@@ -7,7 +7,8 @@ import { createImageTask } from "@/app/actions/image-task";
 import { type GeminiImageModel, type ImageGenerationConfig, RESOLUTION_OPTIONS } from "@/types/image-gen";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { Loader2, Wand2, Image as ImageIcon, Sparkles, Maximize, Link2 } from "lucide-react";
-import { NodeTextarea } from "@/components/NodeInputs";
+import { NodeTextarea, NodeSelect, NodeLabel, NodeButton } from "@/components/ui/NodeUI";
+import { BaseNode } from "./BaseNode";
 
 // Define the data structure for the node
 type ImageGenNodeData = {
@@ -16,7 +17,7 @@ type ImageGenNodeData = {
   isGenerating: boolean;
 };
 
-const ImageGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
+const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { addImageNode, getConnectedImageNodes } = useCanvas();
   const { getNode } = useReactFlow();
 
@@ -97,7 +98,21 @@ const ImageGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
   };
 
   return (
-    <div className="nowheel bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded w-[300px] overflow-hidden">
+    <BaseNode
+      title="Image Generator"
+      icon={ImageIcon}
+      color="blue"
+      selected={selected}
+      className="w-[300px]"
+      headerActions={
+        connectedImagesCount > 0 && (
+          <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">
+            <Link2 className="w-3 h-3" />
+            {connectedImagesCount}
+          </span>
+        )
+      }
+    >
       <Handle
         type="target"
         position={Position.Top}
@@ -105,70 +120,57 @@ const ImageGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
         className="w-2 h-2 !bg-blue-500 !border-0"
       />
 
-      <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-          <ImageIcon className="w-3.5 h-3.5" />
-          Generator
-        </span>
-        {connectedImagesCount > 0 && (
-          <span className="text-[10px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
-            <Link2 className="w-3 h-3" />
-            {connectedImagesCount}
-          </span>
-        )}
-      </div>
-
-      <div className="p-3 space-y-2.5">
+      <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[11px] text-neutral-600 dark:text-neutral-400">Model</label>
-            <select
-              className="w-full text-xs px-2 py-1.5 rounded bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:border-blue-500"
+          <div>
+            <NodeLabel>Model</NodeLabel>
+            <NodeSelect
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value as GeminiImageModel)}
+              className="w-full"
             >
               <option value="nano-banana">Fast</option>
               <option value="nano-banana-pro">Pro</option>
-            </select>
+            </NodeSelect>
           </div>
 
           {selectedModel === "nano-banana-pro" && (
-            <div className="space-y-1">
-              <label className="text-[11px] text-neutral-600 dark:text-neutral-400">Resolution</label>
-              <select
-                className="w-full text-xs px-2 py-1.5 rounded bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:border-blue-500"
+            <div>
+              <NodeLabel>Resolution</NodeLabel>
+              <NodeSelect
                 value={imageSize}
                 onChange={(e) => setImageSize(e.target.value)}
+                className="w-full"
               >
                 {Object.entries(RESOLUTION_OPTIONS).map(([key, option]) => (
                   <option key={key} value={option.value}>
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </NodeSelect>
             </div>
           )}
         </div>
 
-        <div className="space-y-1">
-          <label className="text-[11px] text-neutral-600 dark:text-neutral-400">Aspect Ratio</label>
-          <select
-            className="w-full text-xs px-2 py-1.5 rounded bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:border-blue-500"
+        <div>
+          <NodeLabel>Aspect Ratio</NodeLabel>
+          <NodeSelect
             value={aspectRatio}
             onChange={(e) => setAspectRatio(e.target.value)}
+            className="w-full"
           >
             <option value="1:1">1:1</option>
             <option value="16:9">16:9</option>
             <option value="9:16">9:16</option>
             <option value="4:3">4:3</option>
             <option value="3:4">3:4</option>
-          </select>
+          </NodeSelect>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-[11px] text-neutral-600 dark:text-neutral-400">Prompt</label>
+        <div>
+          <NodeLabel>Prompt</NodeLabel>
           <NodeTextarea
-            className="w-full text-xs px-2 py-1.5 rounded bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 resize-none focus:outline-none focus:border-blue-500"
+            className="w-full resize-none"
             rows={3}
             value={prompt}
             onChange={handlePromptChange}
@@ -177,21 +179,23 @@ const ImageGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
         </div>
 
         <div className="flex gap-2 pt-1">
-          <button
+          <NodeButton
+            variant="secondary"
             onClick={onRewrite}
             disabled={isRewriting || !prompt}
-            className="flex-1 flex items-center justify-center gap-1 text-xs text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-750 py-1.5 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1"
           >
             {isRewriting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
             Rewrite
-          </button>
-          <button
+          </NodeButton>
+          <NodeButton
+            variant="primary"
             onClick={onGenerate}
             disabled={isGenerating || !prompt}
-            className="flex-[2] flex items-center justify-center gap-1 text-xs bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 py-1.5 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-[2] bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
           >
             {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate"}
-          </button>
+          </NodeButton>
         </div>
       </div>
 
@@ -201,7 +205,7 @@ const ImageGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
         isConnectable={isConnectable}
         className="w-2 h-2 !bg-blue-500 !border-0"
       />
-    </div>
+    </BaseNode>
   );
 };
 

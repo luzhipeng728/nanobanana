@@ -4,7 +4,8 @@ import { memo, useState, useEffect, useRef } from "react";
 import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { Loader2, Video as VideoIcon, Link2, UserPlus } from "lucide-react";
-import { NodeTextarea } from "@/components/NodeInputs";
+import { NodeTextarea, NodeSelect, NodeLabel, NodeButton } from "@/components/ui/NodeUI";
+import { BaseNode } from "./BaseNode";
 import cameoData from "@/data/composer_profiles.json";
 
 type VideoGenNodeData = {
@@ -20,7 +21,7 @@ interface CameoProfile {
   verified: boolean;
 }
 
-const VideoGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
+const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { addVideoNode, getConnectedImageNodes } = useCanvas();
   const { getNode } = useReactFlow();
   const promptRef = useRef<HTMLTextAreaElement>(null);
@@ -128,7 +129,21 @@ const VideoGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
   };
 
   return (
-    <div className="nowheel bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded w-[300px] overflow-hidden">
+    <BaseNode
+      title="Video Generator"
+      icon={VideoIcon}
+      color="orange"
+      selected={selected}
+      className="w-[320px]"
+      headerActions={
+        connectedImagesCount > 0 && (
+          <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium">
+            <Link2 className="w-3 h-3" />
+            {connectedImagesCount}
+          </span>
+        )
+      }
+    >
       <Handle
         type="target"
         position={Position.Top}
@@ -136,77 +151,64 @@ const VideoGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
         className="w-2 h-2 !bg-orange-500 !border-0"
       />
 
-      <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-          <VideoIcon className="w-3.5 h-3.5" />
-          Video Generator
-        </span>
-        {connectedImagesCount > 0 && (
-          <span className="text-[10px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
-            <Link2 className="w-3 h-3" />
-            {connectedImagesCount}
-          </span>
-        )}
-      </div>
-
-      <div className="p-3 space-y-2.5">
-        <div className="space-y-1">
-          <label className="text-[11px] text-neutral-600 dark:text-neutral-400">Orientation</label>
-          <select
-            className="w-full text-xs px-2 py-1.5 rounded bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:border-orange-500"
+      <div className="space-y-3">
+        <div>
+          <NodeLabel>Orientation</NodeLabel>
+          <NodeSelect
             value={orientation}
             onChange={(e) => {
               const val = e.target.value as "portrait" | "landscape";
               setOrientation(val);
               data.orientation = val;
             }}
+            className="w-full"
           >
             <option value="portrait">Portrait (9:16)</option>
             <option value="landscape">Landscape (16:9)</option>
-          </select>
+          </NodeSelect>
         </div>
 
         {/* Cameo Selector */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <label className="text-[11px] text-neutral-600 dark:text-neutral-400">Add Cameo</label>
-            <button
-              type="button"
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <NodeLabel className="mb-0">Add Cameo</NodeLabel>
+            <NodeButton
+              variant="ghost"
               onClick={() => setShowCameos(!showCameos)}
-              className="flex items-center gap-0.5 text-[10px] text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300"
+              className="h-5 px-1.5 text-[10px] text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
             >
-              <UserPlus className="w-3 h-3" />
+              <UserPlus className="w-3 h-3 mr-1" />
               {showCameos ? "Hide" : "Show"}
-            </button>
+            </NodeButton>
           </div>
           {showCameos && (
-            <div className="flex gap-1 overflow-x-auto pb-1" style={{ maxWidth: "100%" }}>
+            <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800" style={{ maxWidth: "100%" }}>
               {cameos.slice(0, 10).map((cameo) => (
                 <button
                   key={cameo.username}
                   type="button"
                   onClick={() => handleCameoSelect(cameo.username)}
                   disabled={!selectedCameos.includes(cameo.username) && selectedCameos.length >= 3}
-                  className={`flex-shrink-0 flex flex-col items-center gap-0.5 p-1 rounded border transition-all ${
+                  className={`flex-shrink-0 flex flex-col items-center gap-0.5 p-1 rounded-md border transition-all duration-200 ${
                     selectedCameos.includes(cameo.username)
-                      ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
-                      : "border-neutral-300 dark:border-neutral-700 hover:border-orange-400"
-                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+                      ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-sm"
+                      : "border-neutral-200 dark:border-neutral-800 hover:border-orange-400 dark:hover:border-orange-600"
+                  } disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-neutral-900`}
                   title={cameo.display_name}
                 >
-                  <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-white dark:border-neutral-900">
+                  <div className="relative w-8 h-8 rounded-full overflow-hidden border border-neutral-100 dark:border-neutral-800">
                     <img
                       src={cameo.profile_picture_url}
                       alt={cameo.username}
                       className="w-full h-full object-cover"
                     />
                     {cameo.verified && (
-                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-blue-500 rounded-full flex items-center justify-center text-[8px] text-white">
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-blue-500 ring-1 ring-white dark:ring-neutral-900 rounded-full flex items-center justify-center text-[8px] text-white">
                         ✓
                       </div>
                     )}
                   </div>
-                  <span className="text-[9px] text-neutral-600 dark:text-neutral-400 max-w-[40px] truncate">
+                  <span className="text-[9px] font-medium text-neutral-600 dark:text-neutral-400 max-w-[40px] truncate">
                     {cameo.display_name?.split(" ")[0] || cameo.username}
                   </span>
                 </button>
@@ -215,11 +217,11 @@ const VideoGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
           )}
         </div>
 
-        <div className="space-y-1">
-          <label className="text-[11px] text-neutral-600 dark:text-neutral-400">Prompt</label>
+        <div>
+          <NodeLabel>Prompt</NodeLabel>
           <NodeTextarea
             ref={promptRef}
-            className="w-full text-xs px-2 py-1.5 rounded bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 resize-none focus:outline-none focus:border-orange-500"
+            className="w-full resize-none focus:border-orange-500 focus:ring-orange-500/20"
             rows={4}
             value={prompt}
             onChange={handlePromptChange}
@@ -228,19 +230,20 @@ const VideoGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
         </div>
 
         {connectedImagesCount > 0 && (
-          <div className="text-[10px] text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1.5 rounded">
-            Image-to-video mode: Using connected image
+          <div className="text-[10px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-3 py-2 rounded-md border border-orange-100 dark:border-orange-900/30 flex items-center gap-2">
+            <Link2 className="w-3 h-3" />
+            Image-to-video mode active
           </div>
         )}
 
         <div className="pt-1">
-          <button
+          <NodeButton
             onClick={onGenerate}
             disabled={isGenerating || !prompt}
-            className="w-full flex items-center justify-center gap-1 text-xs bg-orange-600 dark:bg-orange-600 text-white hover:bg-orange-700 py-1.5 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-700 text-white"
           >
-            {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate Video"}
-          </button>
+            {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Generate Video"}
+          </NodeButton>
         </div>
       </div>
 
@@ -250,7 +253,7 @@ const VideoGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
         isConnectable={isConnectable}
         className="w-2 h-2 !bg-orange-500 !border-0"
       />
-    </div>
+    </BaseNode>
   );
 };
 

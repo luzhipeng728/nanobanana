@@ -4,7 +4,8 @@ import { memo, useState, useRef, useEffect } from "react";
 import { Handle, Position, NodeProps, NodeResizer } from "@xyflow/react";
 import { MessageSquare, Send, Loader2, StopCircle } from "lucide-react";
 import { Streamdown } from "streamdown";
-import { NodeTextarea, NodeInput, NodeScrollArea } from "@/components/NodeInputs";
+import { NodeTextarea, NodeInput, NodeScrollArea } from "@/components/ui/NodeUI";
+import { cn } from "@/lib/utils";
 
 // Helper function to replace unsupported language tags
 const normalizeMarkdown = (content: string) => {
@@ -131,12 +132,15 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   };
 
   return (
-    <div className="nowheel bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl w-[500px] h-[650px] overflow-hidden flex flex-col">
+    <div className={cn(
+      "nowheel bg-white dark:bg-neutral-950 border-2 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[500px] h-[650px] overflow-hidden flex flex-col transition-all duration-300",
+      selected ? "ring-4 ring-offset-0 ring-purple-400/40 border-purple-200 dark:border-purple-800 shadow-[0_8px_20px_-6px_rgba(168,85,247,0.15)] scale-[1.02]" : "border-neutral-200 dark:border-neutral-800 hover:shadow-lg hover:scale-[1.01]"
+    )}>
       <NodeResizer
         isVisible={selected}
         minWidth={400}
         minHeight={500}
-        lineClassName="!border-purple-500"
+        lineClassName="!border-purple-400"
         handleClassName="!w-3 !h-3 !bg-purple-500 !rounded-full"
       />
       <Handle
@@ -147,27 +151,27 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       />
 
       {/* Header */}
-      <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between flex-shrink-0 bg-white dark:bg-neutral-900">
+      <div className="px-5 py-4 border-b border-purple-100 dark:border-purple-900/20 flex items-center justify-between flex-shrink-0 bg-purple-50/50 dark:bg-purple-900/20 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-md">
-            <MessageSquare className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shadow-sm text-purple-600 dark:text-purple-300">
+            <MessageSquare className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">AI Assistant</h3>
-            <p className="text-[10px] text-neutral-500 dark:text-neutral-400">Always online</p>
+            <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-100 tracking-tight">AI Assistant</h3>
+            <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium">Always online</p>
           </div>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowSystemPrompt(!showSystemPrompt)}
-            className="text-[11px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-purple-600 dark:hover:text-purple-400 px-3 py-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-all"
+            className="text-[10px] font-bold text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 px-3 py-1.5 rounded-full transition-all"
           >
             {showSystemPrompt ? "Hide System" : "System"}
           </button>
           {messages.length > 0 && (
             <button
               onClick={handleClear}
-              className="text-[11px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+              className="text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 px-3 py-1.5 rounded-full transition-all"
             >
               Clear
             </button>
@@ -177,9 +181,9 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
       {/* System Prompt (collapsible) */}
       {showSystemPrompt && (
-        <div className="px-4 py-3 border-b border-purple-100 dark:border-purple-900/30 bg-purple-50/50 dark:bg-purple-950/20 flex-shrink-0">
+        <div className="px-4 py-3 border-b border-purple-100 dark:border-purple-900/20 bg-purple-50/30 dark:bg-purple-900/10 flex-shrink-0">
           <NodeTextarea
-            className="w-full text-xs px-3 py-2 rounded-lg bg-white dark:bg-neutral-900 border border-purple-200 dark:border-purple-800/50 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm transition-all"
+            className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-neutral-900 border-2 border-purple-100 dark:border-purple-800/30 resize-none focus:ring-4 focus:ring-purple-100 dark:focus:ring-purple-900/20 focus:border-purple-300 dark:focus:border-purple-700 shadow-sm transition-all"
             rows={3}
             value={systemPrompt}
             onChange={(e) => setSystemPrompt(e.target.value)}
@@ -189,19 +193,19 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       )}
 
       {/* Messages */}
-      <NodeScrollArea className="flex-1 overflow-y-auto overflow-x-hidden p-5 bg-neutral-50 dark:bg-neutral-950">
+      <NodeScrollArea className="flex-1 overflow-y-auto overflow-x-hidden p-5 bg-white/50 dark:bg-neutral-950/50">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center">
-                <MessageSquare className="w-8 h-8 text-purple-500 dark:text-purple-400" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-3xl bg-purple-50 dark:bg-purple-900/10 flex items-center justify-center rotate-3">
+                <MessageSquare className="w-8 h-8 text-purple-400/70 dark:text-purple-400/50" />
               </div>
-              <h4 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Start a conversation</h4>
+              <h4 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-1">Start a conversation</h4>
               <p className="text-xs text-neutral-500 dark:text-neutral-500">Send a message to begin chatting with AI</p>
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {messages.map((msg, index) => {
               const prevMsg = index > 0 ? messages[index - 1] : undefined;
               const isGrouped = shouldGroupMessage(msg, prevMsg);
@@ -211,32 +215,32 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   key={index}
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} ${isGrouped ? "mt-1" : "mt-4"}`}
                 >
-                  <div className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} max-w-[80%] min-w-0`}>
+                  <div className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} max-w-[85%] min-w-0`}>
                     {!isGrouped && msg.role === "assistant" && (
-                      <div className="flex items-center gap-2 mb-1.5 px-1">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm">
-                          <MessageSquare className="w-3.5 h-3.5 text-white" />
+                      <div className="flex items-center gap-2 mb-2 px-1">
+                        <div className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shadow-sm">
+                          <MessageSquare className="w-3 h-3 text-purple-600 dark:text-purple-300" />
                         </div>
-                        <span className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400">AI Assistant</span>
+                        <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">AI Assistant</span>
                       </div>
                     )}
                     <div
-                      className={`rounded-2xl px-4 py-2.5 break-words overflow-wrap-anywhere overflow-hidden w-full ${
+                      className={`rounded-2xl px-4 py-3 overflow-hidden w-full shadow-sm ${
                         msg.role === "user"
-                          ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-md"
-                          : "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 shadow-sm"
-                      } ${isGrouped ? (msg.role === "user" ? "rounded-tr-md" : "rounded-tl-md") : ""}`}
+                          ? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-tr-sm"
+                          : "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border-2 border-neutral-100 dark:border-neutral-800 rounded-tl-sm"
+                      } ${isGrouped ? (msg.role === "user" ? "rounded-tr-sm" : "rounded-tl-sm") : ""}`}
                     >
                       {msg.role === "assistant" ? (
-                        <div className="text-[13px] leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-p:break-words prose-pre:max-w-full prose-pre:overflow-x-auto prose-pre:whitespace-pre prose-code:break-words prose-p:my-1.5 prose-p:leading-relaxed prose-headings:mt-3 prose-headings:mb-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-code:text-xs">
+                        <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none break-words whitespace-pre-wrap">
                           <Streamdown>{normalizeMarkdown(msg.content)}</Streamdown>
                         </div>
                       ) : (
-                        <div className="text-[13px] whitespace-pre-wrap break-words leading-relaxed">{msg.content}</div>
+                        <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.content}</div>
                       )}
                     </div>
-                    {msg.timestamp && (
-                      <span className="text-[10px] text-neutral-400 dark:text-neutral-600 mt-1 px-1">
+                    {msg.timestamp && !isGrouped && (
+                      <span className="text-[9px] text-neutral-400 dark:text-neutral-600 mt-1 px-2 font-medium">
                         {formatTime(msg.timestamp)}
                       </span>
                     )}
@@ -250,16 +254,16 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         {/* Streaming Message */}
         {isStreaming && streamingContent && (
           <div className="flex justify-start mt-4">
-            <div className="flex flex-col items-start max-w-[80%] min-w-0">
-              <div className="flex items-center gap-2 mb-1.5 px-1">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-sm">
-                  <MessageSquare className="w-3.5 h-3.5 text-white" />
+            <div className="flex flex-col items-start max-w-[85%] min-w-0">
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <div className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shadow-sm">
+                  <MessageSquare className="w-3 h-3 text-purple-600 dark:text-purple-300" />
                 </div>
-                <span className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400">AI Assistant</span>
+                <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">AI Assistant</span>
                 <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
               </div>
-              <div className="rounded-2xl px-4 py-2.5 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-700 break-words overflow-wrap-anywhere overflow-hidden w-full shadow-sm">
-                <div className="text-[13px] leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-p:break-words prose-pre:max-w-full prose-pre:overflow-x-auto prose-pre:whitespace-pre prose-code:break-words prose-p:my-1.5 prose-p:leading-relaxed prose-headings:mt-3 prose-headings:mb-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-code:text-xs">
+              <div className="rounded-2xl rounded-tl-sm px-4 py-3 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border-2 border-neutral-100 dark:border-neutral-800 overflow-hidden w-full shadow-sm">
+                <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none break-words whitespace-pre-wrap">
                   <Streamdown>{normalizeMarkdown(streamingContent)}</Streamdown>
                 </div>
               </div>
@@ -270,9 +274,9 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         {/* Loading indicator */}
         {isStreaming && !streamingContent && (
           <div className="flex justify-start mt-4">
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">
-              <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
-              <span className="text-xs text-neutral-500">Thinking...</span>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-sm">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-500" />
+              <span className="text-xs font-medium text-neutral-500">Thinking...</span>
             </div>
           </div>
         )}
@@ -281,25 +285,25 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       </NodeScrollArea>
 
       {/* Input */}
-      <div className="px-5 py-4 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-end gap-3 flex-shrink-0">
-        <div className="flex-1 relative">
+      <div className="px-5 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-end gap-3 flex-shrink-0">
+        <div className="flex-1 relative group">
           <NodeInput
             type="text"
-            className="w-full text-sm px-4 py-3 pr-12 rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder:text-neutral-400 dark:placeholder:text-neutral-500 resize-none"
+            className="w-full text-sm px-4 py-3 pr-12 rounded-full bg-neutral-50 dark:bg-neutral-900 border-2 border-transparent focus:border-purple-300 dark:focus:border-purple-700 focus:ring-4 focus:ring-purple-100 dark:focus:ring-purple-900/20 transition-all placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
             placeholder="Type a message..."
             disabled={isStreaming}
           />
-          <div className="absolute right-2 bottom-2 flex items-center gap-1">
-            <span className="text-[10px] text-neutral-400 dark:text-neutral-600 mr-1">{input.length}</span>
+          <div className="absolute right-3 bottom-3 flex items-center gap-1 pointer-events-none">
+            <span className="text-[10px] font-bold text-neutral-300 dark:text-neutral-700">{input.length}</span>
           </div>
         </div>
         {isStreaming ? (
           <button
             onClick={handleStop}
-            className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95"
+            className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95 hover:-translate-y-0.5"
             title="Stop generating"
           >
             <StopCircle className="w-5 h-5" />
@@ -308,7 +312,7 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="p-3 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:from-neutral-300 disabled:to-neutral-400 dark:disabled:from-neutral-700 dark:disabled:to-neutral-800 transition-all shadow-md hover:shadow-lg active:scale-95 disabled:shadow-none"
+            className="p-3 rounded-full bg-neutral-900 dark:bg-neutral-100 hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-900 disabled:opacity-30 disabled:cursor-not-allowed disabled:bg-neutral-200 dark:disabled:bg-neutral-800 disabled:text-neutral-400 dark:disabled:text-neutral-600 transition-all shadow-md hover:shadow-lg active:scale-95 disabled:shadow-none hover:-translate-y-0.5"
             title="Send message"
           >
             <Send className="w-5 h-5" />

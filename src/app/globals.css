@@ -2,8 +2,16 @@
 @import '@xyflow/react/dist/style.css';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fdfbf7; /* Creamier white */
+  --foreground: #4a4a4a; /* Softer black */
+  
+  /* Pastel Accents */
+  --accent-purple: #e0c3fc;
+  --accent-blue: #bde0fe;
+  --accent-green: #d0f4de;
+  --accent-orange: #ffdac1;
+  --accent-pink: #ffcfd2;
+  --accent-red: #ff9aa2;
 }
 
 @theme inline {
@@ -15,13 +23,51 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1a1a1a;
+    --foreground: #f0f0f0;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Nunito", "Rounded Mplus 1c", Arial, Helvetica, sans-serif; /* Trying to suggest a rounder font if available, falling back to Arial */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Cute scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e2e2e2;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d1d1d1;
+}
+
+/* React Flow Customization */
+.react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 3px solid white;
+  transition: all 0.2s ease;
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.2);
+}
+
+.react-flow__node.selected .nowheel {
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.4);
+  transform: scale(1.02);
 }

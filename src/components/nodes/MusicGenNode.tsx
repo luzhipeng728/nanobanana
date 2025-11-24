@@ -5,7 +5,7 @@ import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { Loader2, Wand2, Music as MusicIcon, Sparkles, ArrowRight } from "lucide-react";
 import { BaseNode } from "./BaseNode";
-import { NodeTextarea, NodeButton, NodeLabel } from "@/components/ui/NodeUI";
+import { NodeTextarea, NodeButton, NodeLabel, NodeInput } from "@/components/ui/NodeUI";
 
 type MusicGenNodeData = {
   prompt: string;
@@ -14,7 +14,7 @@ type MusicGenNodeData = {
   isGenerating: boolean;
 };
 
-const MusicGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
+const MusicGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { addMusicNode } = useCanvas();
   const { getNode } = useReactFlow();
 
@@ -135,13 +135,14 @@ const MusicGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
       title="Music Generator"
       icon={MusicIcon}
       color="green"
+      selected={selected}
       className="w-[320px]"
     >
       <Handle
         type="target"
         position={Position.Top}
         isConnectable={isConnectable}
-        className="w-3 h-3 !bg-green-500 !border-2 !border-white dark:!border-neutral-900"
+        className="w-2 h-2 !bg-green-500 !border-0"
       />
 
       <div className="space-y-4">
@@ -152,7 +153,7 @@ const MusicGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
             value={prompt}
             onChange={handlePromptChange}
             placeholder="Describe the music style..."
-            className="focus:ring-green-500/20 focus:border-green-500"
+            className="focus:border-green-500 focus:ring-green-500/20"
           />
         </div>
 
@@ -189,17 +190,17 @@ const MusicGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
             value={lyrics}
             onChange={handleLyricsChange}
             placeholder="Enter lyrics or click Generate..."
-            className="focus:ring-green-500/20 focus:border-green-500"
+            className="focus:border-green-500 focus:ring-green-500/20"
           />
         </div>
 
         <div className="space-y-1">
           <NodeLabel>Number of Songs</NodeLabel>
-          <input
+          <NodeInput
             type="number"
             min="1"
             max="5"
-            className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
+            className="focus:border-green-500 focus:ring-green-500/20"
             value={numberOfSongs}
             onChange={(e) => {
               const val = parseInt(e.target.value) || 2;
@@ -213,7 +214,7 @@ const MusicGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
           <NodeButton
             onClick={onGenerate}
             disabled={isGenerating || !prompt}
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white"
           >
             {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Generate Music"}
           </NodeButton>
@@ -224,7 +225,7 @@ const MusicGenNode = ({ data, id, isConnectable }: NodeProps<any>) => {
         type="source"
         position={Position.Bottom}
         isConnectable={isConnectable}
-        className="w-3 h-3 !bg-green-500 !border-2 !border-white dark:!border-neutral-900"
+        className="w-2 h-2 !bg-green-500 !border-0"
       />
     </BaseNode>
   );
