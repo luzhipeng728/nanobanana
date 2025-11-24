@@ -1,0 +1,36 @@
+2025-11-24 16:29:50:  ⨯ Failed to start server
+2025-11-24 16:29:50:  ⨯ Failed to start server
+2025-11-24 16:29:50:  ⨯ Failed to start server
+2025-11-24 16:29:50:  ⨯ Failed to start server
+2025-11-24 16:29:51:  ⨯ Failed to start server
+2025-11-24 16:29:51:  ⨯ Failed to start server
+2025-11-24 16:29:51:  ⨯ Failed to start server
+2025-11-24 16:29:51:  ⨯ Failed to start server
+2025-11-24 16:29:51:  ⨯ Failed to start server
+2025-11-24 16:29:51:  ⨯ Failed to start server
+2025-11-24 16:29:52:  ⨯ Failed to start server
+2025-11-24 16:29:52:  ⨯ Failed to start server
+2025-11-24 16:29:52:  ⨯ Failed to start server
+2025-11-24 16:29:52:  ⨯ Failed to start server
+2025-11-24 16:29:52:  ⨯ Failed to start server
+2025-11-24 16:29:53:  ⨯ Failed to start server
+2025-11-24 16:42:29: ⚠️  Retryable error (503): {
+  "error": {
+    "code": 503,
+    "message": "The model is overloaded. Please try again later.",
+ ...
+2025-11-24 16:44:32: ⚠️  Retryable error (503): {
+  "error": {
+    "code": 503,
+    "message": "The model is overloaded. Please try again later.",
+ ...
+2025-11-24 16:51:30: ⚠️  Retryable error (503): {
+  "error": {
+    "code": 503,
+    "message": "The model is overloaded. Please try again later.",
+ ...
+2025-11-24 16:51:32: ⚠️  Retryable error (503): {
+  "error": {
+    "code": 503,
+    "message": "The model is overloaded. Please try again later.",
+ ...

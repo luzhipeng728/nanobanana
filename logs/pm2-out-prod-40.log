@@ -1,0 +1,362 @@
+2025-11-24 16:30:44:    ▲ Next.js 16.0.3
+2025-11-24 16:30:44:    - Local:         http://localhost:3004
+2025-11-24 16:30:44:    - Network:       http://0.0.0.0:3004
+2025-11-24 16:30:44: 
+2025-11-24 16:30:44:  ✓ Starting...
+2025-11-24 16:30:44:  ✓ Ready in 293ms
+2025-11-24 16:39:13: [Lyrics] Extending lyrics
+2025-11-24 16:39:14: [Lyrics] Extended lyrics successfully
+2025-11-24 16:39:21: [Lyrics] Generating lyrics for prompt: "爱你"
+2025-11-24 16:39:25: [Lyrics] Generated lyrics - Title: "深爱"
+2025-11-24 16:39:32: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Starting music generation...
+2025-11-24 16:39:32: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Prompt: 爱你...
+2025-11-24 16:39:32: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Calling Mureka API with payload: {"model":"auto","n":2,"prompt":"爱你","lyrics":"[前奏]\n[主歌]\n在你眼中我看见未来\n每个微笑都是我的安慰\n你的手温暖如初见\n爱意深藏在每个瞬间\n\n[主歌]\n每个夜晚我梦到你\n醒来时你的影子还在\n无论风雨我都不怕\n因为你在我身旁不走\n\n[副歌]\n爱你 爱你\n每个明天都有你\n爱你 爱你\n直到世界的尽头\n\n[桥段]\n就算世界变得模糊\n你的笑容依旧清晰\n我愿意为你守候\n直到时间的尽头\n\n[主歌]\n每个清晨醒来看到你\n是我一天最美的开始\n你的温柔像春风拂面\n每一天都充满希望\n\n[主歌]\n你的名字我轻轻念起\n心中满是甜蜜回忆\n承诺不变如初见\n这份爱永远不分离\n\n[副歌]\n爱你 爱你\n每个明天都有你\n爱你 爱你\n直到世界的尽头\n\n[副歌]\n爱你 爱你\n每个明天都有你\n爱你 爱你\n直到世界的尽头"}
+2025-11-24 16:39:35: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Mureka task created: 107634176884737
+2025-11-24 16:39:40: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 1/120...
+2025-11-24 16:39:40: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:39:45: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 2/120...
+2025-11-24 16:39:46: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:39:51: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 3/120...
+2025-11-24 16:39:51: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:39:56: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 4/120...
+2025-11-24 16:39:56: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:01: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 5/120...
+2025-11-24 16:40:01: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:06: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 6/120...
+2025-11-24 16:40:06: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:11: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 7/120...
+2025-11-24 16:40:11: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:16: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 8/120...
+2025-11-24 16:40:16: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:21: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 9/120...
+2025-11-24 16:40:21: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:26: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 10/120...
+2025-11-24 16:40:26: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:31: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 11/120...
+2025-11-24 16:40:31: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:36: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 12/120...
+2025-11-24 16:40:36: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:41: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 13/120...
+2025-11-24 16:40:41: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:46: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 14/120...
+2025-11-24 16:40:46: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:51: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 15/120...
+2025-11-24 16:40:51: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: running
+2025-11-24 16:40:56: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Polling attempt 16/120...
+2025-11-24 16:40:56: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] Status: succeeded
+2025-11-24 16:40:56: [MusicTask f3ac4913-1daf-4b85-abe7-a245b33a2a2c] ✅ Completed successfully with 2 songs
+2025-11-24 16:42:13: [Task 03ec5014-b744-4463-b244-510ae8199bf0] Starting image generation...
+2025-11-24 16:42:13: [Task 03ec5014-b744-4463-b244-510ae8199bf0] Model: nano-banana-pro, Prompt: Hand-drawn style PPT page with cream paper texture...
+2025-11-24 16:42:13: Generating image with model: gemini-3-pro-image-preview, prompt: Hand-drawn style PPT page with cream paper texture...
+2025-11-24 16:42:13: Config: { aspectRatio: '1:1', imageSize: '4K' }
+2025-11-24 16:42:13: Reference images: 0
+2025-11-24 16:42:29: ⏳ Retry attempt 1/5, waiting 2000ms...
+2025-11-24 16:44:32: ⏳ Retry attempt 2/5, waiting 4000ms...
+2025-11-24 16:44:49: Iteration 1: AIMessage {
+  "id": "chatcmpl-d2e7ce77-829a-42dc-9e7d-18fe3c9e3eb9",
+  "content": "\n```json\n{\n  \"prompts\": [\n    {\n      \"scene\": \"波斯猫优雅肖像\",\n      \"prompt\": \"A majestic Persian cat with luxurious long white fur and striking blue eyes, sitting gracefully on a velvet cushion in an elegant living room, soft natural lighting, photorealistic style, shallow depth of field, 8k resolution, professional pet photography\"\n    },\n    {\n      \"scene\": \"暹罗猫特写\",\n      \"prompt\": \"Close-up portrait of a beautiful Siamese cat with distinctive cream coat and chocolate points, piercing blue almond-shaped eyes, sitting near a window with soft sunlight, minimalist background, high detail, professional animal portrait photography\"\n    },\n    {\n      \"scene\": \"英国短毛猫休闲\",\n      \"prompt\": \"A chubby British Shorthair cat with classic blue-gray coat and round copper eyes, lounging comfortably on a plush sofa, cozy home environment, warm ambient lighting, detailed fur texture, cinematic composition, 4k quality\"\n    },\n    {\n      \"scene\": \"布偶猫温馨场景\",\n      \"prompt\": \"A large fluffy Ragdoll cat with pointed coloration and stunning blue eyes, relaxing on a soft blanket, peaceful bedroom setting, golden hour lighting, ultra-detailed fur, gentle expression, professional pet photography style\"\n    },\n    {\n      \"scene\": \"美国短毛猫活力\",\n      \"prompt\": \"An American Shorthair cat with classic silver tabby pattern, bright alert eyes, in a playful pose on a wooden floor, natural daylight streaming through window, dynamic composition, sharp details, award-winning pet photography\"\n    },\n    {\n      \"scene\": \"斯芬克斯猫艺术照\",\n      \"prompt\": \"A Sphynx cat with wrinkled skin and large ears, sitting elegantly against a dark background, dramatic studio lighting, highlighting unique skin texture and muscular build, artistic black and white photography, high contrast, professional portrait\"\n    }\n  ]\n}\n```",
+  "additional_kwargs": {},
+  "response_metadata": {
+    "tokenUsage": {
+      "promptTokens": 1525,
+      "completionTokens": 672,
+      "totalTokens": 2197
+    },
+    "finish_reason": "stop",
+    "model_provider": "openai",
+    "model_name": "zai-glm-4.6",
+    "usage": {
+      "total_tokens": 2197,
+      "completion_tokens": 672,
+      "prompt_tokens": 1525
+    },
+    "system_fingerprint": "fp_9eaa76d40d229969234d"
+  },
+  "tool_calls": [],
+  "invalid_tool_calls": [],
+  "usage_metadata": {
+    "output_tokens": 672,
+    "input_tokens": 1525,
+    "total_tokens": 2197,
+    "input_token_details": {},
+    "output_token_details": {}
+  }
+}
+2025-11-24 16:44:49: Final output: 
+```json
+{
+  "prompts": [
+    {
+      "scene": "波斯猫优雅肖像",
+      "prompt": "A majestic Persian cat with luxurious long white fur and striking blue eyes, sitting gracefully on a velvet cushion in an elegant living room, soft natural lighting, photorealistic style, shallow depth of field, 8k resolution, professional pet photography"
+    },
+    {
+      "scene": "暹罗猫特写",
+      "prompt": "Close-up portrait of a beautiful Siamese cat with distinctive cream coat and chocolate points, piercing blue almond-shaped eyes, sitting near a window with soft sunlight, minimalist background, high detail, professional animal portrait photography"
+    },
+    {
+      "scene": "英国短毛猫休闲",
+      "prompt": "A chubby British Shorthair cat with classic blue-gray coat and round copper eyes, lounging comfortably on a plush sofa, cozy home environment, warm ambient lighting, detailed fur texture, cinematic composition, 4k quality"
+    },
+    {
+      "scene": "布偶猫温馨场景",
+      "prompt": "A large fluffy Ragdoll cat with pointed coloration and stunning blue eyes, relaxing on a soft blanket, peaceful bedroom setting, golden hour lighting, ultra-detailed fur, gentle expression, professional pet photography style"
+    },
+    {
+      "scene": "美国短毛猫活力",
+      "prompt": "An American Shorthair cat with classic silver tabby pattern, bright alert eyes, in a playful pose on a wooden floor, natural daylight streaming through window, dynamic composition, sharp details, award-winning pet photography"
+    },
+    {
+      "scene": "斯芬克斯猫艺术照",
+      "prompt": "A Sphynx cat with wrinkled skin and large ears, sitting elegantly against a dark background, dramatic studio lighting, highlighting unique skin texture and muscular build, artistic black and white photography, high contrast, professional portrait"
+    }
+  ]
+}
+```
+2025-11-24 16:44:49: Found JSON in markdown block
+2025-11-24 16:44:49: Successfully parsed 6 prompts
+2025-11-24 16:44:50: [Task 39ce5531-e12d-4ab3-a013-971d2941266d] Starting image generation...
+2025-11-24 16:44:50: [Task 39ce5531-e12d-4ab3-a013-971d2941266d] Model: nano-banana, Prompt: A large fluffy Ragdoll cat with pointed coloration...
+2025-11-24 16:44:50: Generating image with model: gemini-2.5-flash-image, prompt: A large fluffy Ragdoll cat with pointed coloration...
+2025-11-24 16:44:50: Config: { aspectRatio: '16:9' }
+2025-11-24 16:44:50: Reference images: 0
+2025-11-24 16:44:50: [Task ce495286-b6f4-48ae-a27b-16c48830721b] Starting image generation...
+2025-11-24 16:44:50: [Task ce495286-b6f4-48ae-a27b-16c48830721b] Model: nano-banana, Prompt: A majestic Persian cat with luxurious long white f...
+2025-11-24 16:44:50: Generating image with model: gemini-2.5-flash-image, prompt: A majestic Persian cat with luxurious long white f...
+2025-11-24 16:44:50: Config: { aspectRatio: '16:9' }
+2025-11-24 16:44:50: Reference images: 0
+2025-11-24 16:44:50: [Task 5f2433a3-28ed-40f1-a19f-508168779bb6] Starting image generation...
+2025-11-24 16:44:50: [Task 5f2433a3-28ed-40f1-a19f-508168779bb6] Model: nano-banana, Prompt: A chubby British Shorthair cat with classic blue-g...
+2025-11-24 16:44:50: Generating image with model: gemini-2.5-flash-image, prompt: A chubby British Shorthair cat with classic blue-g...
+2025-11-24 16:44:50: Config: { aspectRatio: '16:9' }
+2025-11-24 16:44:50: Reference images: 0
+2025-11-24 16:44:50: [Task 522eab84-ddc6-413e-8bf0-22a482e1bfb8] Starting image generation...
+2025-11-24 16:44:50: [Task 522eab84-ddc6-413e-8bf0-22a482e1bfb8] Model: nano-banana, Prompt: Close-up portrait of a beautiful Siamese cat with ...
+2025-11-24 16:44:50: Generating image with model: gemini-2.5-flash-image, prompt: Close-up portrait of a beautiful Siamese cat with ...
+2025-11-24 16:44:50: Config: { aspectRatio: '16:9' }
+2025-11-24 16:44:50: Reference images: 0
+2025-11-24 16:44:50: [Task c4d1fca4-a884-4fbc-a26d-064626c5da2d] Starting image generation...
+2025-11-24 16:44:50: [Task c4d1fca4-a884-4fbc-a26d-064626c5da2d] Model: nano-banana, Prompt: An American Shorthair cat with classic silver tabb...
+2025-11-24 16:44:50: Generating image with model: gemini-2.5-flash-image, prompt: An American Shorthair cat with classic silver tabb...
+2025-11-24 16:44:50: Config: { aspectRatio: '16:9' }
+2025-11-24 16:44:50: Reference images: 0
+2025-11-24 16:44:50: [Task 3508cba4-9701-49b7-95ca-6fd86fb1226b] Starting image generation...
+2025-11-24 16:44:50: [Task 3508cba4-9701-49b7-95ca-6fd86fb1226b] Model: nano-banana, Prompt: A Sphynx cat with wrinkled skin and large ears, si...
+2025-11-24 16:44:50: Generating image with model: gemini-2.5-flash-image, prompt: A Sphynx cat with wrinkled skin and large ears, si...
+2025-11-24 16:44:50: Config: { aspectRatio: '16:9' }
+2025-11-24 16:44:50: Reference images: 0
+2025-11-24 16:44:56: ✅ Gemini API response received
+2025-11-24 16:44:56: Image data found, processing...
+2025-11-24 16:44:56: Image size: 1221211 bytes, MIME type: image/png
+2025-11-24 16:44:56: ✅ Gemini API response received
+2025-11-24 16:44:56: Image data found, processing...
+2025-11-24 16:44:56: Image size: 1454716 bytes, MIME type: image/png
+2025-11-24 16:44:57: Image uploaded to R2: https://doubao.luzhipeng.com/b0621ed2-a26a-4bad-99d5-b86c9dcf00bf.png
+2025-11-24 16:44:57: Image uploaded to R2: https://doubao.luzhipeng.com/e97e4dbd-c594-4b7c-8c77-368859b5337c.png
+2025-11-24 16:44:57: [Task 3508cba4-9701-49b7-95ca-6fd86fb1226b] ✅ Completed successfully
+2025-11-24 16:44:57: ✅ Gemini API response received
+2025-11-24 16:44:57: Image data found, processing...
+2025-11-24 16:44:57: Image size: 1460194 bytes, MIME type: image/png
+2025-11-24 16:44:57: [Task 522eab84-ddc6-413e-8bf0-22a482e1bfb8] ✅ Completed successfully
+2025-11-24 16:44:57: ✅ Gemini API response received
+2025-11-24 16:44:57: Image data found, processing...
+2025-11-24 16:44:57: Image size: 1513217 bytes, MIME type: image/png
+2025-11-24 16:44:57: Image uploaded to R2: https://doubao.luzhipeng.com/19f097a8-1cf8-4998-a560-b82f9bcc5284.png
+2025-11-24 16:44:57: [Task c4d1fca4-a884-4fbc-a26d-064626c5da2d] ✅ Completed successfully
+2025-11-24 16:44:57: Image uploaded to R2: https://doubao.luzhipeng.com/ec1713be-655f-43fb-b5c5-7043ffa9c344.png
+2025-11-24 16:44:57: [Task ce495286-b6f4-48ae-a27b-16c48830721b] ✅ Completed successfully
+2025-11-24 16:44:58: ✅ Gemini API response received
+2025-11-24 16:44:58: Image data found, processing...
+2025-11-24 16:44:58: Image size: 1528879 bytes, MIME type: image/png
+2025-11-24 16:44:59: ✅ Gemini API response received
+2025-11-24 16:44:59: Image data found, processing...
+2025-11-24 16:44:59: Image size: 1399170 bytes, MIME type: image/png
+2025-11-24 16:44:59: Image uploaded to R2: https://doubao.luzhipeng.com/2fdba721-0ad0-4e51-97de-3c3e4849af07.png
+2025-11-24 16:44:59: [Task 39ce5531-e12d-4ab3-a013-971d2941266d] ✅ Completed successfully
+2025-11-24 16:44:59: Image uploaded to R2: https://doubao.luzhipeng.com/a95eac2c-fdaf-4627-a997-57cc06a1a546.png
+2025-11-24 16:44:59: [Task 5f2433a3-28ed-40f1-a19f-508168779bb6] ✅ Completed successfully
+2025-11-24 16:45:25: ✅ Gemini API response received
+2025-11-24 16:45:25: Image data found, processing...
+2025-11-24 16:45:25: Image size: 10007664 bytes, MIME type: image/jpeg
+2025-11-24 16:45:26: Image uploaded to R2: https://doubao.luzhipeng.com/e21204ac-f922-4385-ab67-476baf296de1.png
+2025-11-24 16:45:26: [Task 03ec5014-b744-4463-b244-510ae8199bf0] ✅ Completed successfully
+2025-11-24 16:51:29: [Task c7b67af7-1146-4471-aa4e-37cf96b33d4a] Starting image generation...
+2025-11-24 16:51:29: [Task c7b67af7-1146-4471-aa4e-37cf96b33d4a] Model: nano-banana-pro, Prompt: Hand-drawn style PPT page with cream paper texture...
+2025-11-24 16:51:29: Generating image with model: gemini-3-pro-image-preview, prompt: Hand-drawn style PPT page with cream paper texture...
+2025-11-24 16:51:29: Config: { aspectRatio: '16:9', imageSize: '4K' }
+2025-11-24 16:51:29: Reference images: 0
+2025-11-24 16:51:30: ⏳ Retry attempt 1/5, waiting 2000ms...
+2025-11-24 16:51:32: ⏳ Retry attempt 2/5, waiting 4000ms...
+2025-11-24 16:54:29: ✅ Gemini API response received
+2025-11-24 16:54:29: Image data found, processing...
+2025-11-24 16:54:29: Image size: 8751684 bytes, MIME type: image/jpeg
+2025-11-24 16:54:30: Image uploaded to R2: https://doubao.luzhipeng.com/7e2092cd-7d9a-4e33-83ae-3aea6010ae69.png
+2025-11-24 16:54:30: [Task c7b67af7-1146-4471-aa4e-37cf96b33d4a] ✅ Completed successfully
+2025-11-24 17:56:30: [Lyrics] Generating lyrics for prompt: "无可奈何"
+2025-11-24 17:56:34: [Lyrics] Generated lyrics - Title: "无可奈何"
+2025-11-24 17:56:37: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Starting music generation...
+2025-11-24 17:56:37: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Prompt: 无可奈何...
+2025-11-24 17:56:37: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Calling Mureka API with payload: {"model":"auto","n":2,"prompt":"无可奈何","lyrics":"[前奏]\n[主歌]\n风吹过无尽的荒原\n带不走我心中的遗憾\n曾经梦想展翅高飞\n如今只能默默承受\n\n[主歌]\n雨滴落在我孤单的肩\n诉说着命运的冷酷\n曾经以为可以改变\n现在只愿顺其自然\n\n[副歌]\n无可奈何啊\n无法改变的结局\n只能笑着面对\n不再挣扎\n\n[主歌]\n夜深人静时想起\n那些无法挽回的过去\n曾经的誓言已成空\n如今只有自己承担\n\n[主歌]\n阳光洒满破碎的窗\n照亮了前行的方向\n虽然前路漫长又艰难\n但也要勇敢地走下去\n\n[副歌]\n无可奈何啊\n无法改变的现实\n只能坦然接受\n继续向前"}
+2025-11-24 17:56:38: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Mureka task created: 107643869986817
+2025-11-24 17:56:43: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 1/120...
+2025-11-24 17:56:43: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: running
+2025-11-24 17:56:48: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 2/120...
+2025-11-24 17:56:48: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: running
+2025-11-24 17:56:53: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 3/120...
+2025-11-24 17:56:53: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: running
+2025-11-24 17:56:58: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 4/120...
+2025-11-24 17:56:58: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: running
+2025-11-24 17:57:03: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 5/120...
+2025-11-24 17:57:03: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: running
+2025-11-24 17:57:08: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 6/120...
+2025-11-24 17:57:08: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: running
+2025-11-24 17:57:13: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 7/120...
+2025-11-24 17:57:13: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: running
+2025-11-24 17:57:18: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 8/120...
+2025-11-24 17:57:18: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: running
+2025-11-24 17:57:23: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 9/120...
+2025-11-24 17:57:23: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: running
+2025-11-24 17:57:28: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 10/120...
+2025-11-24 17:57:28: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: running
+2025-11-24 17:57:33: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Polling attempt 11/120...
+2025-11-24 17:57:33: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] Status: succeeded
+2025-11-24 17:57:33: [MusicTask 9edb35d4-169e-4acd-8958-a14284e5112e] ✅ Completed successfully with 2 songs
+2025-11-24 18:02:30:    ▲ Next.js 16.0.3
+2025-11-24 18:02:30:    - Local:         http://localhost:3004
+2025-11-24 18:02:30:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:02:30: 
+2025-11-24 18:02:30:  ✓ Starting...
+2025-11-24 18:02:30:  ✓ Ready in 292ms
+2025-11-24 18:07:36:    ▲ Next.js 16.0.3
+2025-11-24 18:07:36:    - Local:         http://localhost:3004
+2025-11-24 18:07:36:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:07:36: 
+2025-11-24 18:07:36:  ✓ Starting...
+2025-11-24 18:07:36:  ✓ Ready in 290ms
+2025-11-24 18:14:12:    ▲ Next.js 16.0.3
+2025-11-24 18:14:12:    - Local:         http://localhost:3004
+2025-11-24 18:14:12:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:14:12: 
+2025-11-24 18:14:12:  ✓ Starting...
+2025-11-24 18:14:12:  ✓ Ready in 296ms
+2025-11-24 18:18:11:    ▲ Next.js 16.0.3
+2025-11-24 18:18:11:    - Local:         http://localhost:3004
+2025-11-24 18:18:11:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:18:11: 
+2025-11-24 18:18:11:  ✓ Starting...
+2025-11-24 18:18:11:  ✓ Ready in 296ms
+2025-11-24 18:19:39: [Task f244d637-7034-4d15-aa9f-d40b5b8890e8] Starting image generation...
+2025-11-24 18:19:39: [Task f244d637-7034-4d15-aa9f-d40b5b8890e8] Model: nano-banana, Prompt: A mystical enchanted forest at golden hour, with t...
+2025-11-24 18:19:39: Generating image with model: gemini-2.5-flash-image, prompt: A mystical enchanted forest at golden hour, with t...
+2025-11-24 18:19:39: Config: { aspectRatio: '1:1' }
+2025-11-24 18:19:39: Reference images: 0
+2025-11-24 18:19:46: ✅ Gemini API response received
+2025-11-24 18:19:46: Image data found, processing...
+2025-11-24 18:19:46: Image size: 1906753 bytes, MIME type: image/png
+2025-11-24 18:19:46: Image uploaded to R2: https://doubao.luzhipeng.com/b90ea78e-6f66-4c8e-af00-96c452b6c33d.png
+2025-11-24 18:19:46: [Task f244d637-7034-4d15-aa9f-d40b5b8890e8] ✅ Completed successfully
+2025-11-24 18:20:14: [Task d19776d5-7e9b-48df-91f9-8c5f3fe7b104] Starting image generation...
+2025-11-24 18:20:14: [Task d19776d5-7e9b-48df-91f9-8c5f3fe7b104] Model: nano-banana, Prompt: A photorealistic dense forest in early morning, ta...
+2025-11-24 18:20:14: Generating image with model: gemini-2.5-flash-image, prompt: A photorealistic dense forest in early morning, ta...
+2025-11-24 18:20:14: Config: { aspectRatio: '1:1' }
+2025-11-24 18:20:14: Reference images: 0
+2025-11-24 18:20:14:    ▲ Next.js 16.0.3
+2025-11-24 18:20:14:    - Local:         http://localhost:3004
+2025-11-24 18:20:14:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:20:14: 
+2025-11-24 18:20:14:  ✓ Starting...
+2025-11-24 18:20:15:  ✓ Ready in 298ms
+2025-11-24 18:22:18: [Task 0cf7fe56-7e95-47fb-8412-07d514f57328] Starting image generation...
+2025-11-24 18:22:18: [Task 0cf7fe56-7e95-47fb-8412-07d514f57328] Model: nano-banana, Prompt: A photorealistic dense forest in early morning, ta...
+2025-11-24 18:22:18: Generating image with model: gemini-2.5-flash-image, prompt: A photorealistic dense forest in early morning, ta...
+2025-11-24 18:22:18: Config: { aspectRatio: '1:1' }
+2025-11-24 18:22:18: Reference images: 0
+2025-11-24 18:22:28: ✅ Gemini API response received
+2025-11-24 18:22:28: Image data found, processing...
+2025-11-24 18:22:28: Image size: 2035743 bytes, MIME type: image/png
+2025-11-24 18:22:28: Image uploaded to R2: https://doubao.luzhipeng.com/2cc44121-461e-494b-b55a-931a38f6591f.png
+2025-11-24 18:22:28: [Task 0cf7fe56-7e95-47fb-8412-07d514f57328] ✅ Completed successfully
+2025-11-24 18:22:33:    ▲ Next.js 16.0.3
+2025-11-24 18:22:33:    - Local:         http://localhost:3004
+2025-11-24 18:22:33:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:22:33: 
+2025-11-24 18:22:33:  ✓ Starting...
+2025-11-24 18:22:33:  ✓ Ready in 295ms
+2025-11-24 18:23:33:    ▲ Next.js 16.0.3
+2025-11-24 18:23:33:    - Local:         http://localhost:3004
+2025-11-24 18:23:33:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:23:33: 
+2025-11-24 18:23:33:  ✓ Starting...
+2025-11-24 18:23:33:  ✓ Ready in 295ms
+2025-11-24 18:25:00:    ▲ Next.js 16.0.3
+2025-11-24 18:25:00:    - Local:         http://localhost:3004
+2025-11-24 18:25:00:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:25:00: 
+2025-11-24 18:25:00:  ✓ Starting...
+2025-11-24 18:25:01:  ✓ Ready in 299ms
+2025-11-24 18:27:02:    ▲ Next.js 16.0.3
+2025-11-24 18:27:02:    - Local:         http://localhost:3004
+2025-11-24 18:27:02:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:27:02: 
+2025-11-24 18:27:02:  ✓ Starting...
+2025-11-24 18:27:02:  ✓ Ready in 290ms
+2025-11-24 18:28:18:    ▲ Next.js 16.0.3
+2025-11-24 18:28:18:    - Local:         http://localhost:3004
+2025-11-24 18:28:18:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:28:18: 
+2025-11-24 18:28:18:  ✓ Starting...
+2025-11-24 18:28:18:  ✓ Ready in 295ms
+2025-11-24 18:29:42: [Task f9dd6e48-f41d-4abd-8849-780d06119790] Starting image generation...
+2025-11-24 18:29:42: [Task f9dd6e48-f41d-4abd-8849-780d06119790] Model: nano-banana, Prompt: 三只不同颜色的小奶猫依偎在一起睡觉，一只打哈欠，一只伸懒腰，一只眯着眼睛，毛发柔软细腻，摇篮里铺着柔...
+2025-11-24 18:29:42: Generating image with model: gemini-2.5-flash-image, prompt: 三只不同颜色的小奶猫依偎在一起睡觉，一只打哈欠，一只伸懒腰，一只眯着眼睛，毛发柔软细腻，摇篮里铺着柔...
+2025-11-24 18:29:42: Config: { aspectRatio: '1:1' }
+2025-11-24 18:29:42: Reference images: 0
+2025-11-24 18:29:48: ✅ Gemini API response received
+2025-11-24 18:29:48: Image data found, processing...
+2025-11-24 18:29:48: Image size: 1430641 bytes, MIME type: image/png
+2025-11-24 18:29:48: Image uploaded to R2: https://doubao.luzhipeng.com/ce5ea6c8-3da8-4d32-a164-c332f260d590.png
+2025-11-24 18:29:48: [Task f9dd6e48-f41d-4abd-8849-780d06119790] ✅ Completed successfully
+2025-11-24 18:30:03: [Task 3d4b9f8f-95f0-447f-ad17-73bd114b2a3a] Starting image generation...
+2025-11-24 18:30:03: [Task 3d4b9f8f-95f0-447f-ad17-73bd114b2a3a] Model: nano-banana, Prompt: 一只白色波斯猫，蓝色的大眼睛，蓬松的长毛，坐在窗台上，爪子轻轻搭在玻璃上，外面飘着雪花，室内温暖的灯...
+2025-11-24 18:30:03: Generating image with model: gemini-2.5-flash-image, prompt: 一只白色波斯猫，蓝色的大眼睛，蓬松的长毛，坐在窗台上，爪子轻轻搭在玻璃上，外面飘着雪花，室内温暖的灯...
+2025-11-24 18:30:03: Config: { aspectRatio: '1:1' }
+2025-11-24 18:30:03: Reference images: 0
+2025-11-24 18:30:09: ✅ Gemini API response received
+2025-11-24 18:30:09: Image data found, processing...
+2025-11-24 18:30:09: Image size: 1447836 bytes, MIME type: image/png
+2025-11-24 18:30:10: Image uploaded to R2: https://doubao.luzhipeng.com/d2732e4c-e722-4bf0-a47f-5c4828b3130a.png
+2025-11-24 18:30:10: [Task 3d4b9f8f-95f0-447f-ad17-73bd114b2a3a] ✅ Completed successfully
+2025-11-24 18:30:22: [Task fcae9565-30da-47bc-99a6-86a7d29133b8] Starting image generation...
+2025-11-24 18:30:22: [Task fcae9565-30da-47bc-99a6-86a7d29133b8] Model: nano-banana, Prompt: 可爱的橘猫幼崽，歪着头好奇地看着镜头，胡须翘起，耳朵竖立，背景是温馨的室内环境，柔和的光线，萌化人心...
+2025-11-24 18:30:22: Generating image with model: gemini-2.5-flash-image, prompt: 可爱的橘猫幼崽，歪着头好奇地看着镜头，胡须翘起，耳朵竖立，背景是温馨的室内环境，柔和的光线，萌化人心...
+2025-11-24 18:30:22: Config: { aspectRatio: '1:1' }
+2025-11-24 18:30:22: Reference images: 0
+2025-11-24 18:30:29: ✅ Gemini API response received
+2025-11-24 18:30:29: Image data found, processing...
+2025-11-24 18:30:29: Image size: 1463586 bytes, MIME type: image/png
+2025-11-24 18:30:30: Image uploaded to R2: https://doubao.luzhipeng.com/9968bf27-c610-48e1-a2c3-6e973d2421ae.png
+2025-11-24 18:30:30: [Task fcae9565-30da-47bc-99a6-86a7d29133b8] ✅ Completed successfully
+2025-11-24 18:31:40:    ▲ Next.js 16.0.3
+2025-11-24 18:31:40:    - Local:         http://localhost:3004
+2025-11-24 18:31:40:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:31:40: 
+2025-11-24 18:31:40:  ✓ Starting...
+2025-11-24 18:31:40:  ✓ Ready in 294ms
+2025-11-24 18:33:10:    ▲ Next.js 16.0.3
+2025-11-24 18:33:10:    - Local:         http://localhost:3004
+2025-11-24 18:33:10:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:33:10: 
+2025-11-24 18:33:10:  ✓ Starting...
+2025-11-24 18:33:11:  ✓ Ready in 294ms
+2025-11-24 18:37:14:    ▲ Next.js 16.0.3
+2025-11-24 18:37:14:    - Local:         http://localhost:3004
+2025-11-24 18:37:14:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:37:14: 
+2025-11-24 18:37:14:  ✓ Starting...
+2025-11-24 18:37:14:  ✓ Ready in 291ms
+2025-11-24 18:44:15:    ▲ Next.js 16.0.3
+2025-11-24 18:44:15:    - Local:         http://localhost:3004
+2025-11-24 18:44:15:    - Network:       http://0.0.0.0:3004
+2025-11-24 18:44:15: 
+2025-11-24 18:44:15:  ✓ Starting...
+2025-11-24 18:44:16:  ✓ Ready in 294ms

@@ -12,31 +12,51 @@ import {
   Edge,
   Node,
   ReactFlowProvider,
-  BackgroundVariant
+  BackgroundVariant,
+  getConnectedEdges,
+  getIncomers,
+  NodeTypes,
 } from "@xyflow/react";
 import ImageGenNode from "./nodes/ImageGenNode";
+import ImageNode from "./nodes/ImageNode";
+import AgentNode from "./nodes/AgentNode";
+import MusicGenNode from "./nodes/MusicGenNode";
+import MusicNode from "./nodes/MusicNode";
+import VideoGenNode from "./nodes/VideoGenNode";
+import VideoNode from "./nodes/VideoNode";
+import ChatNode from "./nodes/ChatNode";
+import ImageModal from "./ImageModal";
+import NodeToolbar from "./NodeToolbar";
+import { CanvasContext } from "@/contexts/CanvasContext";
+import { AudioProvider } from "@/contexts/AudioContext";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { getOrCreateUser, getCurrentUser, logout } from "@/app/actions/user";
-import { Plus, Save, FolderOpen, User as UserIcon, LogOut } from "lucide-react";
+import { uploadImageToR2 } from "@/app/actions/storage";
+import { Save, FolderOpen, User as UserIcon, LogOut, Image, Wand2, Brain, Trash2 } from "lucide-react";
 
 const nodeTypes = {
-  imageGen: ImageGenNode,
+  imageGen: ImageGenNode as any,
+  image: ImageNode as any,
+  agent: AgentNode as any,
+  musicGen: MusicGenNode as any,
+  music: MusicNode as any,
+  videoGen: VideoGenNode as any,
+  video: VideoNode as any,
+  chat: ChatNode as any,
 };
 
-const initialNodes: Node[] = [
-  {
-    id: "1",
-    type: "imageGen",
-    position: { x: 250, y: 250 },
-    data: { prompt: "A futuristic city with flying cars" },
-  },
-];
+const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
+
+// Start with empty canvas - users will drag nodes from toolbar
+const initialNodes: Node[] = [];
 
 export default function InfiniteCanvas() {
   // Flow State
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  
+  const [isCanvasLoaded, setIsCanvasLoaded] = useState(false);
+
+
   // User & Canvas State
   const [username, setUsername] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
@@ -44,6 +64,43 @@ export default function InfiniteCanvas() {
   const [savedCanvases, setSavedCanvases] = useState<any[]>([]);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Image Modal State
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState("");
+  const [modalPrompt, setModalPrompt] = useState<string | undefined>(undefined);
+
+  // Load canvas from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedCanvas = localStorage.getItem(LOCALSTORAGE_KEY);
+      if (savedCanvas) {
+        const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedCanvas);
+        if (savedNodes && Array.isArray(savedNodes) && savedNodes.length > 0) {
+          setNodes(savedNodes);
+          setEdges(savedEdges || []);
+          console.log("✅ Loaded canvas from localStorage:", savedNodes.length, "nodes");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load canvas from localStorage:", error);
+    } finally {
+      setIsCanvasLoaded(true);
+    }
+  }, []);
+
+  // Auto-save canvas to localStorage whenever nodes or edges change
+  useEffect(() => {
+    if (!isCanvasLoaded) return; // Don't save during initial load
+
+    try {
+      const canvasData = JSON.stringify({ nodes, edges });
+      localStorage.setItem(LOCALSTORAGE_KEY, canvasData);
+      console.log("💾 Auto-saved canvas to localStorage:", nodes.length, "nodes", edges.length, "edges");
+    } catch (error) {
+      console.error("Failed to save canvas to localStorage:", error);
+    }
+  }, [nodes, edges, isCanvasLoaded]);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -69,18 +126,131 @@ export default function InfiniteCanvas() {
     [setEdges]
   );
 
-  const addNode = useCallback(() => {
+
+  const addGeneratorNode = useCallback(() => {
     const newNode: Node = {
-      id: `node-${Date.now()}`,
+      id: `gen-${Date.now()}`,
       type: "imageGen",
       position: {
-        x: Math.random() * 500,
-        y: Math.random() * 500,
+        x: Math.random() * 400 + 100,
+        y: Math.random() * 400 + 100,
       },
       data: { prompt: "" },
     };
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes]);
+
+  const addAgentNode = useCallback(() => {
+    const newNode: Node = {
+      id: `agent-${Date.now()}`,
+      type: "agent",
+      position: {
+        x: Math.random() * 400 + 100,
+        y: Math.random() * 400 + 100,
+      },
+      data: {
+        userRequest: "",
+        status: "idle",
+        prompts: [],
+        progress: 0,
+      },
+    };
+    setNodes((nds) => nds.concat(newNode));
+  }, [setNodes]);
+
+  const handleImageUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image size must be less than 10MB');
+      return;
+    }
+
+    try {
+      // Upload to R2
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const imageUrl = await uploadImageToR2(formData);
+
+      // Create image node
+      const newNode: Node = {
+        id: `image-${Date.now()}`,
+        type: "image",
+        position: {
+          x: Math.random() * 500 + 100,
+          y: Math.random() * 500 + 100,
+        },
+        data: {
+          imageUrl,
+          timestamp: new Date().toLocaleString(),
+        },
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      alert('Failed to upload image. Please try again.');
+    }
+
+    // Reset input
+    event.target.value = '';
+  }, [setNodes]);
+
+  // Drag and drop handlers for adding nodes
+  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+
+  const onDragStart = useCallback((event: React.DragEvent, nodeType: string) => {
+    event.dataTransfer.setData('application/reactflow', nodeType);
+    event.dataTransfer.effectAllowed = 'move';
+  }, []);
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const type = event.dataTransfer.getData('application/reactflow');
+      if (!type || !reactFlowInstance) return;
+
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      const newNode: Node = {
+        id: `${type}-${Date.now()}`,
+        type,
+        position,
+        data: type === 'imageGen'
+          ? { prompt: '' }
+          : type === 'agent'
+          ? { userRequest: '' }
+          : type === 'musicGen'
+          ? { prompt: '', lyrics: '', numberOfSongs: 2 }
+          : type === 'videoGen'
+          ? { prompt: '', orientation: 'portrait' }
+          : type === 'chat'
+          ? { messages: [], systemPrompt: 'You are a helpful AI assistant that generates image prompts. When user asks for images, wrap your prompt suggestions in ```text\n[prompt text]\n``` blocks.' }
+          : {},
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [reactFlowInstance, setNodes]
+  );
 
   const handleLogin = async () => {
     if (!username.trim()) {
@@ -140,29 +310,185 @@ export default function InfiniteCanvas() {
       setNodes(loadedNodes);
       setEdges(loadedEdges);
       setCurrentCanvasId(canvas.id);
+      // Also update localStorage
+      localStorage.setItem(LOCALSTORAGE_KEY, canvas.data);
     }
   };
+
+  // Clear local cache
+  const clearLocalCache = () => {
+    if (confirm("确定要清空画布缓存吗？这将删除所有节点，但不会影响已保存的画布。")) {
+      localStorage.removeItem(LOCALSTORAGE_KEY);
+      setNodes(initialNodes);
+      setEdges([]);
+      setCurrentCanvasId(null);
+      console.log("🗑️ Cleared local cache");
+    }
+  };
+
+  // Add image node programmatically with 16:9 aspect ratio sizing
+  const addImageNode = useCallback((imageUrl: string | undefined, prompt: string, position: { x: number; y: number }, taskId?: string): string => {
+    const nodeId = `image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // 16:9 aspect ratio: width = 400px, height = 225px (image area)
+    // Add padding/borders: total ~420px width × ~270px height
+    const newNode: Node = {
+      id: nodeId,
+      type: "image",
+      position,
+      style: {
+        width: 420,  // 16:9 宽度
+        height: 270, // 16:9 高度（包含header和padding）
+      },
+      data: {
+        imageUrl,
+        prompt,
+        timestamp: new Date().toLocaleString(),
+        isLoading: !imageUrl, // loading 状态
+        taskId, // 存储任务 ID
+      },
+    };
+    setNodes((nds) => nds.concat(newNode));
+    return nodeId;
+  }, [setNodes]);
+
+  // Update image node with generated image
+  const updateImageNode = useCallback((nodeId: string, imageUrl: string) => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                imageUrl,
+                isLoading: false,
+              },
+            }
+          : node
+      )
+    );
+  }, [setNodes]);
+
+  // Add music node programmatically
+  const addMusicNode = useCallback((taskId: string, prompt: string, position: { x: number; y: number }): string => {
+    const nodeId = `music-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    const newNode: Node = {
+      id: nodeId,
+      type: "music",
+      position,
+      data: {
+        taskId,
+        prompt,
+        isLoading: true,
+      },
+    };
+    setNodes((nds) => nds.concat(newNode));
+    return nodeId;
+  }, [setNodes]);
+
+  // Add video node programmatically
+  const addVideoNode = useCallback((taskId: string, prompt: string, position: { x: number; y: number }): string => {
+    const nodeId = `video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    const newNode: Node = {
+      id: nodeId,
+      type: "video",
+      position,
+      style: {
+        width: 420,
+        height: 320,
+      },
+      data: {
+        taskId,
+        prompt,
+        isLoading: true,
+      },
+    };
+    setNodes((nds) => nds.concat(newNode));
+    return nodeId;
+  }, [setNodes]);
+
+  // Get connected image nodes for a given node
+  const getConnectedImageNodes = useCallback((nodeId: string): Node[] => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return [];
+
+    // Get all edges connected to this node (incoming edges)
+    const connectedEdges = edges.filter((edge: Edge) => edge.target === nodeId);
+
+    // Get all source nodes from connected edges
+    const sourceNodes = connectedEdges
+      .map((edge: Edge) => nodes.find(n => n.id === edge.source))
+      .filter((n): n is Node => n !== undefined && n.type === 'image');
+
+    return sourceNodes;
+  }, [nodes, edges]);
+
+  // Get a single node by ID
+  const getNode = useCallback((nodeId: string) => {
+    return nodes.find(n => n.id === nodeId);
+  }, [nodes]);
+
+  // Open image modal
+  const openImageModal = useCallback((imageUrl: string, prompt?: string) => {
+    setModalImageUrl(imageUrl);
+    setModalPrompt(prompt);
+    setIsImageModalOpen(true);
+  }, []);
+
+  // Canvas context value
+  const canvasContextValue = useMemo(() => ({
+    addImageNode,
+    updateImageNode,
+    addMusicNode,
+    addVideoNode,
+    getConnectedImageNodes,
+    getSelectedImageNodes: () => [], // Remove selected functionality
+    getNode,
+    openImageModal,
+    nodes,
+    edges,
+  }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, getConnectedImageNodes, getNode, openImageModal, nodes, edges]);
 
   return (
     <div className="w-full h-screen relative bg-neutral-50 dark:bg-black">
       {/* Toolbar */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm p-2 rounded-full shadow-lg border border-neutral-200 dark:border-neutral-800">
-        <button 
-          onClick={addNode}
+        <button
+          onClick={addGeneratorNode}
           className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-          title="Add Node"
+          title="Add Generator"
         >
-          <Plus className="w-5 h-5" />
+          <Wand2 className="w-5 h-5" />
         </button>
-        <button 
+        <button
+          onClick={addAgentNode}
+          className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          title="Add AI Agent"
+        >
+          <Brain className="w-5 h-5 text-purple-600" />
+        </button>
+        <label className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer" title="Upload Image">
+          <Image className="w-5 h-5" />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+        </label>
+        <div className="w-px bg-neutral-300 dark:bg-neutral-700 my-1" />
+        <button
           onClick={handleSave}
           className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-          title="Save Canvas"
+          title="Save Canvas to Cloud"
         >
           <Save className="w-5 h-5" />
         </button>
         <div className="relative group">
-          <button className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+          <button className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors" title="Load Canvas from Cloud">
             <FolderOpen className="w-5 h-5" />
           </button>
           {/* Dropdown for history */}
@@ -171,7 +497,7 @@ export default function InfiniteCanvas() {
               <div className="p-3 text-xs text-neutral-500 text-center">No saved canvases</div>
             ) : (
               savedCanvases.map(c => (
-                <div 
+                <div
                   key={c.id}
                   onClick={() => loadCanvas(c.id)}
                   className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-xs truncate border-b border-neutral-100 dark:border-neutral-800 last:border-0"
@@ -182,6 +508,14 @@ export default function InfiniteCanvas() {
             )}
           </div>
         </div>
+        <button
+          onClick={clearLocalCache}
+          className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-600 dark:text-red-400"
+          title="Clear Local Cache"
+        >
+          <Trash2 className="w-5 h-5" />
+        </button>
+        <div className="w-px bg-neutral-300 dark:bg-neutral-700 my-1" />
         {userId ? (
           <div className="relative group">
             <button className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-2">
@@ -214,19 +548,31 @@ export default function InfiniteCanvas() {
         )}
       </div>
 
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        nodeTypes={nodeTypes}
-        fitView
-        className="bg-neutral-50 dark:bg-black"
-      >
-        <Controls />
-        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-      </ReactFlow>
+      {/* Node Toolbar */}
+      <NodeToolbar onDragStart={onDragStart} />
+
+      <AudioProvider>
+        <CanvasContext.Provider value={canvasContextValue}>
+          <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onInit={setReactFlowInstance}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          nodeTypes={nodeTypes}
+          fitView
+          minZoom={0.1}
+          maxZoom={4}
+          className="bg-neutral-50 dark:bg-black"
+        >
+          <Controls />
+          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+        </ReactFlow>
+      </CanvasContext.Provider>
+      </AudioProvider>
 
       {/* Login/Register Modal */}
       {isUserModalOpen && !userId && !isLoading && (
@@ -266,6 +612,14 @@ export default function InfiniteCanvas() {
           </div>
         </div>
       )}
+
+      {/* Global Image Modal */}
+      <ImageModal
+        isOpen={isImageModalOpen}
+        imageUrl={modalImageUrl}
+        prompt={modalPrompt}
+        onClose={() => setIsImageModalOpen(false)}
+      />
     </div>
   );
 }

@@ -26,3 +26,45 @@ model Canvas {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
 }
+
+model ImageTask {
+  id               String   @id @default(uuid())
+  status           String   // pending, processing, completed, failed
+  prompt           String
+  model            String
+  config           String?  // JSON string of ImageGenerationConfig
+  referenceImages  String?  // JSON array of reference image URLs
+  imageUrl         String?  // Result image URL (when completed)
+  error            String?  // Error message (when failed)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  completedAt      DateTime?
+}
+
+model MusicTask {
+  id            String   @id @default(uuid())
+  status        String   // pending, processing, completed, failed
+  prompt        String
+  lyrics        String?
+  numberOfSongs Int      @default(2)
+  externalTaskId String? // Mureka task ID for polling
+  musicUrls     String?  // JSON array of generated music URLs [{url, flacUrl, duration}]
+  error         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  completedAt   DateTime?
+}
+
+model VideoTask {
+  id          String   @id @default(uuid())
+  status      String   // pending, processing, completed, failed
+  prompt      String
+  orientation String   @default("portrait") // portrait or landscape
+  inputImage  String?  // Optional image URL for image-to-video
+  videoUrl    String?
+  progress    Int      @default(0) // 0-100
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  completedAt DateTime?
+}
