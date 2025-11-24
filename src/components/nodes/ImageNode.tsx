@@ -114,6 +114,7 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           color="blue"
           selected={selected}
           className="w-full h-full min-w-[200px] min-h-[200px] flex flex-col p-0 !border-0 !bg-transparent !shadow-none"
+          contentClassName="p-0 flex flex-col h-full"
         >
         {/* NodeResizer for drag-to-resize functionality */}
         <NodeResizer
@@ -130,22 +131,32 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           className="w-3 h-3 !bg-blue-500 !border-2 !border-white dark:!border-neutral-900"
         />
 
-        <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-blue-100 dark:border-blue-900/30 bg-white dark:bg-neutral-950">
+        <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-blue-100 dark:border-blue-900/30 bg-white dark:bg-neutral-950 h-full">
           <div
-            className="relative cursor-pointer flex-1 min-h-[150px]"
+            className="relative cursor-pointer flex-1 min-h-[150px] h-full"
             onClick={handleImageClick}
           >
             {isLoading ? (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50/30 dark:bg-blue-900/10">
-                <Loader2 className="w-8 h-8 text-blue-400 animate-spin mb-2" />
-                <span className="text-xs font-bold text-blue-400 dark:text-blue-300">
-                  {pollingStatus === "processing" ? "Processing..." : pollingStatus === "pending" ? "Queued..." : "Generating..."}
-                </span>
-                {data.taskId && (
-                  <span className="text-[10px] text-blue-300 dark:text-blue-500 mt-1 font-mono">
-                    ID: {data.taskId.substring(0, 8)}
-                  </span>
-                )}
+              <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-900 relative overflow-hidden">
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                
+                <div className="relative z-10 flex flex-col items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 animate-pulse" />
+                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin relative z-10" />
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xs font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse">
+                      {pollingStatus === "processing" ? "Processing..." : pollingStatus === "pending" ? "Queued..." : "Generating..."}
+                    </span>
+                    {data.taskId && (
+                      <span className="text-[10px] text-neutral-400 font-mono">
+                        ID: {data.taskId.substring(0, 8)}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : data.error ? (
               <div className="w-full h-full bg-red-50 dark:bg-red-900/10 flex flex-col items-center justify-center p-4">

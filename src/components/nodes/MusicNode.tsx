@@ -146,16 +146,36 @@ const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
       <div className="space-y-3">
         {isLoading ? (
-          <div className="w-full bg-green-50/30 dark:bg-green-900/10 rounded-2xl border border-green-100 dark:border-green-900/30 flex flex-col items-center justify-center py-8">
-            <Loader2 className="w-8 h-8 text-green-400 animate-spin mb-2" />
-            <span className="text-xs font-bold text-green-500 dark:text-green-400">
-              {pollingStatus === "processing" ? "Processing..." : pollingStatus === "pending" ? "Queued..." : "Generating..."}
-            </span>
-            {data.taskId && (
-              <span className="text-[10px] text-green-400 dark:text-green-500 mt-1 font-mono">
-                ID: {data.taskId.substring(0, 8)}
-              </span>
-            )}
+          <div className="w-full bg-neutral-100 dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 flex flex-col items-center justify-center py-8 relative overflow-hidden">
+             {/* Shimmer effect */}
+             <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            
+            <div className="relative z-10 flex flex-col items-center gap-4">
+              {/* Audio Wave Animation */}
+              <div className="flex items-end gap-1 h-8">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-1.5 bg-green-500 rounded-full animate-[music-bar_1s_ease-in-out_infinite]"
+                    style={{
+                      animationDelay: `${i * 0.1}s`,
+                      height: "40%"
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-xs font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-emerald-500 animate-pulse">
+                  {pollingStatus === "processing" ? "Composing..." : pollingStatus === "pending" ? "In Queue..." : "Generating Music..."}
+                </span>
+                {data.taskId && (
+                  <span className="text-[10px] text-neutral-400 font-mono">
+                    ID: {data.taskId.substring(0, 8)}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         ) : data.error ? (
           <div className="w-full bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30 flex flex-col items-center justify-center p-4">
