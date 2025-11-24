@@ -55,7 +55,8 @@ export function BaseNode({
   className,
   contentClassName,
   selected,
-}: BaseNodeProps) {
+  hideHeader = false,
+}: BaseNodeProps & { hideHeader?: boolean }) {
   return (
     <div
       className={cn(
@@ -67,22 +68,24 @@ export function BaseNode({
       )}
     >
       {/* Header */}
-      <div
-        className={cn(
-          "flex items-center justify-between px-5 py-4 rounded-t-[2rem] transition-colors duration-300 flex-shrink-0",
-          headerColorMap[color]
-        )}
-      >
-        <div className="flex items-center gap-3">
-          {Icon && (
-            <div className={cn("p-2 rounded-xl", iconColorMap[color])}>
-              <Icon className="w-5 h-5" />
-            </div>
+      {!hideHeader && (
+        <div
+          className={cn(
+            "flex items-center justify-between px-5 py-4 rounded-t-[2rem] transition-colors duration-300 flex-shrink-0",
+            headerColorMap[color]
           )}
-          <span className="text-sm font-extrabold tracking-wide text-opacity-90">{title}</span>
+        >
+          <div className="flex items-center gap-3">
+            {Icon && (
+              <div className={cn("p-2 rounded-xl", iconColorMap[color])}>
+                <Icon className="w-5 h-5" />
+              </div>
+            )}
+            <span className="text-sm font-extrabold tracking-wide text-opacity-90">{title}</span>
+          </div>
+          {headerActions && <div className="flex items-center gap-2">{headerActions}</div>}
         </div>
-        {headerActions && <div className="flex items-center gap-2">{headerActions}</div>}
-      </div>
+      )}
 
       {/* Content */}
       <div className={cn("p-5 space-y-4 relative flex-1 min-h-0", contentClassName)}>

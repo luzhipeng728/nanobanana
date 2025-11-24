@@ -115,6 +115,7 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           selected={selected}
           className="w-full h-full min-w-[200px] min-h-[200px] flex flex-col p-0 !border-0 !bg-transparent !shadow-none"
           contentClassName="p-0 flex flex-col h-full"
+          hideHeader={true}
         >
         {/* NodeResizer for drag-to-resize functionality */}
         <NodeResizer
