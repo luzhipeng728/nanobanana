@@ -12,11 +12,46 @@ export interface MusicTaskResult {
   prompt: string;
   lyrics?: string;
   numberOfSongs: number;
-  musicUrls?: Array<{ url: string; flacUrl: string; duration: number }>;
+  musicUrls?: Array<{ url: string; flacUrl: string; duration: number; lyrics?: string }>;
   error?: string;
   createdAt: Date;
   updatedAt: Date;
   completedAt?: Date;
+}
+
+/**
+ * 从 lyrics_sections 提取歌词文本
+ */
+function extractLyricsFromSections(lyricsSections: any[]): string {
+  if (!lyricsSections || lyricsSections.length === 0) {
+    return '';
+  }
+
+  const lines: string[] = [];
+
+  for (const section of lyricsSections) {
+    // 添加节类型标记（如果需要）
+    if (section.section_type && section.section_type !== 'intro' && section.section_type !== 'outro') {
+      const sectionLabel = section.section_type.replace('_', ' ').toUpperCase();
+      lines.push(`[${sectionLabel}]`);
+    }
+
+    // 提取该节的所有歌词行
+    if (section.lines && Array.isArray(section.lines)) {
+      for (const line of section.lines) {
+        if (line.text) {
+          lines.push(line.text);
+        }
+      }
+    }
+
+    // 节之间添加空行
+    if (section.section_type !== 'intro' && section.section_type !== 'outro') {
+      lines.push('');
+    }
+  }
+
+  return lines.join('\n').trim();
 }
 
 /**
@@ -178,23 +213,38 @@ async function processMusicTask(taskId: string): Promise<void> {
       if (status === "succeeded") {
         // 任务成功
         const choices = queryData.choices || [];
-        const musicUrls = choices.map((choice: any) => ({
-          url: choice.url,
-          flacUrl: choice.flac_url,
-          duration: choice.duration,
-        }));
+        const musicUrls = choices.map((choice: any) => {
+          // 提取每首歌的歌词
+          const lyricsText = choice.lyrics_sections
+            ? extractLyricsFromSections(choice.lyrics_sections)
+            : '';
+
+          return {
+            url: choice.url,
+            flacUrl: choice.flac_url,
+            duration: choice.duration,
+            lyrics: lyricsText,
+          };
+        });
+
+        // 使用第一首歌的歌词作为任务的歌词（如果用户没有提供歌词）
+        const taskLyrics = task.lyrics || (musicUrls[0]?.lyrics || null);
 
         await prisma.musicTask.update({
           where: { id: taskId },
           data: {
             status: "completed",
             musicUrls: JSON.stringify(musicUrls),
+            lyrics: taskLyrics,
             completedAt: new Date(),
             updatedAt: new Date(),
           },
         });
 
         console.log(`[MusicTask ${taskId}] ✅ Completed successfully with ${musicUrls.length} songs`);
+        if (musicUrls[0]?.lyrics) {
+          console.log(`[MusicTask ${taskId}] Extracted lyrics (${musicUrls[0].lyrics.length} chars)`);
+        }
         completed = true;
       } else if (status === "failed") {
         // 任务失败

@@ -2,17 +2,16 @@
 
 import { memo, useEffect, useState, useRef } from "react";
 import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
-import { Music as MusicIcon, Download, Loader2, ChevronDown, ChevronUp, FileText, Play, Pause } from "lucide-react";
+import { Music as MusicIcon, Download, Loader2, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { useAudio } from "@/contexts/AudioContext";
 import { NodeScrollArea } from "@/components/ui/NodeUI";
 import { BaseNode } from "./BaseNode";
-import { cn } from "@/lib/utils";
 
 type MusicNodeData = {
   taskId?: string;
   prompt?: string;
   lyrics?: string;
-  musicUrls?: Array<{ url: string; flacUrl: string; duration: number }>;
+  musicUrls?: Array<{ url: string; flacUrl: string; duration: number; lyrics?: string }>;
   isLoading?: boolean;
   error?: string;
   timestamp?: string;
@@ -23,8 +22,7 @@ const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { registerAudio, unregisterAudio, pauseAllExcept } = useAudio();
   const isLoading = data.isLoading || !data.musicUrls;
   const [pollingStatus, setPollingStatus] = useState<string | null>(null);
-  const [showLyrics, setShowLyrics] = useState(false);
-  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const [expandedLyrics, setExpandedLyrics] = useState<{ [key: number]: boolean }>({});
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
 
@@ -117,20 +115,18 @@ const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   }, [data.musicUrls, registerAudio, unregisterAudio]);
 
   // 全局音频互斥播放控制 + 自动显示歌词
-  const handleAudioPlay = (index: number) => {
-    const audio = audioRefs.current[index];
-    if (audio) {
-      pauseAllExcept(audio);
-      setPlayingIndex(index);
-      // 如果有歌词且当前未展开，则自动展开
-      if (data.lyrics && !showLyrics) {
-        setShowLyrics(true);
-      }
+  const handleAudioPlay = (currentAudio: HTMLAudioElement, index: number) => {
+    pauseAllExcept(currentAudio);
+    // 如果该歌曲有歌词且当前未展开，则自动展开
+    const music = data.musicUrls?.[index];
+    if (music?.lyrics && !expandedLyrics[index]) {
+      setExpandedLyrics(prev => ({ ...prev, [index]: true }));
     }
   };
 
-  const handleAudioPause = () => {
-    setPlayingIndex(null);
+  // 切换歌词显示
+  const toggleLyrics = (index: number) => {
+    setExpandedLyrics(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
   return (
@@ -166,57 +162,13 @@ const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
             <span className="text-xs font-medium text-red-500 dark:text-red-400 text-center">{data.error}</span>
           </div>
         ) : (
-          <div className="space-y-3">
-            {/* 歌词显示区域 */}
-            {data.lyrics && (
-              <div className="border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden bg-white dark:bg-neutral-900">
-                <button
-                  onClick={() => setShowLyrics(!showLyrics)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                >
-                  <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400 flex items-center gap-1.5 uppercase tracking-wider">
-                    <FileText className="w-3 h-3" />
-                    Lyrics
-                  </span>
-                  {showLyrics ? <ChevronUp className="w-3.5 h-3.5 text-neutral-400" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />}
-                </button>
-                {showLyrics && (
-                  <NodeScrollArea className="p-3 bg-white dark:bg-neutral-900 border-t border-neutral-100 dark:border-neutral-800 max-h-40 overflow-y-auto">
-                    <pre className="text-[10px] text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap font-sans leading-relaxed">
-                      {data.lyrics}
-                    </pre>
-                  </NodeScrollArea>
-                )}
-              </div>
-            )}
-
+          <div className="space-y-2">
             {/* 音乐播放列表 */}
-            <div className="space-y-2">
-              {data.musicUrls?.map((music: { url: string; flacUrl: string; duration: number }, index: number) => (
-                <div 
-                  key={index} 
-                  className={cn(
-                    "border rounded-2xl p-3 transition-all duration-200",
-                    playingIndex === index 
-                      ? "border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-900/20 shadow-sm" 
-                      : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-green-200 dark:hover:border-green-800"
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-white shadow-sm",
-                        playingIndex === index ? "bg-green-500 animate-pulse" : "bg-neutral-200 dark:bg-neutral-700"
-                      )}>
-                        <MusicIcon className="w-3 h-3" />
-                      </div>
-                      <span className="text-[11px] font-bold text-neutral-700 dark:text-neutral-300">
-                        Track {index + 1}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-full">
-                      {Math.floor(music.duration / 60)}:{(music.duration % 60).toString().padStart(2, "0")}
-                    </span>
+            {data.musicUrls?.map((music: { url: string; flacUrl: string; duration: number; lyrics?: string }, index: number) => (
+              <div key={index} className="border border-neutral-200 dark:border-neutral-700 rounded overflow-hidden">
+                <div className="p-2">
+                  <div className="text-[11px] text-neutral-600 dark:text-neutral-400 mb-1.5 font-medium">
+                    Song {index + 1} • {Math.floor(music.duration / 60)}:{(music.duration % 60).toString().padStart(2, "0")}
                   </div>
                   
                   <audio
@@ -224,8 +176,7 @@ const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                     controls
                     className="w-full h-8 mb-2 opacity-90 hover:opacity-100 transition-opacity"
                     style={{ maxHeight: "32px" }}
-                    onPlay={() => handleAudioPlay(index)}
-                    onPause={handleAudioPause}
+                    onPlay={(e) => handleAudioPlay(e.currentTarget, index)}
                     onWheel={(e) => { e.stopPropagation(); e.preventDefault(); }}
                   >
                     <source src={music.url} type="audio/mpeg" />
@@ -251,8 +202,31 @@ const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                     </a>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                {/* 每首歌的歌词 */}
+                {music.lyrics && (
+                  <div className="border-t border-neutral-200 dark:border-neutral-700">
+                    <button
+                      onClick={() => toggleLyrics(index)}
+                      className="w-full flex items-center justify-between px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-750 transition-colors"
+                    >
+                      <span className="text-[11px] text-neutral-700 dark:text-neutral-300 flex items-center gap-1">
+                        <FileText className="w-3 h-3" />
+                        歌词
+                      </span>
+                      {expandedLyrics[index] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                    {expandedLyrics[index] && (
+                      <NodeScrollArea className="p-2 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-700 max-h-48 overflow-y-auto">
+                        <pre className="text-[10px] text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap font-sans leading-relaxed">
+                          {music.lyrics}
+                        </pre>
+                      </NodeScrollArea>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 
