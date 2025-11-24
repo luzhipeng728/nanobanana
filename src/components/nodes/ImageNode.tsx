@@ -4,6 +4,8 @@ import { memo, useEffect, useState, useRef } from "react";
 import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from "@xyflow/react";
 import { Image as ImageIcon, ExternalLink, Loader2 } from "lucide-react";
 import { useCanvas } from "@/contexts/CanvasContext";
+import { BaseNode } from "./BaseNode";
+import { cn } from "@/lib/utils";
 
 // Define the data structure for the image node
 type ImageNodeData = {
@@ -12,6 +14,7 @@ type ImageNodeData = {
   timestamp?: string;
   isLoading?: boolean;
   taskId?: string;
+  error?: string;
 };
 
 const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
@@ -104,67 +107,74 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   };
 
   return (
-    <div className="nowheel bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded min-w-[200px] min-h-[200px] w-full h-full overflow-hidden">
+    <div className="w-full h-full">
+        <BaseNode
+          title="Generated Image"
+          icon={ImageIcon}
+          color="blue"
+          selected={selected}
+          className="w-full h-full min-w-[200px] min-h-[200px] flex flex-col p-0 !border-0 !bg-transparent !shadow-none"
+        >
         {/* NodeResizer for drag-to-resize functionality */}
         <NodeResizer
           isVisible={selected}
           minWidth={200}
           minHeight={200}
-          lineClassName="!border-purple-500"
-          handleClassName="!w-2 !h-2 !bg-purple-500"
+          lineClassName="!border-blue-400"
+          handleClassName="!w-3 !h-3 !bg-blue-500 !rounded-full"
         />
         <Handle
           type="target"
           position={Position.Top}
           isConnectable={isConnectable}
-          className="w-2 h-2 !bg-purple-500 !border-0"
+          className="w-3 h-3 !bg-blue-500 !border-2 !border-white dark:!border-neutral-900"
         />
 
-        <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-          <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-            <ImageIcon className="w-3.5 h-3.5" />
-            Image
-          </span>
-        </div>
-
-        <div className="p-2 h-full flex flex-col">
+        <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-blue-100 dark:border-blue-900/30 bg-white dark:bg-neutral-950">
           <div
-            className="relative group cursor-pointer flex-1 min-h-[150px]"
+            className="relative cursor-pointer flex-1 min-h-[150px]"
             onClick={handleImageClick}
           >
             {isLoading ? (
-              <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 rounded border border-neutral-200 dark:border-neutral-700 flex flex-col items-center justify-center">
-                <Loader2 className="w-6 h-6 text-purple-500 animate-spin mb-1.5" />
-                <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                  {pollingStatus === "processing" ? "处理中..." : pollingStatus === "pending" ? "排队中..." : "生成中..."}
+              <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50/30 dark:bg-blue-900/10">
+                <Loader2 className="w-8 h-8 text-blue-400 animate-spin mb-2" />
+                <span className="text-xs font-bold text-blue-400 dark:text-blue-300">
+                  {pollingStatus === "processing" ? "Processing..." : pollingStatus === "pending" ? "Queued..." : "Generating..."}
                 </span>
                 {data.taskId && (
-                  <span className="text-[9px] text-neutral-400 dark:text-neutral-600 mt-1">
-                    任务 ID: {data.taskId.substring(0, 8)}
+                  <span className="text-[10px] text-blue-300 dark:text-blue-500 mt-1 font-mono">
+                    ID: {data.taskId.substring(0, 8)}
                   </span>
                 )}
               </div>
             ) : data.error ? (
-              <div className="w-full h-full bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800 flex flex-col items-center justify-center p-3">
-                <span className="text-xs text-red-600 dark:text-red-400 text-center">{data.error}</span>
+              <div className="w-full h-full bg-red-50 dark:bg-red-900/10 flex flex-col items-center justify-center p-4">
+                <span className="text-xs font-medium text-red-500 dark:text-red-400 text-center">{data.error}</span>
               </div>
             ) : (
               <>
                 <img
                   src={data.imageUrl}
-                  alt="Reference"
-                  className="w-full h-full object-cover rounded border border-neutral-200 dark:border-neutral-700"
+                  alt="Generated"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
-                  <ExternalLink className="w-5 h-5 text-white" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg">
+                    <ExternalLink className="w-5 h-5 text-neutral-900" />
+                  </div>
                 </div>
               </>
             )}
           </div>
 
-          {data.timestamp && (
-            <div className="text-[10px] text-neutral-400 dark:text-neutral-600 text-center mt-1.5">
-              {data.timestamp}
+          {/* Footer info overlay */}
+          {!isLoading && !data.error && (
+            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+               {data.timestamp && (
+                <div className="text-[10px] text-white/90 text-center font-medium">
+                  {data.timestamp}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -173,10 +183,12 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           type="source"
           position={Position.Bottom}
           isConnectable={isConnectable}
-          className="w-2 h-2 !bg-purple-500 !border-0"
+          className="w-3 h-3 !bg-blue-500 !border-2 !border-white dark:!border-neutral-900"
         />
+        </BaseNode>
       </div>
   );
 };
 
 export default memo(ImageNode);
+

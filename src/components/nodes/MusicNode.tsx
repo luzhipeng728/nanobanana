@@ -2,9 +2,11 @@
 
 import { memo, useEffect, useState, useRef } from "react";
 import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
-import { Music as MusicIcon, Download, Loader2, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { Music as MusicIcon, Download, Loader2, ChevronDown, ChevronUp, FileText, Play, Pause } from "lucide-react";
 import { useAudio } from "@/contexts/AudioContext";
-import { NodeScrollArea } from "@/components/NodeInputs";
+import { NodeScrollArea } from "@/components/ui/NodeUI";
+import { BaseNode } from "./BaseNode";
+import { cn } from "@/lib/utils";
 
 type MusicNodeData = {
   taskId?: string;
@@ -16,12 +18,13 @@ type MusicNodeData = {
   timestamp?: string;
 };
 
-const MusicNode = ({ data, id, isConnectable }: NodeProps<any>) => {
+const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { updateNodeData } = useReactFlow();
   const { registerAudio, unregisterAudio, pauseAllExcept } = useAudio();
   const isLoading = data.isLoading || !data.musicUrls;
   const [pollingStatus, setPollingStatus] = useState<string | null>(null);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
 
@@ -114,16 +117,30 @@ const MusicNode = ({ data, id, isConnectable }: NodeProps<any>) => {
   }, [data.musicUrls, registerAudio, unregisterAudio]);
 
   // 全局音频互斥播放控制 + 自动显示歌词
-  const handleAudioPlay = (currentAudio: HTMLAudioElement) => {
-    pauseAllExcept(currentAudio);
-    // 如果有歌词且当前未展开，则自动展开
-    if (data.lyrics && !showLyrics) {
-      setShowLyrics(true);
+  const handleAudioPlay = (index: number) => {
+    const audio = audioRefs.current[index];
+    if (audio) {
+      pauseAllExcept(audio);
+      setPlayingIndex(index);
+      // 如果有歌词且当前未展开，则自动展开
+      if (data.lyrics && !showLyrics) {
+        setShowLyrics(true);
+      }
     }
   };
 
+  const handleAudioPause = () => {
+    setPlayingIndex(null);
+  };
+
   return (
-    <div className="nowheel bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded w-[300px] overflow-hidden">
+    <BaseNode
+      title="Generated Music"
+      icon={MusicIcon}
+      color="green"
+      selected={selected}
+      className="w-[320px]"
+    >
       <Handle
         type="target"
         position={Position.Top}
@@ -131,47 +148,40 @@ const MusicNode = ({ data, id, isConnectable }: NodeProps<any>) => {
         className="w-2 h-2 !bg-green-500 !border-0"
       />
 
-      <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-          <MusicIcon className="w-3.5 h-3.5" />
-          Music
-        </span>
-      </div>
-
-      <div className="p-3">
+      <div className="space-y-3">
         {isLoading ? (
-          <div className="w-full bg-neutral-100 dark:bg-neutral-800 rounded border border-neutral-200 dark:border-neutral-700 flex flex-col items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 text-green-500 animate-spin mb-1.5" />
-            <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
-              {pollingStatus === "processing" ? "处理中..." : pollingStatus === "pending" ? "排队中..." : "生成中..."}
+          <div className="w-full bg-green-50/30 dark:bg-green-900/10 rounded-2xl border border-green-100 dark:border-green-900/30 flex flex-col items-center justify-center py-8">
+            <Loader2 className="w-8 h-8 text-green-400 animate-spin mb-2" />
+            <span className="text-xs font-bold text-green-500 dark:text-green-400">
+              {pollingStatus === "processing" ? "Processing..." : pollingStatus === "pending" ? "Queued..." : "Generating..."}
             </span>
             {data.taskId && (
-              <span className="text-[9px] text-neutral-400 dark:text-neutral-600 mt-1">
-                任务 ID: {data.taskId.substring(0, 8)}
+              <span className="text-[10px] text-green-400 dark:text-green-500 mt-1 font-mono">
+                ID: {data.taskId.substring(0, 8)}
               </span>
             )}
           </div>
         ) : data.error ? (
-          <div className="w-full bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800 flex flex-col items-center justify-center p-3">
-            <span className="text-xs text-red-600 dark:text-red-400 text-center">{data.error}</span>
+          <div className="w-full bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30 flex flex-col items-center justify-center p-4">
+            <span className="text-xs font-medium text-red-500 dark:text-red-400 text-center">{data.error}</span>
           </div>
         ) : (
           <div className="space-y-3">
             {/* 歌词显示区域 */}
             {data.lyrics && (
-              <div className="border border-neutral-200 dark:border-neutral-700 rounded overflow-hidden">
+              <div className="border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden bg-white dark:bg-neutral-900">
                 <button
                   onClick={() => setShowLyrics(!showLyrics)}
-                  className="w-full flex items-center justify-between px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-750 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 bg-neutral-50 dark:bg-neutral-800/50 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
-                  <span className="text-[11px] text-neutral-700 dark:text-neutral-300 flex items-center gap-1">
+                  <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400 flex items-center gap-1.5 uppercase tracking-wider">
                     <FileText className="w-3 h-3" />
-                    歌词
+                    Lyrics
                   </span>
-                  {showLyrics ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  {showLyrics ? <ChevronUp className="w-3.5 h-3.5 text-neutral-400" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />}
                 </button>
                 {showLyrics && (
-                  <NodeScrollArea className="p-2 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-700 max-h-48 overflow-y-auto">
+                  <NodeScrollArea className="p-3 bg-white dark:bg-neutral-900 border-t border-neutral-100 dark:border-neutral-800 max-h-40 overflow-y-auto">
                     <pre className="text-[10px] text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap font-sans leading-relaxed">
                       {data.lyrics}
                     </pre>
@@ -183,26 +193,50 @@ const MusicNode = ({ data, id, isConnectable }: NodeProps<any>) => {
             {/* 音乐播放列表 */}
             <div className="space-y-2">
               {data.musicUrls?.map((music: { url: string; flacUrl: string; duration: number }, index: number) => (
-                <div key={index} className="border border-neutral-200 dark:border-neutral-700 rounded p-2">
-                  <div className="text-[11px] text-neutral-600 dark:text-neutral-400 mb-1.5 font-medium">
-                    Song {index + 1} • {Math.floor(music.duration / 60)}:{(music.duration % 60).toString().padStart(2, "0")}
+                <div 
+                  key={index} 
+                  className={cn(
+                    "border rounded-2xl p-3 transition-all duration-200",
+                    playingIndex === index 
+                      ? "border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-900/20 shadow-sm" 
+                      : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-green-200 dark:hover:border-green-800"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center text-white shadow-sm",
+                        playingIndex === index ? "bg-green-500 animate-pulse" : "bg-neutral-200 dark:bg-neutral-700"
+                      )}>
+                        <MusicIcon className="w-3 h-3" />
+                      </div>
+                      <span className="text-[11px] font-bold text-neutral-700 dark:text-neutral-300">
+                        Track {index + 1}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-full">
+                      {Math.floor(music.duration / 60)}:{(music.duration % 60).toString().padStart(2, "0")}
+                    </span>
                   </div>
+                  
                   <audio
                     ref={(el) => { audioRefs.current[index] = el; }}
                     controls
-                    className="w-full h-8"
+                    className="w-full h-8 mb-2 opacity-90 hover:opacity-100 transition-opacity"
                     style={{ maxHeight: "32px" }}
-                    onPlay={(e) => handleAudioPlay(e.currentTarget)}
+                    onPlay={() => handleAudioPlay(index)}
+                    onPause={handleAudioPause}
                     onWheel={(e) => { e.stopPropagation(); e.preventDefault(); }}
                   >
                     <source src={music.url} type="audio/mpeg" />
                     Your browser does not support audio playback.
                   </audio>
-                  <div className="flex gap-2 mt-2">
+
+                  <div className="flex gap-2">
                     <a
                       href={music.url}
                       download
-                      className="flex-1 flex items-center justify-center gap-1 text-[10px] text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-750 py-1 rounded transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 dark:hover:text-green-400 py-1.5 rounded-full transition-all"
                     >
                       <Download className="w-3 h-3" />
                       MP3
@@ -210,7 +244,7 @@ const MusicNode = ({ data, id, isConnectable }: NodeProps<any>) => {
                     <a
                       href={music.flacUrl}
                       download
-                      className="flex-1 flex items-center justify-center gap-1 text-[10px] text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-750 py-1 rounded transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 dark:hover:text-green-400 py-1.5 rounded-full transition-all"
                     >
                       <Download className="w-3 h-3" />
                       FLAC
@@ -222,8 +256,8 @@ const MusicNode = ({ data, id, isConnectable }: NodeProps<any>) => {
           </div>
         )}
 
-        {data.timestamp && (
-          <div className="text-[10px] text-neutral-400 dark:text-neutral-600 text-center mt-2">
+        {data.timestamp && !isLoading && !data.error && (
+          <div className="text-[9px] font-medium text-neutral-400 dark:text-neutral-600 text-center mt-2 pt-2 border-t border-neutral-100 dark:border-neutral-800/50">
             {data.timestamp}
           </div>
         )}
@@ -235,8 +269,9 @@ const MusicNode = ({ data, id, isConnectable }: NodeProps<any>) => {
         isConnectable={isConnectable}
         className="w-2 h-2 !bg-green-500 !border-0"
       />
-    </div>
+    </BaseNode>
   );
 };
 
 export default memo(MusicNode);
+

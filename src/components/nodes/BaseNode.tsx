@@ -11,6 +11,7 @@ interface BaseNodeProps {
   children: ReactNode;
   headerActions?: ReactNode;
   className?: string;
+  contentClassName?: string;
   selected?: boolean;
 }
 
@@ -52,6 +53,7 @@ export function BaseNode({
   children,
   headerActions,
   className,
+  contentClassName,
   selected,
 }: BaseNodeProps) {
   return (
@@ -67,7 +69,7 @@ export function BaseNode({
       {/* Header */}
       <div
         className={cn(
-          "flex items-center justify-between px-5 py-4 rounded-t-[2rem] transition-colors duration-300",
+          "flex items-center justify-between px-5 py-4 rounded-t-[2rem] transition-colors duration-300 flex-shrink-0",
           headerColorMap[color]
         )}
       >
@@ -83,7 +85,7 @@ export function BaseNode({
       </div>
 
       {/* Content */}
-      <div className="p-5 space-y-4 relative">
+      <div className={cn("p-5 space-y-4 relative flex-1 min-h-0", contentClassName)}>
         {children}
       </div>
     </div>
