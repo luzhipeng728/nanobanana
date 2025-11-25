@@ -424,23 +424,51 @@ ${imageAnalysis}
 
         // 检查是否有工具调用
         if (result.stop_reason === "tool_use") {
-          const toolUseBlock = result.content.find(
+          // 找到所有的工具调用
+          const toolUseBlocks = result.content.filter(
             (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
           );
 
-          if (toolUseBlock && toolUseBlock.name === "tavily_search") {
-            const toolArgs = toolUseBlock.input as { query: string };
-            console.log(`Tool call: tavily_search`, toolArgs);
-
-            await sendEvent({
-              type: "status",
-              status: "searching",
-              step: `🔎 正在搜索：${toolArgs.query.slice(0, 50)}...`,
-              progress: 40 + iteration * 10,
+          if (toolUseBlocks.length > 0) {
+            // 将助手响应添加到消息历史
+            messages.push({
+              role: "assistant",
+              content: result.content,
             });
 
-            // 执行搜索
-            const searchResult = await tavilySearch(toolArgs.query, process.env.TAVILY_API_KEY!);
+            // 处理所有工具调用并收集结果
+            const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+            for (const toolUseBlock of toolUseBlocks) {
+              if (toolUseBlock.name === "tavily_search") {
+                const toolArgs = toolUseBlock.input as { query: string };
+                console.log(`Tool call: tavily_search`, toolArgs);
+
+                await sendEvent({
+                  type: "status",
+                  status: "searching",
+                  step: `🔎 正在搜索：${toolArgs.query.slice(0, 50)}...`,
+                  progress: 40 + iteration * 10,
+                });
+
+                // 执行搜索
+                const searchResult = await tavilySearch(toolArgs.query, process.env.TAVILY_API_KEY!);
+
+                toolResults.push({
+                  type: "tool_result",
+                  tool_use_id: toolUseBlock.id,
+                  content: `搜索结果：\n${searchResult}`,
+                });
+              } else {
+                // 未知工具，返回错误
+                toolResults.push({
+                  type: "tool_result",
+                  tool_use_id: toolUseBlock.id,
+                  content: `未知工具: ${toolUseBlock.name}`,
+                  is_error: true,
+                });
+              }
+            }
 
             await sendEvent({
               type: "status",
@@ -449,19 +477,15 @@ ${imageAnalysis}
               progress: 50 + iteration * 10,
             });
 
-            // 将助手响应和工具结果添加到消息历史
-            messages.push({
-              role: "assistant",
-              content: result.content,
-            });
+            // 将所有工具结果添加到消息历史
             messages.push({
               role: "user",
               content: [
+                ...toolResults,
                 {
-                  type: "tool_result",
-                  tool_use_id: toolUseBlock.id,
-                  content: `搜索结果：\n${searchResult}\n\n请根据搜索结果，直接输出 JSON 格式的图像 prompts，不要有任何解释性文字，直接以 \`\`\`json 开头输出。`,
-                } as Anthropic.ToolResultBlockParam,
+                  type: "text",
+                  text: "请根据搜索结果，直接输出 JSON 格式的图像 prompts，不要有任何解释性文字，直接以 ```json 开头输出。",
+                },
               ],
             });
           }
