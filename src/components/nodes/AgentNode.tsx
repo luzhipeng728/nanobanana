@@ -20,6 +20,7 @@ import type { AgentNodeData, AgentPrompt, AgentStreamEvent } from "@/types/agent
 import { RESOLUTION_OPTIONS } from "@/types/image-gen";
 import { BaseNode } from "./BaseNode";
 import { NodeTextarea, NodeSelect, NodeButton, NodeLabel } from "@/components/ui/NodeUI";
+import ReactMarkdown from "react-markdown";
 
 const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { addImageNode, updateImageNode, getNode, getConnectedImageNodes } = useCanvas();
@@ -572,17 +573,24 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
             )}
           </div>
           
-          {/* Content - 流式文字展示 */}
+          {/* Content - 流式 Markdown 渲染 */}
           <div 
             ref={analysisRef}
             className="relative p-3 max-h-[150px] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800"
           >
-            <p className="text-[11px] leading-relaxed text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap font-mono">
-              {claudeAnalysis}
+            <div className="text-[11px] leading-relaxed text-neutral-700 dark:text-neutral-300 prose prose-xs prose-purple dark:prose-invert max-w-none
+              prose-headings:text-[12px] prose-headings:font-bold prose-headings:text-purple-700 dark:prose-headings:text-purple-300 prose-headings:mt-2 prose-headings:mb-1
+              prose-p:my-1 prose-p:text-[11px]
+              prose-ul:my-1 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-[11px]
+              prose-ol:my-1 prose-ol:pl-4
+              prose-strong:text-purple-600 dark:prose-strong:text-purple-400
+              prose-code:text-[10px] prose-code:bg-purple-100 dark:prose-code:bg-purple-900/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+            ">
+              <ReactMarkdown>{claudeAnalysis}</ReactMarkdown>
               {isAnalyzing && (
                 <span className="inline-block w-2 h-4 bg-purple-500 ml-0.5 animate-pulse" />
               )}
-            </p>
+            </div>
           </div>
         </div>
       )}

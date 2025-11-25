@@ -511,16 +511,39 @@ ${imageAnalysis}
         }
       }
 
-      // 方法4: 如果还是没有，尝试直接解析整个输出
+      // 方法4: 尝试找到任何 JSON 对象
       if (!jsonString) {
-        jsonString = finalOutput.trim();
-        console.log("Trying to parse entire output as JSON");
+        const anyJsonMatch = finalOutput.match(/\{[\s\S]*\}/);
+        if (anyJsonMatch) {
+          jsonString = anyJsonMatch[0].trim();
+          console.log("Found any JSON object");
+        }
       }
 
       // 尝试解析提取的 JSON 字符串
-      if (jsonString) {
+      const tryParseJson = (str: string): any => {
         try {
-          const parsed = JSON.parse(jsonString);
+          return JSON.parse(str);
+        } catch {
+          // 尝试修复常见的 JSON 格式错误
+          try {
+            // 移除可能的注释
+            const cleaned = str
+              .replace(/\/\/.*$/gm, '')  // 移除单行注释
+              .replace(/\/\*[\s\S]*?\*\//g, '')  // 移除多行注释
+              .replace(/,\s*}/g, '}')  // 移除尾随逗号
+              .replace(/,\s*]/g, ']')  // 移除数组尾随逗号
+              .trim();
+            return JSON.parse(cleaned);
+          } catch {
+            return null;
+          }
+        }
+      };
+
+      if (jsonString) {
+        const parsed = tryParseJson(jsonString);
+        if (parsed) {
           if (parsed.prompts && Array.isArray(parsed.prompts)) {
             prompts = parsed.prompts.map((p: any) => ({
               id: uuidv4(),
@@ -529,13 +552,55 @@ ${imageAnalysis}
               status: "pending" as const,
             }));
             console.log(`Successfully parsed ${prompts.length} prompts`);
+          } else if (Array.isArray(parsed)) {
+            // 可能直接返回了数组
+            prompts = parsed.map((p: any) => ({
+              id: uuidv4(),
+              scene: p.scene || "场景",
+              prompt: p.prompt || p.description || String(p),
+              status: "pending" as const,
+            }));
+            console.log(`Successfully parsed ${prompts.length} prompts from array`);
           } else {
             console.error("Parsed JSON but no valid prompts array found");
           }
-        } catch (e) {
-          console.error("Failed to parse JSON:", e);
-          console.error("JSON string was:", jsonString.substring(0, 200));
+        } else {
+          console.error("Failed to parse JSON");
+          console.error("JSON string was:", jsonString.substring(0, 500));
         }
+      }
+
+      // 方法5: 如果所有 JSON 解析都失败了，尝试从文本中提取 prompts
+      if (prompts.length === 0) {
+        console.log("Trying to extract prompts from plain text...");
+        
+        // 尝试找到类似 "prompt": "..." 的模式
+        const promptMatches = finalOutput.matchAll(/"prompt"\s*:\s*"([^"]+)"/g);
+        const sceneMatches = finalOutput.matchAll(/"scene"\s*:\s*"([^"]+)"/g);
+        
+        const promptTexts = [...promptMatches].map(m => m[1]);
+        const sceneTexts = [...sceneMatches].map(m => m[1]);
+        
+        if (promptTexts.length > 0) {
+          prompts = promptTexts.map((promptText, i) => ({
+            id: uuidv4(),
+            scene: sceneTexts[i] || `场景 ${i + 1}`,
+            prompt: promptText,
+            status: "pending" as const,
+          }));
+          console.log(`Extracted ${prompts.length} prompts from text patterns`);
+        }
+      }
+
+      // 方法6: 如果还是失败，用原始请求生成一个默认 prompt
+      if (prompts.length === 0 && imageAnalysis) {
+        console.log("Fallback: Creating default prompt from image analysis");
+        prompts = [{
+          id: uuidv4(),
+          scene: "基于参考图的创作",
+          prompt: `Based on the reference image style: ${userRequest}. Style reference: ${imageAnalysis.substring(0, 200)}`,
+          status: "pending" as const,
+        }];
       }
 
       // 如果所有方法都失败了，返回错误
