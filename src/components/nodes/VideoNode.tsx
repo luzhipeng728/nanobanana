@@ -1,8 +1,9 @@
 "use client";
 
 import { memo, useEffect, useState, useRef } from "react";
-import { NodeProps, NodeResizer, useReactFlow } from "@xyflow/react";
+import { NodeProps, NodeResizer, useReactFlow, Handle, Position } from "@xyflow/react";
 import { Video as VideoIcon, Download, Loader2 } from "lucide-react";
+import { BaseNode } from "./BaseNode";
 
 type VideoNodeData = {
   taskId?: string;
@@ -22,7 +23,6 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
   // 轮询任务状态
   useEffect(() => {
-    // 如果已经有视频URL，不需要轮询
     if (data.videoUrl) {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -31,7 +31,6 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       return;
     }
 
-    // 如果有 taskId，开始轮询
     if (data.taskId) {
       console.log(`[VideoNode ${id}] Starting polling for task ${data.taskId}`);
 
@@ -49,7 +48,6 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           setProgress(task.progress || 0);
 
           if (task.status === "completed" && task.videoUrl) {
-            // 任务完成，更新节点数据
             console.log(`[VideoNode ${id}] Task completed, updating node with video URL`);
             updateNodeData(id, {
               videoUrl: task.videoUrl,
@@ -57,20 +55,17 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
               timestamp: new Date().toLocaleString(),
             });
 
-            // 停止轮询
             if (pollingIntervalRef.current) {
               clearInterval(pollingIntervalRef.current);
               pollingIntervalRef.current = null;
             }
           } else if (task.status === "failed") {
-            // 任务失败
             console.error(`[VideoNode ${id}] Task failed: ${task.error}`);
             updateNodeData(id, {
               isLoading: false,
               error: task.error,
             });
 
-            // 停止轮询
             if (pollingIntervalRef.current) {
               clearInterval(pollingIntervalRef.current);
               pollingIntervalRef.current = null;
@@ -81,14 +76,10 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         }
       };
 
-      // 立即执行一次
       pollTaskStatus();
-
-      // 每 5 秒轮询一次
       pollingIntervalRef.current = setInterval(pollTaskStatus, 5000);
     }
 
-    // 清理函数
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -98,83 +89,124 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   }, [data.taskId, data.videoUrl, id, updateNodeData]);
 
   return (
-    <div className="nowheel bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded min-w-[300px] min-h-[200px] w-full h-full overflow-hidden">
-      <NodeResizer
-        isVisible={selected}
-        minWidth={300}
-        minHeight={200}
-        lineClassName="!border-orange-500"
-        handleClassName="!w-2 !h-2 !bg-orange-500"
-      />
+    <div className="w-full h-full">
+      <BaseNode
+        title="Generated Video"
+        icon={VideoIcon}
+        color="orange"
+        selected={selected}
+        className="w-full h-full min-w-[200px] min-h-[200px] flex flex-col p-0 !border-0 !bg-transparent !shadow-none"
+        contentClassName="p-0 flex flex-col h-full"
+        hideHeader={true}
+      >
+        {/* NodeResizer */}
+        <NodeResizer
+          isVisible={selected}
+          minWidth={200}
+          minHeight={200}
+          lineClassName="!border-orange-400"
+          handleClassName="!w-3 !h-3 !bg-orange-500 !rounded-full"
+        />
 
-      <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
-          <VideoIcon className="w-3.5 h-3.5" />
-          Video
-        </span>
-      </div>
+        <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-orange-100 dark:border-orange-900/30 bg-white dark:bg-neutral-950 h-full">
+          <div
+            className="relative flex-1 min-h-[150px] h-full cursor-pointer"
+          >
+            {isLoading ? (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-900 relative overflow-hidden rounded-[2rem]">
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-      <div className="p-2 h-full flex flex-col">
-        <div className="relative flex-1 min-h-[150px]">
-          {isLoading ? (
-            <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 rounded border border-neutral-200 dark:border-neutral-700 flex flex-col items-center justify-center p-4">
-              <Loader2 className="w-6 h-6 text-orange-500 animate-spin mb-2" />
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-2">
-                {pollingStatus === "processing" ? "处理中..." : pollingStatus === "pending" ? "排队中..." : "生成中..."}
-              </span>
-              {progress > 0 && (
-                <div className="w-full">
-                  <div className="flex justify-between text-[10px] text-neutral-400 mb-1">
-                    <span>进度</span>
-                    <span>{progress}%</span>
+                <div className="relative z-10 flex flex-col items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-orange-500 blur-xl opacity-20 animate-pulse" />
+                    <Loader2 className="w-8 h-8 text-orange-500 animate-spin relative z-10" />
                   </div>
-                  <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-orange-500 transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xs font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-red-500 animate-pulse">
+                      {pollingStatus === "processing" ? "Processing..." : pollingStatus === "pending" ? "Queued..." : "Generating..."}
+                    </span>
+                    {progress > 0 && (
+                      <div className="w-32 mt-2">
+                        <div className="flex justify-between text-[10px] text-neutral-400 mb-1">
+                          <span>Progress</span>
+                          <span>{progress}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {data.taskId && (
+                      <span className="text-[10px] text-neutral-400 font-mono mt-1">
+                        ID: {data.taskId.substring(0, 8)}
+                      </span>
+                    )}
                   </div>
                 </div>
-              )}
-              {data.taskId && (
-                <span className="text-[9px] text-neutral-400 dark:bg-neutral-600 mt-2">
-                  任务 ID: {data.taskId.substring(0, 8)}
-                </span>
+              </div>
+            ) : data.error ? (
+              <div className="w-full h-full bg-red-50 dark:bg-red-900/10 flex flex-col items-center justify-center p-4 rounded-[2rem]">
+                <span className="text-xs font-medium text-red-500 dark:text-red-400 text-center">{data.error}</span>
+              </div>
+            ) : (
+              <>
+                <video
+                  controls
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 rounded-[calc(2rem-2px)]"
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                >
+                  <source src={data.videoUrl} type="video/mp4" />
+                  Your browser does not support video playback.
+                </video>
+
+                {/* Download button overlay */}
+                <a
+                  href={data.videoUrl}
+                  download
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg z-10"
+                  title="Download Video"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Download className="w-4 h-4 text-orange-600" />
+                </a>
+              </>
+            )}
+          </div>
+
+          {/* Footer info overlay */}
+          {!isLoading && !data.error && (
+            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-b-[2rem]">
+              {data.timestamp && (
+                <div className="text-[10px] text-white/90 text-center font-medium">
+                  {data.timestamp}
+                </div>
               )}
             </div>
-          ) : data.error ? (
-            <div className="w-full h-full bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800 flex flex-col items-center justify-center p-3">
-              <span className="text-xs text-red-600 dark:text-red-400 text-center">{data.error}</span>
-            </div>
-          ) : (
-            <div className="w-full h-full flex flex-col">
-              <video
-                controls
-                className="w-full flex-1 rounded border border-neutral-200 dark:border-neutral-700 bg-black"
-                style={{ objectFit: "contain" }}
-              >
-                <source src={data.videoUrl} type="video/mp4" />
-                Your browser does not support video playback.
-              </video>
-              <a
-                href={data.videoUrl}
-                download
-                className="mt-2 flex items-center justify-center gap-1 text-xs text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-750 py-1.5 rounded"
-              >
-                <Download className="w-3 h-3" />
-                Download Video
-              </a>
+          )}
+
+          {/* 右侧连接提示 */}
+          {!isLoading && !data.error && (
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-10">
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[9px] font-bold px-2 py-1 rounded-full shadow-lg whitespace-nowrap animate-pulse">
+                拖拽 →
+              </div>
             </div>
           )}
         </div>
 
-        {data.timestamp && (
-          <div className="text-[10px] text-neutral-400 dark:text-neutral-600 text-center mt-1.5">
-            {data.timestamp}
-          </div>
-        )}
-      </div>
-
+        {/* 右侧输出连接点 */}
+        <Handle
+          type="source"
+          position={Position.Right}
+          isConnectable={isConnectable}
+          className="w-4 h-4 !bg-gradient-to-r !from-orange-500 !to-red-500 !border-2 !border-white dark:!border-neutral-900 !rounded-full transition-all duration-200 hover:!scale-125 hover:!shadow-lg hover:!shadow-orange-500/50"
+          title="拖拽连接"
+        />
+      </BaseNode>
     </div>
   );
 };
