@@ -100,54 +100,64 @@ async function generateAllFramePrompts(
     max_tokens: 3000,
     messages: [{
       role: "user",
-      content: `Based on this image analysis, I need to create a "${animationPrompt}" animation with 10 frames.
+      content: `Based on this image analysis, I need to create a "${animationPrompt}" sticker animation with 10 frames.
 
 Image Analysis:
 ${baseAnalysis.substring(0, 1500)}
 
+## CRITICAL REQUIREMENTS FOR STICKER ANIMATION:
+
+### MANDATORY BACKGROUND:
+- Background MUST be: **solid pure white (#FFFFFF)** or **solid light gray (#F5F5F5)**
+- NO gradients, NO patterns, NO scenery, NO shadows on background
+- This is for a sticker/emoji, clean background is essential
+
+### MANDATORY CONSISTENCY (same in ALL frames):
+- Exact same skin tone and color (no color shifts between frames)
+- Exact same hair color, style, arrangement
+- Exact same clothing colors and details
+- Exact same lighting direction and intensity
+- Exact same camera angle and framing
+
 ## YOUR TASK:
-Generate a JSON response with TWO parts:
+Generate a JSON with TWO parts:
 
 ### Part 1: BASE_TEMPLATE
-A single, detailed prompt describing EVERYTHING about the image EXCEPT facial expression:
-- Subject appearance (face shape, skin tone, hair style/color/arrangement)
-- Exact clothing and accessories with colors
-- Exact body pose and position
-- Exact background color/elements
-- Art style, lighting, color grading
-- Camera angle and framing
-
-This template will be REUSED for all 10 frames to ensure consistency.
+Describe the subject for sticker use:
+- Face shape, skin tone (be SPECIFIC about color, e.g., "fair peachy skin tone")
+- Hair style/color/arrangement (EXACT details)
+- Clothing with EXACT colors
+- MUST include: "solid pure white background, no shadows, flat even lighting, sticker style, clean edges"
+- Camera: head and shoulders portrait, centered
 
 ### Part 2: EXPRESSIONS array
-10 SHORT facial expression descriptions (10-20 words each) for the "${animationPrompt}" animation:
-- Frame 1: Neutral/relaxed face (starting point)
-- Frame 2-4: Gradual subtle build-up (tiny incremental changes)
-- Frame 5-6: Peak of the expression
-- Frame 7-9: Gradual return toward neutral
-- Frame 10: Almost identical to Frame 1 (for loop)
+10 SHORT facial expressions (10-15 words each) for "${animationPrompt}":
+- Frame 1: Neutral baseline
+- Frames 2-4: Subtle build-up (5% change each)
+- Frames 5-6: Peak expression
+- Frames 7-9: Return to neutral
+- Frame 10: Match frame 1
 
-Each expression should ONLY describe: eyes, eyebrows, mouth, cheeks.
-Changes between frames should be VERY SUBTLE (5-10% difference).
+Only describe: eyes, eyebrows, mouth, cheeks. NO other changes.
 
-## OUTPUT FORMAT (JSON only, no markdown):
+## OUTPUT (JSON only, no markdown):
 {
-  "base_template": "A young woman with long dark braided hair, wearing white V-neck blouse, soft natural lighting, pure white background, photorealistic style, portrait shot, shoulders visible, looking at camera",
+  "base_template": "A young woman with long dark braided hair, fair peachy skin tone, wearing white V-neck blouse, solid pure white background, no shadows, flat even studio lighting, sticker style portrait, head and shoulders, centered composition, clean crisp edges",
   "expressions": [
-    "neutral relaxed expression, eyes looking forward, slight natural smile",
-    "eyes slightly more open, corners of mouth lifting 5%",
-    "eyes brightening, gentle smile forming, eyebrows slightly raised",
-    "eyes sparkling, warm smile, subtle blush appearing on cheeks",
-    "eyes curved into crescents, full genuine smile, rosy cheeks",
-    "brightest smile, eyes squinted happily, prominent blush",
-    "smile softening slightly, eyes still bright, blush fading",
-    "returning to gentle smile, eyes relaxing",
-    "soft pleasant expression, nearly neutral",
-    "neutral relaxed expression, matching frame 1"
+    "neutral relaxed face, eyes forward, natural closed-lip smile",
+    "eyes slightly brighter, mouth corners lifting 5%",
+    "gentle smile forming, eyes softening",
+    "warm smile, slight eye crinkle, faint blush",
+    "full smile, eyes curved happily, rosy cheeks",
+    "brightest smile, eyes squinted with joy, prominent blush",
+    "smile softening, eyes still warm, blush fading",
+    "returning to gentle smile, relaxed eyes",
+    "soft pleasant look, nearly neutral",
+    "neutral relaxed face, matching frame 1"
   ]
 }
 
-IMPORTANT: Output ONLY valid JSON, no other text.`
+Output ONLY valid JSON.`
     }],
   });
 
@@ -195,10 +205,14 @@ IMPORTANT: Output ONLY valid JSON, no other text.`
 
   // 组合基础模板和表情，生成 10 个完整提示词
   const prompts: string[] = [];
+
+  // 强制添加一致性约束
+  const consistencySuffix = ", solid pure white background #FFFFFF, consistent skin tone, consistent lighting, sticker style, no background elements";
+
   for (let i = 0; i < 10; i++) {
     const expression = expressions[i] || expressions[expressions.length - 1] || "neutral expression";
     // 将基础模板和表情组合，确保静态部分完全一致
-    const fullPrompt = `${baseTemplate}, ${expression}, maintain exact same lighting and color grading`;
+    const fullPrompt = `${baseTemplate}, ${expression}${consistencySuffix}`;
     prompts.push(fullPrompt);
   }
 
