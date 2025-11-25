@@ -1,6 +1,6 @@
 "use client";
 
-import { Wand2, Brain, Music, MessageSquare, Smile } from "lucide-react";
+import { Wand2, Brain, Music, MessageSquare, Smile, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'stickerGen';
@@ -39,11 +39,18 @@ const items = [
     accentColor: '#22c55e',
   },
   {
+    type: 'videoGen' as NodeType,
+    title: 'Video',
+    description: 'Sora 视频生成',
+    icon: Video,
+    accentColor: '#f97316',
+  },
+  {
     type: 'chat' as NodeType,
     title: 'Chat',
     description: '流式对话',
     icon: MessageSquare,
-    accentColor: '#f97316',
+    accentColor: '#64748b',
   },
 ];
 

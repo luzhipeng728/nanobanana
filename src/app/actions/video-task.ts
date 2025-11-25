@@ -109,8 +109,8 @@ async function processVideoTask(taskId: string): Promise<void> {
 
     // 选择模型
     const model = task.orientation === "portrait"
-      ? "sora_video2-portrait-15s"
-      : "sora_video2-landscape-15s";
+      ? "sora_video2-portrait"
+      : "sora_video2-landscape";
 
     // 构建消息 - 完全按照原项目格式
     let messages: any[];
@@ -159,15 +159,15 @@ async function processVideoTask(taskId: string): Promise<void> {
 
         console.log(`[VideoTask ${taskId}] API response status: ${response.status}`);
 
-        // Retry on 500/503 errors
-        if ((response.status === 500 || response.status === 503) && retries < maxRetries) {
+        // Retry on non-200 responses
+        if (!response.ok && retries < maxRetries - 1) {
           retries++;
           console.log(`[VideoTask ${taskId}] API returned ${response.status}, retrying... (${retries}/${maxRetries})`);
           await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
           continue;
         }
 
-        // Exit retry loop
+        // Exit retry loop (either success or max retries reached)
         break;
       } catch (fetchError: any) {
         console.error(`[VideoTask ${taskId}] Fetch error:`, fetchError.message);
