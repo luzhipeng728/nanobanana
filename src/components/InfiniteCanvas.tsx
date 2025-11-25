@@ -268,6 +268,8 @@ export default function InfiniteCanvas() {
           ? { prompt: '', orientation: 'portrait' }
           : type === 'chat'
           ? { messages: [], systemPrompt: 'You are a helpful AI assistant that generates image prompts. When user asks for images, wrap your prompt suggestions in ```text\n[prompt text]\n``` blocks.' }
+          : type === 'stickerGen'
+          ? { animationPrompt: '', model: 'nano-banana', imageSize: '512x512' }
           : {},
       };
 
