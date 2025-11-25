@@ -313,20 +313,23 @@ export async function POST(request: NextRequest) {
   });
 }
 
-// 后台处理帧生成任务
+// 后台处理帧生成任务 - 链式生成：每一帧基于上一帧
 async function processFramesTask(
   taskId: string,
   framePrompts: string[],
   model: GeminiImageModel,
   config: ImageGenerationConfig,
-  referenceImage: string
+  originalReferenceImage: string
 ) {
   const generatedFrames: (string | null)[] = Array(10).fill(null);
   const frameStatuses: string[] = Array(10).fill("pending");
 
-  console.log(`[Sticker ${taskId}] Starting frame generation...`);
+  console.log(`[Sticker ${taskId}] Starting chained frame generation...`);
 
-  // 逐帧生成
+  // 当前参考图：初始为原始参考图，之后用上一帧的结果
+  let currentReferenceImage = originalReferenceImage;
+
+  // 逐帧链式生成
   for (let i = 0; i < 10; i++) {
     frameStatuses[i] = "generating";
     
@@ -340,38 +343,52 @@ async function processFramesTask(
 
     const framePrompt = framePrompts[i] || `Frame ${i + 1}`;
     
-    // 构建完整提示词
-    const fullPrompt = `CRITICAL: Generate an image that maintains PERFECT CONSISTENCY with the reference image.
+    // 构建提示词 - 强调基于上一帧的微小变化
+    const fullPrompt = i === 0 
+      ? `Generate frame 1 of a 10-frame animation loop based on this reference image.
 
 ${framePrompt}
 
-Animation context: This is frame ${i + 1} of a 10-frame seamless loop animation.
+Requirements:
+- This is the STARTING frame of the animation
+- Maintain EXACT appearance, style, background from reference
+- Square aspect ratio (1:1)
+- High quality, consistent with reference style`
+      : `Generate frame ${i + 1} of a 10-frame animation loop.
 
-Essential requirements:
-- EXACT SAME character/subject appearance, outfit, colors as reference
-- EXACT SAME background, composition, lighting as reference  
-- EXACT SAME art style, texture, and color palette as reference
-- ONLY the animation-related micro-changes should differ
-- Frame ${i + 1}/10 should smoothly connect to adjacent frames
+CRITICAL: This frame must be a VERY SUBTLE progression from the previous frame (frame ${i}).
+The change between frames should be MINIMAL (only 5-10% difference).
+
+${framePrompt}
+
+Requirements:
+- The reference image is frame ${i} - maintain 90-95% similarity
+- Only apply the TINY incremental change described above
+- SAME character/subject, SAME background, SAME style
+- Frame ${i + 1}/10 in seamless loop
+- ${i === 9 ? 'This is the LAST frame - should transition smoothly back to frame 1' : ''}
 - Square aspect ratio (1:1)`;
 
     try {
-      console.log(`[Sticker ${taskId}] Generating frame ${i + 1}/10...`);
+      console.log(`[Sticker ${taskId}] Generating frame ${i + 1}/10 (ref: ${i === 0 ? 'original' : `frame ${i}`})...`);
       
       const result = await generateImageAction(
         fullPrompt,
         model,
         { ...config, aspectRatio: "1:1" },
-        [referenceImage]
+        [currentReferenceImage] // 用上一帧作为参考
       );
 
       if (result.success && result.imageUrl) {
         generatedFrames[i] = result.imageUrl;
         frameStatuses[i] = "completed";
-        console.log(`[Sticker ${taskId}] Frame ${i + 1} completed: ${result.imageUrl.substring(0, 50)}...`);
+        // 更新参考图为当前帧，供下一帧使用
+        currentReferenceImage = result.imageUrl;
+        console.log(`[Sticker ${taskId}] Frame ${i + 1} completed ✓`);
       } else {
         frameStatuses[i] = "error";
         console.error(`[Sticker ${taskId}] Frame ${i + 1} failed:`, result.error);
+        // 如果当前帧失败，继续用上一个成功的帧作为参考
       }
     } catch (err) {
       frameStatuses[i] = "error";
@@ -406,5 +423,5 @@ Essential requirements:
     },
   });
 
-  console.log(`[Sticker ${taskId}] ✅ Generation finished (${completedCount}/10 frames)`);
+  console.log(`[Sticker ${taskId}] ✅ Chained generation finished (${completedCount}/10 frames)`);
 }
