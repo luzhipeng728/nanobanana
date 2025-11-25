@@ -271,8 +271,22 @@ export async function POST(request: NextRequest) {
         taskId,
       });
 
-      // 异步生成 10 帧图片（后台执行）
-      generateFramesAsync(taskId, framePrompts, model || "nano-banana", config || {}, referenceImage);
+      await sendEvent({
+        type: "status",
+        step: "🚀 任务已创建，开始后台生成...",
+        progress: 20,
+      });
+
+      // 后台异步生成 10 帧图片（不等待）
+      processFramesTask(
+        taskId,
+        framePrompts,
+        (model || "nano-banana") as GeminiImageModel,
+        config || {},
+        referenceImage
+      ).catch((err) => {
+        console.error(`[Sticker ${taskId}] Background task error:`, err);
+      });
 
       await sendEvent({
         type: "complete",
@@ -299,8 +313,8 @@ export async function POST(request: NextRequest) {
   });
 }
 
-// 异步生成帧（后台执行）
-async function generateFramesAsync(
+// 后台处理帧生成任务
+async function processFramesTask(
   taskId: string,
   framePrompts: string[],
   model: GeminiImageModel,
@@ -310,30 +324,24 @@ async function generateFramesAsync(
   const generatedFrames: (string | null)[] = Array(10).fill(null);
   const frameStatuses: string[] = Array(10).fill("pending");
 
-  // 并发生成，但限制并发数为 2（避免 API 限流）
-  const MAX_CONCURRENT = 2;
-  
-  for (let batch = 0; batch < Math.ceil(10 / MAX_CONCURRENT); batch++) {
-    const startIdx = batch * MAX_CONCURRENT;
-    const endIdx = Math.min(startIdx + MAX_CONCURRENT, 10);
-    
-    const batchPromises = [];
-    
-    for (let i = startIdx; i < endIdx; i++) {
-      frameStatuses[i] = "generating";
-      
-      // 更新数据库状态
-      await prisma.stickerTask.update({
-        where: { id: taskId },
-        data: {
-          frameStatuses: JSON.stringify(frameStatuses),
-        },
-      });
+  console.log(`[Sticker ${taskId}] Starting frame generation...`);
 
-      const framePrompt = framePrompts[i] || `Frame ${i + 1}`;
-      
-      // 构建完整提示词
-      const fullPrompt = `CRITICAL: Generate an image that maintains PERFECT CONSISTENCY with the reference image.
+  // 逐帧生成
+  for (let i = 0; i < 10; i++) {
+    frameStatuses[i] = "generating";
+    
+    // 更新数据库状态
+    await prisma.stickerTask.update({
+      where: { id: taskId },
+      data: {
+        frameStatuses: JSON.stringify(frameStatuses),
+      },
+    });
+
+    const framePrompt = framePrompts[i] || `Frame ${i + 1}`;
+    
+    // 构建完整提示词
+    const fullPrompt = `CRITICAL: Generate an image that maintains PERFECT CONSISTENCY with the reference image.
 
 ${framePrompt}
 
@@ -346,63 +354,57 @@ Essential requirements:
 - ONLY the animation-related micro-changes should differ
 - Frame ${i + 1}/10 should smoothly connect to adjacent frames
 - Square aspect ratio (1:1)`;
+
+    try {
+      console.log(`[Sticker ${taskId}] Generating frame ${i + 1}/10...`);
       
-      batchPromises.push(
-        (async (frameIndex: number) => {
-          try {
-            console.log(`[Sticker ${taskId}] Generating frame ${frameIndex + 1}/10...`);
-            
-            const result = await generateImageAction(
-              fullPrompt,
-              model,
-              { ...config, aspectRatio: "1:1" },
-              [referenceImage]
-            );
-
-            if (result.success && result.imageUrl) {
-              generatedFrames[frameIndex] = result.imageUrl;
-              frameStatuses[frameIndex] = "completed";
-              console.log(`[Sticker ${taskId}] Frame ${frameIndex + 1} completed`);
-            } else {
-              frameStatuses[frameIndex] = "error";
-              console.error(`[Sticker ${taskId}] Frame ${frameIndex + 1} failed:`, result.error);
-            }
-          } catch (err) {
-            frameStatuses[frameIndex] = "error";
-            console.error(`[Sticker ${taskId}] Frame ${frameIndex + 1} error:`, err);
-          }
-
-          // 更新数据库
-          const completedCount = frameStatuses.filter(s => s === "completed").length;
-          await prisma.stickerTask.update({
-            where: { id: taskId },
-            data: {
-              frames: JSON.stringify(generatedFrames.filter(f => f !== null)),
-              frameStatuses: JSON.stringify(frameStatuses),
-              completedFrames: completedCount,
-            },
-          });
-        })(i)
+      const result = await generateImageAction(
+        fullPrompt,
+        model,
+        { ...config, aspectRatio: "1:1" },
+        [referenceImage]
       );
+
+      if (result.success && result.imageUrl) {
+        generatedFrames[i] = result.imageUrl;
+        frameStatuses[i] = "completed";
+        console.log(`[Sticker ${taskId}] Frame ${i + 1} completed: ${result.imageUrl.substring(0, 50)}...`);
+      } else {
+        frameStatuses[i] = "error";
+        console.error(`[Sticker ${taskId}] Frame ${i + 1} failed:`, result.error);
+      }
+    } catch (err) {
+      frameStatuses[i] = "error";
+      console.error(`[Sticker ${taskId}] Frame ${i + 1} error:`, err);
     }
 
-    await Promise.all(batchPromises);
+    // 更新数据库 - 保存已完成的帧
+    const completedFrameUrls = generatedFrames.filter((f): f is string => f !== null);
+    const completedCount = frameStatuses.filter(s => s === "completed").length;
+    
+    await prisma.stickerTask.update({
+      where: { id: taskId },
+      data: {
+        frames: JSON.stringify(completedFrameUrls),
+        frameStatuses: JSON.stringify(frameStatuses),
+        completedFrames: completedCount,
+      },
+    });
   }
 
   // 最终更新
   const completedCount = frameStatuses.filter(s => s === "completed").length;
-  const allCompleted = completedCount === 10;
   
   await prisma.stickerTask.update({
     where: { id: taskId },
     data: {
       status: completedCount >= 5 ? "completed" : "failed",
-      frames: JSON.stringify(generatedFrames),
+      frames: JSON.stringify(generatedFrames.filter(f => f !== null)),
       frameStatuses: JSON.stringify(frameStatuses),
       completedFrames: completedCount,
       completedAt: new Date(),
     },
   });
 
-  console.log(`[Sticker ${taskId}] Generation ${allCompleted ? "completed" : "partially completed"} (${completedCount}/10 frames)`);
+  console.log(`[Sticker ${taskId}] ✅ Generation finished (${completedCount}/10 frames)`);
 }
