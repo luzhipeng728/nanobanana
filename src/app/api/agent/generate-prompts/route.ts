@@ -95,70 +95,20 @@ async function analyzeImagesWithClaudeStream(
   return fullText;
 }
 
-// Tavily 搜索函数
-async function tavilySearch(query: string, apiKey: string): Promise<string> {
-  try {
-    const response = await fetch("https://api.tavily.com/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        api_key: apiKey,
-        query: query,
-        max_results: 3,
-        search_depth: "basic",
-        include_answer: true,
-      }),
-    });
 
-    if (!response.ok) {
-      throw new Error(`Tavily API error: ${response.statusText}`);
-    }
+// Agent 系统提示词 - 直接输出 JSON
+const AGENT_SYSTEM_PROMPT = `你是 Nano Banana Pro（Gemini 3 Pro Image）的专业 Prompt 生成 Agent。你的任务是根据用户需求，直接生成高质量的图像生成 prompt。
 
-    const data = await response.json();
+## 你的工作流程
 
-    // 格式化搜索结果
-    const results = data.results?.map((r: any) => ({
-      title: r.title,
-      content: r.content,
-      url: r.url,
-    })) || [];
-
-    return JSON.stringify({
-      answer: data.answer || "",
-      results: results.slice(0, 3),
-    }, null, 2);
-  } catch (error) {
-    console.error("Search error:", error);
-    return JSON.stringify({ error: "搜索失败" });
-  }
-}
-
-// ReAct Agent 系统提示词
-const AGENT_SYSTEM_PROMPT = `你是 Nano Banana Pro（Gemini 3 Pro Image）的专业 AI Agent。你会使用 ReAct（Reasoning + Acting）模式来规划和生成高质量的图像生成 prompt。
-
-## 你的工作流程（ReAct 模式）
-
-### 第1步：思考与规划 (Thought & Planning)
-分析用户需求，思考：
+### 分析用户需求
 - 用户想要什么类型的图片？
-- 是否需要搜索最新信息？（例如：最新产品、流行趋势、实时数据、热点事件等）
 - 应该生成几个场景？每个场景的主题是什么？
 - 🚨【关键】用户需求中是否包含需要显示的中文文字？必须原样保留！
 - 🚨【关键】如果有文字内容，绝对不能翻译成英文，必须保留中文原文并用引号包裹！
 
-### 第2步：决定行动 (Action)
-如果需要最新信息，使用 tavily_search 工具搜索。
-搜索场景示例：
-- "2024年最流行的UI设计趋势"
-- "赛博朋克风格的视觉特点"
-- "现代简约咖啡店设计案例"
-- "最新iPhone产品特性"
-- "当前热门的短视频趋势"
-
-### 第3步：生成 Prompts (Final Answer)
-基于你的思考和搜索结果，生成专业的图像 prompts。
+### 直接生成 JSON
+分析完毕后，直接输出 JSON 格式的 prompts，不需要任何额外解释。
 
 ## Nano Banana Pro 核心能力
 1. 文字渲染：在图像中生成清晰可读的多语言文字
@@ -230,9 +180,9 @@ const AGENT_SYSTEM_PROMPT = `你是 Nano Banana Pro（Gemini 3 Pro Image）的�
 ## 最终输出格式（必须严格遵守）
 
 ### 🚨【强制要求】输出格式规则
-1. **当你完成所有思考和搜索后，必须直接输出 JSON 格式**
+1. **必须直接输出 JSON 格式**
 2. **不要输出任何中文解释、说明或过渡性语言**
-3. **不要说"基于搜索结果..."、"我将为您生成..."等解释性文字**
+3. **不要说"我将为您生成..."等解释性文字**
 4. **直接输出纯 JSON，以 \`\`\`json 开头，以 \`\`\` 结尾**
 5. **JSON 必须完整且格式正确，可以被直接解析**
 
@@ -254,27 +204,10 @@ const AGENT_SYSTEM_PROMPT = `你是 Nano Banana Pro（Gemini 3 Pro Image）的�
 \`\`\`
 
 ### ❌ 错误示例（不要这样做）
-❌ "基于搜索结果了解手账风格特点后，我将为您生成..."
-❌ "好的，我现在生成 prompts: ..."
+❌ "好的，我来为您生成..."
+❌ "根据您的需求，我将..."
 ✅ 直接输出 JSON，不要有任何解释性文字`;
 
-// Claude 工具定义
-const claudeTools: Anthropic.Tool[] = [
-  {
-    name: "tavily_search",
-    description: "A search engine for finding up-to-date information. Use this when you need current information about trends, products, events, or any time-sensitive content.",
-    input_schema: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description: "The search query string",
-        },
-      },
-      required: ["query"],
-    },
-  },
-];
 
 export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
@@ -309,12 +242,6 @@ export async function POST(request: NextRequest) {
       // 检查必需的 API Keys
       if (!process.env.ANTHROPIC_API_KEY) {
         await sendEvent({ type: "error", error: "Anthropic API Key 未配置" });
-        await writer.close();
-        return;
-      }
-
-      if (!process.env.TAVILY_API_KEY) {
-        await sendEvent({ type: "error", error: "Tavily API Key 未配置" });
         await writer.close();
         return;
       }
@@ -400,144 +327,74 @@ ${imageAnalysis}
         progress: 30,
       });
 
-      // ReAct 循环 - 使用 Claude（流式输出思考过程）
-      const messages: Anthropic.MessageParam[] = [
-        { role: "user", content: userInput },
-      ];
-
-      let iteration = 0;
-      const maxIterations = 5;
+      // 直接调用 Claude 生成 prompts（无工具调用，简化流程）
       let finalOutput = "";
 
       // 发送思考开始事件
       await sendEvent({ type: "claude_analysis_start" });
 
-      while (iteration < maxIterations) {
-        iteration++;
-
-        // 使用流式 API 输出思考过程
-        let currentIterationText = "";
-        let toolUseBlocks: Anthropic.ToolUseBlock[] = [];
-        let stopReason = "";
+      try {
+        console.log(`[Agent] Starting Claude stream for prompt generation`);
 
         const stream = anthropic.messages.stream({
           model: "claude-opus-4-5-20251101",
           max_tokens: 4096,
           system: AGENT_SYSTEM_PROMPT,
-          tools: claudeTools,
-          messages,
+          messages: [{ role: "user", content: userInput }],
         });
 
         // 处理流式响应
-        for await (const event of stream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            const chunk = event.delta.text;
-            currentIterationText += chunk;
-            // 实时发送思考过程给前端
-            await sendEvent({ type: "claude_analysis_chunk", chunk });
-          } else if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
-            // 工具调用开始
-            toolUseBlocks.push(event.content_block as Anthropic.ToolUseBlock);
-          } else if (event.type === "content_block_delta" && event.delta.type === "input_json_delta") {
-            // 工具调用参数（流式）
-            if (toolUseBlocks.length > 0) {
-              const lastTool = toolUseBlocks[toolUseBlocks.length - 1];
-              if (!lastTool.input) lastTool.input = {};
-              // 累积 JSON 输入
+        let collectedText = "";
+        try {
+          for await (const event of stream) {
+            if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+              const chunk = event.delta.text;
+              collectedText += chunk;
+              // 实时发送思考过程给前端
+              await sendEvent({ type: "claude_analysis_chunk", chunk });
             }
-          } else if (event.type === "message_delta") {
-            stopReason = event.delta.stop_reason || "";
+          }
+        } catch (streamError) {
+          console.error(`[Agent] Stream error:`, streamError);
+          // 如果已经有一些文本，尝试继续处理
+          if (collectedText.length > 100) {
+            console.log(`[Agent] Using partial text (${collectedText.length} chars) despite stream error`);
+            finalOutput = collectedText;
+          } else {
+            throw streamError;
           }
         }
 
         // 获取完整的响应
-        const finalMessage = await stream.finalMessage();
-        stopReason = finalMessage.stop_reason || stopReason;
-
-        // 提取工具调用
-        toolUseBlocks = finalMessage.content.filter(
-          (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
-        );
-
-        console.log(`Iteration ${iteration}:`, stopReason);
-
-        // 检查是否有工具调用
-        if (stopReason === "tool_use" && toolUseBlocks.length > 0) {
-          // 将助手响应添加到消息历史
-          messages.push({
-            role: "assistant",
-            content: finalMessage.content,
-          });
-
-          // 处理所有工具调用并收集结果
-          const toolResults: Anthropic.ToolResultBlockParam[] = [];
-
-          for (const toolUseBlock of toolUseBlocks) {
-            if (toolUseBlock.name === "tavily_search") {
-              const toolArgs = toolUseBlock.input as { query: string };
-              console.log(`Tool call: tavily_search`, toolArgs);
-
-              await sendEvent({
-                type: "status",
-                status: "searching",
-                step: `🔎 正在搜索：${toolArgs.query.slice(0, 50)}...`,
-                progress: 40 + iteration * 10,
-              });
-
-              // 发送搜索提示
-              await sendEvent({ type: "claude_analysis_chunk", chunk: `\n\n🔎 搜索中: ${toolArgs.query}\n` });
-
-              // 执行搜索
-              const searchResult = await tavilySearch(toolArgs.query, process.env.TAVILY_API_KEY!);
-
-              toolResults.push({
-                type: "tool_result",
-                tool_use_id: toolUseBlock.id,
-                content: `搜索结果：\n${searchResult}`,
-              });
-
-              await sendEvent({ type: "claude_analysis_chunk", chunk: `✅ 搜索完成\n\n` });
+        if (!finalOutput) {
+          try {
+            const finalMessage = await stream.finalMessage();
+            const textBlock = finalMessage.content.find(
+              (block): block is Anthropic.TextBlock => block.type === "text"
+            );
+            finalOutput = textBlock?.text || collectedText;
+            console.log(`[Agent] Got final output, length: ${finalOutput.length}`);
+          } catch (finalMsgError) {
+            console.error(`[Agent] Error getting final message:`, finalMsgError);
+            // 使用已收集的文本
+            if (collectedText.length > 100) {
+              console.log(`[Agent] Using collected text (${collectedText.length} chars) as fallback`);
+              finalOutput = collectedText;
             } else {
-              // 未知工具，返回错误
-              toolResults.push({
-                type: "tool_result",
-                tool_use_id: toolUseBlock.id,
-                content: `未知工具: ${toolUseBlock.name}`,
-                is_error: true,
-              });
+              throw finalMsgError;
             }
           }
-
-          await sendEvent({
-            type: "status",
-            status: "planning",
-            step: "📊 已获取搜索结果，继续规划...",
-            progress: 50 + iteration * 10,
-          });
-
-          // 将所有工具结果添加到消息历史
-          messages.push({
-            role: "user",
-            content: [
-              ...toolResults,
-              {
-                type: "text",
-                text: "请根据搜索结果，直接输出 JSON 格式的图像 prompts，不要有任何解释性文字，直接以 ```json 开头输出。",
-              },
-            ],
-          });
-        } else {
-          // 没有工具调用，说明Agent完成了思考
-          const textBlock = finalMessage.content.find(
-            (block): block is Anthropic.TextBlock => block.type === "text"
-          );
-          finalOutput = textBlock?.text || currentIterationText;
-          break;
         }
+      } catch (loopError) {
+        console.error(`[Agent] Error in Claude stream:`, loopError);
+        // 确保发送结束事件
+        await sendEvent({ type: "claude_analysis_end" });
+        throw loopError;
       }
 
       // 发送思考结束事件
       await sendEvent({ type: "claude_analysis_end" });
+      console.log(`[Agent] Analysis ended, finalOutput length: ${finalOutput.length}`);
 
       console.log("Final output:", finalOutput);
 
