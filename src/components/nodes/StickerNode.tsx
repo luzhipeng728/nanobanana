@@ -29,92 +29,85 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
   const [fps, setFps] = useState(8); // 默认 8 帧/秒
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const animationRef = useRef<NodeJS.Timeout | null>(null);
+  const isPollingRef = useRef(false); // 追踪是否正在轮询
 
-  // 轮询任务状态
+  // 轮询任务状态 - 只在 taskId 变化时启动
   useEffect(() => {
-    // 检查有效帧数量（非 null 的帧），而不是数组长度
-    const validFrameCount = data.frames?.filter((f: string | null) => f !== null).length || 0;
-    
-    // 只有当所有 10 帧都生成完成时才停止轮询
-    if (validFrameCount >= 10) {
-      console.log(`[StickerNode ${id}] All 10 frames completed, stopping poll`);
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
+    // 如果没有 taskId 或已经在轮询，不重复启动
+    if (!data.taskId || isPollingRef.current) {
       return;
     }
 
-    if (data.taskId) {
-      console.log(`[StickerNode ${id}] Starting polling for task ${data.taskId}`);
+    console.log(`[StickerNode ${id}] Starting polling for task ${data.taskId}`);
+    isPollingRef.current = true;
 
-      const pollTaskStatus = async () => {
-        try {
-          const response = await fetch(`/api/sticker/task?taskId=${data.taskId}`);
-          if (!response.ok) {
-            console.error(`[StickerNode ${id}] Failed to fetch task status`);
-            return;
-          }
-
-          const task = await response.json();
-          console.log(`[StickerNode ${id}] Task status:`, task.status, `frames: ${task.completedFrames}/${task.totalFrames}`);
-
-          // 更新帧状态
-          if (task.frameStatuses) {
-            setFrameStatuses(task.frameStatuses);
-          }
-
-          // 更新已完成的帧
-          if (task.frames && task.frames.length > 0) {
-            updateNodeData(id, {
-              frames: task.frames,
-              frameStatuses: task.frameStatuses,
-            });
-          }
-
-          // 检查实际完成的帧数（非 null）
-          const validFrames = task.frames?.filter((f: string | null) => f !== null) || [];
-          
-          if (task.status === "completed" && validFrames.length >= 5) {
-            console.log(`[StickerNode ${id}] Task completed! (${validFrames.length}/10 frames)`);
-            updateNodeData(id, {
-              frames: task.frames,
-              isLoading: false,
-              frameStatuses: task.frameStatuses,
-            });
-
-            if (pollingIntervalRef.current) {
-              clearInterval(pollingIntervalRef.current);
-              pollingIntervalRef.current = null;
-            }
-          } else if (task.status === "failed") {
-            console.error(`[StickerNode ${id}] Task failed: ${task.error}`);
-            updateNodeData(id, {
-              isLoading: false,
-              error: task.error,
-            });
-
-            if (pollingIntervalRef.current) {
-              clearInterval(pollingIntervalRef.current);
-              pollingIntervalRef.current = null;
-            }
-          }
-        } catch (error) {
-          console.error(`[StickerNode ${id}] Error polling task status:`, error);
+    const pollTaskStatus = async () => {
+      try {
+        const response = await fetch(`/api/sticker/task?taskId=${data.taskId}`);
+        if (!response.ok) {
+          console.error(`[StickerNode ${id}] Failed to fetch task status`);
+          return;
         }
-      };
 
-      pollTaskStatus();
-      pollingIntervalRef.current = setInterval(pollTaskStatus, 3000);
-    }
+        const task = await response.json();
+        
+        // 检查有效帧数
+        const validFrames = task.frames?.filter((f: string | null) => f !== null) || [];
+        console.log(`[StickerNode ${id}] Task status: ${task.status}, frames: ${validFrames.length}/${task.totalFrames}`);
+
+        // 更新帧状态
+        if (task.frameStatuses) {
+          setFrameStatuses(task.frameStatuses);
+        }
+
+        // 更新已完成的帧
+        if (task.frames && task.frames.length > 0) {
+          updateNodeData(id, {
+            frames: task.frames,
+            frameStatuses: task.frameStatuses,
+          });
+        }
+
+        // 检查是否应该停止轮询
+        const shouldStopPolling = 
+          task.status === "completed" || 
+          task.status === "failed" ||
+          validFrames.length >= 10;
+        
+        if (shouldStopPolling) {
+          console.log(`[StickerNode ${id}] Stopping poll: ${task.status} (${validFrames.length}/10 frames)`);
+          
+          updateNodeData(id, {
+            frames: task.frames,
+            isLoading: task.status !== "completed" && task.status !== "failed",
+            frameStatuses: task.frameStatuses,
+            error: task.status === "failed" ? task.error : undefined,
+          });
+
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          isPollingRef.current = false;
+        }
+      } catch (error) {
+        console.error(`[StickerNode ${id}] Error polling task status:`, error);
+      }
+    };
+
+    // 立即执行一次
+    pollTaskStatus();
+    // 然后每 3 秒轮询一次
+    pollingIntervalRef.current = setInterval(pollTaskStatus, 3000);
 
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
       }
+      isPollingRef.current = false;
     };
-  }, [data.taskId, data.frames, id, updateNodeData]);
+  }, [data.taskId, id, updateNodeData]); // 移除 data.frames 依赖！
 
   // 获取有效帧的索引
   const validIndices = data.frames
