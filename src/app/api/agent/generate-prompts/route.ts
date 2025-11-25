@@ -348,7 +348,7 @@ export async function POST(request: NextRequest) {
         });
 
         // 开始流式分析
-        await sendEvent({ type: "claude_analysis_start" } as any);
+        await sendEvent({ type: "claude_analysis_start" });
 
         try {
           imageAnalysis = await analyzeImagesWithClaudeStream(
@@ -356,13 +356,13 @@ export async function POST(request: NextRequest) {
             userRequest,
             async (chunk) => {
               // 每收到一个 chunk 就发送给前端
-              await sendEvent({ type: "claude_analysis_chunk", chunk } as any);
+              await sendEvent({ type: "claude_analysis_chunk", chunk });
             }
           );
           console.log("Claude image analysis completed");
 
           // 分析完成
-          await sendEvent({ type: "claude_analysis_end" } as any);
+          await sendEvent({ type: "claude_analysis_end" });
 
           await sendEvent({
             type: "status",
@@ -372,7 +372,7 @@ export async function POST(request: NextRequest) {
           });
         } catch (err) {
           console.error("Claude analysis error:", err);
-          await sendEvent({ type: "claude_analysis_end" } as any);
+          await sendEvent({ type: "claude_analysis_end" });
           await sendEvent({
             type: "status",
             status: "planning",

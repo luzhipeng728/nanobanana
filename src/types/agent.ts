@@ -29,10 +29,11 @@ export interface AgentNodeData {
 
 // 流式输出事件类型
 export interface AgentStreamEvent {
-  type: "status" | "progress" | "prompts" | "error" | "complete";
+  type: "status" | "progress" | "prompts" | "error" | "complete" | "claude_analysis_start" | "claude_analysis_chunk" | "claude_analysis_end";
   status?: AgentStatus;
   step?: string;
   progress?: number;
   prompts?: AgentPrompt[];
   error?: string;
+  chunk?: string;  // Claude 分析的文本片段
 }
