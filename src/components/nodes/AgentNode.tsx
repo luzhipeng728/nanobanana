@@ -73,9 +73,18 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
   // 并发生成图片（Pro 模型最多 10 个并发，Fast 模型最多 20 个并发）
   const generateImagesInBatches = async (promptsList: AgentPrompt[]) => {
+    console.log(`🎬 [generateImagesInBatches] Starting with ${promptsList.length} prompts`);
+    console.log(`🎬 [generateImagesInBatches] Model: ${selectedModel}`);
+
     const MAX_CONCURRENT = selectedModel === "nano-banana-pro" ? 10 : 20;
     const currentNode = getReactFlowNode(id);
-    if (!currentNode) return;
+
+    if (!currentNode) {
+      console.error(`❌ [generateImagesInBatches] Current node not found! id=${id}`);
+      return;
+    }
+
+    console.log(`✅ [generateImagesInBatches] Current node found at position:`, currentNode.position);
 
     let completedCount = 0;
     const totalCount = promptsList.length;

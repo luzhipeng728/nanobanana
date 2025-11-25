@@ -400,7 +400,7 @@ ${imageAnalysis}
         progress: 30,
       });
 
-      // ReAct 循环 - 使用 Claude
+      // ReAct 循环 - 使用 Claude（流式输出思考过程）
       const messages: Anthropic.MessageParam[] = [
         { role: "user", content: userInput },
       ];
@@ -409,10 +409,18 @@ ${imageAnalysis}
       const maxIterations = 5;
       let finalOutput = "";
 
+      // 发送思考开始事件
+      await sendEvent({ type: "claude_analysis_start" });
+
       while (iteration < maxIterations) {
         iteration++;
 
-        const result = await anthropic.messages.create({
+        // 使用流式 API 输出思考过程
+        let currentIterationText = "";
+        let toolUseBlocks: Anthropic.ToolUseBlock[] = [];
+        let stopReason = "";
+
+        const stream = anthropic.messages.stream({
           model: "claude-sonnet-4-5-20250929",
           max_tokens: 4096,
           system: AGENT_SYSTEM_PROMPT,
@@ -420,84 +428,116 @@ ${imageAnalysis}
           messages,
         });
 
-        console.log(`Iteration ${iteration}:`, result.stop_reason);
+        // 处理流式响应
+        for await (const event of stream) {
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            const chunk = event.delta.text;
+            currentIterationText += chunk;
+            // 实时发送思考过程给前端
+            await sendEvent({ type: "claude_analysis_chunk", chunk });
+          } else if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
+            // 工具调用开始
+            toolUseBlocks.push(event.content_block as Anthropic.ToolUseBlock);
+          } else if (event.type === "content_block_delta" && event.delta.type === "input_json_delta") {
+            // 工具调用参数（流式）
+            if (toolUseBlocks.length > 0) {
+              const lastTool = toolUseBlocks[toolUseBlocks.length - 1];
+              if (!lastTool.input) lastTool.input = {};
+              // 累积 JSON 输入
+            }
+          } else if (event.type === "message_delta") {
+            stopReason = event.delta.stop_reason || "";
+          }
+        }
+
+        // 获取完整的响应
+        const finalMessage = await stream.finalMessage();
+        stopReason = finalMessage.stop_reason || stopReason;
+
+        // 提取工具调用
+        toolUseBlocks = finalMessage.content.filter(
+          (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
+        );
+
+        console.log(`Iteration ${iteration}:`, stopReason);
 
         // 检查是否有工具调用
-        if (result.stop_reason === "tool_use") {
-          // 找到所有的工具调用
-          const toolUseBlocks = result.content.filter(
-            (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
-          );
+        if (stopReason === "tool_use" && toolUseBlocks.length > 0) {
+          // 将助手响应添加到消息历史
+          messages.push({
+            role: "assistant",
+            content: finalMessage.content,
+          });
 
-          if (toolUseBlocks.length > 0) {
-            // 将助手响应添加到消息历史
-            messages.push({
-              role: "assistant",
-              content: result.content,
-            });
+          // 处理所有工具调用并收集结果
+          const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
-            // 处理所有工具调用并收集结果
-            const toolResults: Anthropic.ToolResultBlockParam[] = [];
+          for (const toolUseBlock of toolUseBlocks) {
+            if (toolUseBlock.name === "tavily_search") {
+              const toolArgs = toolUseBlock.input as { query: string };
+              console.log(`Tool call: tavily_search`, toolArgs);
 
-            for (const toolUseBlock of toolUseBlocks) {
-              if (toolUseBlock.name === "tavily_search") {
-                const toolArgs = toolUseBlock.input as { query: string };
-                console.log(`Tool call: tavily_search`, toolArgs);
+              await sendEvent({
+                type: "status",
+                status: "searching",
+                step: `🔎 正在搜索：${toolArgs.query.slice(0, 50)}...`,
+                progress: 40 + iteration * 10,
+              });
 
-                await sendEvent({
-                  type: "status",
-                  status: "searching",
-                  step: `🔎 正在搜索：${toolArgs.query.slice(0, 50)}...`,
-                  progress: 40 + iteration * 10,
-                });
+              // 发送搜索提示
+              await sendEvent({ type: "claude_analysis_chunk", chunk: `\n\n🔎 搜索中: ${toolArgs.query}\n` });
 
-                // 执行搜索
-                const searchResult = await tavilySearch(toolArgs.query, process.env.TAVILY_API_KEY!);
+              // 执行搜索
+              const searchResult = await tavilySearch(toolArgs.query, process.env.TAVILY_API_KEY!);
 
-                toolResults.push({
-                  type: "tool_result",
-                  tool_use_id: toolUseBlock.id,
-                  content: `搜索结果：\n${searchResult}`,
-                });
-              } else {
-                // 未知工具，返回错误
-                toolResults.push({
-                  type: "tool_result",
-                  tool_use_id: toolUseBlock.id,
-                  content: `未知工具: ${toolUseBlock.name}`,
-                  is_error: true,
-                });
-              }
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUseBlock.id,
+                content: `搜索结果：\n${searchResult}`,
+              });
+
+              await sendEvent({ type: "claude_analysis_chunk", chunk: `✅ 搜索完成\n\n` });
+            } else {
+              // 未知工具，返回错误
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUseBlock.id,
+                content: `未知工具: ${toolUseBlock.name}`,
+                is_error: true,
+              });
             }
-
-            await sendEvent({
-              type: "status",
-              status: "planning",
-              step: "📊 已获取搜索结果，继续规划...",
-              progress: 50 + iteration * 10,
-            });
-
-            // 将所有工具结果添加到消息历史
-            messages.push({
-              role: "user",
-              content: [
-                ...toolResults,
-                {
-                  type: "text",
-                  text: "请根据搜索结果，直接输出 JSON 格式的图像 prompts，不要有任何解释性文字，直接以 ```json 开头输出。",
-                },
-              ],
-            });
           }
+
+          await sendEvent({
+            type: "status",
+            status: "planning",
+            step: "📊 已获取搜索结果，继续规划...",
+            progress: 50 + iteration * 10,
+          });
+
+          // 将所有工具结果添加到消息历史
+          messages.push({
+            role: "user",
+            content: [
+              ...toolResults,
+              {
+                type: "text",
+                text: "请根据搜索结果，直接输出 JSON 格式的图像 prompts，不要有任何解释性文字，直接以 ```json 开头输出。",
+              },
+            ],
+          });
         } else {
           // 没有工具调用，说明Agent完成了思考
-          const textBlock = result.content.find(
+          const textBlock = finalMessage.content.find(
             (block): block is Anthropic.TextBlock => block.type === "text"
           );
-          finalOutput = textBlock?.text || "";
+          finalOutput = textBlock?.text || currentIterationText;
           break;
         }
       }
+
+      // 发送思考结束事件
+      await sendEvent({ type: "claude_analysis_end" });
 
       console.log("Final output:", finalOutput);
 
