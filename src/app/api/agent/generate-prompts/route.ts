@@ -1,6 +1,4 @@
 import { NextRequest } from "next/server";
-import { ChatOpenAI } from "@langchain/openai";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { v4 as uuidv4 } from "uuid";
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgentPrompt, AgentStreamEvent } from "@/types/agent";
@@ -260,23 +258,20 @@ const AGENT_SYSTEM_PROMPT = `你是 Nano Banana Pro（Gemini 3 Pro Image）的�
 ❌ "好的，我现在生成 prompts: ..."
 ✅ 直接输出 JSON，不要有任何解释性文字`;
 
-// 搜索工具定义
-const tools = [
+// Claude 工具定义
+const claudeTools: Anthropic.Tool[] = [
   {
-    type: "function",
-    function: {
-      name: "tavily_search",
-      description: "A search engine for finding up-to-date information. Use this when you need current information about trends, products, events, or any time-sensitive content.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: {
-            type: "string",
-            description: "The search query string",
-          },
+    name: "tavily_search",
+    description: "A search engine for finding up-to-date information. Use this when you need current information about trends, products, events, or any time-sensitive content.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The search query string",
         },
-        required: ["query"],
       },
+      required: ["query"],
     },
   },
 ];
@@ -312,8 +307,8 @@ export async function POST(request: NextRequest) {
       }
 
       // 检查必需的 API Keys
-      if (!process.env.OPENAI_API_KEY) {
-        await sendEvent({ type: "error", error: "OpenAI API Key 未配置" });
+      if (!process.env.ANTHROPIC_API_KEY) {
+        await sendEvent({ type: "error", error: "Anthropic API Key 未配置" });
         await writer.close();
         return;
       }
@@ -334,12 +329,6 @@ export async function POST(request: NextRequest) {
       // 如果有参考图且需要 Claude 分析
       let imageAnalysis = "";
       if (referenceImages?.useForClaude && referenceImages.urls.length > 0) {
-        if (!process.env.ANTHROPIC_API_KEY) {
-          await sendEvent({ type: "error", error: "ANTHROPIC_API_KEY 未配置，无法使用图片理解功能" });
-          await writer.close();
-          return;
-        }
-
         await sendEvent({
           type: "status",
           status: "searching",
@@ -382,14 +371,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 初始化 LLM with tool support
-      const llm = new ChatOpenAI({
-        openAIApiKey: process.env.OPENAI_API_KEY,
-        configuration: {
-          baseURL: process.env.OPENAI_BASE_URL,
-        },
-        modelName: process.env.OPENAI_MODEL || "gpt-4",
-        temperature: 0.7,
+      // 初始化 Claude 客户端
+      const anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
       });
 
       let userInput = userRequest;
@@ -415,9 +400,8 @@ ${imageAnalysis}
         progress: 30,
       });
 
-      // ReAct 循环
-      const messages: any[] = [
-        { role: "system", content: AGENT_SYSTEM_PROMPT },
+      // ReAct 循环 - 使用 Claude
+      const messages: Anthropic.MessageParam[] = [
         { role: "user", content: userInput },
       ];
 
@@ -428,18 +412,26 @@ ${imageAnalysis}
       while (iteration < maxIterations) {
         iteration++;
 
-        const result = await llm.invoke(messages, { tools });
-        console.log(`Iteration ${iteration}:`, result);
+        const result = await anthropic.messages.create({
+          model: "claude-sonnet-4-5-20250929",
+          max_tokens: 4096,
+          system: AGENT_SYSTEM_PROMPT,
+          tools: claudeTools,
+          messages,
+        });
+
+        console.log(`Iteration ${iteration}:`, result.stop_reason);
 
         // 检查是否有工具调用
-        if (result.additional_kwargs?.tool_calls && result.additional_kwargs.tool_calls.length > 0) {
-          const toolCall = result.additional_kwargs.tool_calls[0];
-          const toolName = toolCall.function.name;
-          const toolArgs = JSON.parse(toolCall.function.arguments);
+        if (result.stop_reason === "tool_use") {
+          const toolUseBlock = result.content.find(
+            (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
+          );
 
-          console.log(`Tool call: ${toolName}`, toolArgs);
+          if (toolUseBlock && toolUseBlock.name === "tavily_search") {
+            const toolArgs = toolUseBlock.input as { query: string };
+            console.log(`Tool call: tavily_search`, toolArgs);
 
-          if (toolName === "tavily_search") {
             await sendEvent({
               type: "status",
               status: "searching",
@@ -457,19 +449,32 @@ ${imageAnalysis}
               progress: 50 + iteration * 10,
             });
 
-            // 将搜索结果添加到消息历史
+            // 将助手响应和工具结果添加到消息历史
             messages.push({
               role: "assistant",
-              content: result.content as string,
+              content: result.content,
             });
             messages.push({
               role: "user",
-              content: `搜索结果：\n${searchResult}\n\n现在请直接输出 JSON 格式的图像 prompts，不要有任何解释性文字，直接以 \`\`\`json 开头输出。`,
+              content: [
+                {
+                  type: "tool_result",
+                  tool_use_id: toolUseBlock.id,
+                  content: searchResult,
+                },
+                {
+                  type: "text",
+                  text: "现在请直接输出 JSON 格式的图像 prompts，不要有任何解释性文字，直接以 ```json 开头输出。",
+                },
+              ],
             });
           }
         } else {
           // 没有工具调用，说明Agent完成了思考
-          finalOutput = result.content as string;
+          const textBlock = result.content.find(
+            (block): block is Anthropic.TextBlock => block.type === "text"
+          );
+          finalOutput = textBlock?.text || "";
           break;
         }
       }
