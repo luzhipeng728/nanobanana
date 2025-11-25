@@ -89,7 +89,7 @@ Output in clear English with bullet points.`,
   return analysisText;
 }
 
-// 一次性生成 10 帧的提示词
+// 生成模板 + 表情变化的结构化方法
 async function generateAllFramePrompts(
   anthropic: Anthropic,
   baseAnalysis: string,
@@ -97,92 +97,115 @@ async function generateAllFramePrompts(
 ): Promise<string[]> {
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-5-20250929",
-    max_tokens: 4000,
+    max_tokens: 3000,
     messages: [{
       role: "user",
-      content: `Based on this subject analysis, generate 10 image prompts for a "${animationPrompt}" animation sequence.
+      content: `Based on this image analysis, I need to create a "${animationPrompt}" animation with 10 frames.
 
-Subject Analysis:
-${baseAnalysis.substring(0, 1200)}
+Image Analysis:
+${baseAnalysis.substring(0, 1500)}
 
-## ABSOLUTE REQUIREMENTS FOR SMOOTH ANIMATION:
+## YOUR TASK:
+Generate a JSON response with TWO parts:
 
-### 1. STATIC ELEMENTS (MUST BE IDENTICAL in ALL 10 prompts):
-- Character's hair style, color, and arrangement
-- Clothing and accessories (exact same items, colors, positions)
-- Background (same color, same elements, same composition)
-- Art style and rendering quality
-- Lighting direction and color temperature
-- Character's body pose and position (torso, shoulders, arms, hands)
-- Camera angle and distance
+### Part 1: BASE_TEMPLATE
+A single, detailed prompt describing EVERYTHING about the image EXCEPT facial expression:
+- Subject appearance (face shape, skin tone, hair style/color/arrangement)
+- Exact clothing and accessories with colors
+- Exact body pose and position
+- Exact background color/elements
+- Art style, lighting, color grading
+- Camera angle and framing
 
-### 2. ANIMATION RULES - ONLY FACE CHANGES:
-- Animation "${animationPrompt}" should ONLY affect:
-  * Eyes (shape, openness, direction)
-  * Eyebrows (angle, height)
-  * Mouth (shape, openness)
-  * Cheeks (blush, puffing)
-- NEVER change: hair, body, clothes, pose, background, camera angle
+This template will be REUSED for all 10 frames to ensure consistency.
 
-### 3. EXTREMELY SUBTLE TRANSITIONS:
-- Each frame changes by only 5-10% from the previous frame
-- Frame 1: Completely neutral face (baseline)
-- Frames 2-4: Very gradual build-up (barely noticeable changes each frame)
-- Frame 5-6: Peak expression (maximum but still natural)
-- Frames 7-9: Very gradual return to neutral
-- Frame 10: Nearly identical to Frame 1 (for smooth loop)
+### Part 2: EXPRESSIONS array
+10 SHORT facial expression descriptions (10-20 words each) for the "${animationPrompt}" animation:
+- Frame 1: Neutral/relaxed face (starting point)
+- Frame 2-4: Gradual subtle build-up (tiny incremental changes)
+- Frame 5-6: Peak of the expression
+- Frame 7-9: Gradual return toward neutral
+- Frame 10: Almost identical to Frame 1 (for loop)
 
-### 4. PROMPT STRUCTURE (use this exact format for each):
-"[EXACT subject description from analysis], [EXACT clothing], [EXACT pose], [EXACT background], [EXACT art style], [SPECIFIC facial expression for this frame only]"
+Each expression should ONLY describe: eyes, eyebrows, mouth, cheeks.
+Changes between frames should be VERY SUBTLE (5-10% difference).
 
-## OUTPUT FORMAT:
-Generate EXACTLY 10 prompts, each 80-100 words, separated by "---":
+## OUTPUT FORMAT (JSON only, no markdown):
+{
+  "base_template": "A young woman with long dark braided hair, wearing white V-neck blouse, soft natural lighting, pure white background, photorealistic style, portrait shot, shoulders visible, looking at camera",
+  "expressions": [
+    "neutral relaxed expression, eyes looking forward, slight natural smile",
+    "eyes slightly more open, corners of mouth lifting 5%",
+    "eyes brightening, gentle smile forming, eyebrows slightly raised",
+    "eyes sparkling, warm smile, subtle blush appearing on cheeks",
+    "eyes curved into crescents, full genuine smile, rosy cheeks",
+    "brightest smile, eyes squinted happily, prominent blush",
+    "smile softening slightly, eyes still bright, blush fading",
+    "returning to gentle smile, eyes relaxing",
+    "soft pleasant expression, nearly neutral",
+    "neutral relaxed expression, matching frame 1"
+  ]
+}
 
-Prompt 1:
-[Complete prompt with neutral face - this is the baseline]
----
-Prompt 2:
-[Same as Prompt 1 but with 5% expression change]
----
-...continue to Prompt 10...
-
-REMEMBER: The viewer should see a smooth animation where ONLY the face subtly changes. Any change in hair, clothes, pose, or background will ruin the animation.`
+IMPORTANT: Output ONLY valid JSON, no other text.`
     }],
   });
 
   const textBlock = response.content.find(b => b.type === "text");
   const fullText = textBlock?.type === "text" ? textBlock.text : "";
-  
-  // 解析 10 个 prompts
+
+  // 解析 JSON 响应
+  let baseTemplate = "";
+  let expressions: string[] = [];
+
+  try {
+    // 尝试提取 JSON（可能被 markdown 包裹）
+    const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      baseTemplate = parsed.base_template || "";
+      expressions = parsed.expressions || [];
+    }
+  } catch (e) {
+    console.error("[generateAllFramePrompts] Failed to parse JSON:", e);
+  }
+
+  // 如果解析失败，使用备用方案
+  if (!baseTemplate || expressions.length < 10) {
+    console.warn("[generateAllFramePrompts] Fallback to simple prompts");
+    const fallbackPrompts: string[] = [];
+    const expressionStages = [
+      "neutral relaxed expression",
+      "slightly brighter eyes, hint of smile",
+      "gentle smile forming",
+      "warm smile, eyes brightening",
+      "full smile, eyes curved happily",
+      "brightest expression, joyful smile",
+      "smile softening",
+      "returning to gentle expression",
+      "nearly neutral, soft look",
+      "neutral relaxed expression"
+    ];
+
+    for (let i = 0; i < 10; i++) {
+      fallbackPrompts.push(`${baseAnalysis.substring(0, 300)}, ${expressionStages[i]}, consistent style and lighting`);
+    }
+    return fallbackPrompts;
+  }
+
+  // 组合基础模板和表情，生成 10 个完整提示词
   const prompts: string[] = [];
-  const parts = fullText.split("---");
-  
-  for (const part of parts) {
-    // 提取 "Prompt N:" 后面的内容
-    const match = part.match(/Prompt \d+:?\s*([\s\S]*)/i);
-    if (match && match[1]) {
-      const prompt = match[1].trim();
-      if (prompt.length > 20) {
-        prompts.push(prompt);
-      }
-    }
+  for (let i = 0; i < 10; i++) {
+    const expression = expressions[i] || expressions[expressions.length - 1] || "neutral expression";
+    // 将基础模板和表情组合，确保静态部分完全一致
+    const fullPrompt = `${baseTemplate}, ${expression}, maintain exact same lighting and color grading`;
+    prompts.push(fullPrompt);
   }
-  
-  // 如果解析失败，用简单分割
-  if (prompts.length < 10) {
-    const simpleParts = fullText.split(/(?:Prompt \d+:?|---)/i).filter(p => p.trim().length > 20);
-    for (let i = prompts.length; i < 10 && i < simpleParts.length; i++) {
-      prompts.push(simpleParts[i].trim());
-    }
-  }
-  
-  // 补充缺失的 prompts
-  while (prompts.length < 10) {
-    prompts.push(`Frame ${prompts.length + 1} of ${animationPrompt} animation, same subject and style`);
-  }
-  
-  console.log(`[generateAllFramePrompts] Generated ${prompts.length} prompts`);
-  return prompts.slice(0, 10);
+
+  console.log(`[generateAllFramePrompts] Generated ${prompts.length} prompts with template method`);
+  console.log(`[generateAllFramePrompts] Base template: ${baseTemplate.substring(0, 100)}...`);
+
+  return prompts;
 }
 
 export async function POST(request: NextRequest) {
@@ -361,7 +384,7 @@ async function processParallelFrames(
   const generatedFrames: (string | null)[] = Array(10).fill(null);
   const frameStatuses: string[] = Array(10).fill("pending");
 
-  console.log(`[Sticker ${taskId}] Starting parallel generation...`);
+  console.log(`[Sticker ${taskId}] Starting parallel generation with model: ${model}`);
 
   try {
     // Step 1: 一次性生成 10 个 prompts
