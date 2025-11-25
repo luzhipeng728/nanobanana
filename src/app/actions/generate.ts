@@ -57,6 +57,9 @@ const isRetryableError = (status: number, errorMessage: string): boolean => {
     'timeout',
     'temporarily',
     'try again',
+    'aborted',
+    'fetch failed',
+    'headers timeout',
   ];
 
   return retryableMessages.some(msg =>
@@ -163,6 +166,10 @@ export async function generateImageAction(
       }
 
       // Use native fetch with curl-like request
+      // 设置 2 分钟超时
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 秒 = 2 分钟
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -170,7 +177,10 @@ export async function generateImageAction(
           'x-goog-api-key': process.env.GEMINI_API_KEY || '',
         },
         body: JSON.stringify(requestBody),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -228,17 +238,34 @@ export async function generateImageAction(
       throw new Error("No image data found in response");
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorName = error instanceof Error ? error.name : '';
+
+      // 网络错误（fetch failed, abort, timeout）总是可重试
+      const isNetworkError =
+        errorName === 'AbortError' ||
+        errorMessage.includes('fetch failed') ||
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('aborted') ||
+        errorMessage.includes('ECONNRESET') ||
+        errorMessage.includes('ETIMEDOUT');
+
       // 如果是最后一次尝试，返回错误
       if (attempt === MAX_RETRIES) {
         console.error(`❌ Gemini Generation Error (after ${MAX_RETRIES} retries):`, error);
         return {
           success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: errorMessage,
         };
       }
 
-      // 检查是否是可重试的错误
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      // 网络错误总是重试
+      if (isNetworkError) {
+        console.warn(`⚠️  Network error (${errorName || 'fetch failed'}), will retry... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+        continue;
+      }
+
+      // 检查是否是可重试的 API 错误
       const statusMatch = errorMessage.match(/error: (\d+)/);
       const status = statusMatch ? parseInt(statusMatch[1]) : 0;
 
@@ -252,7 +279,7 @@ export async function generateImageAction(
       }
 
       // 可重试的错误，继续循环
-      console.warn(`⚠️  Retryable error, will retry...`);
+      console.warn(`⚠️  Retryable error, will retry... (attempt ${attempt + 1}/${MAX_RETRIES})`);
     }
   }
 
