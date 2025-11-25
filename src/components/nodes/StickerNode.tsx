@@ -111,21 +111,25 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
     };
   }, [data.taskId, data.frames, id, updateNodeData]);
 
-  // 动画播放逻辑 - 只播放有效帧
-  useEffect(() => {
-    if (isPlaying && data.frames && data.frames.length > 0) {
-      // 获取有效帧的索引
-      const validIndices = data.frames
+  // 获取有效帧的索引
+  const validIndices = data.frames
+    ? data.frames
         .map((f: string | null, i: number) => f !== null ? i : -1)
-        .filter((i: number) => i !== -1);
-      
-      if (validIndices.length > 0) {
-        let currentIdx = 0;
-        animationRef.current = setInterval(() => {
-          currentIdx = (currentIdx + 1) % validIndices.length;
-          setCurrentFrame(validIndices[currentIdx]);
-        }, 1000 / fps);
-      }
+        .filter((i: number) => i !== -1)
+    : [];
+
+  // 动画播放逻辑
+  useEffect(() => {
+    if (isPlaying && validIndices.length > 0) {
+      animationRef.current = setInterval(() => {
+        setCurrentFrame(prev => {
+          // 找到当前帧在有效索引中的位置
+          const currentPos = validIndices.indexOf(prev);
+          // 移动到下一帧
+          const nextPos = (currentPos + 1) % validIndices.length;
+          return validIndices[nextPos];
+        });
+      }, 1000 / fps);
     } else {
       if (animationRef.current) {
         clearInterval(animationRef.current);
@@ -139,17 +143,14 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
         animationRef.current = null;
       }
     };
-  }, [isPlaying, fps, data.frames]);
-
-  // 计算有效帧数
-  const validFrameCount = data.frames?.filter((f: string | null) => f !== null).length || 0;
+  }, [isPlaying, fps, validIndices.length]);
 
   // 当帧加载完成后自动播放（至少5帧）
   useEffect(() => {
-    if (validFrameCount >= 5 && !isPlaying && !data.isLoading) {
+    if (validIndices.length >= 5 && !isPlaying && !data.isLoading) {
       setIsPlaying(true);
     }
-  }, [validFrameCount, data.isLoading]);
+  }, [validIndices.length, data.isLoading]);
 
   const togglePlay = () => setIsPlaying(!isPlaying);
   const resetAnimation = () => {
@@ -159,7 +160,7 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
 
   // 下载所有有效帧
   const downloadFrames = async () => {
-    if (!data.frames || validFrameCount === 0) return;
+    if (!data.frames || validIndices.length === 0) return;
     
     // 创建一个临时链接下载每一帧
     for (let i = 0; i < data.frames.length; i++) {
@@ -290,7 +291,7 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
       </div>
 
       {/* 播放控制 - 至少5帧可播放 */}
-      {validFrameCount >= 5 && (
+      {validIndices.length >= 5 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <NodeButton
