@@ -25,6 +25,8 @@ import MusicNode from "./nodes/MusicNode";
 import VideoGenNode from "./nodes/VideoGenNode";
 import VideoNode from "./nodes/VideoNode";
 import ChatNode from "./nodes/ChatNode";
+import StickerGenNode from "./nodes/StickerGenNode";
+import StickerNode from "./nodes/StickerNode";
 import ImageModal from "./ImageModal";
 import NodeToolbar from "./NodeToolbar";
 import { CanvasContext } from "@/contexts/CanvasContext";
@@ -32,7 +34,7 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { getOrCreateUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Image, Wand2, Brain, Trash2 } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Image, Wand2, Brain, Trash2, Smile } from "lucide-react";
 
 const nodeTypes = {
   imageGen: ImageGenNode as any,
@@ -43,6 +45,8 @@ const nodeTypes = {
   videoGen: VideoGenNode as any,
   video: VideoNode as any,
   chat: ChatNode as any,
+  stickerGen: StickerGenNode as any,
+  sticker: StickerNode as any,
 };
 
 const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
@@ -153,6 +157,26 @@ export default function InfiniteCanvas() {
         status: "idle",
         prompts: [],
         progress: 0,
+      },
+    };
+    setNodes((nds) => nds.concat(newNode));
+  }, [setNodes]);
+
+  const addStickerGenNode = useCallback(() => {
+    const newNode: Node = {
+      id: `stickerGen-${Date.now()}`,
+      type: "stickerGen",
+      position: {
+        x: Math.random() * 400 + 100,
+        y: Math.random() * 400 + 100,
+      },
+      style: {
+        width: 340,
+      },
+      data: {
+        animationPrompt: "",
+        model: "nano-banana",
+        imageSize: "512x512",
       },
     };
     setNodes((nds) => nds.concat(newNode));
@@ -410,6 +434,28 @@ export default function InfiniteCanvas() {
     return nodeId;
   }, [setNodes]);
 
+  // Add sticker node programmatically
+  const addStickerNode = useCallback((taskId: string, animationType: string, position: { x: number; y: number }): string => {
+    const nodeId = `sticker-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    const newNode: Node = {
+      id: nodeId,
+      type: "sticker",
+      position,
+      style: {
+        width: 380,
+        height: 500,
+      },
+      data: {
+        taskId,
+        animationType,
+        isLoading: true,
+      },
+    };
+    setNodes((nds) => nds.concat(newNode));
+    return nodeId;
+  }, [setNodes]);
+
   // Get connected image nodes for a given node
   const getConnectedImageNodes = useCallback((nodeId: string): Node[] => {
     const node = nodes.find(n => n.id === nodeId);
@@ -444,13 +490,14 @@ export default function InfiniteCanvas() {
     updateImageNode,
     addMusicNode,
     addVideoNode,
+    addStickerNode,
     getConnectedImageNodes,
     getSelectedImageNodes: () => [], // Remove selected functionality
     getNode,
     openImageModal,
     nodes,
     edges,
-  }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, getConnectedImageNodes, getNode, openImageModal, nodes, edges]);
+  }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, addStickerNode, getConnectedImageNodes, getNode, openImageModal, nodes, edges]);
 
   return (
     <div className="w-full h-screen relative bg-neutral-50 dark:bg-black">
@@ -469,6 +516,13 @@ export default function InfiniteCanvas() {
           title="Add AI Agent"
         >
           <Brain className="w-5 h-5 text-purple-600" />
+        </button>
+        <button
+          onClick={addStickerGenNode}
+          className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          title="表情包生成器"
+        >
+          <Smile className="w-5 h-5 text-pink-500" />
         </button>
         <label className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer" title="Upload Image">
           <Image className="w-5 h-5" />

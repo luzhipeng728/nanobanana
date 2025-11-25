@@ -8,6 +8,7 @@ interface CanvasContextType {
   updateImageNode: (nodeId: string, imageUrl: string) => void;
   addMusicNode: (taskId: string, prompt: string, position: { x: number; y: number }) => string;
   addVideoNode: (taskId: string, prompt: string, position: { x: number; y: number }) => string;
+  addStickerNode: (taskId: string, animationType: string, position: { x: number; y: number }) => string;
   getConnectedImageNodes: (nodeId: string) => Node[];
   getSelectedImageNodes: () => Node[];
   getNode: (nodeId: string) => Node | undefined;

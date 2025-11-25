@@ -68,3 +68,21 @@ model VideoTask {
   updatedAt   DateTime @updatedAt
   completedAt DateTime?
 }
+
+model StickerTask {
+  id              String   @id @default(uuid())
+  status          String   // pending, processing, completed, failed
+  animationType   String   // 动画描述
+  referenceImage  String   // 参考图片 URL
+  model           String   // 使用的模型
+  config          String?  // JSON 配置
+  customPrompt    String?  // 自定义提示词 / 帧提示词 JSON
+  totalFrames     Int      @default(10)
+  completedFrames Int      @default(0)
+  frames          String?  // JSON 数组，存储已生成的帧图片 URLs
+  frameStatuses   String?  // JSON 数组，每帧的状态
+  error           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  completedAt     DateTime?
+}

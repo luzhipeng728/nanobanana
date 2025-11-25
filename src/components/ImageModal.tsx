@@ -19,6 +19,20 @@ export default function ImageModal({ isOpen, imageUrl, prompt, onClose }: ImageM
   const [scrollPos, setScrollPos] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // ESC 键关闭弹框
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   // 计算适应屏幕的缩放比例
   useEffect(() => {
     if (!isOpen || !imageUrl) return;
@@ -222,7 +236,7 @@ export default function ImageModal({ isOpen, imageUrl, prompt, onClose }: ImageM
 
       {/* 底部提示 */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/50 text-white text-xs px-4 py-2 rounded-full">
-        {zoom > fitZoom ? "拖拽移动图片 • 滚轮缩放" : "滚轮缩放 • 点击背景关闭"}
+        {zoom > fitZoom ? "拖拽移动图片 • 滚轮缩放 • ESC 退出" : "滚轮缩放 • 点击背景或按 ESC 关闭"}
       </div>
     </div>
   );
