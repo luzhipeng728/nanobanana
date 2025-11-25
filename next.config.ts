@@ -7,12 +7,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "10mb",
     },
   },
-  // 增加 API 路由请求体大小限制
-  api: {
-    bodyParser: {
-      sizeLimit: "10mb",
-    },
-  },
 };
 
 export default nextConfig;
