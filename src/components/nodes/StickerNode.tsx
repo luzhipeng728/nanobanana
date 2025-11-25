@@ -67,12 +67,15 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
             });
           }
 
-          if (task.status === "completed" && task.frames?.length === 10) {
-            console.log(`[StickerNode ${id}] Task completed!`);
+          // 检查实际完成的帧数（非 null）
+          const validFrames = task.frames?.filter((f: string | null) => f !== null) || [];
+          
+          if (task.status === "completed" && validFrames.length >= 5) {
+            console.log(`[StickerNode ${id}] Task completed! (${validFrames.length}/10 frames)`);
             updateNodeData(id, {
               frames: task.frames,
               isLoading: false,
-              frameStatuses: Array(10).fill("completed"),
+              frameStatuses: task.frameStatuses,
             });
 
             if (pollingIntervalRef.current) {
@@ -108,12 +111,21 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
     };
   }, [data.taskId, data.frames, id, updateNodeData]);
 
-  // 动画播放逻辑
+  // 动画播放逻辑 - 只播放有效帧
   useEffect(() => {
-    if (isPlaying && data.frames && data.frames.length === 10) {
-      animationRef.current = setInterval(() => {
-        setCurrentFrame(prev => (prev + 1) % 10);
-      }, 1000 / fps);
+    if (isPlaying && data.frames && data.frames.length > 0) {
+      // 获取有效帧的索引
+      const validIndices = data.frames
+        .map((f: string | null, i: number) => f !== null ? i : -1)
+        .filter((i: number) => i !== -1);
+      
+      if (validIndices.length > 0) {
+        let currentIdx = 0;
+        animationRef.current = setInterval(() => {
+          currentIdx = (currentIdx + 1) % validIndices.length;
+          setCurrentFrame(validIndices[currentIdx]);
+        }, 1000 / fps);
+      }
     } else {
       if (animationRef.current) {
         clearInterval(animationRef.current);
@@ -129,12 +141,15 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
     };
   }, [isPlaying, fps, data.frames]);
 
-  // 当所有帧加载完成后自动播放
+  // 计算有效帧数
+  const validFrameCount = data.frames?.filter((f: string | null) => f !== null).length || 0;
+
+  // 当帧加载完成后自动播放（至少5帧）
   useEffect(() => {
-    if (data.frames && data.frames.length === 10 && !isPlaying) {
+    if (validFrameCount >= 5 && !isPlaying && !data.isLoading) {
       setIsPlaying(true);
     }
-  }, [data.frames]);
+  }, [validFrameCount, data.isLoading]);
 
   const togglePlay = () => setIsPlaying(!isPlaying);
   const resetAnimation = () => {
@@ -142,12 +157,13 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
     setIsPlaying(false);
   };
 
-  // 下载为 GIF（简单实现：下载所有帧）
+  // 下载所有有效帧
   const downloadFrames = async () => {
-    if (!data.frames || data.frames.length < 10) return;
+    if (!data.frames || validFrameCount === 0) return;
     
     // 创建一个临时链接下载每一帧
     for (let i = 0; i < data.frames.length; i++) {
+      if (!data.frames[i]) continue; // 跳过 null
       const link = document.createElement('a');
       link.href = data.frames[i];
       link.download = `sticker_frame_${i + 1}.png`;
@@ -273,8 +289,8 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
         </div>
       </div>
 
-      {/* 播放控制 */}
-      {data.frames && data.frames.length === 10 && (
+      {/* 播放控制 - 至少5帧可播放 */}
+      {validFrameCount >= 5 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <NodeButton

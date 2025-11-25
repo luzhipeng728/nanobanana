@@ -303,12 +303,11 @@ async function processChainedFrames(
       console.error(`[Sticker ${taskId}] Frame ${i + 1} error:`, err);
     }
 
-    // 更新数据库
-    const completedFrameUrls = generatedFrames.filter((f): f is string => f !== null);
+    // 更新数据库 - 保持索引对应，不过滤 null
     await prisma.stickerTask.update({
       where: { id: taskId },
       data: {
-        frames: JSON.stringify(completedFrameUrls),
+        frames: JSON.stringify(generatedFrames), // 保持完整数组，null 表示该帧未完成
         frameStatuses: JSON.stringify(frameStatuses),
         completedFrames: frameStatuses.filter(s => s === "completed").length,
       },
@@ -321,7 +320,7 @@ async function processChainedFrames(
     where: { id: taskId },
     data: {
       status: completedCount >= 5 ? "completed" : "failed",
-      frames: JSON.stringify(generatedFrames.filter(f => f !== null)),
+      frames: JSON.stringify(generatedFrames), // 保持完整数组
       frameStatuses: JSON.stringify(frameStatuses),
       completedFrames: completedCount,
       completedAt: new Date(),
