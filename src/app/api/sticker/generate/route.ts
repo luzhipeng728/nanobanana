@@ -5,27 +5,28 @@ import { prisma } from "@/lib/prisma";
 import { generateImageAction } from "@/app/actions/generate";
 import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen";
 
-// 使用 Claude 分析图片并生成 10 帧提示词
-async function analyzeAndGenerateFramePrompts(
-  imageUrl: string,
-  animationPrompt: string,
-  onAnalysisChunk: (chunk: string) => Promise<void>,
-  onStatusUpdate: (status: string, progress: number) => Promise<void>
-): Promise<{ analysis: string; framePrompts: string[] }> {
+// 初始化 Anthropic 客户端
+function getAnthropicClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY 未配置");
   }
-
-  const anthropic = new Anthropic({
+  return new Anthropic({
     apiKey,
     baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
   });
+}
 
+// 分析原始图片，获取基础描述（流式）
+async function analyzeOriginalImage(
+  imageUrl: string,
+  animationPrompt: string,
+  onChunk: (chunk: string) => Promise<void>
+): Promise<string> {
+  const anthropic = getAnthropicClient();
   let analysisText = "";
   
-  // 第一步：分析图片
-  const analysisStream = anthropic.messages.stream({
+  const stream = anthropic.messages.stream({
     model: "claude-sonnet-4-5-20250929",
     max_tokens: 1500,
     messages: [
@@ -34,147 +35,83 @@ async function analyzeAndGenerateFramePrompts(
         content: [
           {
             type: "image",
-            source: {
-              type: "url",
-              url: imageUrl,
-            },
+            source: { type: "url", url: imageUrl },
           },
           {
             type: "text",
-            text: `请仔细分析这张图片，我需要基于它生成一个「${animationPrompt}」动画效果的 10 帧连续图片。
+            text: `请仔细分析这张图片，我需要基于它生成一个「${animationPrompt}」动画效果。
 
-请描述：
-1. **主体特征**：角色/物体的外形、颜色、风格、特征细节
-2. **背景描述**：背景的颜色、元素、氛围
-3. **艺术风格**：画风、色调、质感
-4. **适合的动画方式**：根据"${animationPrompt}"这个动画描述，分析这个主体最适合怎样的动画表现
+请用英文描述以下内容（这将用于图像生成）：
+1. **Subject**: 主体的外形、颜色、姿态、表情等详细特征
+2. **Background**: 背景的颜色、元素、氛围
+3. **Art Style**: 画风、色调、质感
+4. **Animation Plan**: 如何将"${animationPrompt}"这个动画分解为10帧的微小渐进变化
 
-用中文描述，要详细具体。`,
+请直接用英文输出，格式清晰。`,
           },
         ],
       },
     ],
   });
 
-  for await (const event of analysisStream) {
+  for await (const event of stream) {
     if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
       const chunk = event.delta.text;
       analysisText += chunk;
-      await onAnalysisChunk(chunk);
+      await onChunk(chunk);
     }
   }
 
-  // 第二步：生成 10 帧提示词
-  await onStatusUpdate("🎨 正在生成 10 帧动画提示词...", 10);
-  
-  const frameResponse = await anthropic.messages.create({
-    model: "claude-sonnet-4-5-20250929",
-    max_tokens: 8000,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "url",
-              url: imageUrl,
-            },
-          },
-          {
-            type: "text",
-            text: `基于这张参考图和以下分析，为「${animationPrompt}」动画生成 10 帧连续的图像提示词。
-
-图片分析：
-${analysisText}
-
-【关键要求】
-1. 每帧提示词必须用英文，要非常详细（至少 100 字）
-2. 10 帧必须形成平滑的循环动画（第10帧要能自然接回第1帧）
-3. 帧与帧之间的变化必须非常微小和渐进（变化幅度控制在 5-15%）
-4. 所有帧必须保持完全相同的：主体外观、背景、艺术风格、构图、色调
-5. 只改变与动画相关的微小细节（如表情、姿态的细微变化）
-6. 每帧要明确说明当前动画进度百分比
-
-【动画节奏参考】
-- 帧 1-3: 动画开始，变化逐渐增加
-- 帧 4-6: 动画达到高峰
-- 帧 7-9: 动画逐渐回归
-- 帧 10: 接近初始状态，准备循环
-
-【输出格式】
-必须严格按照以下 JSON 格式输出，不要有任何其他文字：
-
-\`\`\`json
-{
-  "frames": [
-    "完整的第1帧提示词，包含所有主体细节和当前动画状态",
-    "完整的第2帧提示词，包含所有主体细节和当前动画状态",
-    "完整的第3帧提示词，包含所有主体细节和当前动画状态",
-    "完整的第4帧提示词，包含所有主体细节和当前动画状态",
-    "完整的第5帧提示词，包含所有主体细节和当前动画状态",
-    "完整的第6帧提示词，包含所有主体细节和当前动画状态",
-    "完整的第7帧提示词，包含所有主体细节和当前动画状态",
-    "完整的第8帧提示词，包含所有主体细节和当前动画状态",
-    "完整的第9帧提示词，包含所有主体细节和当前动画状态",
-    "完整的第10帧提示词，包含所有主体细节和当前动画状态"
-  ]
+  return analysisText;
 }
-\`\`\``,
-          },
-        ],
-      },
-    ],
+
+// 为单帧生成提示词（基于上一帧）
+async function generateFramePrompt(
+  anthropic: Anthropic,
+  baseAnalysis: string,
+  animationPrompt: string,
+  frameIndex: number,
+  previousFrameUrl: string | null,
+  isFirstFrame: boolean
+): Promise<string> {
+  const framePosition = frameIndex + 1;
+  const animationPhase = 
+    frameIndex < 3 ? "building up" :
+    frameIndex < 6 ? "peak intensity" :
+    frameIndex < 9 ? "winding down" : "returning to start";
+
+  const prompt = isFirstFrame
+    ? `Based on this image analysis, generate a detailed image prompt for frame 1 of a 10-frame "${animationPrompt}" animation.
+
+Analysis: ${baseAnalysis}
+
+This is the STARTING frame. The subject should be in its initial/neutral state, ready to begin the animation.
+
+Output ONLY the image generation prompt in English (100+ words), no explanations.`
+    : `Generate the image prompt for frame ${framePosition}/10 of a "${animationPrompt}" animation.
+
+Base analysis: ${baseAnalysis}
+
+Animation phase: ${animationPhase}
+Previous frame was frame ${frameIndex}.
+
+CRITICAL RULES:
+- Frame ${framePosition} must be only 5-10% different from frame ${frameIndex}
+- The change must be TINY and gradual
+- Maintain EXACT same: subject appearance, background, art style, colors
+- Only change the specific animation element (${animationPrompt})
+${frameIndex === 9 ? '- This is the LAST frame - must transition smoothly back to frame 1' : ''}
+
+Output ONLY the image generation prompt in English (100+ words), no explanations.`;
+
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-5-20250929",
+    max_tokens: 500,
+    messages: [{ role: "user", content: prompt }],
   });
 
-  // 解析帧提示词
-  let framePrompts: string[] = [];
-  const frameContent = frameResponse.content.find(block => block.type === "text");
-  if (frameContent && frameContent.type === "text") {
-    const jsonMatch = frameContent.text.match(/```json\s*([\s\S]*?)\s*```/);
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[1]);
-        if (parsed.frames && Array.isArray(parsed.frames)) {
-          framePrompts = parsed.frames;
-        }
-      } catch (e) {
-        console.error("Failed to parse frame prompts JSON:", e);
-        // 尝试修复 JSON
-        try {
-          const fixedJson = jsonMatch[1]
-            .replace(/,\s*}/g, "}")
-            .replace(/,\s*]/g, "]");
-          const parsed = JSON.parse(fixedJson);
-          if (parsed.frames && Array.isArray(parsed.frames)) {
-            framePrompts = parsed.frames;
-          }
-        } catch (e2) {
-          console.error("Failed to fix JSON:", e2);
-        }
-      }
-    }
-    
-    // 备用解析：查找所有引号内的内容
-    if (framePrompts.length === 0) {
-      const allQuoted = frameContent.text.match(/"([^"]{50,})"/g);
-      if (allQuoted && allQuoted.length >= 10) {
-        framePrompts = allQuoted.slice(0, 10).map(s => s.slice(1, -1));
-      }
-    }
-  }
-
-  // 如果还是没有 10 帧，生成默认的
-  if (framePrompts.length !== 10) {
-    console.warn(`Failed to generate 10 frame prompts (got ${framePrompts.length}), using fallback`);
-    const basePrompt = analysisText.substring(0, 300).replace(/\n/g, " ");
-    framePrompts = Array(10).fill(0).map((_, i) => {
-      const progress = i < 5 ? (i + 1) * 20 : (10 - i) * 20;
-      return `${basePrompt}, animation: ${animationPrompt}, frame ${i + 1} of 10, animation intensity ${progress}%, smooth continuous motion, consistent style and appearance`;
-    });
-  }
-
-  return { analysis: analysisText, framePrompts };
+  const textBlock = response.content.find(b => b.type === "text");
+  return textBlock?.type === "text" ? textBlock.text : `Frame ${framePosition} of ${animationPrompt} animation`;
 }
 
 export async function POST(request: NextRequest) {
@@ -183,9 +120,7 @@ export async function POST(request: NextRequest) {
   const writer = stream.writable.getWriter();
 
   const sendEvent = async (event: any) => {
-    await writer.write(
-      encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
-    );
+    await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
   };
 
   (async () => {
@@ -207,48 +142,39 @@ export async function POST(request: NextRequest) {
 
       const taskId = uuidv4();
 
-      // Step 1: Claude 分析图片并生成帧提示词
+      // Step 1: 分析原始图片（流式显示）
       await sendEvent({
         type: "status",
         step: "👁️ Claude 正在分析参考图片...",
         progress: 5,
       });
-
       await sendEvent({ type: "claude_analysis_start" });
-      
-      let analysis = "";
-      let framePrompts: string[] = [];
-      
+
+      let baseAnalysis = "";
       try {
-        const result = await analyzeAndGenerateFramePrompts(
+        baseAnalysis = await analyzeOriginalImage(
           referenceImage,
           animationPrompt,
           async (chunk) => {
             await sendEvent({ type: "claude_analysis_chunk", chunk });
-          },
-          async (status, progress) => {
-            await sendEvent({ type: "claude_analysis_end" }); // 结束分析阶段
-            await sendEvent({ type: "status", step: status, progress });
           }
         );
-        analysis = result.analysis;
-        framePrompts = result.framePrompts;
       } catch (err) {
-        console.error("Claude analysis error:", err);
-        await sendEvent({ type: "error", error: "图片分析失败: " + (err instanceof Error ? err.message : "未知错误") });
+        console.error("Analysis error:", err);
+        await sendEvent({ type: "error", error: "图片分析失败" });
         await writer.close();
         return;
       }
-      
-      await sendEvent({ type: "frame_prompts", prompts: framePrompts });
 
+      await sendEvent({ type: "claude_analysis_end" });
+
+      // Step 2: 创建任务记录
       await sendEvent({
         type: "status",
-        step: "✅ 分析完成，准备生成帧...",
+        step: "📝 创建任务...",
         progress: 15,
       });
 
-      // 创建任务记录
       await prisma.stickerTask.create({
         data: {
           id: taskId,
@@ -257,7 +183,7 @@ export async function POST(request: NextRequest) {
           referenceImage,
           model: model || "nano-banana",
           config: JSON.stringify(config || {}),
-          customPrompt: JSON.stringify(framePrompts),
+          customPrompt: baseAnalysis, // 存储基础分析
           totalFrames: 10,
           completedFrames: 0,
           frames: JSON.stringify([]),
@@ -265,7 +191,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // 通知前端创建 StickerNode
+      // Step 3: 立即创建 StickerNode
       await sendEvent({
         type: "sticker_created",
         taskId,
@@ -273,19 +199,20 @@ export async function POST(request: NextRequest) {
 
       await sendEvent({
         type: "status",
-        step: "🚀 任务已创建，开始后台生成...",
+        step: "🚀 任务已创建，开始链式生成...",
         progress: 20,
       });
 
-      // 后台异步生成 10 帧图片（不等待）
-      processFramesTask(
+      // Step 4: 后台链式生成（不等待）
+      processChainedFrames(
         taskId,
-        framePrompts,
+        baseAnalysis,
+        animationPrompt,
+        referenceImage,
         (model || "nano-banana") as GeminiImageModel,
-        config || {},
-        referenceImage
+        config || {}
       ).catch((err) => {
-        console.error(`[Sticker ${taskId}] Background task error:`, err);
+        console.error(`[Sticker ${taskId}] Chain generation error:`, err);
       });
 
       await sendEvent({
@@ -313,105 +240,83 @@ export async function POST(request: NextRequest) {
   });
 }
 
-// 后台处理帧生成任务 - 链式生成：每一帧基于上一帧
-async function processFramesTask(
+// 后台链式生成：每帧基于上一帧
+async function processChainedFrames(
   taskId: string,
-  framePrompts: string[],
+  baseAnalysis: string,
+  animationPrompt: string,
+  originalReferenceImage: string,
   model: GeminiImageModel,
-  config: ImageGenerationConfig,
-  originalReferenceImage: string
+  config: ImageGenerationConfig
 ) {
+  const anthropic = getAnthropicClient();
   const generatedFrames: (string | null)[] = Array(10).fill(null);
   const frameStatuses: string[] = Array(10).fill("pending");
 
-  console.log(`[Sticker ${taskId}] Starting chained frame generation...`);
+  console.log(`[Sticker ${taskId}] Starting chained generation...`);
 
-  // 当前参考图：初始为原始参考图，之后用上一帧的结果
+  // 当前参考图：初始为原始图，之后用上一帧
   let currentReferenceImage = originalReferenceImage;
 
-  // 逐帧链式生成
   for (let i = 0; i < 10; i++) {
     frameStatuses[i] = "generating";
     
-    // 更新数据库状态
     await prisma.stickerTask.update({
       where: { id: taskId },
-      data: {
-        frameStatuses: JSON.stringify(frameStatuses),
-      },
+      data: { frameStatuses: JSON.stringify(frameStatuses) },
     });
 
-    const framePrompt = framePrompts[i] || `Frame ${i + 1}`;
-    
-    // 构建提示词 - 强调基于上一帧的微小变化
-    const fullPrompt = i === 0 
-      ? `Generate frame 1 of a 10-frame animation loop based on this reference image.
-
-${framePrompt}
-
-Requirements:
-- This is the STARTING frame of the animation
-- Maintain EXACT appearance, style, background from reference
-- Square aspect ratio (1:1)
-- High quality, consistent with reference style`
-      : `Generate frame ${i + 1} of a 10-frame animation loop.
-
-CRITICAL: This frame must be a VERY SUBTLE progression from the previous frame (frame ${i}).
-The change between frames should be MINIMAL (only 5-10% difference).
-
-${framePrompt}
-
-Requirements:
-- The reference image is frame ${i} - maintain 90-95% similarity
-- Only apply the TINY incremental change described above
-- SAME character/subject, SAME background, SAME style
-- Frame ${i + 1}/10 in seamless loop
-- ${i === 9 ? 'This is the LAST frame - should transition smoothly back to frame 1' : ''}
-- Square aspect ratio (1:1)`;
-
     try {
-      console.log(`[Sticker ${taskId}] Generating frame ${i + 1}/10 (ref: ${i === 0 ? 'original' : `frame ${i}`})...`);
-      
+      // Step A: 为当前帧生成提示词
+      console.log(`[Sticker ${taskId}] Generating prompt for frame ${i + 1}...`);
+      const framePrompt = await generateFramePrompt(
+        anthropic,
+        baseAnalysis,
+        animationPrompt,
+        i,
+        i > 0 ? generatedFrames[i - 1] : null,
+        i === 0
+      );
+      console.log(`[Sticker ${taskId}] Frame ${i + 1} prompt: ${framePrompt.substring(0, 80)}...`);
+
+      // Step B: 用上一帧作为参考生成当前帧图片
+      console.log(`[Sticker ${taskId}] Generating image for frame ${i + 1}...`);
       const result = await generateImageAction(
-        fullPrompt,
+        framePrompt,
         model,
         { ...config, aspectRatio: "1:1" },
-        [currentReferenceImage] // 用上一帧作为参考
+        [currentReferenceImage]
       );
 
       if (result.success && result.imageUrl) {
         generatedFrames[i] = result.imageUrl;
         frameStatuses[i] = "completed";
-        // 更新参考图为当前帧，供下一帧使用
+        // 更新参考图为当前帧
         currentReferenceImage = result.imageUrl;
         console.log(`[Sticker ${taskId}] Frame ${i + 1} completed ✓`);
       } else {
         frameStatuses[i] = "error";
         console.error(`[Sticker ${taskId}] Frame ${i + 1} failed:`, result.error);
-        // 如果当前帧失败，继续用上一个成功的帧作为参考
       }
     } catch (err) {
       frameStatuses[i] = "error";
       console.error(`[Sticker ${taskId}] Frame ${i + 1} error:`, err);
     }
 
-    // 更新数据库 - 保存已完成的帧
+    // 更新数据库
     const completedFrameUrls = generatedFrames.filter((f): f is string => f !== null);
-    const completedCount = frameStatuses.filter(s => s === "completed").length;
-    
     await prisma.stickerTask.update({
       where: { id: taskId },
       data: {
         frames: JSON.stringify(completedFrameUrls),
         frameStatuses: JSON.stringify(frameStatuses),
-        completedFrames: completedCount,
+        completedFrames: frameStatuses.filter(s => s === "completed").length,
       },
     });
   }
 
-  // 最终更新
+  // 最终状态
   const completedCount = frameStatuses.filter(s => s === "completed").length;
-  
   await prisma.stickerTask.update({
     where: { id: taskId },
     data: {

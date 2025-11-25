@@ -41,7 +41,6 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState("");
   const [error, setError] = useState("");
-  const [generatedFramePrompts, setGeneratedFramePrompts] = useState<string[]>([]);
 
   const analysisRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -71,7 +70,6 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     setProgress(0);
     setClaudeAnalysis("");
     setIsAnalyzing(false);
-    setGeneratedFramePrompts([]);
 
     abortControllerRef.current = new AbortController();
 
@@ -132,11 +130,6 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
                 }
               } else if (event.type === "claude_analysis_end") {
                 setIsAnalyzing(false);
-              } else if (event.type === "frame_prompts") {
-                // 显示生成的帧提示词
-                if (event.prompts) {
-                  setGeneratedFramePrompts(event.prompts);
-                }
               } else if (event.type === "sticker_created") {
                 // 创建表情包展示节点
                 const currentNode = getNode(id);
@@ -339,23 +332,6 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
                 <span className="inline-block w-2 h-3 bg-pink-500 ml-0.5 animate-pulse" />
               )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 生成的帧提示词预览 */}
-      {generatedFramePrompts.length > 0 && (
-        <div className="space-y-1.5">
-          <NodeLabel>生成的 10 帧描述</NodeLabel>
-          <div className="max-h-[100px] overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-pink-200 dark:scrollbar-thumb-pink-800">
-            {generatedFramePrompts.map((prompt, i) => (
-              <div
-                key={i}
-                className="text-[9px] px-2 py-1 bg-pink-50 dark:bg-pink-900/20 rounded border border-pink-100 dark:border-pink-800 text-neutral-600 dark:text-neutral-400"
-              >
-                <span className="font-bold text-pink-600 dark:text-pink-400">帧{i + 1}:</span> {prompt.substring(0, 60)}...
-              </div>
-            ))}
           </div>
         </div>
       )}
