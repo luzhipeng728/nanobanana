@@ -132,11 +132,12 @@ export async function generateImageAction(
   const requestBody: any = {
     contents: [
       {
+        role: "user",
         parts,
       },
     ],
     generationConfig: {
-      responseModalities: ['IMAGE'],  // Only IMAGE
+      responseModalities: ['IMAGE', 'TEXT'],  // 官方示例要求同时返回 IMAGE 和 TEXT
     },
   };
 
@@ -150,6 +151,11 @@ export async function generateImageAction(
       // 注意：API 使用 image_size (下划线) 而不是 imageSize
       requestBody.generationConfig.imageConfig.image_size = configOptions.imageSize;
     }
+  }
+
+  // Pro 模型添加 Google Search 工具（官方示例要求）
+  if (model === "nano-banana-pro") {
+    requestBody.tools = [{ googleSearch: {} }];
   }
 
   // API URL - 非流式 generateContent

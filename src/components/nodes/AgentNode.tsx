@@ -71,9 +71,9 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
   const StatusIcon = statusIcons[status];
 
-  // 并发生成图片（最多 10 个并发）
+  // 并发生成图片（Pro 模型最多 10 个并发，Fast 模型最多 20 个并发）
   const generateImagesInBatches = async (promptsList: AgentPrompt[]) => {
-    const MAX_CONCURRENT = 10;
+    const MAX_CONCURRENT = selectedModel === "nano-banana-pro" ? 10 : 20;
     const currentNode = getReactFlowNode(id);
     if (!currentNode) return;
 
