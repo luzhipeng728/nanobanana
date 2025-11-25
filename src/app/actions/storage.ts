@@ -58,3 +58,42 @@ export async function uploadImageToR2(formData: FormData) {
   }
 }
 
+/**
+ * 从 URL 下载视频并上传到 R2
+ */
+export async function uploadVideoFromUrl(videoUrl: string): Promise<string> {
+  console.log(`[R2] Downloading video from: ${videoUrl.substring(0, 100)}...`);
+
+  try {
+    // 下载视频
+    const response = await fetch(videoUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download video: ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    console.log(`[R2] Downloaded video, size: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
+
+    // 生成文件名
+    const fileName = `videos/${uuidv4()}.mp4`;
+
+    const command = new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: fileName,
+      Body: buffer,
+      ContentType: "video/mp4",
+    });
+
+    await r2Client.send(command);
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+
+    console.log(`[R2] Video uploaded successfully: ${publicUrl}`);
+    return publicUrl;
+  } catch (error) {
+    console.error("[R2] Error uploading video:", error);
+    throw new Error("Failed to upload video to R2");
+  }
+}
+

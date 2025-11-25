@@ -1,6 +1,7 @@
 "use server";
 
 import { PrismaClient } from "@prisma/client";
+import { uploadVideoFromUrl } from "./storage";
 
 const prisma = new PrismaClient();
 
@@ -255,14 +256,24 @@ async function processVideoTask(taskId: string): Promise<void> {
                 if (content.includes("✅") && content.includes("视频生成成功")) {
                   console.log(`[VideoTask ${taskId}] Success message detected! videoUrl=${videoUrl}, videoCreated=${videoCreated}`);
                   if (videoUrl && !videoCreated) {
-                    console.log(`[VideoTask ${taskId}] ✅ Video generation successful, saving to database...`);
+                    console.log(`[VideoTask ${taskId}] ✅ Video generation successful, uploading to R2...`);
+
+                    // 上传视频到 R2
+                    let finalVideoUrl = videoUrl;
+                    try {
+                      finalVideoUrl = await uploadVideoFromUrl(videoUrl);
+                      console.log(`[VideoTask ${taskId}] ✅ Video uploaded to R2: ${finalVideoUrl}`);
+                    } catch (uploadError) {
+                      console.error(`[VideoTask ${taskId}] ⚠️ Failed to upload to R2, using original URL:`, uploadError);
+                      // 如果上传失败，使用原始 URL（会过期）
+                    }
 
                     // 更新任务状态为完成
                     await prisma.videoTask.update({
                       where: { id: taskId },
                       data: {
                         status: "completed",
-                        videoUrl,
+                        videoUrl: finalVideoUrl,
                         progress: 100,
                         completedAt: new Date(),
                         updatedAt: new Date(),
@@ -293,12 +304,22 @@ async function processVideoTask(taskId: string): Promise<void> {
 
     // 如果流结束但没有创建视频，检查是否有videoUrl
     if (!videoCreated && videoUrl) {
-      console.log(`[VideoTask ${taskId}] Stream ended with videoUrl but not marked completed, completing now...`);
+      console.log(`[VideoTask ${taskId}] Stream ended with videoUrl but not marked completed, uploading to R2...`);
+
+      // 上传视频到 R2
+      let finalVideoUrl = videoUrl;
+      try {
+        finalVideoUrl = await uploadVideoFromUrl(videoUrl);
+        console.log(`[VideoTask ${taskId}] ✅ Video uploaded to R2: ${finalVideoUrl}`);
+      } catch (uploadError) {
+        console.error(`[VideoTask ${taskId}] ⚠️ Failed to upload to R2, using original URL:`, uploadError);
+      }
+
       await prisma.videoTask.update({
         where: { id: taskId },
         data: {
           status: "completed",
-          videoUrl,
+          videoUrl: finalVideoUrl,
           progress: 100,
           completedAt: new Date(),
           updatedAt: new Date(),
