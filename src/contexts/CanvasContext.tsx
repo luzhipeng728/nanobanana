@@ -4,7 +4,17 @@ import { createContext, useContext } from "react";
 import { Node, Edge } from "@xyflow/react";
 
 interface CanvasContextType {
-  addImageNode: (imageUrl: string | undefined, prompt: string, position: { x: number; y: number }, taskId?: string) => string;
+  addImageNode: (
+    imageUrl: string | undefined,
+    prompt: string,
+    position: { x: number; y: number },
+    taskId?: string,
+    generationConfig?: {
+      model: string;
+      config: any;
+      referenceImages?: string[];
+    }
+  ) => string;
   updateImageNode: (nodeId: string, imageUrl: string) => void;
   addMusicNode: (taskId: string, prompt: string, position: { x: number; y: number }) => string;
   addVideoNode: (taskId: string, prompt: string, position: { x: number; y: number }) => string;

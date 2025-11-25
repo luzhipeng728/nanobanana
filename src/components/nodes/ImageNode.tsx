@@ -1,11 +1,13 @@
 "use client";
 
-import { memo, useEffect, useState, useRef } from "react";
+import { memo, useEffect, useState, useRef, useCallback } from "react";
 import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from "@xyflow/react";
-import { Image as ImageIcon, ExternalLink, Loader2 } from "lucide-react";
+import { Image as ImageIcon, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { BaseNode } from "./BaseNode";
 import { cn } from "@/lib/utils";
+import { createImageTask } from "@/app/actions/image-task";
+import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen";
 
 // Define the data structure for the image node
 type ImageNodeData = {
@@ -15,14 +17,63 @@ type ImageNodeData = {
   isLoading?: boolean;
   taskId?: string;
   error?: string;
+  // 存储生图配置，用于重新生成
+  generationConfig?: {
+    model: GeminiImageModel;
+    config: ImageGenerationConfig;
+    referenceImages?: string[];
+  };
 };
 
 const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
-  const { openImageModal } = useCanvas();
-  const { updateNodeData } = useReactFlow();
+  const { openImageModal, addImageNode } = useCanvas();
+  const { updateNodeData, getNode } = useReactFlow();
   const isLoading = data.isLoading || !data.imageUrl;
   const [pollingStatus, setPollingStatus] = useState<string | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 重新生成图片 - 创建新节点
+  const handleRegenerate = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止触发图片点击
+
+    if (!data.prompt || !data.generationConfig) {
+      console.warn("[ImageNode] Cannot regenerate: missing prompt or config");
+      return;
+    }
+
+    setIsRegenerating(true);
+
+    try {
+      const { model, config, referenceImages } = data.generationConfig;
+
+      // 创建新任务
+      const { taskId } = await createImageTask(
+        data.prompt,
+        model as GeminiImageModel,
+        config,
+        referenceImages || []
+      );
+
+      // 获取当前节点位置，在右边创建新节点
+      const currentNode = getNode(id);
+      if (currentNode) {
+        addImageNode(
+          undefined,
+          data.prompt,
+          { x: currentNode.position.x + 450, y: currentNode.position.y },
+          taskId,
+          data.generationConfig
+        );
+      }
+
+      console.log(`[ImageNode ${id}] Created new node with task ${taskId}`);
+    } catch (error) {
+      console.error("[ImageNode] Regeneration failed:", error);
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, [data.prompt, data.generationConfig, id, getNode, addImageNode]);
 
   // 轮询任务状态
   useEffect(() => {
@@ -168,6 +219,26 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                     <ExternalLink className="w-5 h-5 text-neutral-900" />
                   </div>
                 </div>
+
+                {/* 重新生成按钮 - 右上角 */}
+                {data.generationConfig && (
+                  <button
+                    onClick={handleRegenerate}
+                    disabled={isRegenerating}
+                    className={cn(
+                      "absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 z-10",
+                      "bg-white/90 hover:bg-white shadow-lg",
+                      "opacity-0 group-hover:opacity-100",
+                      isRegenerating && "cursor-not-allowed"
+                    )}
+                    title="重新生成"
+                  >
+                    <RefreshCw className={cn(
+                      "w-4 h-4 text-blue-600",
+                      isRegenerating && "animate-spin"
+                    )} />
+                  </button>
+                )}
               </>
             )}
           </div>

@@ -161,6 +161,9 @@ export async function generateImageAction(
   // API URL - 非流式 generateContent
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
+  // 当前使用的 imageSize（可能会降级）
+  let currentImageSize = configOptions.imageSize;
+
   // 重试循环
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -169,6 +172,15 @@ export async function generateImageAction(
         const delay = INITIAL_DELAY * Math.pow(2, attempt - 1);
         console.log(`⏳ Retry attempt ${attempt}/${MAX_RETRIES}, waiting ${delay}ms...`);
         await sleep(delay);
+
+        // 4K 失败自动降级到 2K
+        if (currentImageSize === '4K' && attempt >= 2) {
+          console.log(`📉 Downgrading from 4K to 2K due to repeated failures`);
+          currentImageSize = '2K';
+          if (requestBody.generationConfig.imageConfig) {
+            requestBody.generationConfig.imageConfig.image_size = '2K';
+          }
+        }
       }
 
       // Use native fetch with curl-like request

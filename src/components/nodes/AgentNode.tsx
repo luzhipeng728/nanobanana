@@ -200,7 +200,18 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         if (result.success && result.taskId) {
           // 立即创建 Image 节点并传入任务 ID
           const position = getNodePosition(index);
-          const nodeId = addImageNode(undefined, prompt.prompt, position, result.taskId);
+          const nodeId = addImageNode(
+            undefined,
+            prompt.prompt,
+            position,
+            result.taskId,
+            // 保存生图配置，用于重新生成
+            {
+              model: selectedModel,
+              config,
+              referenceImages: referenceImagesForGen,
+            }
+          );
           nodeIdMap.set(prompt.id, nodeId);
           taskIdMap.set(prompt.id, result.taskId);
 

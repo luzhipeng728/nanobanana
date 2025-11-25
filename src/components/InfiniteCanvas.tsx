@@ -395,7 +395,17 @@ export default function InfiniteCanvas() {
   };
 
   // Add image node programmatically with 16:9 aspect ratio sizing
-  const addImageNode = useCallback((imageUrl: string | undefined, prompt: string, position: { x: number; y: number }, taskId?: string): string => {
+  const addImageNode = useCallback((
+    imageUrl: string | undefined,
+    prompt: string,
+    position: { x: number; y: number },
+    taskId?: string,
+    generationConfig?: {
+      model: string;
+      config: any;
+      referenceImages?: string[];
+    }
+  ): string => {
     const nodeId = `image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // 16:9 aspect ratio: width = 400px, height = 225px (image area)
@@ -414,6 +424,7 @@ export default function InfiniteCanvas() {
         timestamp: new Date().toLocaleString(),
         isLoading: !imageUrl, // loading 状态
         taskId, // 存储任务 ID
+        generationConfig, // 存储生图配置，用于重新生成
       },
     };
     setNodes((nds) => nds.concat(newNode));

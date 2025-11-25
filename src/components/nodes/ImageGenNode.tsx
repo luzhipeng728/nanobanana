@@ -91,7 +91,13 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           undefined, // No imageUrl yet
           prompt,
           { x: currentNode.position.x + 350, y: currentNode.position.y },
-          taskId // Pass taskId to the image node
+          taskId, // Pass taskId to the image node
+          // 保存生图配置，用于重新生成
+          {
+            model: selectedModel,
+            config,
+            referenceImages,
+          }
         );
       }
     } catch (error) {
