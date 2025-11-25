@@ -9,7 +9,8 @@ import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen"
 async function analyzeAndGenerateFramePrompts(
   imageUrl: string,
   animationPrompt: string,
-  onAnalysisChunk: (chunk: string) => Promise<void>
+  onAnalysisChunk: (chunk: string) => Promise<void>,
+  onStatusUpdate: (status: string, progress: number) => Promise<void>
 ): Promise<{ analysis: string; framePrompts: string[] }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -64,6 +65,8 @@ async function analyzeAndGenerateFramePrompts(
   }
 
   // 第二步：生成 10 帧提示词
+  await onStatusUpdate("🎨 正在生成 10 帧动画提示词...", 10);
+  
   const frameResponse = await anthropic.messages.create({
     model: "claude-sonnet-4-5-20250929",
     max_tokens: 8000,
@@ -222,6 +225,10 @@ export async function POST(request: NextRequest) {
           animationPrompt,
           async (chunk) => {
             await sendEvent({ type: "claude_analysis_chunk", chunk });
+          },
+          async (status, progress) => {
+            await sendEvent({ type: "claude_analysis_end" }); // 结束分析阶段
+            await sendEvent({ type: "status", step: status, progress });
           }
         );
         analysis = result.analysis;
@@ -233,7 +240,6 @@ export async function POST(request: NextRequest) {
         return;
       }
       
-      await sendEvent({ type: "claude_analysis_end" });
       await sendEvent({ type: "frame_prompts", prompts: framePrompts });
 
       await sendEvent({
