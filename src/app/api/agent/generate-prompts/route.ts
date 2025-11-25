@@ -460,12 +460,8 @@ ${imageAnalysis}
                 {
                   type: "tool_result",
                   tool_use_id: toolUseBlock.id,
-                  content: searchResult,
-                },
-                {
-                  type: "text",
-                  text: "现在请直接输出 JSON 格式的图像 prompts，不要有任何解释性文字，直接以 ```json 开头输出。",
-                },
+                  content: `搜索结果：\n${searchResult}\n\n请根据搜索结果，直接输出 JSON 格式的图像 prompts，不要有任何解释性文字，直接以 \`\`\`json 开头输出。`,
+                } as Anthropic.ToolResultBlockParam,
               ],
             });
           }
