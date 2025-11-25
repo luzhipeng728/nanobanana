@@ -65,49 +65,56 @@ async function analyzeOriginalImage(
   return analysisText;
 }
 
-// 为单帧生成提示词（基于上一帧）
+// 为单帧生成提示词（看上一帧图片）
 async function generateFramePrompt(
   anthropic: Anthropic,
   baseAnalysis: string,
   animationPrompt: string,
   frameIndex: number,
-  previousFrameUrl: string | null,
-  isFirstFrame: boolean
+  previousFrameUrl: string | null
 ): Promise<string> {
   const framePosition = frameIndex + 1;
   const animationPhase = 
-    frameIndex < 3 ? "building up" :
-    frameIndex < 6 ? "peak intensity" :
-    frameIndex < 9 ? "winding down" : "returning to start";
+    frameIndex < 3 ? "building up (0% → 30%)" :
+    frameIndex < 6 ? "peak intensity (30% → 70%)" :
+    frameIndex < 9 ? "winding down (70% → 95%)" : "returning to start (95% → 100%/0%)";
 
-  const prompt = isFirstFrame
-    ? `Based on this image analysis, generate a detailed image prompt for frame 1 of a 10-frame "${animationPrompt}" animation.
+  // 构建消息内容
+  const content: Anthropic.ContentBlockParam[] = [];
+  
+  // 如果有上一帧，让 Claude 看到它
+  if (previousFrameUrl && frameIndex > 0) {
+    content.push({
+      type: "image",
+      source: { type: "url", url: previousFrameUrl },
+    });
+  }
 
-Analysis: ${baseAnalysis}
+  content.push({
+    type: "text",
+    text: `${previousFrameUrl && frameIndex > 0 ? `This is frame ${frameIndex} of the animation. ` : ''}Generate image prompt for frame ${framePosition}/10 of a "${animationPrompt}" animation.
 
-This is the STARTING frame. The subject should be in its initial/neutral state, ready to begin the animation.
+Base subject analysis:
+${baseAnalysis.substring(0, 600)}
 
-Output ONLY the image generation prompt in English (100+ words), no explanations.`
-    : `Generate the image prompt for frame ${framePosition}/10 of a "${animationPrompt}" animation.
+Frame ${framePosition} details:
+- Animation phase: ${animationPhase}
+- Progress: ${(frameIndex / 9 * 100).toFixed(0)}%
+${frameIndex === 0 ? '- FIRST frame: neutral starting pose' : ''}
+${frameIndex === 9 ? '- LAST frame: must look similar to frame 1 for smooth loop' : ''}
 
-Base analysis: ${baseAnalysis}
+RULES:
+- EXACT same subject, background, art style
+- Only change: ${animationPrompt} (~10% change)
+- Be specific about pose/expression changes
 
-Animation phase: ${animationPhase}
-Previous frame was frame ${frameIndex}.
-
-CRITICAL RULES:
-- Frame ${framePosition} must be only 5-10% different from frame ${frameIndex}
-- The change must be TINY and gradual
-- Maintain EXACT same: subject appearance, background, art style, colors
-- Only change the specific animation element (${animationPrompt})
-${frameIndex === 9 ? '- This is the LAST frame - must transition smoothly back to frame 1' : ''}
-
-Output ONLY the image generation prompt in English (100+ words), no explanations.`;
+Output ONLY the English prompt (60-80 words).`
+  });
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-5-20250929",
-    max_tokens: 500,
-    messages: [{ role: "user", content: prompt }],
+    max_tokens: 300,
+    messages: [{ role: "user", content }],
   });
 
   const textBlock = response.content.find(b => b.type === "text");
@@ -240,7 +247,44 @@ export async function POST(request: NextRequest) {
   });
 }
 
-// 后台链式生成：每帧基于上一帧
+// 带超时的 Promise 包装
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    ),
+  ]);
+}
+
+// 带重试的异步函数执行器
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 2000,
+  taskName: string = "operation"
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.warn(`[Retry] ${taskName} attempt ${attempt}/${maxRetries} failed: ${lastError.message}`);
+      
+      if (attempt < maxRetries) {
+        console.log(`[Retry] Waiting ${delayMs}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        delayMs *= 1.5; // 指数退避
+      }
+    }
+  }
+  
+  throw lastError || new Error(`${taskName} failed after ${maxRetries} attempts`);
+}
+
+// 后台链式生成：带超时和重试
 async function processChainedFrames(
   taskId: string,
   baseAnalysis: string,
@@ -253,9 +297,9 @@ async function processChainedFrames(
   const generatedFrames: (string | null)[] = Array(10).fill(null);
   const frameStatuses: string[] = Array(10).fill("pending");
 
-  console.log(`[Sticker ${taskId}] Starting chained generation...`);
+  console.log(`[Sticker ${taskId}] Starting generation with retry support...`);
 
-  // 当前参考图：初始为原始图，之后用上一帧
+  // 当前参考图：用于 Gemini 生成
   let currentReferenceImage = originalReferenceImage;
 
   for (let i = 0; i < 10; i++) {
@@ -267,47 +311,65 @@ async function processChainedFrames(
     });
 
     try {
-      // Step A: 为当前帧生成提示词
+      // 上一帧 URL（给 Claude 看）
+      const previousFrameUrl = i > 0 ? generatedFrames[i - 1] : null;
+
+      // Step A: Claude 生成提示词（带超时和重试）
       console.log(`[Sticker ${taskId}] Generating prompt for frame ${i + 1}...`);
-      const framePrompt = await generateFramePrompt(
-        anthropic,
-        baseAnalysis,
-        animationPrompt,
-        i,
-        i > 0 ? generatedFrames[i - 1] : null,
-        i === 0
+      
+      const framePrompt = await withRetry(
+        () => withTimeout(
+          generateFramePrompt(anthropic, baseAnalysis, animationPrompt, i, previousFrameUrl),
+          60000, // 60秒超时（图片处理需要更长时间）
+          `Claude prompt generation timeout for frame ${i + 1}`
+        ),
+        3, // 最多重试3次
+        3000,
+        `Frame ${i + 1} prompt`
       );
+      
       console.log(`[Sticker ${taskId}] Frame ${i + 1} prompt: ${framePrompt.substring(0, 80)}...`);
 
-      // Step B: 用上一帧作为参考生成当前帧图片
+      // Step B: Gemini 生成图片（generateImageAction 内部已有重试）
       console.log(`[Sticker ${taskId}] Generating image for frame ${i + 1}...`);
-      const result = await generateImageAction(
-        framePrompt,
-        model,
-        { ...config, aspectRatio: "1:1" },
-        [currentReferenceImage]
+      
+      const result = await withTimeout(
+        generateImageAction(
+          framePrompt,
+          model,
+          config,
+          [currentReferenceImage]
+        ),
+        120000, // 2分钟超时（图片生成较慢）
+        `Gemini image generation timeout for frame ${i + 1}`
       );
 
       if (result.success && result.imageUrl) {
         generatedFrames[i] = result.imageUrl;
         frameStatuses[i] = "completed";
-        // 更新参考图为当前帧
         currentReferenceImage = result.imageUrl;
         console.log(`[Sticker ${taskId}] Frame ${i + 1} completed ✓`);
       } else {
-        frameStatuses[i] = "error";
-        console.error(`[Sticker ${taskId}] Frame ${i + 1} failed:`, result.error);
+        throw new Error(result.error || "Image generation failed");
       }
     } catch (err) {
       frameStatuses[i] = "error";
-      console.error(`[Sticker ${taskId}] Frame ${i + 1} error:`, err);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error(`[Sticker ${taskId}] Frame ${i + 1} error: ${errorMsg}`);
+      
+      // 如果不是第一帧失败，继续尝试下一帧（跳过失败的帧）
+      // 但如果是第一帧失败，后面的帧都没有参考，所以要停止
+      if (i === 0) {
+        console.error(`[Sticker ${taskId}] First frame failed, cannot continue`);
+        break;
+      }
     }
 
-    // 更新数据库 - 保持索引对应，不过滤 null
+    // 更新数据库
     await prisma.stickerTask.update({
       where: { id: taskId },
       data: {
-        frames: JSON.stringify(generatedFrames), // 保持完整数组，null 表示该帧未完成
+        frames: JSON.stringify(generatedFrames),
         frameStatuses: JSON.stringify(frameStatuses),
         completedFrames: frameStatuses.filter(s => s === "completed").length,
       },
@@ -320,12 +382,12 @@ async function processChainedFrames(
     where: { id: taskId },
     data: {
       status: completedCount >= 5 ? "completed" : "failed",
-      frames: JSON.stringify(generatedFrames), // 保持完整数组
+      frames: JSON.stringify(generatedFrames),
       frameStatuses: JSON.stringify(frameStatuses),
       completedFrames: completedCount,
       completedAt: new Date(),
     },
   });
 
-  console.log(`[Sticker ${taskId}] ✅ Chained generation finished (${completedCount}/10 frames)`);
+  console.log(`[Sticker ${taskId}] ✅ Generation finished (${completedCount}/10 frames)`);
 }

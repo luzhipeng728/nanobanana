@@ -32,7 +32,12 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
 
   // 轮询任务状态
   useEffect(() => {
-    if (data.frames && data.frames.length === 10) {
+    // 检查有效帧数量（非 null 的帧），而不是数组长度
+    const validFrameCount = data.frames?.filter((f: string | null) => f !== null).length || 0;
+    
+    // 只有当所有 10 帧都生成完成时才停止轮询
+    if (validFrameCount >= 10) {
+      console.log(`[StickerNode ${id}] All 10 frames completed, stopping poll`);
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;

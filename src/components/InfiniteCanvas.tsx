@@ -202,6 +202,28 @@ export default function InfiniteCanvas() {
       return;
     }
 
+    // 先创建一个 loading 状态的节点
+    const nodeId = `image-${Date.now()}`;
+    const newNode: Node = {
+      id: nodeId,
+      type: "image",
+      position: {
+        x: Math.random() * 500 + 100,
+        y: Math.random() * 500 + 100,
+      },
+      style: {
+        width: 420,
+        height: 270,
+      },
+      data: {
+        imageUrl: undefined,
+        prompt: `上传中: ${file.name}`,
+        timestamp: new Date().toLocaleString(),
+        isLoading: true,
+      },
+    };
+    setNodes((nds) => nds.concat(newNode));
+
     try {
       // Upload to R2
       const formData = new FormData();
@@ -209,24 +231,40 @@ export default function InfiniteCanvas() {
 
       const imageUrl = await uploadImageToR2(formData);
 
-      // Create image node
-      const newNode: Node = {
-        id: `image-${Date.now()}`,
-        type: "image",
-        position: {
-          x: Math.random() * 500 + 100,
-          y: Math.random() * 500 + 100,
-        },
-        data: {
-          imageUrl,
-          timestamp: new Date().toLocaleString(),
-        },
-      };
-
-      setNodes((nds) => nds.concat(newNode));
+      // 上传成功，更新节点显示图片
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  imageUrl,
+                  prompt: file.name,
+                  isLoading: false,
+                },
+              }
+            : node
+        )
+      );
     } catch (error) {
       console.error('Failed to upload image:', error);
-      alert('Failed to upload image. Please try again.');
+      // 上传失败，更新节点显示错误
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  prompt: `上传失败: ${file.name}`,
+                  isLoading: false,
+                  error: '上传失败，请重试',
+                },
+              }
+            : node
+        )
+      );
     }
 
     // Reset input
