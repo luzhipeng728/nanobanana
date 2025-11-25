@@ -39,15 +39,39 @@ async function analyzeOriginalImage(
           },
           {
             type: "text",
-            text: `请仔细分析这张图片，我需要基于它生成一个「${animationPrompt}」动画效果。
+            text: `Analyze this image carefully for creating a "${animationPrompt}" animation.
 
-请用英文描述以下内容（这将用于图像生成）：
-1. **Subject**: 主体的外形、颜色、姿态、表情等详细特征
-2. **Background**: 背景的颜色、元素、氛围
-3. **Art Style**: 画风、色调、质感
-4. **Animation Plan**: 如何将"${animationPrompt}"这个动画分解为10帧的微小渐进变化
+I need EXTREMELY DETAILED descriptions of STATIC elements that must remain UNCHANGED across all animation frames.
 
-请直接用英文输出，格式清晰。`,
+Please describe in English:
+
+## 1. SUBJECT (EXACT details that must stay fixed):
+- Face shape, skin tone, facial features (except expression)
+- Hair: exact style, color, length, how it's arranged, any accessories
+- Body pose: exact position of torso, shoulders, arms, hands
+- Camera angle and distance from subject
+
+## 2. CLOTHING & ACCESSORIES (EXACT details):
+- Every piece of clothing with colors, patterns, textures
+- All accessories: jewelry, glasses, hair clips, etc.
+- How clothes are positioned/draped
+
+## 3. BACKGROUND (EXACT details):
+- Background color or gradient
+- All elements present (if any)
+- Lighting direction and quality
+
+## 4. ART STYLE:
+- Rendering style (photorealistic, anime, cartoon, etc.)
+- Color palette and saturation
+- Lighting quality and shadows
+
+## 5. ANIMATION NOTES for "${animationPrompt}":
+- What facial features should change (eyes, eyebrows, mouth, cheeks only)
+- Suggest VERY SUBTLE progression (5-10% change per frame)
+- Keep all other elements COMPLETELY STATIC
+
+Output in clear English with bullet points.`,
           },
         ],
       },
@@ -73,31 +97,56 @@ async function generateAllFramePrompts(
 ): Promise<string[]> {
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-5-20250929",
-    max_tokens: 3000,
+    max_tokens: 4000,
     messages: [{
       role: "user",
-      content: `Based on this subject analysis, generate 10 image prompts for a "${animationPrompt}" animation loop.
+      content: `Based on this subject analysis, generate 10 image prompts for a "${animationPrompt}" animation sequence.
 
 Subject Analysis:
-${baseAnalysis.substring(0, 1000)}
+${baseAnalysis.substring(0, 1200)}
 
-CRITICAL RULES:
-1. ALL 10 prompts must describe the EXACT SAME subject, background, art style, lighting
-2. The ONLY difference between frames is the animation element (${animationPrompt})
-3. Changes between consecutive frames must be VERY SUBTLE (~10% change)
-4. Frame 1 = neutral starting pose
-5. Frame 10 must be almost identical to Frame 1 (for smooth loop)
-6. Animation arc: build up (1-4) → peak (5-7) → return (8-10)
+## ABSOLUTE REQUIREMENTS FOR SMOOTH ANIMATION:
 
-FORMAT: Output EXACTLY 10 prompts, each 60-80 words, separated by "---":
+### 1. STATIC ELEMENTS (MUST BE IDENTICAL in ALL 10 prompts):
+- Character's hair style, color, and arrangement
+- Clothing and accessories (exact same items, colors, positions)
+- Background (same color, same elements, same composition)
+- Art style and rendering quality
+- Lighting direction and color temperature
+- Character's body pose and position (torso, shoulders, arms, hands)
+- Camera angle and distance
+
+### 2. ANIMATION RULES - ONLY FACE CHANGES:
+- Animation "${animationPrompt}" should ONLY affect:
+  * Eyes (shape, openness, direction)
+  * Eyebrows (angle, height)
+  * Mouth (shape, openness)
+  * Cheeks (blush, puffing)
+- NEVER change: hair, body, clothes, pose, background, camera angle
+
+### 3. EXTREMELY SUBTLE TRANSITIONS:
+- Each frame changes by only 5-10% from the previous frame
+- Frame 1: Completely neutral face (baseline)
+- Frames 2-4: Very gradual build-up (barely noticeable changes each frame)
+- Frame 5-6: Peak expression (maximum but still natural)
+- Frames 7-9: Very gradual return to neutral
+- Frame 10: Nearly identical to Frame 1 (for smooth loop)
+
+### 4. PROMPT STRUCTURE (use this exact format for each):
+"[EXACT subject description from analysis], [EXACT clothing], [EXACT pose], [EXACT background], [EXACT art style], [SPECIFIC facial expression for this frame only]"
+
+## OUTPUT FORMAT:
+Generate EXACTLY 10 prompts, each 80-100 words, separated by "---":
 
 Prompt 1:
-[prompt for frame 1 - neutral starting pose]
+[Complete prompt with neutral face - this is the baseline]
 ---
 Prompt 2:
-[prompt for frame 2 - slight change]
+[Same as Prompt 1 but with 5% expression change]
 ---
-...continue to Prompt 10...`
+...continue to Prompt 10...
+
+REMEMBER: The viewer should see a smooth animation where ONLY the face subtly changes. Any change in hair, clothes, pose, or background will ruin the animation.`
     }],
   });
 

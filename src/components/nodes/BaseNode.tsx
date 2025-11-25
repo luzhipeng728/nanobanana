@@ -13,6 +13,7 @@ interface BaseNodeProps {
   className?: string;
   contentClassName?: string;
   selected?: boolean;
+  onTitleClick?: () => void;
 }
 
 // Pastel/Cute color palette
@@ -56,6 +57,7 @@ export function BaseNode({
   contentClassName,
   selected,
   hideHeader = false,
+  onTitleClick,
 }: BaseNodeProps & { hideHeader?: boolean }) {
   return (
     <div
@@ -81,7 +83,15 @@ export function BaseNode({
                 <Icon className="w-5 h-5" />
               </div>
             )}
-            <span className="text-sm font-extrabold tracking-wide text-opacity-90">{title}</span>
+            <span
+              className={cn(
+                "text-sm font-extrabold tracking-wide text-opacity-90",
+                onTitleClick && "cursor-pointer select-none hover:opacity-80 transition-opacity"
+              )}
+              onClick={onTitleClick}
+            >
+              {title}
+            </span>
           </div>
           {headerActions && <div className="flex items-center gap-2">{headerActions}</div>}
         </div>

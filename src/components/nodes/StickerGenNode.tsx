@@ -13,6 +13,7 @@ import {
 import { BaseNode } from "./BaseNode";
 import { NodeTextarea, NodeButton, NodeLabel } from "@/components/ui/NodeUI";
 import ReactMarkdown from "react-markdown";
+import { cn } from "@/lib/utils";
 
 // 预设动画示例（仅作为参考提示）
 const ANIMATION_PRESETS = [
@@ -39,8 +40,43 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
   const [currentStep, setCurrentStep] = useState("");
   const [error, setError] = useState("");
 
+  // 彩蛋：三连击解锁 Pro 模型
+  const [proUnlocked, setProUnlocked] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const analysisRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // 处理标题点击 - 三连击解锁 Pro 模型
+  const handleTitleClick = useCallback(() => {
+    if (proUnlocked) return; // 已解锁则忽略
+
+    setClickCount((prev) => {
+      const newCount = prev + 1;
+
+      // 清除之前的超时
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+
+      // 设置新的超时（500ms 内必须完成三次点击）
+      clickTimeoutRef.current = setTimeout(() => {
+        setClickCount(0);
+      }, 500);
+
+      // 检查是否达到三次
+      if (newCount >= 3) {
+        setProUnlocked(true);
+        setClickCount(0);
+        if (clickTimeoutRef.current) {
+          clearTimeout(clickTimeoutRef.current);
+        }
+      }
+
+      return newCount;
+    });
+  }, [proUnlocked]);
 
   // 监听连接的图片节点
   useEffect(() => {
@@ -77,7 +113,7 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         body: JSON.stringify({
           referenceImage: connectedImages[0],
           animationPrompt,
-          model: "nano-banana", // 表情包只使用 Fast 模型
+          model: proUnlocked ? "nano-banana-pro" : "nano-banana",
           config: {},
         }),
         signal: abortControllerRef.current.signal,
@@ -170,6 +206,7 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
       color="pink"
       selected={selected}
       className="w-[340px]"
+      onTitleClick={handleTitleClick}
       headerActions={
         <div className="flex items-center gap-1.5">
           {connectedImages.length > 0 ? (
@@ -242,10 +279,29 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         </div>
       </div>
 
-      {/* 模型信息 - 表情包只支持 Fast 模型 */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500 text-white font-medium">Fast</span>
-        <span className="text-[10px] text-pink-600 dark:text-pink-400">表情包生成使用 Fast 模型</span>
+      {/* 模型信息 */}
+      <div className={cn(
+        "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-300",
+        proUnlocked
+          ? "bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-purple-300 dark:border-purple-700"
+          : "bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800"
+      )}>
+        <span className={cn(
+          "text-[10px] px-2 py-0.5 rounded-full text-white font-medium",
+          proUnlocked
+            ? "bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse"
+            : "bg-pink-500"
+        )}>
+          {proUnlocked ? "Pro ✨" : "Fast"}
+        </span>
+        <span className={cn(
+          "text-[10px]",
+          proUnlocked
+            ? "text-purple-600 dark:text-purple-400 font-medium"
+            : "text-pink-600 dark:text-pink-400"
+        )}>
+          {proUnlocked ? "🎉 Pro 模型已解锁！" : "表情包生成使用 Fast 模型"}
+        </span>
       </div>
 
       {/* 进度显示 */}
