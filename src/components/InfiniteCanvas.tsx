@@ -34,7 +34,8 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { getOrCreateUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Image, Wand2, Brain, Trash2, Smile } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Image, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd } from "lucide-react";
+import Gallery from "./Gallery";
 
 const nodeTypes = {
   imageGen: ImageGenNode as any,
@@ -73,6 +74,9 @@ export default function InfiniteCanvas() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [modalImageUrl, setModalImageUrl] = useState("");
   const [modalPrompt, setModalPrompt] = useState<string | undefined>(undefined);
+
+  // Gallery State
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   // Load canvas from localStorage on mount
   useEffect(() => {
@@ -565,6 +569,13 @@ export default function InfiniteCanvas() {
           </div>
         </div>
         <button
+          onClick={() => setIsGalleryOpen(true)}
+          className="p-2 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors text-purple-600 dark:text-purple-400"
+          title="创意画廊"
+        >
+          <GalleryHorizontalEnd className="w-5 h-5" />
+        </button>
+        <button
           onClick={clearLocalCache}
           className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-600 dark:text-red-400"
           title="Clear Local Cache"
@@ -675,6 +686,12 @@ export default function InfiniteCanvas() {
         imageUrl={modalImageUrl}
         prompt={modalPrompt}
         onClose={() => setIsImageModalOpen(false)}
+      />
+
+      {/* Gallery Modal */}
+      <Gallery
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
       />
     </div>
   );

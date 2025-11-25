@@ -11,9 +11,8 @@ import {
   Eye,
 } from "lucide-react";
 import { BaseNode } from "./BaseNode";
-import { NodeTextarea, NodeSelect, NodeButton, NodeLabel } from "@/components/ui/NodeUI";
+import { NodeTextarea, NodeButton, NodeLabel } from "@/components/ui/NodeUI";
 import ReactMarkdown from "react-markdown";
-import { RESOLUTION_OPTIONS, type GeminiImageModel } from "@/types/image-gen";
 
 // 预设动画示例（仅作为参考提示）
 const ANIMATION_PRESETS = [
@@ -32,8 +31,6 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
   const { getNode } = useReactFlow();
 
   const [animationPrompt, setAnimationPrompt] = useState(data.animationPrompt || "");
-  const [selectedModel, setSelectedModel] = useState<GeminiImageModel>(data.model || "nano-banana");
-  const [imageSize, setImageSize] = useState<string>(data.imageSize || "1K");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [claudeAnalysis, setClaudeAnalysis] = useState("");
@@ -74,19 +71,14 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     abortControllerRef.current = new AbortController();
 
     try {
-      const config: any = {};
-      if (selectedModel === "nano-banana-pro") {
-        config.imageSize = imageSize;
-      }
-
       const response = await fetch("/api/sticker/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           referenceImage: connectedImages[0],
           animationPrompt,
-          model: selectedModel,
-          config,
+          model: "nano-banana", // 表情包只使用 Fast 模型
+          config: {},
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -161,7 +153,7 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     } finally {
       setIsGenerating(false);
     }
-  }, [connectedImages, animationPrompt, selectedModel, imageSize, id, getNode, addStickerNode]);
+  }, [connectedImages, animationPrompt, id, getNode, addStickerNode]);
 
   const onStop = () => {
     if (abortControllerRef.current) {
@@ -250,36 +242,10 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         </div>
       </div>
 
-      {/* 模型与分辨率选择 */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <NodeLabel>Model</NodeLabel>
-          <NodeSelect
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value as GeminiImageModel)}
-            disabled={isGenerating}
-          >
-            <option value="nano-banana">Fast</option>
-            <option value="nano-banana-pro">Pro</option>
-          </NodeSelect>
-        </div>
-
-        {selectedModel === "nano-banana-pro" && (
-          <div className="space-y-1">
-            <NodeLabel>Resolution</NodeLabel>
-            <NodeSelect
-              value={imageSize}
-              onChange={(e) => setImageSize(e.target.value)}
-              disabled={isGenerating}
-            >
-              {Object.entries(RESOLUTION_OPTIONS).map(([key, option]) => (
-                <option key={key} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </NodeSelect>
-          </div>
-        )}
+      {/* 模型信息 - 表情包只支持 Fast 模型 */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500 text-white font-medium">Fast</span>
+        <span className="text-[10px] text-pink-600 dark:text-pink-400">表情包生成使用 Fast 模型</span>
       </div>
 
       {/* 进度显示 */}
