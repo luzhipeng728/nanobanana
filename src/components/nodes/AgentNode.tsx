@@ -198,11 +198,11 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           nodeIdMap.set(prompt.id, nodeId);
           taskIdMap.set(prompt.id, result.taskId);
 
-          // 更新 prompt 状态为已创建任务
+          // 更新 prompt 状态为已完成（任务已创建，图片在 ImageNode 中异步生成）
           setPrompts((prev) =>
             prev.map((p) =>
               p.id === prompt.id
-                ? { ...p, status: "generating", taskId: result.taskId }
+                ? { ...p, status: "completed", taskId: result.taskId }
                 : p
             )
           );
