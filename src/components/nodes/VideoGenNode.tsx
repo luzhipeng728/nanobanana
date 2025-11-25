@@ -136,19 +136,25 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       selected={selected}
       className="w-[320px]"
       headerActions={
-        connectedImagesCount > 0 && (
+        connectedImagesCount > 0 ? (
           <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium">
             <Link2 className="w-3 h-3" />
-            {connectedImagesCount}
+            图生视频
+          </span>
+        ) : (
+          <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 font-medium opacity-60">
+            ← 可连接图片
           </span>
         )
       }
     >
+      {/* 左侧输入连接点 - 接收参考图片用于图生视频 */}
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         isConnectable={isConnectable}
-        className="w-2 h-2 !bg-orange-500 !border-0"
+        className="w-4 h-4 !bg-gradient-to-r !from-purple-500 !to-orange-500 !border-2 !border-white dark:!border-neutral-900 !rounded-full transition-all duration-200 hover:!scale-125 hover:!shadow-lg hover:!shadow-orange-500/50"
+        title="连接图片作为参考 (图生视频)"
       />
 
       <div className="space-y-3">
@@ -247,12 +253,6 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         </div>
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        isConnectable={isConnectable}
-        className="w-2 h-2 !bg-orange-500 !border-0"
-      />
     </BaseNode>
   );
 };

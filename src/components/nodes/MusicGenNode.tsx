@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState, useCallback } from "react";
-import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
+import { NodeProps, useReactFlow } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { Loader2, Wand2, Music as MusicIcon, Sparkles, ArrowRight } from "lucide-react";
 import { BaseNode } from "./BaseNode";
@@ -138,12 +138,6 @@ const MusicGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       selected={selected}
       className="w-[320px]"
     >
-      <Handle
-        type="target"
-        position={Position.Top}
-        isConnectable={isConnectable}
-        className="w-2 h-2 !bg-green-500 !border-0"
-      />
 
       <div className="space-y-4">
         <div className="space-y-1">
@@ -221,12 +215,6 @@ const MusicGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         </div>
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        isConnectable={isConnectable}
-        className="w-2 h-2 !bg-green-500 !border-0"
-      />
     </BaseNode>
   );
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useState, useRef } from "react";
-import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from "@xyflow/react";
+import { NodeProps, NodeResizer, useReactFlow } from "@xyflow/react";
 import { Video as VideoIcon, Download, Loader2 } from "lucide-react";
 
 type VideoNodeData = {
@@ -106,12 +106,6 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         lineClassName="!border-orange-500"
         handleClassName="!w-2 !h-2 !bg-orange-500"
       />
-      <Handle
-        type="target"
-        position={Position.Top}
-        isConnectable={isConnectable}
-        className="w-2 h-2 !bg-orange-500 !border-0"
-      />
 
       <div className="px-3 py-2 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
         <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
@@ -181,12 +175,6 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         )}
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        isConnectable={isConnectable}
-        className="w-2 h-2 !bg-orange-500 !border-0"
-      />
     </div>
   );
 };

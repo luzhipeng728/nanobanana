@@ -2,7 +2,100 @@ import { NextRequest } from "next/server";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { v4 as uuidv4 } from "uuid";
+import Anthropic from "@anthropic-ai/sdk";
 import type { AgentPrompt, AgentStreamEvent } from "@/types/agent";
+
+// 参考图数据类型
+interface ReferenceImages {
+  urls: string[];
+  useForClaude: boolean;
+  useForImageGen: boolean;
+}
+
+// 使用 Claude 分析图片（流式版本）
+async function analyzeImagesWithClaudeStream(
+  imageUrls: string[],
+  userRequest: string,
+  onChunk: (chunk: string) => Promise<void>
+): Promise<string> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY 未配置");
+  }
+
+  const anthropic = new Anthropic({
+    apiKey,
+    baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+  });
+
+  // 构建图片内容
+  const imageContent: Anthropic.ImageBlockParam[] = await Promise.all(
+    imageUrls.slice(0, 4).map(async (url) => {
+      // 如果是 base64 或 data URL
+      if (url.startsWith("data:")) {
+        const match = url.match(/^data:([^;]+);base64,(.+)$/);
+        if (match) {
+          return {
+            type: "image" as const,
+            source: {
+              type: "base64" as const,
+              media_type: match[1] as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+              data: match[2],
+            },
+          };
+        }
+      }
+      // 普通 URL
+      return {
+        type: "image" as const,
+        source: {
+          type: "url" as const,
+          url: url,
+        },
+      };
+    })
+  );
+
+  // 使用流式 API
+  let fullText = "";
+  
+  const stream = anthropic.messages.stream({
+    model: "claude-sonnet-4-5-20250929",
+    max_tokens: 2048,
+    messages: [
+      {
+        role: "user",
+        content: [
+          ...imageContent,
+          {
+            type: "text",
+            text: `请仔细分析这些参考图片，然后结合用户的需求来理解他们想要生成什么样的图片。
+
+用户需求：${userRequest}
+
+请详细描述：
+1. 图片中的主要元素、风格、色调、构图
+2. 图片的整体氛围和情感
+3. 如果用户想要类似风格的图片，你会建议怎样的描述
+
+请用中文回答，描述要详细具体，这将帮助后续生成更精准的图像。`,
+          },
+        ],
+      },
+    ],
+  });
+
+  // 处理流式响应
+  for await (const event of stream) {
+    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+      const chunk = event.delta.text;
+      fullText += chunk;
+      await onChunk(chunk);
+    }
+  }
+
+  return fullText;
+}
 
 // Tavily 搜索函数
 async function tavilySearch(query: string, apiKey: string): Promise<string> {
@@ -206,7 +299,11 @@ export async function POST(request: NextRequest) {
   (async () => {
     try {
       const body = await request.json();
-      const { userRequest, promptCount } = body;
+      const { userRequest, promptCount, referenceImages } = body as {
+        userRequest: string;
+        promptCount?: number;
+        referenceImages?: ReferenceImages;
+      };
 
       if (!userRequest) {
         await sendEvent({ type: "error", error: "用户需求不能为空" });
@@ -234,6 +331,57 @@ export async function POST(request: NextRequest) {
         progress: 10,
       });
 
+      // 如果有参考图且需要 Claude 分析
+      let imageAnalysis = "";
+      if (referenceImages?.useForClaude && referenceImages.urls.length > 0) {
+        if (!process.env.ANTHROPIC_API_KEY) {
+          await sendEvent({ type: "error", error: "ANTHROPIC_API_KEY 未配置，无法使用图片理解功能" });
+          await writer.close();
+          return;
+        }
+
+        await sendEvent({
+          type: "status",
+          status: "searching",
+          step: "👁️ Claude 正在分析参考图片...",
+          progress: 15,
+        });
+
+        // 开始流式分析
+        await sendEvent({ type: "claude_analysis_start" } as any);
+
+        try {
+          imageAnalysis = await analyzeImagesWithClaudeStream(
+            referenceImages.urls,
+            userRequest,
+            async (chunk) => {
+              // 每收到一个 chunk 就发送给前端
+              await sendEvent({ type: "claude_analysis_chunk", chunk } as any);
+            }
+          );
+          console.log("Claude image analysis completed");
+
+          // 分析完成
+          await sendEvent({ type: "claude_analysis_end" } as any);
+
+          await sendEvent({
+            type: "status",
+            status: "planning",
+            step: "✅ 图片分析完成，继续规划...",
+            progress: 25,
+          });
+        } catch (err) {
+          console.error("Claude analysis error:", err);
+          await sendEvent({ type: "claude_analysis_end" } as any);
+          await sendEvent({
+            type: "status",
+            status: "planning",
+            step: "⚠️ 图片分析失败，继续使用文字描述...",
+            progress: 25,
+          });
+        }
+      }
+
       // 初始化 LLM with tool support
       const llm = new ChatOpenAI({
         openAIApiKey: process.env.OPENAI_API_KEY,
@@ -245,6 +393,17 @@ export async function POST(request: NextRequest) {
       });
 
       let userInput = userRequest;
+      
+      // 如果有图片分析结果，添加到用户输入中
+      if (imageAnalysis) {
+        userInput = `用户需求：${userRequest}
+
+【参考图片分析】（由 Claude 视觉模型分析）
+${imageAnalysis}
+
+请结合用户需求和参考图片的风格特点来生成图像 prompts。`;
+      }
+      
       if (promptCount && promptCount > 0) {
         userInput += `\n\n请生成 ${promptCount} 个连贯的场景 prompt。`;
       }

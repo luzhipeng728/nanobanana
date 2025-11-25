@@ -125,13 +125,6 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           lineClassName="!border-blue-400"
           handleClassName="!w-3 !h-3 !bg-blue-500 !rounded-full"
         />
-        <Handle
-          type="target"
-          position={Position.Top}
-          isConnectable={isConnectable}
-          className="w-3 h-3 !bg-blue-500 !border-2 !border-white dark:!border-neutral-900"
-        />
-
         <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-blue-100 dark:border-blue-900/30 bg-white dark:bg-neutral-950 h-full">
           <div
             className="relative cursor-pointer flex-1 min-h-[150px] h-full"
@@ -189,13 +182,24 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
               )}
             </div>
           )}
+
+          {/* 右侧连接提示 - 当图片加载完成后显示 */}
+          {!isLoading && !data.error && (
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-10">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-[9px] font-bold px-2 py-1 rounded-full shadow-lg whitespace-nowrap animate-pulse">
+                拖拽 →
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* 右侧输出连接点 - 用于连接到生成器作为参考图 */}
         <Handle
           type="source"
-          position={Position.Bottom}
+          position={Position.Right}
           isConnectable={isConnectable}
-          className="w-3 h-3 !bg-blue-500 !border-2 !border-white dark:!border-neutral-900"
+          className="w-4 h-4 !bg-gradient-to-r !from-blue-500 !to-purple-500 !border-2 !border-white dark:!border-neutral-900 !rounded-full transition-all duration-200 hover:!scale-125 hover:!shadow-lg hover:!shadow-purple-500/50"
+          title="拖拽连接到生成器作为参考图"
         />
         </BaseNode>
       </div>

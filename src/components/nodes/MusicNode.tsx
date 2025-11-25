@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useState, useRef } from "react";
-import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
+import { NodeProps, useReactFlow } from "@xyflow/react";
 import { Music as MusicIcon, Download, Loader2, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { useAudio } from "@/contexts/AudioContext";
 import { NodeScrollArea } from "@/components/ui/NodeUI";
@@ -137,12 +137,6 @@ const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       selected={selected}
       className="w-[320px]"
     >
-      <Handle
-        type="target"
-        position={Position.Top}
-        isConnectable={isConnectable}
-        className="w-2 h-2 !bg-green-500 !border-0"
-      />
 
       <div className="space-y-3">
         {isLoading ? (
@@ -257,12 +251,6 @@ const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         )}
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        isConnectable={isConnectable}
-        className="w-2 h-2 !bg-green-500 !border-0"
-      />
     </BaseNode>
   );
 };

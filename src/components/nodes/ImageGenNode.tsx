@@ -105,19 +105,25 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       selected={selected}
       className="w-[300px]"
       headerActions={
-        connectedImagesCount > 0 && (
+        connectedImagesCount > 0 ? (
           <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">
             <Link2 className="w-3 h-3" />
-            {connectedImagesCount}
+            {connectedImagesCount} 张参考图
+          </span>
+        ) : (
+          <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 font-medium opacity-60">
+            ← 连接参考图
           </span>
         )
       }
     >
+      {/* 左侧输入连接点 - 接收参考图片 */}
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         isConnectable={isConnectable}
-        className="w-2 h-2 !bg-blue-500 !border-0"
+        className="w-4 h-4 !bg-gradient-to-r !from-purple-500 !to-blue-500 !border-2 !border-white dark:!border-neutral-900 !rounded-full transition-all duration-200 hover:!scale-125 hover:!shadow-lg hover:!shadow-blue-500/50"
+        title="连接图片作为参考"
       />
 
       <div className="space-y-3">
@@ -199,12 +205,6 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         </div>
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        isConnectable={isConnectable}
-        className="w-2 h-2 !bg-blue-500 !border-0"
-      />
     </BaseNode>
   );
 };
