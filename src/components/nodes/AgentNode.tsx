@@ -3,6 +3,7 @@
 import { memo, useState, useCallback, useRef, useEffect } from "react";
 import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
+import { enqueue, getQueueStatus } from "@/lib/rate-limiter";
 import {
   Loader2,
   Brain,
@@ -71,12 +72,12 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
   const StatusIcon = statusIcons[status];
 
-  // 并发生成图片（Pro 模型最多 10 个并发，Fast 模型最多 20 个并发）
+  // 使用全局速率限制器生成图片
   const generateImagesInBatches = async (promptsList: AgentPrompt[]) => {
     console.log(`🎬 [generateImagesInBatches] Starting with ${promptsList.length} prompts`);
     console.log(`🎬 [generateImagesInBatches] Model: ${selectedModel}`);
+    console.log(`🎬 [generateImagesInBatches] Queue status:`, getQueueStatus());
 
-    const MAX_CONCURRENT = selectedModel === "nano-banana-pro" ? 10 : 20;
     const currentNode = getReactFlowNode(id);
 
     if (!currentNode) {
@@ -90,21 +91,18 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     const totalCount = promptsList.length;
 
     // 创建图片节点位置计算（2×n 网格布局：最多2行，然后往右排）
-    // 16:9 图片节点实际尺寸：420px × 270px
     const NODE_WIDTH = 420;
     const NODE_HEIGHT = 270;
-    const HORIZONTAL_GAP = 50;  // 列之间的间距
-    const VERTICAL_GAP = 50;    // 行之间的间距
+    const HORIZONTAL_GAP = 50;
+    const VERTICAL_GAP = 50;
 
-    // 检查位置是否被占用（检测重叠）
+    // 检查位置是否被占用
     const isPositionOccupied = (x: number, y: number) => {
       const allNodes = getReactFlowNodes();
       return allNodes.some((node) => {
-        if (node.id === id) return false; // 排除当前Agent节点
+        if (node.id === id) return false;
         const nodeWidth = (node.style?.width as number) || NODE_WIDTH;
         const nodeHeight = (node.style?.height as number) || NODE_HEIGHT;
-
-        // 检查矩形是否重叠
         return (
           x < node.position.x + nodeWidth &&
           x + NODE_WIDTH > node.position.x &&
@@ -117,178 +115,146 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     // 寻找未被占用的起始列位置
     const findStartColumn = () => {
       let col = 0;
-      while (col < 100) { // 最多检查100列
+      while (col < 100) {
         const testX = currentNode.position.x + 450 + col * (NODE_WIDTH + HORIZONTAL_GAP);
         const testY = currentNode.position.y;
-
-        // 检查这一列的两行是否都可用
         const row0Occupied = isPositionOccupied(testX, testY);
         const row1Occupied = isPositionOccupied(testX, testY + NODE_HEIGHT + VERTICAL_GAP);
-
         if (!row0Occupied && !row1Occupied) {
           return col;
         }
         col++;
       }
-      return col; // 如果都占用，就继续往右
+      return col;
     };
 
     const startColumn = findStartColumn();
 
     const getNodePosition = (index: number) => {
-      const column = startColumn + Math.floor(index / 2); // 从startColumn开始，每2个节点为一列
-      const row = index % 2; // 当前在列中的行位置（0或1）
-
+      const column = startColumn + Math.floor(index / 2);
+      const row = index % 2;
       return {
         x: currentNode.position.x + 450 + column * (NODE_WIDTH + HORIZONTAL_GAP),
         y: currentNode.position.y + row * (NODE_HEIGHT + VERTICAL_GAP),
       };
     };
 
-    // 第一步：立即创建所有图片节点（loading 状态）
-    console.log("Creating image tasks and nodes...");
-    const nodeIdMap = new Map<string, string>(); // promptId -> nodeId
-    const taskIdMap = new Map<string, string>(); // promptId -> taskId
+    console.log(`📋 [generateImagesInBatches] Adding ${promptsList.length} tasks to rate-limited queue...`);
 
-    // 第二步：并发创建任务并立即创建节点
-    console.log(`Starting concurrent task creation (max ${MAX_CONCURRENT} concurrent)...`);
+    // 为每个 prompt 创建一个 Promise，通过速率限制器排队执行
+    const promises = promptsList.map((prompt, index) => {
+      // 更新 prompt 状态为排队中
+      setPrompts((prev) =>
+        prev.map((p) => (p.id === prompt.id ? { ...p, status: "pending" } : p))
+      );
 
-    // 创建单个任务并立即创建节点的函数
-    const generateSingleImage = async (prompt: AgentPrompt, index: number) => {
-      const startTime = Date.now();
+      // 使用速率限制器排队执行
+      return enqueue(selectedModel, async () => {
+        const startTime = Date.now();
 
-      try {
-        // 增加正在生成的计数
-        setGeneratingCount((prev) => prev + 1);
+        try {
+          // 增加正在生成的计数
+          setGeneratingCount((prev) => prev + 1);
 
-        // 更新 prompt 状态为生成中
-        setPrompts((prev) =>
-          prev.map((p) => (p.id === prompt.id ? { ...p, status: "generating" } : p))
-        );
+          // 更新 prompt 状态为生成中
+          setPrompts((prev) =>
+            prev.map((p) => (p.id === prompt.id ? { ...p, status: "generating" } : p))
+          );
 
-        const startTimeStr = new Date().toLocaleTimeString() + '.' + Date.now() % 1000;
-        console.log(`🚀 [START ${startTimeStr}] Task ${index + 1}/${totalCount}: ${prompt.scene}`);
+          const startTimeStr = new Date().toLocaleTimeString() + '.' + Date.now() % 1000;
+          console.log(`🚀 [START ${startTimeStr}] Task ${index + 1}/${totalCount}: ${prompt.scene}`);
 
-        // 如果启用了"给生图模型"，添加参考图
-        const referenceImagesForGen = useForImageGen ? connectedImages : [];
+          // 如果启用了"给生图模型"，添加参考图
+          const referenceImagesForGen = useForImageGen ? connectedImages : [];
 
-        // 使用 API 调用创建任务
-        const config: any = {};
-        
-        // 如果有参考图，不传 aspectRatio（保持参考图的比例）
-        // 没有参考图时使用用户选择的比例
-        if (referenceImagesForGen.length === 0) {
-          config.aspectRatio = aspectRatio;
-        }
+          // 构建配置
+          const config: any = {};
+          if (referenceImagesForGen.length === 0) {
+            config.aspectRatio = aspectRatio;
+          }
+          if (selectedModel === "nano-banana-pro") {
+            config.imageSize = imageSize;
+          }
 
-        // Add imageSize for Pro model
-        if (selectedModel === "nano-banana-pro") {
-          config.imageSize = imageSize;
-        }
-
-        const response = await fetch("/api/generate-image", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            prompt: prompt.prompt,
-            model: selectedModel,
-            config,
-            referenceImages: referenceImagesForGen,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-
-        if (result.success && result.taskId) {
-          // 立即创建 Image 节点并传入任务 ID
-          const position = getNodePosition(index);
-          const nodeId = addImageNode(
-            undefined,
-            prompt.prompt,
-            position,
-            result.taskId,
-            // 保存生图配置，用于重新生成
-            {
+          const response = await fetch("/api/generate-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt: prompt.prompt,
               model: selectedModel,
               config,
               referenceImages: referenceImagesForGen,
-            }
-          );
-          nodeIdMap.set(prompt.id, nodeId);
-          taskIdMap.set(prompt.id, result.taskId);
+            }),
+          });
 
-          // 更新 prompt 状态为已完成（任务已创建，图片在 ImageNode 中异步生成）
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+
+          if (result.success && result.taskId) {
+            // 创建 Image 节点
+            const position = getNodePosition(index);
+            addImageNode(
+              undefined,
+              prompt.prompt,
+              position,
+              result.taskId,
+              { model: selectedModel, config, referenceImages: referenceImagesForGen }
+            );
+
+            // 更新 prompt 状态
+            setPrompts((prev) =>
+              prev.map((p) =>
+                p.id === prompt.id
+                  ? { ...p, status: "completed", taskId: result.taskId }
+                  : p
+              )
+            );
+
+            completedCount++;
+            setProgress(90 + (completedCount / totalCount) * 10);
+            console.log(`✅ [SUCCESS] Task ${index + 1}/${totalCount} created in ${duration}s (${completedCount}/${totalCount} done)`);
+
+            return result;
+          } else {
+            throw new Error(result.error || "创建任务失败");
+          }
+        } catch (err) {
+          const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+          console.error(`❌ [FAILED] Image ${index + 1}/${totalCount} failed after ${duration}s:`, err);
           setPrompts((prev) =>
             prev.map((p) =>
               p.id === prompt.id
-                ? { ...p, status: "completed", taskId: result.taskId }
+                ? { ...p, status: "error", error: err instanceof Error ? err.message : "生成失败" }
                 : p
             )
           );
-
-          completedCount++;
-          setProgress(90 + (completedCount / totalCount) * 10);
-          const endTimeStr = new Date().toLocaleTimeString() + '.' + Date.now() % 1000;
-          console.log(`✅ [SUCCESS ${endTimeStr}] Task ${index + 1}/${totalCount} created in ${duration}s (${completedCount}/${totalCount} done) - Task ID: ${result.taskId}`);
-        } else {
-          throw new Error(result.error || "创建任务失败");
+          throw err;
+        } finally {
+          setGeneratingCount((prev) => prev - 1);
         }
-      } catch (err) {
-        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-        console.error(`❌ [FAILED] Image ${index + 1}/${totalCount} failed after ${duration}s:`, err);
-        setPrompts((prev) =>
-          prev.map((p) =>
-            p.id === prompt.id
-              ? {
-                  ...p,
-                  status: "error",
-                  error: err instanceof Error ? err.message : "生成失败",
-                }
-              : p
-          )
-        );
-      } finally {
-        // 减少正在生成的计数
-        setGeneratingCount((prev) => prev - 1);
-      }
-    };
+      });
+    });
 
-    // 分批并发生成（最多 10 个并发）
-    const batchCount = Math.ceil(promptsList.length / MAX_CONCURRENT);
-    for (let i = 0; i < promptsList.length; i += MAX_CONCURRENT) {
-      const batch = promptsList.slice(i, i + MAX_CONCURRENT);
-      const batchNum = Math.floor(i / MAX_CONCURRENT) + 1;
+    console.log(`📥 [generateImagesInBatches] ${promises.length} tasks queued, waiting for completion...`);
+    console.log(`📊 [generateImagesInBatches] Queue status:`, getQueueStatus());
 
-      console.log(`\n${'='.repeat(60)}`);
-      console.log(`📦 [BATCH ${batchNum}/${batchCount}] Starting ${batch.length} concurrent generations at ${new Date().toLocaleTimeString()}`);
-      console.log(`Images in this batch: ${batch.map((p, idx) => `#${i + idx + 1}`).join(', ')}`);
-      console.log(`${'='.repeat(60)}\n`);
-
-      const batchStartTime = Date.now();
-
-      // 并发生成这一批 - 所有请求同时发起！
-      const promises = batch.map((prompt, idx) => generateSingleImage(prompt, i + idx));
-      console.log(`🚀 Launched ${promises.length} concurrent requests!`);
-
-      await Promise.all(promises);
-
-      const batchDuration = ((Date.now() - batchStartTime) / 1000).toFixed(1);
-      console.log(`\n✅ [BATCH ${batchNum}/${batchCount}] All ${batch.length} tasks created in ${batchDuration}s\n`);
+    // 等待所有任务完成（会自动按速率限制执行）
+    try {
+      await Promise.allSettled(promises);
+    } catch (err) {
+      console.error("Some tasks failed:", err);
     }
 
-    // 任务创建完成，Agent 的工作结束
+    // 完成
     setStatus("idle");
     setCurrentStep("");
     setProgress(100);
     setGeneratingCount(0);
-    console.log("🎉 All tasks created successfully! Images are generating in background.");
+    console.log("🎉 All tasks completed! Images are generating in background.");
   };
 
   const onGenerate = useCallback(async () => {

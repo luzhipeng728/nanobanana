@@ -58,7 +58,7 @@ async function analyzeImagesWithClaudeStream(
   let fullText = "";
   
   const stream = anthropic.messages.stream({
-    model: "claude-sonnet-4-5-20250929",
+    model: "claude-opus-4-5-20251101",
     max_tokens: 2048,
     messages: [
       {
@@ -421,7 +421,7 @@ ${imageAnalysis}
         let stopReason = "";
 
         const stream = anthropic.messages.stream({
-          model: "claude-sonnet-4-5-20250929",
+          model: "claude-opus-4-5-20251101",
           max_tokens: 4096,
           system: AGENT_SYSTEM_PROMPT,
           tools: claudeTools,
