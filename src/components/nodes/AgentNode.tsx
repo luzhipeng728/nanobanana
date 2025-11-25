@@ -29,6 +29,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const [userRequest, setUserRequest] = useState(data.userRequest || "");
   const [selectedModel, setSelectedModel] = useState<"nano-banana" | "nano-banana-pro">("nano-banana");
   const [imageSize, setImageSize] = useState<string>("2K"); // Default resolution for Pro model
+  const [aspectRatio, setAspectRatio] = useState<string>("16:9"); // 默认比例
   const [status, setStatus] = useState<AgentNodeData["status"]>(data.status || "idle");
   const [currentStep, setCurrentStep] = useState<string>("");
   const [progress, setProgress] = useState(0);
@@ -159,18 +160,22 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         const startTimeStr = new Date().toLocaleTimeString() + '.' + Date.now() % 1000;
         console.log(`🚀 [START ${startTimeStr}] Task ${index + 1}/${totalCount}: ${prompt.scene}`);
 
+        // 如果启用了"给生图模型"，添加参考图
+        const referenceImagesForGen = useForImageGen ? connectedImages : [];
+
         // 使用 API 调用创建任务
-        const config: any = {
-          aspectRatio: "16:9",
-        };
+        const config: any = {};
+        
+        // 如果有参考图，不传 aspectRatio（保持参考图的比例）
+        // 没有参考图时使用用户选择的比例
+        if (referenceImagesForGen.length === 0) {
+          config.aspectRatio = aspectRatio;
+        }
 
         // Add imageSize for Pro model
         if (selectedModel === "nano-banana-pro") {
           config.imageSize = imageSize;
         }
-
-        // 如果启用了"给生图模型"，添加参考图
-        const referenceImagesForGen = useForImageGen ? connectedImages : [];
 
         const response = await fetch("/api/generate-image", {
           method: "POST",
@@ -374,7 +379,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     } finally {
       setIsRunning(false);
     }
-  }, [userRequest, selectedModel, isRunning, id, getReactFlowNode, addImageNode, updateImageNode, connectedImages, useForClaude, useForImageGen]);
+  }, [userRequest, selectedModel, imageSize, aspectRatio, isRunning, id, getReactFlowNode, addImageNode, updateImageNode, connectedImages, useForClaude, useForImageGen]);
 
   const onStop = () => {
     if (abortControllerRef.current) {
@@ -487,7 +492,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         />
       </div>
 
-      {/* Model, Resolution & Count */}
+      {/* Model, Resolution & Aspect Ratio */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <NodeLabel>Model</NodeLabel>
@@ -500,6 +505,24 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
             <option value="nano-banana-pro">Pro</option>
           </NodeSelect>
         </div>
+
+        {/* Aspect Ratio - 只有没有参考图（或没勾选给生图模型）时才显示 */}
+        {!(connectedImages.length > 0 && useForImageGen) && (
+          <div className="space-y-1">
+            <NodeLabel>Aspect Ratio</NodeLabel>
+            <NodeSelect
+              value={aspectRatio}
+              onChange={(e) => setAspectRatio(e.target.value)}
+              disabled={isRunning}
+            >
+              <option value="16:9">16:9</option>
+              <option value="9:16">9:16</option>
+              <option value="1:1">1:1</option>
+              <option value="4:3">4:3</option>
+              <option value="3:4">3:4</option>
+            </NodeSelect>
+          </div>
+        )}
 
         {/* Resolution for Pro model */}
         {selectedModel === "nano-banana-pro" && (

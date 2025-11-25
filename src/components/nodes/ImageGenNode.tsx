@@ -24,7 +24,8 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
   const [prompt, setPrompt] = useState(data.prompt || "");
   const [imageUrl, setImageUrl] = useState(data.imageUrl || "");
   const [selectedModel, setSelectedModel] = useState<GeminiImageModel>(data.model || "nano-banana");
-  const [aspectRatio, setAspectRatio] = useState<string>(data.aspectRatio || "1:1");
+  // Pro 模型默认 auto（不传 aspectRatio），Fast 模型默认 1:1
+  const [aspectRatio, setAspectRatio] = useState<string>(data.aspectRatio || (data.model === "nano-banana-pro" ? "auto" : "1:1"));
   const [imageSize, setImageSize] = useState<string>(data.imageSize || "1K");
   const [isRewriting, setIsRewriting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -60,20 +61,24 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     if (!prompt) return;
     setIsGenerating(true);
     try {
-      const config: ImageGenerationConfig = {
-        aspectRatio: aspectRatio as any,
-      };
-
-      // imageSize only supported by Pro model
-      if (selectedModel === "nano-banana-pro") {
-        config.imageSize = imageSize as any;
-      }
-
       // Get reference images from connected nodes
       const connectedNodes = getConnectedImageNodes(id);
       const referenceImages = connectedNodes.map(node => node.data.imageUrl).filter((url): url is string => typeof url === 'string' && url.length > 0);
 
       console.log(`Using ${referenceImages.length} reference images from connected nodes`);
+
+      const config: ImageGenerationConfig = {};
+
+      // 如果有参考图，不传 aspectRatio（保持参考图的比例）
+      // 如果没有参考图且不是 auto，才传 aspectRatio
+      if (referenceImages.length === 0 && aspectRatio !== "auto") {
+        config.aspectRatio = aspectRatio as any;
+      }
+
+      // imageSize only supported by Pro model
+      if (selectedModel === "nano-banana-pro") {
+        config.imageSize = imageSize as any;
+      }
 
       // Create image generation task
       const { taskId } = await createImageTask(prompt, selectedModel, config, referenceImages);
@@ -132,7 +137,16 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
             <NodeLabel>Model</NodeLabel>
             <NodeSelect
               value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value as GeminiImageModel)}
+              onChange={(e) => {
+                const newModel = e.target.value as GeminiImageModel;
+                setSelectedModel(newModel);
+                // Pro 模型默认 auto，Fast 模型默认 1:1
+                if (newModel === "nano-banana-pro" && aspectRatio === "1:1") {
+                  setAspectRatio("auto");
+                } else if (newModel === "nano-banana" && aspectRatio === "auto") {
+                  setAspectRatio("1:1");
+                }
+              }}
               className="w-full"
             >
               <option value="nano-banana">Fast</option>
@@ -159,12 +173,14 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         </div>
 
         <div>
-          <NodeLabel>Aspect Ratio</NodeLabel>
+          <NodeLabel>Aspect Ratio {connectedImagesCount > 0 && <span className="text-neutral-400">(参考图覆盖)</span>}</NodeLabel>
           <NodeSelect
             value={aspectRatio}
             onChange={(e) => setAspectRatio(e.target.value)}
             className="w-full"
+            disabled={connectedImagesCount > 0}
           >
+            <option value="auto">Auto</option>
             <option value="1:1">1:1</option>
             <option value="16:9">16:9</option>
             <option value="9:16">9:16</option>
