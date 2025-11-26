@@ -70,14 +70,18 @@ async function withRetry<T>(
 }
 
 /**
- * 将图片 URL 或 base64 统一转换为纯 base64 数据
+ * 将图片 URL 或 base64 统一转换为纯 base64 数据，同时返回 MIME 类型
  */
-async function toBase64(imageSource: string): Promise<string> {
+async function toBase64WithMime(imageSource: string): Promise<{ data: string; mimeType: string }> {
   if (imageSource.startsWith("data:image/")) {
-    return imageSource.replace(
-      /^data:image\/(png|jpeg|jpg|webp|gif);base64,/,
-      ""
-    );
+    const match = imageSource.match(/^data:(image\/[^;]+);base64,(.+)$/);
+    if (match) {
+      return { data: match[2], mimeType: match[1] };
+    }
+    return {
+      data: imageSource.replace(/^data:image\/(png|jpeg|jpg|webp|gif);base64,/, ""),
+      mimeType: "image/png"
+    };
   }
 
   if (
@@ -96,18 +100,26 @@ async function toBase64(imageSource: string): Promise<string> {
       );
     }
 
+    const mimeType = response.headers.get('content-type') || 'image/jpeg';
     const arrayBuffer = await response.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
 
     console.log(
       "[Sprite Stream] Image downloaded, size:",
       Math.round(arrayBuffer.byteLength / 1024),
-      "KB"
+      "KB, mimeType:",
+      mimeType
     );
-    return base64;
+    return { data: base64, mimeType };
   }
 
-  return imageSource;
+  return { data: imageSource, mimeType: "image/png" };
+}
+
+// 保留旧函数兼容
+async function toBase64(imageSource: string): Promise<string> {
+  const result = await toBase64WithMime(imageSource);
+  return result.data;
 }
 
 /**
@@ -137,8 +149,8 @@ async function generateSpriteReplica(
   aspectRatio: string = "1:1"
 ): Promise<string> {
   const apiKey = getGeminiApiKey();
-  const cleanTemplate = await toBase64(templateSource);
-  const cleanCharacter = await toBase64(characterSource);
+  const template = await toBase64WithMime(templateSource);
+  const character = await toBase64WithMime(characterSource);
 
   return withRetry(async () => {
     const textPrompt = `
@@ -152,7 +164,7 @@ async function generateSpriteReplica(
       `;
 
     // 使用原生 fetch 调用 REST API（和 Generator 一致）
-    const requestBody = {
+    const requestBody: any = {
       contents: [
         {
           role: "user",
@@ -160,14 +172,14 @@ async function generateSpriteReplica(
             { text: textPrompt },
             {
               inline_data: {
-                mime_type: "image/png",
-                data: cleanTemplate,
+                mime_type: template.mimeType,
+                data: template.data,
               },
             },
             {
               inline_data: {
-                mime_type: "image/png",
-                data: cleanCharacter,
+                mime_type: character.mimeType,
+                data: character.data,
               },
             },
           ],
@@ -175,18 +187,21 @@ async function generateSpriteReplica(
       ],
       generationConfig: {
         responseModalities: ["IMAGE", "TEXT"],
-        imageConfig: {
-          aspectRatio: aspectRatio,
-          image_size: size,
-        },
       },
     };
+
+    // 条件添加 imageConfig（和 Generator 一致）
+    if (aspectRatio) {
+      requestBody.generationConfig.imageConfig = {
+        aspectRatio: aspectRatio,
+      };
+    }
 
     const modelName = "gemini-2.5-flash-image";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
     console.log(`[Sprite Stream] Calling Gemini API with model: ${modelName}`);
-    console.log(`[Sprite Stream] Template size: ${cleanTemplate.length} chars, Character size: ${cleanCharacter.length} chars`);
+    console.log(`[Sprite Stream] Template: ${template.data.length} chars (${template.mimeType}), Character: ${character.data.length} chars (${character.mimeType})`);
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -235,7 +250,7 @@ async function generateSpriteCreative(
   size: ImageResolution
 ): Promise<string> {
   const apiKey = getGeminiApiKey();
-  const cleanCharacter = await toBase64(characterSource);
+  const character = await toBase64WithMime(characterSource);
 
   return withRetry(async () => {
     const textPrompt = `
@@ -259,7 +274,7 @@ async function generateSpriteCreative(
       `;
 
     // 使用原生 fetch 调用 REST API（和 Generator 一致）
-    const requestBody = {
+    const requestBody: any = {
       contents: [
         {
           role: "user",
@@ -267,8 +282,8 @@ async function generateSpriteCreative(
             { text: textPrompt },
             {
               inline_data: {
-                mime_type: "image/png",
-                data: cleanCharacter,
+                mime_type: character.mimeType,
+                data: character.data,
               },
             },
           ],
@@ -276,18 +291,19 @@ async function generateSpriteCreative(
       ],
       generationConfig: {
         responseModalities: ["IMAGE", "TEXT"],
-        imageConfig: {
-          aspectRatio: "1:1",
-          image_size: size,
-        },
       },
+    };
+
+    // 条件添加 imageConfig（和 Generator 一致，只传 aspectRatio）
+    requestBody.generationConfig.imageConfig = {
+      aspectRatio: "1:1",
     };
 
     const modelName = "gemini-2.5-flash-image";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
     console.log(`[Sprite Stream] Calling Gemini API with model: ${modelName}`);
-    console.log(`[Sprite Stream] Character size: ${cleanCharacter.length} chars`);
+    console.log(`[Sprite Stream] Character: ${character.data.length} chars (${character.mimeType})`);
 
     const response = await fetch(apiUrl, {
       method: "POST",
