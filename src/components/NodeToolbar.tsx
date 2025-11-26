@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Wand2, Brain, Music, MessageSquare, Smile, Video, Image, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +11,17 @@ interface NodeToolbarProps {
   onImageUploadClick?: () => void;
 }
 
-const items = [
+// Video 工具单独定义（彩蛋解锁后显示）
+const videoItem = {
+  type: 'videoGen' as NodeType,
+  title: 'Video',
+  description: 'AI 视频生成',
+  icon: Video,
+  accentColor: '#f97316',
+};
+
+// 基础工具列表（不包含 Video）
+const baseItems = [
   {
     type: 'imageGen' as NodeType,
     title: 'Generator',
@@ -41,13 +51,6 @@ const items = [
     accentColor: '#22c55e',
   },
   {
-    type: 'videoGen' as NodeType,
-    title: 'Video',
-    description: 'Sora 视频生成',
-    icon: Video,
-    accentColor: '#f97316',
-  },
-  {
     type: 'chat' as NodeType,
     title: 'Chat',
     description: '流式对话',
@@ -55,6 +58,8 @@ const items = [
     accentColor: '#64748b',
   },
 ];
+
+const VIDEO_UNLOCK_KEY = 'nanobanana-video-unlocked';
 
 // 图片上传项（特殊处理，点击而非拖拽）
 const uploadItem = {
@@ -66,6 +71,47 @@ const uploadItem = {
 
 export default function NodeToolbar({ onDragStart, onImageUploadClick }: NodeToolbarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // 彩蛋：Video 工具解锁状态
+  const [videoUnlocked, setVideoUnlocked] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 初始化时从 localStorage 读取解锁状态
+  useEffect(() => {
+    const unlocked = localStorage.getItem(VIDEO_UNLOCK_KEY) === 'true';
+    setVideoUnlocked(unlocked);
+  }, []);
+
+  // 彩蛋点击处理 - 在标题 "Tools" 上点击 4 次解锁
+  const handleTitleClick = () => {
+    if (videoUnlocked) return; // 已解锁则忽略
+
+    // 重置计时器
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+    }
+
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+
+    if (newCount >= 4) {
+      // 解锁！
+      setVideoUnlocked(true);
+      localStorage.setItem(VIDEO_UNLOCK_KEY, 'true');
+      setClickCount(0);
+      // 可选：显示解锁提示
+      console.log('🎉 Video tool unlocked!');
+    } else {
+      // 2 秒内没有继续点击则重置计数
+      clickTimerRef.current = setTimeout(() => {
+        setClickCount(0);
+      }, 2000);
+    }
+  };
+
+  // 根据解锁状态决定显示的工具列表
+  const items = videoUnlocked ? [...baseItems.slice(0, 4), videoItem, baseItems[4]] : baseItems;
 
   // 折叠状态：显示小按钮
   if (isCollapsed) {
@@ -148,10 +194,14 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick }: NodeToo
 
         {/* 内容区域 */}
         <div className="relative p-4 z-10">
-          {/* 标题栏 - 添加折叠按钮 */}
+          {/* 标题栏 - 添加折叠按钮 + 彩蛋点击 */}
           <div className="mb-4 pl-1">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
+              <div
+                className="flex items-center gap-2.5 cursor-pointer select-none"
+                onClick={handleTitleClick}
+                title={videoUnlocked ? "Video 已解锁" : undefined}
+              >
                 <div className="relative flex items-center justify-center w-3 h-3">
                   <div className="absolute inset-0 bg-blue-400/50 rounded-full animate-ping" />
                   <div className="w-2 h-2 bg-gradient-to-tr from-blue-400 to-purple-400 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.6)]" />
@@ -159,6 +209,12 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick }: NodeToo
                 <h3 className="text-xs font-bold tracking-widest uppercase text-neutral-800/70 dark:text-white/80">
                   Tools
                 </h3>
+                {/* 彩蛋点击进度提示（未解锁时） */}
+                {!videoUnlocked && clickCount > 0 && (
+                  <span className="text-[10px] text-orange-500 font-bold animate-pulse">
+                    {clickCount}/4
+                  </span>
+                )}
               </div>
               {/* 折叠按钮 */}
               <button

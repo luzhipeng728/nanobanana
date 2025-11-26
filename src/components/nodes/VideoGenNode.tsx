@@ -35,6 +35,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
   const [orientation, setOrientation] = useState<"portrait" | "landscape">(data.orientation || "portrait");
   const [model, setModel] = useState<VideoModel>(data.model || "sora");
   const [negativePrompt, setNegativePrompt] = useState(data.negativePrompt || "");
+  const [durationSeconds, setDurationSeconds] = useState<number>(data.durationSeconds || 5);
   const [isGenerating, setIsGenerating] = useState(false);
   const [connectedImagesCount, setConnectedImagesCount] = useState<number>(0);
   const [showCameos, setShowCameos] = useState(false);
@@ -196,7 +197,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
             userRequest: generatedPrompt, // 使用 AI 生成的专业提示词
             aspectRatio: orientation === "landscape" ? "16:9" : "9:16",
             resolution: "720p",
-            durationSeconds: 8,
+            durationSeconds,
             inputImage,
           }),
         });
@@ -314,6 +315,28 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
             <option value="landscape">Landscape (16:9)</option>
           </NodeSelect>
         </div>
+
+        {/* Duration Selector - Only for Veo model */}
+        {isVeoModel && (
+          <div>
+            <NodeLabel>Duration</NodeLabel>
+            <NodeSelect
+              value={durationSeconds}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setDurationSeconds(val);
+                data.durationSeconds = val;
+              }}
+              className="w-full"
+            >
+              <option value={3}>3 秒</option>
+              <option value={4}>4 秒</option>
+              <option value={5}>5 秒</option>
+              <option value={6}>6 秒</option>
+              <option value={8}>8 秒</option>
+            </NodeSelect>
+          </div>
+        )}
 
         {/* Cameo Selector - Only for Sora model */}
         {!isVeoModel && (
