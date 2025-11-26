@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState, useCallback, useEffect } from "react";
-import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
+import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
 import { rewritePrompt } from "@/app/actions/generate";
 import { createImageTask } from "@/app/actions/image-task";
 import { type GeminiImageModel, type ImageGenerationConfig, RESOLUTION_OPTIONS } from "@/types/image-gen";
@@ -31,11 +31,16 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
   const [isGenerating, setIsGenerating] = useState(false);
   const [connectedImagesCount, setConnectedImagesCount] = useState<number>(0);
 
+  // 使用 ReactFlow store 监听 edges 变化
+  const connectedEdgeCount = useStore((state) =>
+    state.edges.filter((e) => e.target === id).length
+  );
+
   // Update connected images count
   useEffect(() => {
     const connectedNodes = getConnectedImageNodes(id);
     setConnectedImagesCount(connectedNodes.length);
-  }, [id, getConnectedImageNodes]);
+  }, [id, getConnectedImageNodes, connectedEdgeCount]);
 
   // Handle local prompt change
   const handlePromptChange = (evt: React.ChangeEvent<HTMLTextAreaElement>) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState, useCallback, useRef, useEffect } from "react";
-import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
+import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import {
   Loader2,
@@ -78,6 +78,11 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     });
   }, [proUnlocked]);
 
+  // 使用 ReactFlow store 监听 edges 变化
+  const connectedEdgeCount = useStore((state) =>
+    state.edges.filter((e) => e.target === id).length
+  );
+
   // 监听连接的图片节点
   useEffect(() => {
     const connectedNodes = getConnectedImageNodes(id);
@@ -85,7 +90,7 @@ const StickerGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
       .map(node => node.data.imageUrl)
       .filter((url): url is string => typeof url === 'string' && url.length > 0);
     setConnectedImages(imageUrls);
-  }, [id, getConnectedImageNodes]);
+  }, [id, getConnectedImageNodes, connectedEdgeCount]);
 
   const onGenerate = useCallback(async () => {
     if (connectedImages.length === 0) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState, useCallback, useRef, useEffect } from "react";
-import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
+import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { enqueue, getQueueStatus } from "@/lib/rate-limiter";
 import {
@@ -289,6 +289,12 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     },
   ];
 
+  // 使用 ReactFlow store 监听 edges 变化
+  // 只选择与当前节点相关的 edges，避免无关变化触发重渲染
+  const connectedEdgeCount = useStore((state) =>
+    state.edges.filter((e) => e.target === id).length
+  );
+
   // 监听连接的图片节点
   useEffect(() => {
     const connectedNodes = getConnectedImageNodes(id);
@@ -296,7 +302,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       .map(node => node.data.imageUrl)
       .filter((url): url is string => typeof url === 'string' && url.length > 0);
     setConnectedImages(imageUrls);
-  }, [id, getConnectedImageNodes]);
+  }, [id, getConnectedImageNodes, connectedEdgeCount]); // 添加 connectedEdgeCount 作为触发器
 
   const statusIcons = {
     idle: Brain,

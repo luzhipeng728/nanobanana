@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState, useEffect, useRef } from "react";
-import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
+import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { Loader2, Video as VideoIcon, Link2, UserPlus } from "lucide-react";
 import { NodeTextarea, NodeSelect, NodeLabel, NodeButton } from "@/components/ui/NodeUI";
@@ -40,11 +40,16 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     verified: p.verified || false,
   }));
 
+  // 使用 ReactFlow store 监听 edges 变化
+  const connectedEdgeCount = useStore((state) =>
+    state.edges.filter((e) => e.target === id).length
+  );
+
   // 更新连接的图片数量
   useEffect(() => {
     const connectedNodes = getConnectedImageNodes(id);
     setConnectedImagesCount(connectedNodes.length);
-  }, [id, getConnectedImageNodes]);
+  }, [id, getConnectedImageNodes, connectedEdgeCount]);
 
   const handlePromptChange = (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPrompt(evt.target.value);
