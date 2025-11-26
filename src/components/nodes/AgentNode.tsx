@@ -448,7 +448,8 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
               prompt.prompt,
               position,
               result.taskId,
-              { model: selectedModel, config, referenceImages: referenceImagesForGen }
+              { model: selectedModel, config, referenceImages: referenceImagesForGen },
+              prompt.scene  // 场景名称作为标签
             );
 
             // 更新 prompt 状态

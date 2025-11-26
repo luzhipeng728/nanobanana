@@ -13,7 +13,8 @@ interface CanvasContextType {
       model: string;
       config: any;
       referenceImages?: string[];
-    }
+    },
+    label?: string  // 左上角标签（场景名称）
   ) => string;
   updateImageNode: (nodeId: string, imageUrl: string) => void;
   addMusicNode: (taskId: string, prompt: string, position: { x: number; y: number }) => string;

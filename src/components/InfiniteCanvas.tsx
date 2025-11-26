@@ -255,6 +255,7 @@ export default function InfiniteCanvas() {
         prompt: `上传中: ${file.name}`,
         timestamp: new Date().toLocaleString(),
         isLoading: true,
+        label: "上传",  // 上传的图片标签
       },
     };
     setNodes((nds) => nds.concat(newNode));
@@ -464,7 +465,8 @@ export default function InfiniteCanvas() {
       model: string;
       config: any;
       referenceImages?: string[];
-    }
+    },
+    label?: string  // 左上角标签（场景名称）
   ): string => {
     const nodeId = `image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -484,6 +486,7 @@ export default function InfiniteCanvas() {
         isLoading: !imageUrl, // loading 状态
         taskId, // 存储任务 ID
         generationConfig, // 存储生图配置，用于重新生成
+        label, // 左上角标签
       },
     };
     setNodes((nds) => nds.concat(newNode));
