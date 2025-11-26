@@ -278,10 +278,7 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           hideHeader={true}
         >
         <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-blue-100 dark:border-blue-900/30 bg-white dark:bg-neutral-950 h-full will-change-transform transform-gpu [contain:layout_style_paint]">
-          <div
-            className="relative cursor-pointer flex-1 min-h-[150px] h-full"
-            onClick={handleImageClick}
-          >
+          <div className="relative flex-1 min-h-[150px] h-full">
             {isLoading ? (
               <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-900 relative overflow-hidden">
                 {/* Shimmer effect */}
@@ -318,10 +315,18 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   onLoad={handleImageLoad}
                 />
 
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg">
+                {/* 悬停遮罩和放大按钮 */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleImageClick();
+                    }}
+                    className="w-10 h-10 rounded-full bg-white/90 hover:bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg pointer-events-auto cursor-pointer"
+                    title="查看大图"
+                  >
                     <ExternalLink className="w-5 h-5 text-neutral-900" />
-                  </div>
+                  </button>
                 </div>
 
                 {/* 重新生成按钮 - 右上角 */}
