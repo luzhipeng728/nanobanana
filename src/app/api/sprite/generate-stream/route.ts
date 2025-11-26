@@ -342,6 +342,39 @@ The final image should look like a seamless grid that can be cut into 16 equal s
 }
 
 /**
+ * 压缩图片用于 Claude 分析（避免 413 错误）
+ */
+async function resizeImageForAnalysis(
+  imageBase64: string,
+  maxSize: number = 1024
+): Promise<string> {
+  const buffer = Buffer.from(imageBase64, "base64");
+  const image = await loadImage(buffer);
+
+  // 如果图片足够小，直接返回
+  if (image.width <= maxSize && image.height <= maxSize) {
+    console.log(`[Sprite Stream] Image already small enough: ${image.width}x${image.height}`);
+    return imageBase64;
+  }
+
+  // 计算缩放比例
+  const scale = Math.min(maxSize / image.width, maxSize / image.height);
+  const newWidth = Math.round(image.width * scale);
+  const newHeight = Math.round(image.height * scale);
+
+  console.log(`[Sprite Stream] Resizing image for analysis: ${image.width}x${image.height} -> ${newWidth}x${newHeight}`);
+
+  // 创建缩小的 canvas
+  const canvas = createCanvas(newWidth, newHeight);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(image, 0, 0, newWidth, newHeight);
+
+  // 转为 JPEG（更小的文件大小）
+  const resizedBuffer = canvas.toBuffer("image/jpeg", { quality: 0.8 });
+  return resizedBuffer.toString("base64");
+}
+
+/**
  * 使用 Claude 流式分析精灵图布局
  */
 async function analyzeSpriteWithClaudeStream(
@@ -352,8 +385,12 @@ async function analyzeSpriteWithClaudeStream(
 
   console.log("[Sprite Stream] Using Claude to analyze sprite sheet...");
 
-  // 检测图片的真实媒体类型
-  const mediaType = detectImageMediaType(imageBase64);
+  // 压缩图片用于分析（避免 413 错误）
+  const resizedBase64 = await resizeImageForAnalysis(imageBase64, 1024);
+  console.log(`[Sprite Stream] Original size: ${Math.round(imageBase64.length / 1024)}KB, Resized: ${Math.round(resizedBase64.length / 1024)}KB`);
+
+  // 检测图片的真实媒体类型（压缩后是 JPEG）
+  const mediaType = detectImageMediaType(resizedBase64);
   console.log(`[Sprite Stream] Detected media type: ${mediaType}`);
 
   let fullText = "";
@@ -370,7 +407,7 @@ async function analyzeSpriteWithClaudeStream(
             source: {
               type: "base64",
               media_type: mediaType,
-              data: imageBase64,
+              data: resizedBase64,
             },
           },
           {
