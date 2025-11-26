@@ -243,6 +243,15 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
   return (
     <div className="w-full h-full">
+        {/* 节点外部上方的手绘标签 */}
+        {data.label && (
+          <div className="absolute -top-7 left-0 z-10">
+            <span className="handwriting-label text-xl text-neutral-700 dark:text-neutral-300">
+              {data.label}
+            </span>
+          </div>
+        )}
+
         <BaseNode
           title="Generated Image"
           icon={ImageIcon}
@@ -305,15 +314,6 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   loading="lazy"
                   onLoad={handleImageLoad}
                 />
-
-                {/* 左上角手绘标签 */}
-                {data.label && (
-                  <div className="absolute top-3 left-3 z-10">
-                    <span className="handwriting-label text-lg text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                      {data.label}
-                    </span>
-                  </div>
-                )}
 
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg">
