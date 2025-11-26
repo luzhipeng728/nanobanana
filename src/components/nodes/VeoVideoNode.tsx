@@ -16,7 +16,8 @@ type VeoVideoNodeData = {
 
 const VeoVideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { updateNodeData } = useReactFlow();
-  const isLoading = data.isLoading || !data.videoUrl;
+  // 只有在没有错误、没有视频且 isLoading 为 true 时才显示加载状态
+  const isLoading = !data.error && (data.isLoading || (!data.videoUrl && data.taskId));
   const [pollingStatus, setPollingStatus] = useState<string | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 

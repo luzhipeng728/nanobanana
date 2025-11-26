@@ -28,7 +28,8 @@ type ImageNodeData = {
 const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { openImageModal, addImageNode } = useCanvas();
   const { updateNodeData, getNode } = useReactFlow();
-  const isLoading = data.isLoading || !data.imageUrl;
+  // 只有在没有错误、没有图片且 isLoading 为 true 时才显示加载状态
+  const isLoading = !data.error && (data.isLoading || (!data.imageUrl && data.taskId));
   const [pollingStatus, setPollingStatus] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);

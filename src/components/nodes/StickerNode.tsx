@@ -19,7 +19,8 @@ type StickerNodeData = {
 const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
   const { updateNodeData } = useReactFlow();
   const { openImageModal } = useCanvas();
-  const isLoading = data.isLoading || !data.frames || data.frames.length < 10;
+  // 只有在没有错误、帧不足且 isLoading 为 true 时才显示加载状态
+  const isLoading = !data.error && (data.isLoading || (!data.frames || data.frames.length < 10) && data.taskId);
   
   const [frameStatuses, setFrameStatuses] = useState<string[]>(
     data.frameStatuses || Array(10).fill("pending")

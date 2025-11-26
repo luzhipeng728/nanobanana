@@ -20,7 +20,8 @@ type MusicNodeData = {
 const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { updateNodeData } = useReactFlow();
   const { registerAudio, unregisterAudio, pauseAllExcept } = useAudio();
-  const isLoading = data.isLoading || !data.musicUrls;
+  // 只有在没有错误、没有音乐且 isLoading 为 true 时才显示加载状态
+  const isLoading = !data.error && (data.isLoading || (!data.musicUrls && data.taskId));
   const [pollingStatus, setPollingStatus] = useState<string | null>(null);
   const [expandedLyrics, setExpandedLyrics] = useState<{ [key: number]: boolean }>({});
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
