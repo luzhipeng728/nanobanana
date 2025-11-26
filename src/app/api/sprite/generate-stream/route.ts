@@ -253,43 +253,20 @@ async function generateSpriteCreative(
   const character = await toBase64WithMime(characterSource);
 
   return withRetry(async () => {
-    const textPrompt = `
-Create a sprite sheet for game animation based on the reference character image.
+    const textPrompt = `Generate a 4x4 sprite sheet animation of the character from the reference image.
 
-**STRICT LAYOUT REQUIREMENTS (MUST FOLLOW EXACTLY):**
-- Output: A single square image divided into a perfect 4x4 grid (16 cells total)
-- Each cell must be EXACTLY 1/4 of the image width and 1/4 of the image height
-- NO margins, NO padding, NO gaps between cells
-- Cells must tile perfectly edge-to-edge
+ACTION: ${actionPrompt}
 
-**GRID STRUCTURE:**
-┌────┬────┬────┬────┐
-│ 1  │ 2  │ 3  │ 4  │
-├────┼────┼────┼────┤
-│ 5  │ 6  │ 7  │ 8  │
-├────┼────┼────┼────┤
-│ 9  │ 10 │ 11 │ 12 │
-├────┼────┼────┼────┤
-│ 13 │ 14 │ 15 │ 16 │
-└────┴────┴────┴────┘
+RULES:
+- 16 frames arranged in 4 rows × 4 columns
+- Frames must FILL THE ENTIRE IMAGE with ZERO margins/padding/gaps
+- Each frame touches its neighbors directly (edge-to-edge tiling)
+- White background (#FFFFFF)
+- Same character size and center position in all frames
+- DO NOT add any text, numbers, labels, or borders
+- ${stylePrompt || "Keep the character's original style"}
 
-**CHARACTER REQUIREMENTS:**
-- Maintain the EXACT identity, colors, and design from the reference image
-- Character must be CENTERED in each cell
-- Character size must be IDENTICAL across all 16 frames
-- Character position (centered) must be CONSISTENT in every cell
-
-**ANIMATION: ${actionPrompt}**
-- Show smooth animation progression from frame 1 to frame 16
-- Reading order: left-to-right, top-to-bottom
-
-**VISUAL STYLE:**
-- Background: Pure white (#FFFFFF) for ALL cells
-- Style: ${stylePrompt || "Match the reference character's pixel art style"}
-- NO decorations, borders, or labels on the sprite sheet
-
-**CRITICAL: The output must be precisely sliceable into 16 equal parts.**
-      `;
+The final image should look like a seamless grid that can be cut into 16 equal squares.`;
 
     // 使用原生 fetch 调用 REST API（和 Generator 一致）
     const requestBody: any = {
