@@ -341,9 +341,9 @@ export async function generateImageAction(
       }
 
       // Use native fetch with curl-like request
-      // 设置 2 分钟超时
+      // 设置 10 分钟超时（Gemini 图片生成较慢，尤其是高清 + 参考图）
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 秒 = 2 分钟
+      const timeoutId = setTimeout(() => controller.abort(), 600000); // 600 秒 = 10 分钟
 
       // 每次请求前获取当前可用的 Key（可能在重试/并发过程中切换了）
       const currentKeyInfo = await getCurrentApiKey();
