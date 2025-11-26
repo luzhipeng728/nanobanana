@@ -6,7 +6,9 @@ import { r2Client, R2_BUCKET_NAME } from "@/lib/r2";
 import { v4 as uuidv4 } from "uuid";
 
 export async function getPresignedUploadUrl(contentType: string = "image/png") {
-  const fileName = `${uuidv4()}.png`;
+  // 根据 contentType 确定扩展名
+  const ext = contentType.includes("png") ? "png" : contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : contentType.includes("webp") ? "webp" : "png";
+  const fileName = `nanobanana/images/${uuidv4()}.${ext}`;
 
   const command = new PutObjectCommand({
     Bucket: R2_BUCKET_NAME,
@@ -35,7 +37,7 @@ export async function uploadImageToR2(formData: FormData) {
 
   // Get file extension
   const ext = file.name.split('.').pop() || 'png';
-  const fileName = `${uuidv4()}.${ext}`;
+  const fileName = `nanobanana/uploads/${uuidv4()}.${ext}`;
 
   // Convert file to buffer
   const arrayBuffer = await file.arrayBuffer();
@@ -77,7 +79,7 @@ export async function uploadVideoFromUrl(videoUrl: string): Promise<string> {
     console.log(`[R2] Downloaded video, size: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
 
     // 生成文件名
-    const fileName = `videos/${uuidv4()}.mp4`;
+    const fileName = `nanobanana/videos/${uuidv4()}.mp4`;
 
     const command = new PutObjectCommand({
       Bucket: R2_BUCKET_NAME,
@@ -109,7 +111,7 @@ export async function uploadVideoFromBase64(base64Data: string, mimeType: string
 
     // 根据 mimeType 确定扩展名
     const ext = mimeType.includes("mp4") ? "mp4" : mimeType.includes("webm") ? "webm" : "mp4";
-    const fileName = `videos/${uuidv4()}.${ext}`;
+    const fileName = `nanobanana/videos/${uuidv4()}.${ext}`;
 
     const command = new PutObjectCommand({
       Bucket: R2_BUCKET_NAME,

@@ -21,9 +21,11 @@ export const r2Client = new S3Client({
 export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || "generated-images";
 export const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || "";
 
-export async function uploadBufferToR2(buffer: Buffer, contentType: string = "image/png", folder: string = "") {
-  const fileName = `${folder ? folder + "/" : ""}${uuidv4()}.png`;
-  
+export async function uploadBufferToR2(buffer: Buffer, contentType: string = "image/png", folder: string = "images") {
+  // 根据 contentType 确定扩展名
+  const ext = contentType.includes("png") ? "png" : contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : contentType.includes("webp") ? "webp" : "png";
+  const fileName = `nanobanana/${folder}/${uuidv4()}.${ext}`;
+
   const command = new PutObjectCommand({
     Bucket: R2_BUCKET_NAME,
     Key: fileName,
