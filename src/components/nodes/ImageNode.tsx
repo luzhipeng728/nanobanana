@@ -251,8 +251,8 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           maxWidth={MAX_WIDTH}
           maxHeight={MAX_HEIGHT}
           keepAspectRatio={true}
-          lineClassName="!border-blue-400 !border-2"
-          handleClassName="!w-4 !h-4 !bg-blue-500 !border-2 !border-white !rounded-sm"
+          lineClassName="!border-blue-400/50 !border-[1.5px]"
+          handleClassName="!w-2 !h-2 !bg-blue-500 !border !border-white !rounded-full !shadow-sm"
           onResizeEnd={() => {
             // 用户手动调整尺寸后，标记为已自定义
             updateNodeData(id, { userResized: true });
