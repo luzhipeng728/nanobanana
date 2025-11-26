@@ -770,51 +770,51 @@ export default function InfiniteCanvas() {
 
   return (
     <div className="w-full h-screen relative bg-neutral-50 dark:bg-black">
-      {/* Toolbar */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm p-2 rounded-full shadow-lg border border-neutral-200 dark:border-neutral-800">
+      {/* Toolbar - Apple Liquid Glass Style */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 p-2 rounded-full bg-white/15 dark:bg-black/25 backdrop-blur-[40px] backdrop-saturate-[180%] border border-white/20 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.12),_inset_0_0_0_1px_rgba(255,255,255,0.1),_inset_0_1px_0_0_rgba(255,255,255,0.2)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4),_inset_0_0_0_1px_rgba(255,255,255,0.05)]">
         <button
           onClick={addGeneratorNode}
-          className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
           title="Add Generator"
         >
-          <Wand2 className="w-5 h-5" />
+          <Wand2 className="w-5 h-5 text-neutral-700 dark:text-neutral-200" />
         </button>
         <button
           onClick={addAgentNode}
-          className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
           title="Add AI Agent"
         >
-          <Brain className="w-5 h-5 text-purple-600" />
+          <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
         </button>
         <button
           onClick={addStickerGenNode}
-          className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
           title="表情包生成器"
         >
-          <Smile className="w-5 h-5 text-pink-500" />
+          <Smile className="w-5 h-5 text-pink-500 dark:text-pink-400" />
         </button>
-        <div className="w-px bg-neutral-300 dark:bg-neutral-700 my-1" />
+        <div className="w-px bg-white/20 dark:bg-white/10 my-1" />
         <button
           onClick={handleSave}
-          className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
           title="Save Canvas to Cloud"
         >
-          <Save className="w-5 h-5" />
+          <Save className="w-5 h-5 text-neutral-700 dark:text-neutral-200" />
         </button>
         <div className="relative group">
-          <button className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors" title="Load Canvas from Cloud">
-            <FolderOpen className="w-5 h-5" />
+          <button className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors" title="Load Canvas from Cloud">
+            <FolderOpen className="w-5 h-5 text-neutral-700 dark:text-neutral-200" />
           </button>
-          {/* Dropdown for history */}
-          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-48 bg-white dark:bg-neutral-900 rounded-lg shadow-xl border border-neutral-200 dark:border-neutral-800 hidden group-hover:block max-h-60 overflow-y-auto">
+          {/* Dropdown for history - Glass style */}
+          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-48 bg-white/80 dark:bg-black/60 backdrop-blur-[20px] backdrop-saturate-[180%] rounded-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] border border-white/20 dark:border-white/10 hidden group-hover:block max-h-60 overflow-y-auto">
             {savedCanvases.length === 0 ? (
-              <div className="p-3 text-xs text-neutral-500 text-center">No saved canvases</div>
+              <div className="p-3 text-xs text-neutral-500 dark:text-neutral-400 text-center">No saved canvases</div>
             ) : (
               savedCanvases.map(c => (
                 <div
                   key={c.id}
                   onClick={() => loadCanvas(c.id)}
-                  className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer text-xs truncate border-b border-neutral-100 dark:border-neutral-800 last:border-0"
+                  className="p-2 hover:bg-white/50 dark:hover:bg-white/10 cursor-pointer text-xs truncate border-b border-white/10 last:border-0 text-neutral-700 dark:text-neutral-200"
                 >
                   {c.name}
                 </div>
@@ -824,7 +824,7 @@ export default function InfiniteCanvas() {
         </div>
         <button
           onClick={() => setIsGalleryOpen(true)}
-          className="p-2 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors text-purple-600 dark:text-purple-400"
+          className="p-2 rounded-full hover:bg-purple-500/20 transition-colors text-purple-600 dark:text-purple-400"
           title="创意画廊"
         >
           <GalleryHorizontalEnd className="w-5 h-5" />
@@ -833,8 +833,8 @@ export default function InfiniteCanvas() {
           onClick={() => setSelectionMode(!selectionMode)}
           className={`p-2 rounded-full transition-colors ${
             selectionMode
-              ? "bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400"
-              : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              ? "bg-blue-500/20 text-blue-600 dark:text-blue-400"
+              : "hover:bg-white/30 dark:hover:bg-white/10 text-neutral-700 dark:text-neutral-200"
           }`}
           title={selectionMode ? "当前：选择模式（点击切换到手掌模式）" : "当前：手掌模式（点击切换到选择模式）"}
         >
@@ -847,7 +847,7 @@ export default function InfiniteCanvas() {
         {selectionMode && (
           <button
             onClick={() => deleteSelectedNodes(false)}
-            className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-600 dark:text-red-400"
+            className="p-2 rounded-full hover:bg-red-500/20 transition-colors text-red-600 dark:text-red-400"
             title="删除选中节点"
           >
             <Trash2 className="w-5 h-5" />
@@ -855,34 +855,34 @@ export default function InfiniteCanvas() {
         )}
         <button
           onClick={loadExampleImages}
-          className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-blue-600 dark:text-blue-400"
+          className="p-2 rounded-full hover:bg-blue-500/20 transition-colors text-blue-600 dark:text-blue-400"
           title="导入示例图片 (27张)"
         >
           <LayoutGrid className="w-5 h-5" />
         </button>
         <button
           onClick={clearLocalCache}
-          className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-600 dark:text-red-400"
+          className="p-2 rounded-full hover:bg-red-500/20 transition-colors text-red-600 dark:text-red-400"
           title="清空画布"
         >
           <Trash2 className="w-5 h-5" />
         </button>
-        <div className="w-px bg-neutral-300 dark:bg-neutral-700 my-1" />
+        <div className="w-px bg-white/20 dark:bg-white/10 my-1" />
         {userId ? (
           <div className="relative group">
-            <button className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-2">
-              <UserIcon className="w-5 h-5" />
-              <span className="text-xs font-medium">{username}</span>
+            <button className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors flex items-center gap-2">
+              <UserIcon className="w-5 h-5 text-neutral-700 dark:text-neutral-200" />
+              <span className="text-xs font-medium text-neutral-700 dark:text-neutral-200">{username}</span>
             </button>
-            {/* User dropdown */}
-            <div className="absolute top-full mt-2 right-0 w-48 bg-white dark:bg-neutral-900 rounded-lg shadow-xl border border-neutral-200 dark:border-neutral-800 hidden group-hover:block">
-              <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
-                <p className="text-xs text-neutral-500">Logged in as</p>
-                <p className="text-sm font-medium truncate">{username}</p>
+            {/* User dropdown - Glass style */}
+            <div className="absolute top-full mt-2 right-0 w-48 bg-white/80 dark:bg-black/60 backdrop-blur-[20px] backdrop-saturate-[180%] rounded-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] border border-white/20 dark:border-white/10 hidden group-hover:block">
+              <div className="p-3 border-b border-white/10">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Logged in as</p>
+                <p className="text-sm font-medium truncate text-neutral-800 dark:text-neutral-100">{username}</p>
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full p-3 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left text-sm flex items-center gap-2 text-red-600 dark:text-red-400"
+                className="w-full p-3 hover:bg-red-500/10 text-left text-sm flex items-center gap-2 text-red-600 dark:text-red-400 rounded-b-xl"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -892,10 +892,10 @@ export default function InfiniteCanvas() {
         ) : (
           <button
             onClick={() => setIsUserModalOpen(true)}
-            className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
             title="Login"
           >
-            <UserIcon className="w-5 h-5" />
+            <UserIcon className="w-5 h-5 text-neutral-700 dark:text-neutral-200" />
           </button>
         )}
       </div>
