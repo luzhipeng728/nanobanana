@@ -34,7 +34,7 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid } from "lucide-react";
 import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
 
@@ -52,7 +52,6 @@ const nodeTypes = {
 };
 
 const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
-const FIRST_VISIT_KEY = "nanobanana-first-visit";
 
 // Start with empty canvas - users will drag nodes from toolbar
 const initialNodes: Node[] = [];
@@ -98,7 +97,6 @@ export default function InfiniteCanvas() {
   useEffect(() => {
     try {
       const savedCanvas = localStorage.getItem(LOCALSTORAGE_KEY);
-      const hasVisited = localStorage.getItem(FIRST_VISIT_KEY);
 
       if (savedCanvas) {
         const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedCanvas);
@@ -107,12 +105,8 @@ export default function InfiniteCanvas() {
           setEdges(savedEdges || []);
           console.log("✅ Loaded canvas from localStorage:", savedNodes.length, "nodes");
         }
-      } else if (!hasVisited) {
-        // First visit: load example images
-        console.log("🎉 First visit! Loading example images...");
-        loadExampleImages();
-        localStorage.setItem(FIRST_VISIT_KEY, "true");
       }
+      // 不再自动加载示例图片，用户可以通过按钮手动导入
     } catch (error) {
       console.error("Failed to load canvas from localStorage:", error);
     } finally {
@@ -120,8 +114,15 @@ export default function InfiniteCanvas() {
     }
   }, []);
 
-  // Load example images for first-time visitors
+  // Load example images manually
   const loadExampleImages = useCallback(() => {
+    // 如果画布不为空，提示用户
+    if (nodes.length > 0) {
+      if (!confirm("当前画布有内容，导入示例图片将覆盖现有内容。是否继续？")) {
+        return;
+      }
+    }
+
     const COLS = 9;  // 9 columns (27 images / 3 rows)
     const NODE_WIDTH = 420;  // Image node width
     const NODE_HEIGHT = 260; // Estimated height (16:9 aspect)
@@ -157,7 +158,15 @@ export default function InfiniteCanvas() {
 
     setNodes(exampleNodes);
     console.log(`✅ Loaded ${exampleNodes.length} example images`);
-  }, [setNodes]);
+
+    // 延迟执行 fitView 以确保节点已渲染
+    setTimeout(() => {
+      if (reactFlowInstance) {
+        reactFlowInstance.fitView({ padding: 0.1 });
+        console.log("📐 Centered view on example images");
+      }
+    }, 100);
+  }, [setNodes, nodes.length, reactFlowInstance]);
 
   // Auto-save canvas to localStorage with debounce to prevent lag during dragging
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -517,18 +526,16 @@ export default function InfiniteCanvas() {
     }
   };
 
-  // Clear local cache and show example images
+  // Clear local cache
   const clearLocalCache = useCallback(() => {
-    if (confirm("确定要清空画布缓存吗？这将删除所有节点并重置为示例画布。")) {
+    if (confirm("确定要清空画布缓存吗？这将删除所有节点。")) {
       localStorage.removeItem(LOCALSTORAGE_KEY);
-      localStorage.removeItem(FIRST_VISIT_KEY);  // 重置首次访问标记
+      setNodes([]);
       setEdges([]);
       setCurrentCanvasId(null);
-      // 直接加载示例图片
-      loadExampleImages();
-      console.log("🗑️ Cleared local cache and loaded example images");
+      console.log("🗑️ Cleared local cache");
     }
-  }, [loadExampleImages]);
+  }, [setNodes]);
 
   // Delete selected nodes
   const deleteSelectedNodes = useCallback((skipConfirm = false) => {
@@ -846,6 +853,13 @@ export default function InfiniteCanvas() {
             <Trash2 className="w-5 h-5" />
           </button>
         )}
+        <button
+          onClick={loadExampleImages}
+          className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-blue-600 dark:text-blue-400"
+          title="导入示例图片 (27张)"
+        >
+          <LayoutGrid className="w-5 h-5" />
+        </button>
         <button
           onClick={clearLocalCache}
           className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-600 dark:text-red-400"

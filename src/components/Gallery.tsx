@@ -13,6 +13,7 @@ import {
   Sparkles,
   User,
   Users,
+  Trash2,
 } from "lucide-react";
 
 interface GalleryImage {
@@ -40,6 +41,7 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
   const [total, setTotal] = useState(0);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [myOnly, setMyOnly] = useState(false);  // 只看自己的
+  const [deletingId, setDeletingId] = useState<string | null>(null);  // 正在删除的图片 ID
 
   const fetchImages = useCallback(async (pageNum: number, onlyMine: boolean) => {
     setLoading(true);
@@ -68,6 +70,41 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
   const toggleMyOnly = () => {
     setMyOnly(!myOnly);
     setPage(1);
+  };
+
+  // 软删除图片
+  const handleDelete = async (imageId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("确定要删除这张图片吗？删除后将从画廊中移除。")) {
+      return;
+    }
+
+    setDeletingId(imageId);
+    try {
+      const res = await fetch("/api/gallery", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: imageId }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        // 从列表中移除该图片
+        setImages((prev) => prev.filter((img) => img.id !== imageId));
+        setTotal((prev) => prev - 1);
+        // 如果删除的是当前选中的图片，关闭详情
+        if (selectedImage?.id === imageId) {
+          setSelectedImage(null);
+        }
+      } else {
+        alert(data.error || "删除失败");
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+      alert("删除失败，请稍后重试");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   useEffect(() => {
@@ -237,6 +274,21 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
 
                   {/* Quick actions */}
                   <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* 删除按钮 - 仅对自己的作品显示 */}
+                    {image.isOwner && (
+                      <button
+                        onClick={(e) => handleDelete(image.id, e)}
+                        disabled={deletingId === image.id}
+                        className="p-1.5 rounded-lg bg-red-500/90 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
+                        title="删除"
+                      >
+                        {deletingId === image.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

@@ -36,106 +36,116 @@ model Canvas {
 }
 
 model ImageTask {
-  id               String   @id @default(uuid())
-  status           String   // pending, processing, completed, failed
-  prompt           String   @db.Text
+  id               String    @id @default(uuid())
+  status           String    // pending, processing, completed, failed
+  prompt           String    @db.Text
   model            String
-  config           String?  @db.Text // JSON string of ImageGenerationConfig
-  referenceImages  String?  @db.Text // JSON array of reference image URLs
-  imageUrl         String?  @db.Text // Result image URL (when completed)
-  error            String?  @db.Text // Error message (when failed)
-  userId           String?  // 关联用户（用于统计）
-  user             User?    @relation(fields: [userId], references: [id])
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  config           String?   @db.Text // JSON string of ImageGenerationConfig
+  referenceImages  String?   @db.Text // JSON array of reference image URLs
+  imageUrl         String?   @db.Text // Result image URL (when completed)
+  error            String?   @db.Text // Error message (when failed)
+  userId           String?   // 关联用户（用于统计）
+  user             User?     @relation(fields: [userId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
   completedAt      DateTime?
+  deletedAt        DateTime? // 软删除：null 表示未删除，有值表示删除时间
 
   @@index([userId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model MusicTask {
-  id            String   @id @default(uuid())
-  status        String   // pending, processing, completed, failed
-  prompt        String   @db.Text
-  lyrics        String?  @db.Text
-  numberOfSongs Int      @default(2)
-  externalTaskId String? // Mureka task ID for polling
-  musicUrls     String?  @db.LongText // JSON array of generated music URLs [{url, flacUrl, duration}]
-  error         String?  @db.Text
-  userId        String?  // 关联用户（用于统计）
-  user          User?    @relation(fields: [userId], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  completedAt   DateTime?
+  id             String    @id @default(uuid())
+  status         String    // pending, processing, completed, failed
+  prompt         String    @db.Text
+  lyrics         String?   @db.Text
+  numberOfSongs  Int       @default(2)
+  externalTaskId String?   // Mureka task ID for polling
+  musicUrls      String?   @db.LongText // JSON array of generated music URLs [{url, flacUrl, duration}]
+  error          String?   @db.Text
+  userId         String?   // 关联用户（用于统计）
+  user           User?     @relation(fields: [userId], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  completedAt    DateTime?
+  deletedAt      DateTime? // 软删除
 
   @@index([userId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model VideoTask {
-  id          String   @id @default(uuid())
-  status      String   // pending, processing, completed, failed
-  prompt      String   @db.Text
-  orientation String   @default("portrait") // portrait or landscape
-  inputImage  String?  @db.Text // Optional image URL for image-to-video
-  videoUrl    String?  @db.Text
-  progress    Int      @default(0) // 0-100
-  error       String?  @db.Text
-  userId      String?  // 关联用户（用于统计）
-  user        User?    @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id          String    @id @default(uuid())
+  status      String    // pending, processing, completed, failed
+  prompt      String    @db.Text
+  orientation String    @default("portrait") // portrait or landscape
+  inputImage  String?   @db.Text // Optional image URL for image-to-video
+  videoUrl    String?   @db.Text
+  progress    Int       @default(0) // 0-100
+  error       String?   @db.Text
+  userId      String?   // 关联用户（用于统计）
+  user        User?     @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   completedAt DateTime?
+  deletedAt   DateTime? // 软删除
 
   @@index([userId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model StickerTask {
-  id              String   @id @default(uuid())
-  status          String   // pending, processing, completed, failed
-  animationType   String   @db.Text // 动画描述
-  referenceImage  String   @db.Text // 参考图片 URL
-  model           String   // 使用的模型
-  config          String?  @db.Text // JSON 配置
-  customPrompt    String?  @db.LongText // 自定义提示词 / 帧提示词 JSON
-  totalFrames     Int      @default(10)
-  completedFrames Int      @default(0)
-  frames          String?  @db.LongText // JSON 数组，存储已生成的帧图片 URLs
-  frameStatuses   String?  @db.Text // JSON 数组，每帧的状态
-  error           String?  @db.Text
-  userId          String?  // 关联用户（用于统计）
-  user            User?    @relation(fields: [userId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id              String    @id @default(uuid())
+  status          String    // pending, processing, completed, failed
+  animationType   String    @db.Text // 动画描述
+  referenceImage  String    @db.Text // 参考图片 URL
+  model           String    // 使用的模型
+  config          String?   @db.Text // JSON 配置
+  customPrompt    String?   @db.LongText // 自定义提示词 / 帧提示词 JSON
+  totalFrames     Int       @default(10)
+  completedFrames Int       @default(0)
+  frames          String?   @db.LongText // JSON 数组，存储已生成的帧图片 URLs
+  frameStatuses   String?   @db.Text // JSON 数组，每帧的状态
+  error           String?   @db.Text
+  userId          String?   // 关联用户（用于统计）
+  user            User?     @relation(fields: [userId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   completedAt     DateTime?
+  deletedAt       DateTime? // 软删除
 
   @@index([userId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 // Veo 视频生成任务
 model VeoTask {
-  id              String   @id @default(uuid())
-  status          String   // pending, processing, completed, failed
-  prompt          String   @db.Text
-  aspectRatio     String   @default("16:9")   // 16:9 或 9:16
-  resolution      String   @default("720p")   // 720p
-  durationSeconds Int      @default(8)        // 5-8 秒
-  negativePrompt  String?  @db.Text           // 负面提示词
-  inputImage      String?  @db.Text           // 可选的输入图片 (图生视频)
-  operationName   String?  @db.Text           // Google API 的 operation name，用于轮询
-  videoUrl        String?  @db.Text           // 生成的视频 URL
-  error           String?  @db.Text
-  userId          String?                     // 关联用户（用于统计）
-  user            User?    @relation(fields: [userId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id              String    @id @default(uuid())
+  status          String    // pending, processing, completed, failed
+  prompt          String    @db.Text
+  aspectRatio     String    @default("16:9")   // 16:9 或 9:16
+  resolution      String    @default("720p")   // 720p
+  durationSeconds Int       @default(8)        // 5-8 秒
+  negativePrompt  String?   @db.Text           // 负面提示词
+  inputImage      String?   @db.Text           // 可选的输入图片 (图生视频)
+  operationName   String?   @db.Text           // Google API 的 operation name，用于轮询
+  videoUrl        String?   @db.Text           // 生成的视频 URL
+  error           String?   @db.Text
+  userId          String?                      // 关联用户（用于统计）
+  user            User?     @relation(fields: [userId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   completedAt     DateTime?
+  deletedAt       DateTime? // 软删除
 
   @@index([userId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 // API Key 状态管理（全局单例）
