@@ -712,14 +712,14 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         </div>
       )}
 
-      {/* User Request Input */}
+      {/* 目标描述输入 */}
       <div className="space-y-1">
-        <NodeLabel>Goal Description</NodeLabel>
+        <NodeLabel>目标描述</NodeLabel>
         <NodeTextarea
           rows={4}
           value={userRequest}
           onChange={(e) => setUserRequest(e.target.value)}
-          placeholder="Describe the scene you want to generate..."
+          placeholder="描述你想要生成的场景..."
           disabled={isRunning}
           className="focus:ring-purple-500/20 focus:border-purple-500"
         />
@@ -773,27 +773,27 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         )}
       </div>
 
-      {/* Model, Resolution & Aspect Ratio - 使用 Tab 样式 */}
+      {/* 模型、分辨率、比例选择 - 使用 Tab 样式 */}
       <div className="space-y-3">
-        {/* Model 选择 */}
+        {/* 模型选择 */}
         <div className="space-y-1.5">
-          <NodeLabel>Model</NodeLabel>
+          <NodeLabel>模型</NodeLabel>
           <NodeTabSelect
             value={selectedModel}
             onChange={(val) => setSelectedModel(val as "nano-banana" | "nano-banana-pro")}
             options={[
-              { value: "nano-banana", label: "Fast" },
-              { value: "nano-banana-pro", label: "Pro" },
+              { value: "nano-banana", label: "快速" },
+              { value: "nano-banana-pro", label: "高级" },
             ]}
             disabled={isRunning}
             color="purple"
           />
         </div>
 
-        {/* Resolution for Pro model */}
+        {/* 分辨率 - Pro 模型时显示 */}
         {selectedModel === "nano-banana-pro" && (
           <div className="space-y-1.5">
-            <NodeLabel>Resolution</NodeLabel>
+            <NodeLabel>分辨率</NodeLabel>
             <NodeTabSelect
               value={imageSize}
               onChange={setImageSize}
@@ -808,17 +808,17 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           </div>
         )}
 
-        {/* Aspect Ratio - 只有没有参考图（或没勾选给生图模型）时才显示 */}
+        {/* 画面比例 - 只有没有参考图（或没勾选给生图模型）时才显示 */}
         {!(connectedImages.length > 0 && useForImageGen) && (
           <div className="space-y-1.5">
-            <NodeLabel>Aspect Ratio</NodeLabel>
+            <NodeLabel>画面比例</NodeLabel>
             <NodeTabSelect
               value={aspectRatio}
               onChange={setAspectRatio}
               options={[
-                { value: "16:9", label: "16:9" },
-                { value: "9:16", label: "9:16" },
-                { value: "1:1", label: "1:1" },
+                { value: "16:9", label: "横屏" },
+                { value: "9:16", label: "竖屏" },
+                { value: "1:1", label: "方形" },
                 { value: "4:3", label: "4:3" },
                 { value: "3:4", label: "3:4" },
               ]}
@@ -916,7 +916,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       {/* Generated Prompts */}
       {prompts.length > 0 && (
         <div className="space-y-2">
-          <NodeLabel>Scenes ({prompts.length})</NodeLabel>
+          <NodeLabel>场景 ({prompts.length})</NodeLabel>
           <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800">
             {prompts.map((prompt) => (
               <div
@@ -928,11 +928,11 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                     {prompt.scene}
                   </span>
                   <span className="text-[10px] text-neutral-500 ml-2 flex-shrink-0">
-                    {prompt.status === "pending" && "Waiting"}
+                    {prompt.status === "pending" && "等待中"}
                     {prompt.status === "generating" && (
                       <span className="flex items-center gap-1 text-purple-600">
                         <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                        Gen
+                        生成中
                       </span>
                     )}
                     {prompt.status === "completed" && <CheckCircle2 className="w-3 h-3 text-green-500" />}
@@ -948,7 +948,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* 操作按钮 */}
       <div className="pt-2">
         {!isRunning ? (
           <NodeButton
@@ -957,7 +957,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
             className="w-full bg-purple-600 hover:bg-purple-700 text-white"
           >
             <Brain className="w-3.5 h-3.5" />
-            Start Agent
+            开始生成
           </NodeButton>
         ) : (
           <NodeButton
@@ -966,7 +966,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
             className="w-full"
           >
             <XCircle className="w-3.5 h-3.5" />
-            Stop Generation
+            停止生成
           </NodeButton>
         )}
       </div>

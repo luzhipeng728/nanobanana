@@ -283,9 +283,9 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       />
 
       <div className="space-y-3">
-        {/* Model Selector - Tab 样式 */}
+        {/* 模型选择 - Tab 样式 */}
         <div className="space-y-1.5">
-          <NodeLabel>Model</NodeLabel>
+          <NodeLabel>模型</NodeLabel>
           <NodeTabSelect
             value={model}
             onChange={(val) => {
@@ -301,9 +301,9 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           />
         </div>
 
-        {/* Orientation - Tab 样式 */}
+        {/* 画面方向 - Tab 样式 */}
         <div className="space-y-1.5">
-          <NodeLabel>Orientation</NodeLabel>
+          <NodeLabel>画面方向</NodeLabel>
           <NodeTabSelect
             value={orientation}
             onChange={(val) => {
@@ -312,18 +312,18 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
               data.orientation = newVal;
             }}
             options={[
-              { value: "portrait", label: "Portrait 9:16" },
-              { value: "landscape", label: "Landscape 16:9" },
+              { value: "portrait", label: "竖屏 9:16" },
+              { value: "landscape", label: "横屏 16:9" },
             ]}
             color="orange"
             size="sm"
           />
         </div>
 
-        {/* Duration Selector - Only for Veo model - Tab 样式 */}
+        {/* 时长选择 - Veo 模型时显示 - Tab 样式 */}
         {isVeoModel && (
           <div className="space-y-1.5">
-            <NodeLabel>Duration</NodeLabel>
+            <NodeLabel>视频时长</NodeLabel>
             <NodeTabSelect
               value={String(durationSeconds)}
               onChange={(val) => {
@@ -332,11 +332,11 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
                 data.durationSeconds = num;
               }}
               options={[
-                { value: "3", label: "3s" },
-                { value: "4", label: "4s" },
-                { value: "5", label: "5s" },
-                { value: "6", label: "6s" },
-                { value: "8", label: "8s" },
+                { value: "3", label: "3秒" },
+                { value: "4", label: "4秒" },
+                { value: "5", label: "5秒" },
+                { value: "6", label: "6秒" },
+                { value: "8", label: "8秒" },
               ]}
               color="orange"
               size="sm"
@@ -344,18 +344,18 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           </div>
         )}
 
-        {/* Cameo Selector - Only for Sora model */}
+        {/* 角色选择 - 仅 Sora 模型 */}
         {!isVeoModel && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <NodeLabel className="mb-0">Add Cameo</NodeLabel>
+              <NodeLabel className="mb-0">添加角色</NodeLabel>
               <NodeButton
                 variant="ghost"
                 onClick={() => setShowCameos(!showCameos)}
                 className="h-5 px-1.5 text-[10px] text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
               >
                 <UserPlus className="w-3 h-3 mr-1" />
-                {showCameos ? "Hide" : "Show"}
+                {showCameos ? "收起" : "展开"}
               </NodeButton>
             </div>
             {showCameos && (
@@ -397,7 +397,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <NodeLabel className="mb-0">{isVeoModel ? "描述" : "Prompt"}</NodeLabel>
+            <NodeLabel className="mb-0">描述</NodeLabel>
             {isVeoModel && (
               <span className="text-[9px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">
                 <Sparkles className="w-2.5 h-2.5" />
@@ -413,7 +413,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
             onChange={handlePromptChange}
             placeholder={isVeoModel
               ? "简单描述即可，AI 会自动生成专业提示词\n例如：让她微笑、慢慢转头看向镜头"
-              : "Describe the video scene..."
+              : "描述视频场景..."
             }
           />
         </div>
@@ -421,7 +421,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         {connectedImagesCount > 0 && (
           <div className="text-[10px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-3 py-2 rounded-md border border-orange-100 dark:border-orange-900/30 flex items-center gap-2">
             <Link2 className="w-3 h-3" />
-            Image-to-video mode active
+            图生视频模式已启用
           </div>
         )}
 
@@ -486,7 +486,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
                 {isAnalyzing ? "分析中..." : "生成中..."}
               </>
             ) : (
-              "Generate Video"
+              "生成视频"
             )}
           </NodeButton>
         </div>

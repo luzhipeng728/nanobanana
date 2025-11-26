@@ -54,7 +54,7 @@ export const DEFAULT_SPRITE_CONFIG: SpriteConfig = {
   rows: 4,
   cols: 4,
   totalFrames: 16,
-  fps: 12,
+  fps: 6,  // 降低默认 FPS，避免动画播放过快
   scale: 1,
   autoTransparent: true,
   direction: 'row'

@@ -479,7 +479,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
               : 'text-neutral-500 hover:text-neutral-700'
           }`}
         >
-          <Copy className="w-3 h-3" /> Replica
+          <Copy className="w-3 h-3" /> 复制动作
         </button>
         <button
           onClick={() => setGenConfig(prev => ({ ...prev, mode: 'creative' }))}
@@ -489,14 +489,14 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
               : 'text-neutral-500 hover:text-neutral-700'
           }`}
         >
-          <Zap className="w-3 h-3" /> Creative
+          <Zap className="w-3 h-3" /> 创意生成
         </button>
       </div>
 
       {/* 连接状态显示 */}
       <div className="space-y-2">
         {genConfig.mode === 'replica' && (
-          renderConnectionStatus('template', templateImage, '模板 Sprite Sheet')
+          renderConnectionStatus('template', templateImage, '模板精灵图')
         )}
         {renderConnectionStatus('character', characterImage, '角色图片')}
 
@@ -561,7 +561,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
       {/* Sprite Sheet 预览 */}
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <NodeLabel>Sprite Sheet 预览</NodeLabel>
+          <NodeLabel>精灵图预览</NodeLabel>
           {spriteSheetUrl && (
             <button
               onClick={() => setSpriteSheetUrl(null)}
@@ -583,11 +583,11 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
                 alt="Sprite Sheet"
                 className="w-full h-auto"
                 style={{ imageRendering: 'pixelated', maxHeight: '200px', objectFit: 'contain' }}
-                onClick={() => openImageModal(spriteSheetUrl, "Sprite Sheet")}
+                onClick={() => openImageModal(spriteSheetUrl, "精灵图")}
               />
               {renderGridOverlay()}
               <button
-                onClick={() => openImageModal(spriteSheetUrl, "Sprite Sheet")}
+                onClick={() => openImageModal(spriteSheetUrl, "精灵图")}
                 className="absolute top-2 right-2 p-1 bg-black/50 rounded hover:bg-black/70"
               >
                 <Maximize2 className="w-3 h-3 text-white" />
@@ -596,7 +596,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
           ) : (
             <div className="flex flex-col items-center justify-center h-full py-4 text-neutral-400">
               <LayoutTemplate className="w-6 h-6 mb-1 opacity-50" />
-              <span className="text-[10px]">等待生成或加载模板</span>
+              <span className="text-[10px]">等待生成或加载精灵图</span>
             </div>
           )}
         </div>

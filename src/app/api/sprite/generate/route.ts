@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import type { GenerationMode, ImageResolution } from "@/types/sprite";
 
 // 初始化 Gemini 客户端
@@ -8,7 +8,7 @@ function getGeminiClient() {
   if (!apiKey) {
     throw new Error("GOOGLE_AI_API_KEY 未配置");
   }
-  return new GoogleGenerativeAI(apiKey);
+  return new GoogleGenAI({ apiKey });
 }
 
 // 重试机制
@@ -64,13 +64,6 @@ async function toBase64(imageSource: string): Promise<string> {
   return imageSource;
 }
 
-// 根据图片计算最接近的宽高比
-async function determineAspectRatio(base64Image: string): Promise<string> {
-  // 服务端无法直接加载图片，返回默认值
-  // 前端会传入实际的宽高比
-  return "1:1";
-}
-
 // Replica 模式：模板 + 角色 → 生成新角色的相同动作
 async function generateSpriteReplica(
   templateSource: string,
@@ -86,7 +79,6 @@ async function generateSpriteReplica(
   const cleanCharacter = await toBase64(characterSource);
 
   return withRetry(async () => {
-
     const textPrompt = `
 Create a high-quality pixel art sprite sheet based on the visual style of the character provided in the second image.
 
@@ -97,38 +89,37 @@ CRITICAL INSTRUCTIONS:
 4. Apply the character's appearance (colors, clothing, features) to the poses in the template.
 5. Keep consistent lighting, shadows, and rendering style across all frames.
 6. Background should be a solid uniform color (easy to remove) - preferably white or light gray.
+7. IMPORTANT: Maintain perfect character consistency across ALL frames - same proportions, same style, same details.
+8. Each frame must be clearly distinguishable but smoothly connected for animation.
 ${prompt ? `Additional instructions: ${prompt}` : ""}
 `;
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-image",
-      generationConfig: {
-        // @ts-ignore - image generation config
+    const response = await genAI.models.generateContent({
+      model: "gemini-3-pro-image-preview",
+      contents: {
+        parts: [
+          { text: textPrompt },
+          {
+            inlineData: {
+              mimeType: "image/png",
+              data: cleanTemplate
+            }
+          },
+          {
+            inlineData: {
+              mimeType: "image/png",
+              data: cleanCharacter
+            }
+          }
+        ]
+      },
+      config: {
         responseModalities: ["image", "text"],
       }
     });
 
-    const result = await model.generateContent([
-      { text: textPrompt },
-      {
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: cleanTemplate
-        }
-      },
-      {
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: cleanCharacter
-        }
-      }
-    ]);
-
-    const response = result.response;
-    const parts = response.candidates?.[0]?.content?.parts;
-
-    if (parts) {
-      for (const part of parts) {
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
         if (part.inlineData) {
           return `data:image/png;base64,${part.inlineData.data}`;
         }
@@ -152,52 +143,54 @@ async function generateSpriteCreative(
   const cleanCharacter = await toBase64(characterSource);
 
   return withRetry(async () => {
-
     const textPrompt = `
-Create a high-quality sprite sheet for animation.
+Create a high-quality sprite sheet for game animation.
 
 REFERENCE CHARACTER:
-See the attached image. You MUST maintain the exact identity, colors, and design of this character.
+See the attached image. You MUST maintain the exact identity, colors, proportions, clothing, and design of this character throughout ALL frames.
 
 ACTION TO ANIMATE:
 ${actionPrompt}
 
-REQUIREMENTS:
-1. Generate a sequence of animation frames showing the character performing the action.
-2. Arrange the frames in a clean, regular GRID (e.g., 3x3, 4x4, 5x5, or a horizontal strip) so they can be easily sliced.
-3. Ensure consistent sizing and positioning for each frame.
-4. The animation should be smooth and loopable if possible.
-5. Visual Style: ${stylePrompt || "Match the reference character's style"}.
-6. Background: Solid uniform color (white or light gray, easy to remove for transparency).
-7. Each frame should be clearly separated with consistent spacing.
+CRITICAL REQUIREMENTS:
+1. Generate a sequence of 8-16 animation frames showing the character performing the action.
+2. Arrange the frames in a clean, regular GRID (4x4 preferred, or 4x2 horizontal strip) so they can be easily sliced.
+3. IMPORTANT: The animation MUST be loopable - the last frame should transition smoothly back to the first frame.
+4. Start and end with a neutral/idle pose to ensure seamless looping.
+5. Ensure PERFECT character consistency across ALL frames:
+   - Same body proportions and size
+   - Same clothing and accessories
+   - Same art style and level of detail
+   - Same viewing angle (keep perspective consistent)
+6. Each frame must show a distinct but smoothly connected pose for fluid animation.
+7. Visual Style: ${stylePrompt || "Match the reference character's style exactly"}.
+8. Background: Solid uniform color (white or light gray, easy to remove for transparency).
+9. Each frame should be clearly separated with consistent spacing and equal sizes.
 
 OUTPUT FORMAT:
-A single image file containing the sprite sheet with all animation frames arranged in a grid.
+A single image file containing the sprite sheet with all animation frames arranged in a 4x4 or similar regular grid.
 `;
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-image",
-      generationConfig: {
-        // @ts-ignore - image generation config
+    const response = await genAI.models.generateContent({
+      model: "gemini-3-pro-image-preview",
+      contents: {
+        parts: [
+          { text: textPrompt },
+          {
+            inlineData: {
+              mimeType: "image/png",
+              data: cleanCharacter
+            }
+          }
+        ]
+      },
+      config: {
         responseModalities: ["image", "text"],
       }
     });
 
-    const result = await model.generateContent([
-      { text: textPrompt },
-      {
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: cleanCharacter
-        }
-      }
-    ]);
-
-    const response = result.response;
-    const parts = response.candidates?.[0]?.content?.parts;
-
-    if (parts) {
-      for (const part of parts) {
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
         if (part.inlineData) {
           return `data:image/png;base64,${part.inlineData.data}`;
         }

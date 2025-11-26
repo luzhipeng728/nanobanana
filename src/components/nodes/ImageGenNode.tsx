@@ -144,9 +144,9 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       />
 
       <div className="space-y-3">
-        {/* Model 选择 - Tab 样式 */}
+        {/* 模型选择 - Tab 样式 */}
         <div className="space-y-1.5">
-          <NodeLabel>Model</NodeLabel>
+          <NodeLabel>模型</NodeLabel>
           <NodeTabSelect
             value={selectedModel}
             onChange={(val) => {
@@ -160,17 +160,17 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
               }
             }}
             options={[
-              { value: "nano-banana", label: "Fast" },
-              { value: "nano-banana-pro", label: "Pro" },
+              { value: "nano-banana", label: "快速" },
+              { value: "nano-banana-pro", label: "高级" },
             ]}
             color="blue"
           />
         </div>
 
-        {/* Resolution for Pro model - Tab 样式 */}
+        {/* 分辨率 - Pro 模型时显示 - Tab 样式 */}
         {selectedModel === "nano-banana-pro" && (
           <div className="space-y-1.5">
-            <NodeLabel>Resolution</NodeLabel>
+            <NodeLabel>分辨率</NodeLabel>
             <NodeTabSelect
               value={imageSize}
               onChange={setImageSize}
@@ -184,17 +184,17 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           </div>
         )}
 
-        {/* Aspect Ratio - Tab 样式 */}
+        {/* 画面比例 - Tab 样式 */}
         <div className="space-y-1.5">
-          <NodeLabel>Aspect Ratio {connectedImagesCount > 0 && <span className="text-neutral-400">(参考图覆盖)</span>}</NodeLabel>
+          <NodeLabel>画面比例 {connectedImagesCount > 0 && <span className="text-neutral-400">(参考图覆盖)</span>}</NodeLabel>
           <NodeTabSelect
             value={aspectRatio}
             onChange={setAspectRatio}
             options={[
-              { value: "auto", label: "Auto" },
-              { value: "1:1", label: "1:1" },
-              { value: "16:9", label: "16:9" },
-              { value: "9:16", label: "9:16" },
+              { value: "auto", label: "自动" },
+              { value: "1:1", label: "方形" },
+              { value: "16:9", label: "横屏" },
+              { value: "9:16", label: "竖屏" },
               { value: "4:3", label: "4:3" },
               { value: "3:4", label: "3:4" },
             ]}
@@ -205,13 +205,13 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         </div>
 
         <div>
-          <NodeLabel>Prompt</NodeLabel>
+          <NodeLabel>提示词</NodeLabel>
           <NodeTextarea
             className="w-full resize-none"
             rows={3}
             value={prompt}
             onChange={handlePromptChange}
-            placeholder="Describe your image..."
+            placeholder="描述你想要生成的图片..."
           />
         </div>
 
@@ -223,7 +223,7 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
             className="flex-1"
           >
             {isRewriting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-            Rewrite
+            优化
           </NodeButton>
           <NodeButton
             variant="primary"
@@ -231,7 +231,7 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
             disabled={isGenerating || !prompt}
             className="flex-[2] bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
           >
-            {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Generate"}
+            {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : "生成"}
           </NodeButton>
         </div>
       </div>
