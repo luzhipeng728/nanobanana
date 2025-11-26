@@ -521,7 +521,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
         </div>
       )}
 
-      {/* 风格提示词 + 尺寸选择 */}
+      {/* 风格提示词 */}
       <div className="space-y-2">
         <input
           type="text"
@@ -530,22 +530,6 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
           placeholder="风格提示词（可选）..."
           className="w-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500"
         />
-
-        <div className="flex gap-1">
-          {(['1K', '2K', '4K'] as ImageResolution[]).map((res) => (
-            <button
-              key={res}
-              onClick={() => setGenConfig(prev => ({ ...prev, size: res }))}
-              className={`flex-1 py-1 text-[10px] font-bold rounded border transition-all ${
-                genConfig.size === res
-                  ? 'bg-violet-500 border-violet-500 text-white'
-                  : 'bg-transparent border-neutral-300 dark:border-neutral-600 text-neutral-500 hover:text-neutral-700'
-              }`}
-            >
-              {res}
-            </button>
-          ))}
-        </div>
 
         <NodeButton
           onClick={handleGenerate}
