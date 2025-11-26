@@ -10,6 +10,96 @@ const openai = new OpenAI({
   baseURL: process.env.OPENAI_BASE_URL,
 });
 
+// Gemini API Key 管理器 - 支持多 Key 轮换
+class GeminiKeyManager {
+  private keys: string[] = [];
+  private currentIndex: number = 0;
+  private failedKeys: Set<string> = new Set(); // 已失败的 Key（429 配额用尽）
+  private failedKeyTimestamps: Map<string, number> = new Map(); // 记录失败时间
+  private readonly RECOVERY_TIME = 24 * 60 * 60 * 1000; // 24 小时后重试失败的 Key
+
+  constructor() {
+    // 从环境变量加载所有 API Keys（支持多个）
+    const keyEnvNames = [
+      'GEMINI_API_KEY',
+      'GEMINI_API_KEY_2',
+      'GEMINI_API_KEY_3',
+      'GEMINI_API_KEY_4',
+      'GEMINI_API_KEY_5',
+    ];
+
+    for (const envName of keyEnvNames) {
+      const key = process.env[envName];
+      if (key) this.keys.push(key);
+    }
+
+    console.log(`[GeminiKeyManager] Initialized with ${this.keys.length} API key(s)`);
+  }
+
+  // 获取当前可用的 API Key
+  getCurrentKey(): string | null {
+    if (this.keys.length === 0) return null;
+
+    // 清理过期的失败记录（24小时后重试）
+    const now = Date.now();
+    for (const [key, timestamp] of this.failedKeyTimestamps.entries()) {
+      if (now - timestamp > this.RECOVERY_TIME) {
+        this.failedKeys.delete(key);
+        this.failedKeyTimestamps.delete(key);
+        console.log(`[GeminiKeyManager] Key recovered after 24h cooldown`);
+      }
+    }
+
+    // 找到第一个未失败的 Key
+    for (let i = 0; i < this.keys.length; i++) {
+      const index = (this.currentIndex + i) % this.keys.length;
+      const key = this.keys[index];
+      if (!this.failedKeys.has(key)) {
+        this.currentIndex = index;
+        return key;
+      }
+    }
+
+    // 所有 Key 都失败了，返回第一个（让它报错）
+    console.warn(`[GeminiKeyManager] All keys exhausted, using first key anyway`);
+    return this.keys[0];
+  }
+
+  // 标记当前 Key 为 429 失败，切换到下一个
+  markCurrentKeyFailed(): boolean {
+    const currentKey = this.keys[this.currentIndex];
+    if (currentKey) {
+      this.failedKeys.add(currentKey);
+      this.failedKeyTimestamps.set(currentKey, Date.now());
+      console.log(`[GeminiKeyManager] Key ${this.currentIndex + 1} marked as failed (429), trying next...`);
+    }
+
+    // 尝试切换到下一个可用的 Key
+    const nextKey = this.getCurrentKey();
+    const hasAvailableKey = nextKey !== null && !this.failedKeys.has(nextKey);
+
+    if (hasAvailableKey) {
+      console.log(`[GeminiKeyManager] Switched to key ${this.currentIndex + 1}`);
+    } else {
+      console.warn(`[GeminiKeyManager] No more available keys!`);
+    }
+
+    return hasAvailableKey;
+  }
+
+  // 获取状态信息
+  getStatus(): { total: number; available: number; failed: number } {
+    return {
+      total: this.keys.length,
+      available: this.keys.length - this.failedKeys.size,
+      failed: this.failedKeys.size,
+    };
+  }
+}
+
+// 全局 Key 管理器实例
+const geminiKeyManager = new GeminiKeyManager();
+
 export async function rewritePrompt(prompt: string) {
   if (!process.env.OPENAI_API_KEY) {
     return prompt + " (OpenAI Key Missing)";
@@ -73,9 +163,14 @@ export async function generateImageAction(
   configOptions: ImageGenerationConfig = {},
   referenceImages: string[] = []
 ) {
-  if (!process.env.GEMINI_API_KEY) {
+  // 使用 Key 管理器获取当前可用的 Key
+  const apiKey = geminiKeyManager.getCurrentKey();
+  if (!apiKey) {
     throw new Error("Gemini API Key is missing");
   }
+
+  const keyStatus = geminiKeyManager.getStatus();
+  console.log(`[Gemini] Using key ${keyStatus.total - keyStatus.failed}/${keyStatus.total}`);
 
   const modelName = GEMINI_IMAGE_MODELS[model];
   const MAX_RETRIES = 5; // 最多重试 5 次
@@ -188,11 +283,14 @@ export async function generateImageAction(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 秒 = 2 分钟
 
+      // 每次请求前获取当前可用的 Key（可能在重试过程中切换了）
+      const currentApiKey = geminiKeyManager.getCurrentKey() || apiKey;
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.GEMINI_API_KEY || '',
+          'x-goog-api-key': currentApiKey,
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
@@ -204,7 +302,29 @@ export async function generateImageAction(
         const errorText = await response.text();
         const errorMessage = `Gemini API error: ${response.status} - ${errorText}`;
 
-        // 检查是否应该重试
+        // 429 错误（配额用尽）- 尝试切换 Key
+        if (response.status === 429) {
+          const isQuotaExhausted = errorText.includes('RESOURCE_EXHAUSTED') ||
+            errorText.includes('quota') ||
+            errorText.includes('exceeded');
+
+          if (isQuotaExhausted) {
+            console.warn(`⚠️  429 Quota exhausted, attempting to switch API key...`);
+            const hasMoreKeys = geminiKeyManager.markCurrentKeyFailed();
+
+            if (hasMoreKeys) {
+              // 有备用 Key，立即重试（不算作常规重试）
+              console.log(`🔄 Retrying with backup API key...`);
+              continue;
+            } else {
+              // 没有更多可用的 Key
+              console.error(`❌ All API keys exhausted!`);
+              throw new Error("All Gemini API keys quota exhausted. Please try again later.");
+            }
+          }
+        }
+
+        // 检查是否应该重试（其他可重试错误）
         if (attempt < MAX_RETRIES && isRetryableError(response.status, errorText)) {
           console.warn(`⚠️  Retryable error (${response.status}): ${errorText.substring(0, 100)}...`);
           continue; // 继续重试
