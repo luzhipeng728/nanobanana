@@ -1,8 +1,8 @@
+/* 手绘风格字体 - Google Fonts 导入必须在最前面 */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
+
 @import "tailwindcss";
 @import '@xyflow/react/dist/style.css';
-
-/* 手绘风格字体 - 使用 Google Fonts 的 Caveat */
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
 
 /* 手绘标签样式 */
 .handwriting-label {
