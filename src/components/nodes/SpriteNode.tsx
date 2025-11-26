@@ -67,6 +67,9 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
 
   // 帧图片 URL 数组（从 R2 获取）
   const [frames, setFrames] = useState<string[]>(data.frameUrls || []);
+  // 预加载的图片对象
+  const [preloadedImages, setPreloadedImages] = useState<HTMLImageElement[]>([]);
+  const [isPreloading, setIsPreloading] = useState(false);
 
   // 空白帧信息（由 Claude 分析得到）
   const [hasBlankFrames, setHasBlankFrames] = useState(false);
@@ -365,18 +368,55 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     img.src = spriteSheetUrl;
   }, [spriteSheetUrl]);
 
-  // 动画播放 - 简单切换帧（使用 R2 URL 列表）
+  // 预加载所有帧图片
   useEffect(() => {
-    if (frames.length === 0 || !isPlaying) return;
+    if (frames.length === 0) {
+      setPreloadedImages([]);
+      return;
+    }
+
+    setIsPreloading(true);
+    const images: HTMLImageElement[] = [];
+    let loadedCount = 0;
+
+    const checkAllLoaded = () => {
+      loadedCount++;
+      if (loadedCount === frames.length) {
+        setPreloadedImages(images);
+        setIsPreloading(false);
+        console.log(`[SpriteNode] All ${frames.length} frames preloaded`);
+      }
+    };
+
+    frames.forEach((url, index) => {
+      const img = new Image();
+      img.onload = checkAllLoaded;
+      img.onerror = checkAllLoaded; // 即使加载失败也继续
+      img.src = url;
+      images[index] = img;
+    });
+
+    return () => {
+      // 清理
+      images.forEach(img => {
+        img.onload = null;
+        img.onerror = null;
+      });
+    };
+  }, [frames]);
+
+  // 动画播放 - 只在图片预加载完成后播放
+  useEffect(() => {
+    if (preloadedImages.length === 0 || !isPlaying || isPreloading) return;
 
     const frameInterval = 1000 / config.fps;
 
     const timer = setInterval(() => {
-      setCurrentFrame(prev => (prev + 1) % frames.length);
+      setCurrentFrame(prev => (prev + 1) % preloadedImages.length);
     }, frameInterval);
 
     return () => clearInterval(timer);
-  }, [frames.length, config.fps, isPlaying]);
+  }, [preloadedImages.length, config.fps, isPlaying, isPreloading]);
 
   // 渲染网格叠加
   const renderGridOverlay = () => {
@@ -787,23 +827,41 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
           <div className="flex items-center justify-between">
             <NodeLabel>动画预览</NodeLabel>
             <span className="text-[10px] text-neutral-500">
-              {currentFrame + 1}/{frames.length}
+              {isPreloading ? '加载中...' : `${currentFrame + 1}/${preloadedImages.length || frames.length}`}
             </span>
           </div>
 
           <div className="relative bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAE/xkYGP4TMDAwYJNkaGBgYCQYrGggkYYBo0+AYQ4oKJCpAgA99AFTn+FxvgAAAABJRU5ErkJggg==')] bg-neutral-800 rounded-lg overflow-hidden flex items-center justify-center p-2"
                style={{ minHeight: '120px' }}>
-            {/* 直接显示拆分后的当前帧图片 */}
-            <img
-              src={frames[currentFrame]}
-              alt={`Frame ${currentFrame + 1}`}
-              className="max-w-full max-h-[150px] object-contain"
-              style={{ imageRendering: 'pixelated' }}
-            />
+            {isPreloading ? (
+              <div className="flex flex-col items-center text-neutral-400">
+                <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+                <span className="text-[10px] mt-1">预加载帧图片...</span>
+              </div>
+            ) : preloadedImages.length > 0 ? (
+              /* 所有帧都渲染，用 CSS 控制显示 - 避免切换 src 导致重复请求 */
+              <div className="relative w-full h-full flex items-center justify-center">
+                {preloadedImages.map((img, index) => (
+                  <img
+                    key={index}
+                    src={img.src}
+                    alt={`Frame ${index + 1}`}
+                    className={`max-w-full max-h-[150px] object-contain absolute transition-opacity duration-0 ${
+                      index === currentFrame ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-neutral-400">
+                <span className="text-[10px]">无帧数据</span>
+              </div>
+            )}
 
             <button
               onClick={() => setIsPlaying(!isPlaying)}
-              className="absolute bottom-2 right-2 p-1.5 bg-black/50 rounded hover:bg-violet-500/80 transition-colors"
+              className="absolute bottom-2 right-2 p-1.5 bg-black/50 rounded hover:bg-violet-500/80 transition-colors z-10"
             >
               {isPlaying ? <Pause className="w-3 h-3 text-white" /> : <Play className="w-3 h-3 text-white" />}
             </button>
