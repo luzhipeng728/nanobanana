@@ -51,6 +51,13 @@ async function withRetry<T>(
         error.message.includes("internal error")
       ));
 
+    console.error(`[Sprite Stream] Error details:`, {
+      status: error.status,
+      code: error.code,
+      message: error.message?.substring(0, 500),
+      isRetryable,
+    });
+
     if (retries > 0 && isRetryable) {
       console.warn(
         `[Sprite Stream] API error (${error.status || 'unknown'}). Retrying in ${delay}ms... (${retries} retries left)`
@@ -175,7 +182,11 @@ async function generateSpriteReplica(
       },
     };
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent`;
+    const modelName = "gemini-2.5-flash-image";
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+
+    console.log(`[Sprite Stream] Calling Gemini API with model: ${modelName}`);
+    console.log(`[Sprite Stream] Template size: ${cleanTemplate.length} chars, Character size: ${cleanCharacter.length} chars`);
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -188,23 +199,30 @@ async function generateSpriteReplica(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      console.error(`[Sprite Stream] Gemini API error: ${response.status} - ${errorText}`);
+      const error = new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      (error as any).status = response.status;
+      throw error;
     }
 
     const result = await response.json();
+    console.log(`[Sprite Stream] Gemini API response received`);
 
     if (result.candidates?.[0]?.content?.parts) {
       for (const part of result.candidates[0].content.parts) {
         if (part.inlineData?.data) {
+          console.log(`[Sprite Stream] Got image data (inlineData)`);
           return part.inlineData.data as string;
         }
         // REST API 返回的是 inline_data
         if (part.inline_data?.data) {
+          console.log(`[Sprite Stream] Got image data (inline_data)`);
           return part.inline_data.data as string;
         }
       }
     }
 
+    console.error(`[Sprite Stream] No image in response:`, JSON.stringify(result).substring(0, 500));
     throw new Error("No image generated in response");
   });
 }
@@ -265,7 +283,11 @@ async function generateSpriteCreative(
       },
     };
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent`;
+    const modelName = "gemini-2.5-flash-image";
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+
+    console.log(`[Sprite Stream] Calling Gemini API with model: ${modelName}`);
+    console.log(`[Sprite Stream] Character size: ${cleanCharacter.length} chars`);
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -278,23 +300,30 @@ async function generateSpriteCreative(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      console.error(`[Sprite Stream] Gemini API error: ${response.status} - ${errorText}`);
+      const error = new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      (error as any).status = response.status;
+      throw error;
     }
 
     const result = await response.json();
+    console.log(`[Sprite Stream] Gemini API response received`);
 
     if (result.candidates?.[0]?.content?.parts) {
       for (const part of result.candidates[0].content.parts) {
         if (part.inlineData?.data) {
+          console.log(`[Sprite Stream] Got image data (inlineData)`);
           return part.inlineData.data as string;
         }
         // REST API 返回的是 inline_data
         if (part.inline_data?.data) {
+          console.log(`[Sprite Stream] Got image data (inline_data)`);
           return part.inline_data.data as string;
         }
       }
     }
 
+    console.error(`[Sprite Stream] No image in response:`, JSON.stringify(result).substring(0, 500));
     throw new Error("No image generated in response");
   });
 }
