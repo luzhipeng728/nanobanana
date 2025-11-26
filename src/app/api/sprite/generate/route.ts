@@ -34,6 +34,36 @@ async function withRetry<T>(
   }
 }
 
+/**
+ * 将图片 URL 或 base64 统一转换为纯 base64 数据
+ * 如果是 URL，先下载图片再转换
+ */
+async function toBase64(imageSource: string): Promise<string> {
+  // 如果已经是 base64 data URL，直接提取数据部分
+  if (imageSource.startsWith("data:image/")) {
+    return imageSource.replace(/^data:image\/(png|jpeg|jpg|webp|gif);base64,/, "");
+  }
+
+  // 如果是 URL，下载并转换为 base64
+  if (imageSource.startsWith("http://") || imageSource.startsWith("https://")) {
+    console.log("[Sprite Generate] Downloading image from URL:", imageSource.substring(0, 50) + "...");
+
+    const response = await fetch(imageSource);
+    if (!response.ok) {
+      throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+    console.log("[Sprite Generate] Image downloaded, size:", Math.round(arrayBuffer.byteLength / 1024), "KB");
+    return base64;
+  }
+
+  // 假设是纯 base64 字符串
+  return imageSource;
+}
+
 // 根据图片计算最接近的宽高比
 async function determineAspectRatio(base64Image: string): Promise<string> {
   // 服务端无法直接加载图片，返回默认值
@@ -43,17 +73,19 @@ async function determineAspectRatio(base64Image: string): Promise<string> {
 
 // Replica 模式：模板 + 角色 → 生成新角色的相同动作
 async function generateSpriteReplica(
-  templateBase64: string,
-  characterBase64: string,
+  templateSource: string,
+  characterSource: string,
   prompt: string,
   size: ImageResolution,
   aspectRatio: string = "1:1"
 ): Promise<string> {
   const genAI = getGeminiClient();
 
+  // 先转换图片为 base64（处理 URL 情况）
+  const cleanTemplate = await toBase64(templateSource);
+  const cleanCharacter = await toBase64(characterSource);
+
   return withRetry(async () => {
-    const cleanTemplate = templateBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, "");
-    const cleanCharacter = characterBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, "");
 
     const textPrompt = `
 Create a high-quality pixel art sprite sheet based on the visual style of the character provided in the second image.
@@ -69,7 +101,7 @@ ${prompt ? `Additional instructions: ${prompt}` : ""}
 `;
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp-image-generation",
+      model: "gemini-2.5-flash-image",
       generationConfig: {
         // @ts-ignore - image generation config
         responseModalities: ["image", "text"],
@@ -80,13 +112,13 @@ ${prompt ? `Additional instructions: ${prompt}` : ""}
       { text: textPrompt },
       {
         inlineData: {
-          mimeType: "image/png",
+          mimeType: "image/jpeg",
           data: cleanTemplate
         }
       },
       {
         inlineData: {
-          mimeType: "image/png",
+          mimeType: "image/jpeg",
           data: cleanCharacter
         }
       }
@@ -109,15 +141,17 @@ ${prompt ? `Additional instructions: ${prompt}` : ""}
 
 // Creative 模式：角色 + 动作描述 → 生成新动作 Sprite Sheet
 async function generateSpriteCreative(
-  characterBase64: string,
+  characterSource: string,
   actionPrompt: string,
   stylePrompt: string,
   size: ImageResolution
 ): Promise<string> {
   const genAI = getGeminiClient();
 
+  // 先转换图片为 base64（处理 URL 情况）
+  const cleanCharacter = await toBase64(characterSource);
+
   return withRetry(async () => {
-    const cleanCharacter = characterBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, "");
 
     const textPrompt = `
 Create a high-quality sprite sheet for animation.
@@ -142,7 +176,7 @@ A single image file containing the sprite sheet with all animation frames arrang
 `;
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp-image-generation",
+      model: "gemini-2.5-flash-image",
       generationConfig: {
         // @ts-ignore - image generation config
         responseModalities: ["image", "text"],
@@ -153,7 +187,7 @@ A single image file containing the sprite sheet with all animation frames arrang
       { text: textPrompt },
       {
         inlineData: {
-          mimeType: "image/png",
+          mimeType: "image/jpeg",
           data: cleanCharacter
         }
       }
