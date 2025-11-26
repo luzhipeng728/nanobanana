@@ -1,10 +1,21 @@
 "use server";
 
 import { PrismaClient } from "@prisma/client";
+import { cookies } from "next/headers";
 import Anthropic from "@anthropic-ai/sdk";
 import { uploadVideoFromBase64 } from "./storage";
 
 const prisma = new PrismaClient();
+
+// 获取当前用户 ID
+async function getCurrentUserId(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get("userId")?.value || null;
+  } catch {
+    return null;
+  }
+}
 
 export type VeoTaskStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -265,6 +276,8 @@ export async function createVeoTask(input: CreateVeoTaskInput): Promise<{ taskId
     inputImage,
   } = input;
 
+  const userId = await getCurrentUserId();
+
   // 先创建一个 pending 状态的任务
   const task = await prisma.veoTask.create({
     data: {
@@ -274,6 +287,7 @@ export async function createVeoTask(input: CreateVeoTaskInput): Promise<{ taskId
       resolution,
       durationSeconds,
       inputImage: inputImage || null,
+      userId,  // 关联当前用户
     },
   });
 

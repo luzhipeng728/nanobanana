@@ -1,9 +1,20 @@
 import { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import Anthropic from "@anthropic-ai/sdk";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "@/lib/prisma";
 import { generateImageAction } from "@/app/actions/generate";
 import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen";
+
+// 获取当前用户 ID
+async function getCurrentUserId(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get("userId")?.value || null;
+  } catch {
+    return null;
+  }
+}
 
 // 初始化 Anthropic 客户端
 function getAnthropicClient() {
@@ -283,6 +294,8 @@ export async function POST(request: NextRequest) {
         progress: 15,
       });
 
+      const userId = await getCurrentUserId();
+
       await prisma.stickerTask.create({
         data: {
           id: taskId,
@@ -296,6 +309,7 @@ export async function POST(request: NextRequest) {
           completedFrames: 0,
           frames: JSON.stringify([]),
           frameStatuses: JSON.stringify(Array(10).fill("pending")),
+          userId,  // 关联当前用户
         },
       });
 

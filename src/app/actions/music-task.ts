@@ -1,8 +1,19 @@
 "use server";
 
 import { PrismaClient } from "@prisma/client";
+import { cookies } from "next/headers";
 
 const prisma = new PrismaClient();
+
+// 获取当前用户 ID
+async function getCurrentUserId(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get("userId")?.value || null;
+  } catch {
+    return null;
+  }
+}
 
 export type MusicTaskStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -62,12 +73,15 @@ export async function createMusicTask(
   lyrics?: string,
   numberOfSongs: number = 2
 ): Promise<{ taskId: string }> {
+  const userId = await getCurrentUserId();
+
   const task = await prisma.musicTask.create({
     data: {
       status: "pending",
       prompt,
       lyrics: lyrics || null,
       numberOfSongs,
+      userId,  // 关联当前用户
     },
   });
 

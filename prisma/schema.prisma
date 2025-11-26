@@ -6,110 +6,142 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  createdAt DateTime @default(now())
-  canvases  Canvas[]
+  id          String       @id @default(uuid())
+  username    String       @unique
+  createdAt   DateTime     @default(now())
+  canvases    Canvas[]
+  imageTasks  ImageTask[]
+  musicTasks  MusicTask[]
+  videoTasks  VideoTask[]
+  stickerTasks StickerTask[]
+  veoTasks    VeoTask[]
 }
 
 model Canvas {
   id        String   @id @default(uuid())
   name      String
-  data      String   // Storing JSON string of nodes and edges
+  data      String   @db.LongText // Storing JSON string of nodes and edges
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model ImageTask {
   id               String   @id @default(uuid())
   status           String   // pending, processing, completed, failed
-  prompt           String
+  prompt           String   @db.Text
   model            String
-  config           String?  // JSON string of ImageGenerationConfig
-  referenceImages  String?  // JSON array of reference image URLs
-  imageUrl         String?  // Result image URL (when completed)
-  error            String?  // Error message (when failed)
+  config           String?  @db.Text // JSON string of ImageGenerationConfig
+  referenceImages  String?  @db.Text // JSON array of reference image URLs
+  imageUrl         String?  @db.Text // Result image URL (when completed)
+  error            String?  @db.Text // Error message (when failed)
+  userId           String?  // 关联用户（用于统计）
+  user             User?    @relation(fields: [userId], references: [id])
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   completedAt      DateTime?
+
+  @@index([userId])
+  @@index([status])
 }
 
 model MusicTask {
   id            String   @id @default(uuid())
   status        String   // pending, processing, completed, failed
-  prompt        String
-  lyrics        String?
+  prompt        String   @db.Text
+  lyrics        String?  @db.Text
   numberOfSongs Int      @default(2)
   externalTaskId String? // Mureka task ID for polling
-  musicUrls     String?  // JSON array of generated music URLs [{url, flacUrl, duration}]
-  error         String?
+  musicUrls     String?  @db.LongText // JSON array of generated music URLs [{url, flacUrl, duration}]
+  error         String?  @db.Text
+  userId        String?  // 关联用户（用于统计）
+  user          User?    @relation(fields: [userId], references: [id])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   completedAt   DateTime?
+
+  @@index([userId])
+  @@index([status])
 }
 
 model VideoTask {
   id          String   @id @default(uuid())
   status      String   // pending, processing, completed, failed
-  prompt      String
+  prompt      String   @db.Text
   orientation String   @default("portrait") // portrait or landscape
-  inputImage  String?  // Optional image URL for image-to-video
-  videoUrl    String?
+  inputImage  String?  @db.Text // Optional image URL for image-to-video
+  videoUrl    String?  @db.Text
   progress    Int      @default(0) // 0-100
-  error       String?
+  error       String?  @db.Text
+  userId      String?  // 关联用户（用于统计）
+  user        User?    @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   completedAt DateTime?
+
+  @@index([userId])
+  @@index([status])
 }
 
 model StickerTask {
   id              String   @id @default(uuid())
   status          String   // pending, processing, completed, failed
-  animationType   String   // 动画描述
-  referenceImage  String   // 参考图片 URL
+  animationType   String   @db.Text // 动画描述
+  referenceImage  String   @db.Text // 参考图片 URL
   model           String   // 使用的模型
-  config          String?  // JSON 配置
-  customPrompt    String?  // 自定义提示词 / 帧提示词 JSON
+  config          String?  @db.Text // JSON 配置
+  customPrompt    String?  @db.LongText // 自定义提示词 / 帧提示词 JSON
   totalFrames     Int      @default(10)
   completedFrames Int      @default(0)
-  frames          String?  // JSON 数组，存储已生成的帧图片 URLs
-  frameStatuses   String?  // JSON 数组，每帧的状态
-  error           String?
+  frames          String?  @db.LongText // JSON 数组，存储已生成的帧图片 URLs
+  frameStatuses   String?  @db.Text // JSON 数组，每帧的状态
+  error           String?  @db.Text
+  userId          String?  // 关联用户（用于统计）
+  user            User?    @relation(fields: [userId], references: [id])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   completedAt     DateTime?
+
+  @@index([userId])
+  @@index([status])
 }
 
 // Veo 视频生成任务
 model VeoTask {
   id              String   @id @default(uuid())
   status          String   // pending, processing, completed, failed
-  prompt          String
+  prompt          String   @db.Text
   aspectRatio     String   @default("16:9")   // 16:9 或 9:16
   resolution      String   @default("720p")   // 720p
   durationSeconds Int      @default(8)        // 5-8 秒
-  negativePrompt  String?                     // 负面提示词
-  inputImage      String?                     // 可选的输入图片 (图生视频)
-  operationName   String?                     // Google API 的 operation name，用于轮询
-  videoUrl        String?                     // 生成的视频 URL
-  error           String?
+  negativePrompt  String?  @db.Text           // 负面提示词
+  inputImage      String?  @db.Text           // 可选的输入图片 (图生视频)
+  operationName   String?  @db.Text           // Google API 的 operation name，用于轮询
+  videoUrl        String?  @db.Text           // 生成的视频 URL
+  error           String?  @db.Text
+  userId          String?                     // 关联用户（用于统计）
+  user            User?    @relation(fields: [userId], references: [id])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   completedAt     DateTime?
+
+  @@index([userId])
+  @@index([status])
 }
 
 // API Key 状态管理（全局单例）
 model ApiKeyState {
   id              String   @id @default("gemini") // 固定 ID，确保单例
   currentKeyIndex Int      @default(0)            // 当前使用的 Key 索引
-  failedKeys      String   @default("[]")         // JSON 数组：失败的 Key 索引列表
-  failedAt        String   @default("{}")         // JSON 对象：{ keyIndex: timestamp }
+  failedKeys      String   @db.Text               // JSON 数组：失败的 Key 索引列表
+  failedAt        String   @db.Text               // JSON 对象：{ keyIndex: timestamp }
   updatedAt       DateTime @updatedAt
 }

@@ -34,7 +34,8 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { getOrCreateUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand } from "lucide-react";
+import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
 
 const nodeTypes = {
@@ -51,6 +52,7 @@ const nodeTypes = {
 };
 
 const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
+const FIRST_VISIT_KEY = "nanobanana-first-visit";
 
 // Start with empty canvas - users will drag nodes from toolbar
 const initialNodes: Node[] = [];
@@ -78,6 +80,9 @@ export default function InfiniteCanvas() {
   // Gallery State
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
+  // Selection Mode State (for box selection)
+  const [selectionMode, setSelectionMode] = useState(false);
+
   // Image Upload Placement State
   const [isPlacingImage, setIsPlacingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,10 +90,12 @@ export default function InfiniteCanvas() {
   // Drag and drop handlers for adding nodes
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
-  // Load canvas from localStorage on mount
+  // Load canvas from localStorage on mount, or show examples for first visit
   useEffect(() => {
     try {
       const savedCanvas = localStorage.getItem(LOCALSTORAGE_KEY);
+      const hasVisited = localStorage.getItem(FIRST_VISIT_KEY);
+
       if (savedCanvas) {
         const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedCanvas);
         if (savedNodes && Array.isArray(savedNodes) && savedNodes.length > 0) {
@@ -96,6 +103,11 @@ export default function InfiniteCanvas() {
           setEdges(savedEdges || []);
           console.log("✅ Loaded canvas from localStorage:", savedNodes.length, "nodes");
         }
+      } else if (!hasVisited) {
+        // First visit: load example images
+        console.log("🎉 First visit! Loading example images...");
+        loadExampleImages();
+        localStorage.setItem(FIRST_VISIT_KEY, "true");
       }
     } catch (error) {
       console.error("Failed to load canvas from localStorage:", error);
@@ -103,6 +115,45 @@ export default function InfiniteCanvas() {
       setIsCanvasLoaded(true);
     }
   }, []);
+
+  // Load example images for first-time visitors
+  const loadExampleImages = useCallback(() => {
+    const COLS = 9;  // 9 columns (27 images / 3 rows)
+    const NODE_WIDTH = 420;  // Image node width
+    const NODE_HEIGHT = 260; // Estimated height (16:9 aspect)
+    const GAP_X = 40;
+    const GAP_Y = 60;
+    const START_X = 50;
+    const START_Y = 80;
+
+    const exampleNodes: Node[] = exampleImages.map((img, index) => {
+      const col = index % COLS;
+      const row = Math.floor(index / COLS);
+
+      return {
+        id: `example-${img.id}-${Date.now()}`,
+        type: "image",
+        position: {
+          x: START_X + col * (NODE_WIDTH + GAP_X),
+          y: START_Y + row * (NODE_HEIGHT + GAP_Y),
+        },
+        style: {
+          width: NODE_WIDTH,
+          height: NODE_HEIGHT,
+        },
+        data: {
+          imageUrl: img.url,
+          prompt: img.prompt,
+          timestamp: new Date().toLocaleString(),
+          isLoading: false,
+          label: `${img.category} - ${img.title}`,  // 显示分类和标题
+        },
+      };
+    });
+
+    setNodes(exampleNodes);
+    console.log(`✅ Loaded ${exampleNodes.length} example images`);
+  }, [setNodes]);
 
   // Auto-save canvas to localStorage with debounce to prevent lag during dragging
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -444,16 +495,61 @@ export default function InfiniteCanvas() {
     }
   };
 
-  // Clear local cache
-  const clearLocalCache = () => {
-    if (confirm("确定要清空画布缓存吗？这将删除所有节点，但不会影响已保存的画布。")) {
+  // Clear local cache and show example images
+  const clearLocalCache = useCallback(() => {
+    if (confirm("确定要清空画布缓存吗？这将删除所有节点并重置为示例画布。")) {
       localStorage.removeItem(LOCALSTORAGE_KEY);
-      setNodes(initialNodes);
+      localStorage.removeItem(FIRST_VISIT_KEY);  // 重置首次访问标记
       setEdges([]);
       setCurrentCanvasId(null);
-      console.log("🗑️ Cleared local cache");
+      // 直接加载示例图片
+      loadExampleImages();
+      console.log("🗑️ Cleared local cache and loaded example images");
     }
-  };
+  }, [loadExampleImages]);
+
+  // Delete selected nodes
+  const deleteSelectedNodes = useCallback((skipConfirm = false) => {
+    const selectedNodes = nodes.filter(node => node.selected);
+    if (selectedNodes.length === 0) {
+      return;
+    }
+
+    const doDelete = () => {
+      const selectedIds = new Set(selectedNodes.map(n => n.id));
+      setNodes(nds => nds.filter(n => !selectedIds.has(n.id)));
+      // 同时删除相关的边
+      setEdges(eds => eds.filter((e: Edge) => !selectedIds.has(e.source) && !selectedIds.has(e.target)));
+      console.log(`🗑️ Deleted ${selectedNodes.length} nodes`);
+    };
+
+    if (skipConfirm || confirm(`确定要删除选中的 ${selectedNodes.length} 个节点吗？`)) {
+      doDelete();
+    }
+  }, [nodes, setNodes, setEdges]);
+
+  // Keyboard shortcut: Delete key to delete selected nodes
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Delete or Backspace to delete selected nodes (when not typing in an input)
+      if ((e.key === "Delete" || e.key === "Backspace") && selectionMode) {
+        const target = e.target as HTMLElement;
+        // Don't trigger if user is typing in an input or textarea
+        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+          return;
+        }
+        e.preventDefault();
+        deleteSelectedNodes(true);  // Skip confirmation for keyboard shortcut
+      }
+      // Press Escape to exit selection mode
+      if (e.key === "Escape" && selectionMode) {
+        setSelectionMode(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectionMode, deleteSelectedNodes]);
 
   // Add image node programmatically - 初始尺寸为默认占位，图片加载后会自动调整
   const addImageNode = useCallback((
@@ -705,9 +801,33 @@ export default function InfiniteCanvas() {
           <GalleryHorizontalEnd className="w-5 h-5" />
         </button>
         <button
+          onClick={() => setSelectionMode(!selectionMode)}
+          className={`p-2 rounded-full transition-colors ${
+            selectionMode
+              ? "bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400"
+              : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          }`}
+          title={selectionMode ? "当前：选择模式（点击切换到手掌模式）" : "当前：手掌模式（点击切换到选择模式）"}
+        >
+          {selectionMode ? (
+            <MousePointer2 className="w-5 h-5" />
+          ) : (
+            <Hand className="w-5 h-5" />
+          )}
+        </button>
+        {selectionMode && (
+          <button
+            onClick={() => deleteSelectedNodes(false)}
+            className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-600 dark:text-red-400"
+            title="删除选中节点"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        )}
+        <button
           onClick={clearLocalCache}
           className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-red-600 dark:text-red-400"
-          title="Clear Local Cache"
+          title="清空画布"
         >
           <Trash2 className="w-5 h-5" />
         </button>
@@ -756,6 +876,21 @@ export default function InfiniteCanvas() {
         className="hidden"
       />
 
+      {/* Selection Mode Indicator */}
+      {selectionMode && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-blue-500/90 backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg">
+          <MousePointer2 className="w-4 h-4" />
+          <span className="text-sm font-medium">选择模式：拖动框选节点，按 Delete 删除</span>
+          <button
+            onClick={() => setSelectionMode(false)}
+            className="ml-2 p-1 hover:bg-white/20 rounded-full transition-colors"
+            title="退出选择模式"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Image Placement Mode Overlay */}
       {isPlacingImage && (
         <div
@@ -802,6 +937,9 @@ export default function InfiniteCanvas() {
           edgesFocusable={false}            // 禁用边焦点
           elevateNodesOnSelect={false}      // 选中时不提升 z-index，避免重排
           nodeDragThreshold={5}             // 拖动阈值，减少误触发
+          // 框选模式配置
+          selectionOnDrag={selectionMode}   // 框选模式下拖动为选择
+          panOnDrag={!selectionMode}        // 普通模式下拖动为平移
         >
           <Controls />
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />

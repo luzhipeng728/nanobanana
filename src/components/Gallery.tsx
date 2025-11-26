@@ -11,6 +11,8 @@ import {
   ZoomIn,
   Calendar,
   Sparkles,
+  User,
+  Users,
 } from "lucide-react";
 
 interface GalleryImage {
@@ -19,6 +21,9 @@ interface GalleryImage {
   model: string;
   imageUrl: string;
   createdAt: string;
+  userId?: string;
+  username: string;
+  isOwner: boolean;
 }
 
 interface GalleryProps {
@@ -34,11 +39,12 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [myOnly, setMyOnly] = useState(false);  // 只看自己的
 
-  const fetchImages = useCallback(async (pageNum: number) => {
+  const fetchImages = useCallback(async (pageNum: number, onlyMine: boolean) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/gallery?page=${pageNum}&limit=20`);
+      const res = await fetch(`/api/gallery?page=${pageNum}&limit=20${onlyMine ? '&my=true' : ''}`);
       const data = await res.json();
       if (data.success) {
         setImages(data.data.images);
@@ -54,9 +60,15 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
 
   useEffect(() => {
     if (isOpen) {
-      fetchImages(page);
+      fetchImages(page, myOnly);
     }
-  }, [isOpen, page, fetchImages]);
+  }, [isOpen, page, myOnly, fetchImages]);
+
+  // 切换筛选时重置页码
+  const toggleMyOnly = () => {
+    setMyOnly(!myOnly);
+    setPage(1);
+  };
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -124,19 +136,42 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
             </div>
             <div>
               <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-                创意画廊
+                {myOnly ? "我的作品" : "创意画廊"}
               </h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 共 {total} 张作品
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-          >
-            <X className="w-5 h-5 text-neutral-500" />
-          </button>
+          <div className="flex items-center gap-3">
+            {/* 筛选切换 */}
+            <button
+              onClick={toggleMyOnly}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                myOnly
+                  ? "bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400"
+                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+              }`}
+            >
+              {myOnly ? (
+                <>
+                  <User className="w-4 h-4" />
+                  我的作品
+                </>
+              ) : (
+                <>
+                  <Users className="w-4 h-4" />
+                  所有作品
+                </>
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            >
+              <X className="w-5 h-5 text-neutral-500" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -151,7 +186,7 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
           ) : images.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-neutral-400">
               <ImageIcon className="w-16 h-16 mb-4 opacity-30" />
-              <p className="text-lg">还没有任何作品</p>
+              <p className="text-lg">{myOnly ? "你还没有创作任何作品" : "还没有任何作品"}</p>
               <p className="text-sm">开始创作你的第一张图片吧！</p>
             </div>
           ) : (
@@ -168,7 +203,14 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                   />
-                  
+
+                  {/* Owner badge */}
+                  {image.isOwner && (
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-purple-500/90 text-white text-[10px] font-medium">
+                      我的
+                    </div>
+                  )}
+
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="absolute bottom-0 left-0 right-0 p-3">
@@ -176,9 +218,15 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
                         {image.prompt}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/80 text-white">
-                          {getModelLabel(image.model)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/80 text-white">
+                            {getModelLabel(image.model)}
+                          </span>
+                          <span className="text-[10px] text-white/70 flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {image.username}
+                          </span>
+                        </div>
                         <span className="text-[10px] text-white/70 flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {formatDate(image.createdAt)}
@@ -263,6 +311,11 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
                     <Sparkles className="w-3 h-3" />
                     {getModelLabel(selectedImage.model)}
                   </span>
+                  <span className="text-xs px-3 py-1 rounded-full bg-white/20 text-white flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    {selectedImage.username}
+                    {selectedImage.isOwner && " (我)"}
+                  </span>
                   <span className="text-xs text-white/70 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     {formatDate(selectedImage.createdAt)}
@@ -289,4 +342,3 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
     </div>
   );
 }
-

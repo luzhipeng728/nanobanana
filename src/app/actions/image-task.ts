@@ -1,10 +1,21 @@
 "use server";
 
 import { PrismaClient } from "@prisma/client";
+import { cookies } from "next/headers";
 import { generateImageAction } from "./generate";
 import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen";
 
 const prisma = new PrismaClient();
+
+// 获取当前用户 ID
+async function getCurrentUserId(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get("userId")?.value || null;
+  } catch {
+    return null;
+  }
+}
 
 export type ImageTaskStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -29,6 +40,8 @@ export async function createImageTask(
   config: ImageGenerationConfig = {},
   referenceImages: string[] = []
 ): Promise<{ taskId: string }> {
+  const userId = await getCurrentUserId();
+
   const task = await prisma.imageTask.create({
     data: {
       status: "pending",
@@ -36,6 +49,7 @@ export async function createImageTask(
       model,
       config: JSON.stringify(config),
       referenceImages: referenceImages.length > 0 ? JSON.stringify(referenceImages) : null,
+      userId,  // 关联当前用户
     },
   });
 
