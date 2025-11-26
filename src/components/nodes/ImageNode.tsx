@@ -242,7 +242,23 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   };
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
+        {/* NodeResizer 必须放在节点最外层才能正常工作 */}
+        <NodeResizer
+          isVisible={selected}
+          minWidth={MIN_WIDTH}
+          minHeight={MIN_HEIGHT}
+          maxWidth={MAX_WIDTH}
+          maxHeight={MAX_HEIGHT}
+          keepAspectRatio={true}
+          lineClassName="!border-blue-400 !border-2"
+          handleClassName="!w-4 !h-4 !bg-blue-500 !border-2 !border-white !rounded-sm"
+          onResizeEnd={() => {
+            // 用户手动调整尺寸后，标记为已自定义
+            updateNodeData(id, { userResized: true });
+          }}
+        />
+
         {/* 节点外部上方的手绘标签 */}
         {data.label && (
           <div className="absolute -top-7 left-0 z-10">
@@ -261,19 +277,6 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           contentClassName="p-0 flex flex-col h-full"
           hideHeader={true}
         >
-        {/* NodeResizer for drag-to-resize functionality */}
-        <NodeResizer
-          isVisible={selected}
-          minWidth={MIN_WIDTH}
-          minHeight={MIN_HEIGHT}
-          keepAspectRatio={true}
-          lineClassName="!border-blue-400"
-          handleClassName="!w-3 !h-3 !bg-blue-500 !rounded-full !cursor-nwse-resize"
-          onResizeEnd={() => {
-            // 用户手动调整尺寸后，标记为已自定义
-            updateNodeData(id, { userResized: true });
-          }}
-        />
         <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-blue-100 dark:border-blue-900/30 bg-white dark:bg-neutral-950 h-full will-change-transform transform-gpu [contain:layout_style_paint]">
           <div
             className="relative cursor-pointer flex-1 min-h-[150px] h-full"
