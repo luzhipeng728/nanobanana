@@ -44,12 +44,25 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       const pollTaskStatus = async () => {
         try {
           const response = await fetch(`${apiEndpoint}?taskId=${data.taskId}`);
+          const result = await response.json();
+
+          // 处理 HTTP 错误（404 任务不存在，500 服务器错误）
           if (!response.ok) {
-            console.error(`[VideoNode ${id}] Failed to fetch task status`);
+            const errorMsg = response.status === 404
+              ? "任务不存在（服务可能已重启）"
+              : result.error || `请求失败 (${response.status})`;
+            console.error(`[VideoNode ${id}] Task error: ${errorMsg}`);
+            updateNodeData(id, {
+              isLoading: false,
+              error: errorMsg,
+            });
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
             return;
           }
 
-          const result = await response.json();
           // Veo API 返回 { task: {...} }，Sora API 直接返回 task 对象
           const task = isVeo ? result.task : result;
 

@@ -44,12 +44,26 @@ const MusicNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       const pollTaskStatus = async () => {
         try {
           const response = await fetch(`/api/music-task?taskId=${data.taskId}`);
+          const result = await response.json();
+
+          // 处理 HTTP 错误（404 任务不存在，500 服务器错误）
           if (!response.ok) {
-            console.error(`[MusicNode ${id}] Failed to fetch task status`);
+            const errorMsg = response.status === 404
+              ? "任务不存在（服务可能已重启）"
+              : result.error || `请求失败 (${response.status})`;
+            console.error(`[MusicNode ${id}] Task error: ${errorMsg}`);
+            updateNodeData(id, {
+              isLoading: false,
+              error: errorMsg,
+            });
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
             return;
           }
 
-          const task = await response.json();
+          const task = result;
           console.log(`[MusicNode ${id}] Task status: ${task.status}`);
           setPollingStatus(task.status);
 

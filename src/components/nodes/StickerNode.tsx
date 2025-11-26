@@ -44,12 +44,27 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
     const pollTaskStatus = async () => {
       try {
         const response = await fetch(`/api/sticker/task?taskId=${data.taskId}`);
+        const result = await response.json();
+
+        // 处理 HTTP 错误（404 任务不存在，500 服务器错误）
         if (!response.ok) {
-          console.error(`[StickerNode ${id}] Failed to fetch task status`);
+          const errorMsg = response.status === 404
+            ? "任务不存在（服务可能已重启）"
+            : result.error || `请求失败 (${response.status})`;
+          console.error(`[StickerNode ${id}] Task error: ${errorMsg}`);
+          updateNodeData(id, {
+            isLoading: false,
+            error: errorMsg,
+          });
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          isPollingRef.current = false;
           return;
         }
 
-        const task = await response.json();
+        const task = result;
         
         // 检查有效帧数
         const validFrames = task.frames?.filter((f: string | null) => f !== null) || [];
