@@ -2,43 +2,119 @@
 
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { createHash } from "crypto";
 
-export async function getOrCreateUser(username: string) {
-  if (!username) return null;
+// 简单的密码哈希函数（生产环境建议使用 bcrypt）
+function hashPassword(password: string): string {
+  return createHash("sha256").update(password).digest("hex");
+}
+
+// 验证密码
+function verifyPassword(password: string, hash: string): boolean {
+  return hashPassword(password) === hash;
+}
+
+// 设置登录 Cookie
+async function setLoginCookies(userId: string, username: string) {
+  const cookieStore = await cookies();
+  cookieStore.set("userId", userId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+  });
+  cookieStore.set("username", username, {
+    httpOnly: false, // Allow client-side access for display
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+  });
+}
+
+/**
+ * 注册新用户
+ */
+export async function registerUser(username: string, password: string) {
+  if (!username || !password) {
+    return { success: false, error: "用户名和密码不能为空" };
+  }
+
+  if (username.length < 2 || username.length > 20) {
+    return { success: false, error: "用户名长度需要在 2-20 个字符之间" };
+  }
+
+  if (password.length < 6) {
+    return { success: false, error: "密码长度至少 6 个字符" };
+  }
 
   try {
-    let user = await prisma.user.findUnique({
+    // 检查用户名是否已存在
+    const existingUser = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (existingUser) {
+      return { success: false, error: "用户名已被注册" };
+    }
+
+    // 创建新用户
+    const user = await prisma.user.create({
+      data: {
+        username,
+        password: hashPassword(password),
+      },
+    });
+
+    // 设置登录状态
+    await setLoginCookies(user.id, user.username);
+
+    return {
+      success: true,
+      user: { id: user.id, username: user.username },
+    };
+  } catch (error) {
+    console.error("Error registering user:", error);
+    return { success: false, error: "注册失败，请稍后重试" };
+  }
+}
+
+/**
+ * 用户登录
+ */
+export async function loginUser(username: string, password: string) {
+  if (!username || !password) {
+    return { success: false, error: "用户名和密码不能为空" };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
       where: { username },
     });
 
     if (!user) {
-      user = await prisma.user.create({
-        data: { username },
-      });
+      return { success: false, error: "用户名或密码错误" };
     }
 
-    // Set cookie to persist login state
-    const cookieStore = await cookies();
-    cookieStore.set("userId", user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-    });
-    cookieStore.set("username", user.username, {
-      httpOnly: false, // Allow client-side access for display
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-    });
+    if (!verifyPassword(password, user.password)) {
+      return { success: false, error: "用户名或密码错误" };
+    }
 
-    return user;
+    // 设置登录状态
+    await setLoginCookies(user.id, user.username);
+
+    return {
+      success: true,
+      user: { id: user.id, username: user.username },
+    };
   } catch (error) {
-    console.error("Error handling user:", error);
-    throw new Error("Failed to handle user");
+    console.error("Error logging in:", error);
+    return { success: false, error: "登录失败，请稍后重试" };
   }
 }
 
+/**
+ * 获取当前登录用户
+ */
 export async function getCurrentUser() {
   try {
     const cookieStore = await cookies();
@@ -48,6 +124,7 @@ export async function getCurrentUser() {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: { id: true, username: true, createdAt: true },
     });
 
     return user;
@@ -57,6 +134,9 @@ export async function getCurrentUser() {
   }
 }
 
+/**
+ * 退出登录
+ */
 export async function logout() {
   try {
     const cookieStore = await cookies();
@@ -69,3 +149,8 @@ export async function logout() {
   }
 }
 
+// 保持旧接口兼容（deprecated，将来移除）
+export async function getOrCreateUser(username: string) {
+  console.warn("getOrCreateUser is deprecated, use registerUser/loginUser instead");
+  return null;
+}

@@ -32,7 +32,7 @@ import NodeToolbar from "./NodeToolbar";
 import { CanvasContext } from "@/contexts/CanvasContext";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
-import { getOrCreateUser, getCurrentUser, logout } from "@/app/actions/user";
+import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
 import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand } from "lucide-react";
 import exampleImages from "@/data/example-images.json";
@@ -66,6 +66,10 @@ export default function InfiniteCanvas() {
 
   // User & Canvas State
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [currentCanvasId, setCurrentCanvasId] = useState<string | null>(null);
   const [savedCanvases, setSavedCanvases] = useState<any[]>([]);
@@ -432,23 +436,41 @@ export default function InfiniteCanvas() {
     [reactFlowInstance, setNodes]
   );
 
-  const handleLogin = async () => {
-    if (!username.trim()) {
-      alert("Please enter a username");
+  const handleAuth = async () => {
+    if (!username.trim() || !password.trim()) {
+      setAuthError("请填写用户名和密码");
       return;
     }
+
+    setAuthError("");
+    setAuthLoading(true);
+
     try {
-      const user = await getOrCreateUser(username.trim());
-      if (user) {
-        setUserId(user.id);
-        setUsername(user.username);
+      const result = authMode === "register"
+        ? await registerUser(username.trim(), password)
+        : await loginUser(username.trim(), password);
+
+      if (result.success && result.user) {
+        setUserId(result.user.id);
+        setUsername(result.user.username);
+        setPassword("");
         setIsUserModalOpen(false);
-        loadUserCanvases(user.id);
+        loadUserCanvases(result.user.id);
+      } else {
+        setAuthError(result.error || "操作失败，请重试");
       }
     } catch (error) {
-      alert("Failed to login. Please try again.");
+      setAuthError("操作失败，请重试");
       console.error(error);
+    } finally {
+      setAuthLoading(false);
     }
+  };
+
+  // 切换登录/注册模式时清空错误
+  const toggleAuthMode = () => {
+    setAuthMode(authMode === "login" ? "register" : "login");
+    setAuthError("");
   };
 
   const handleLogout = async () => {
@@ -951,28 +973,61 @@ export default function InfiniteCanvas() {
       {isUserModalOpen && !userId && !isLoading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-neutral-900 p-8 rounded-xl shadow-2xl w-96 border border-neutral-200 dark:border-neutral-800">
-            <h2 className="text-2xl font-bold mb-2">Welcome to NanoBanana</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              {authMode === "login" ? "登录 NanoBanana" : "注册 NanoBanana"}
+            </h2>
             <p className="text-sm text-neutral-500 mb-6">
-              Login with your username or create a new account
+              {authMode === "login" ? "欢迎回来！请输入账号密码登录" : "创建新账号开始你的创作之旅"}
             </p>
+
+            {/* 错误提示 */}
+            {authError && (
+              <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+                {authError}
+              </div>
+            )}
+
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleLogin()}
-              placeholder="Enter your username"
-              className="w-full p-3 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-transparent mb-4 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              placeholder="用户名"
+              className="w-full p-3 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-transparent mb-3 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
               autoFocus
+              disabled={authLoading}
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleAuth()}
+              placeholder="密码"
+              className="w-full p-3 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-transparent mb-4 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+              disabled={authLoading}
             />
             <button
-              onClick={handleLogin}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+              onClick={handleAuth}
+              disabled={authLoading}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Login or Register
+              {authLoading ? "处理中..." : (authMode === "login" ? "登录" : "注册")}
             </button>
-            <p className="text-xs text-neutral-400 mt-4 text-center">
-              New users will be automatically registered
-            </p>
+
+            <div className="mt-4 text-center">
+              <button
+                onClick={toggleAuthMode}
+                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                disabled={authLoading}
+              >
+                {authMode === "login" ? "没有账号？点击注册" : "已有账号？点击登录"}
+              </button>
+            </div>
+
+            {authMode === "register" && (
+              <p className="text-xs text-neutral-400 mt-4 text-center">
+                用户名 2-20 字符，密码至少 6 位
+              </p>
+            )}
           </div>
         </div>
       )}
