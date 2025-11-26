@@ -3,6 +3,7 @@
 import OpenAI from "openai";
 import { uploadBufferToR2 } from "@/lib/r2";
 import { GEMINI_IMAGE_MODELS, type GeminiImageModel, type ImageGenerationConfig } from "@/types/image-gen";
+import { prisma } from "@/lib/prisma";
 
 // OpenAI Client for Prompt Rewriting
 const openai = new OpenAI({
@@ -10,95 +11,156 @@ const openai = new OpenAI({
   baseURL: process.env.OPENAI_BASE_URL,
 });
 
-// Gemini API Key 管理器 - 支持多 Key 轮换
-class GeminiKeyManager {
-  private keys: string[] = [];
-  private currentIndex: number = 0;
-  private failedKeys: Set<string> = new Set(); // 已失败的 Key（429 配额用尽）
-  private failedKeyTimestamps: Map<string, number> = new Map(); // 记录失败时间
-  private readonly RECOVERY_TIME = 24 * 60 * 60 * 1000; // 24 小时后重试失败的 Key
+// 从环境变量加载所有 API Keys
+const GEMINI_API_KEYS: string[] = [];
+const keyEnvNames = [
+  'GEMINI_API_KEY',
+  'GEMINI_API_KEY_2',
+  'GEMINI_API_KEY_3',
+  'GEMINI_API_KEY_4',
+  'GEMINI_API_KEY_5',
+];
+for (const envName of keyEnvNames) {
+  const key = process.env[envName];
+  if (key) GEMINI_API_KEYS.push(key);
+}
+console.log(`[GeminiKeys] Loaded ${GEMINI_API_KEYS.length} API key(s)`);
 
-  constructor() {
-    // 从环境变量加载所有 API Keys（支持多个）
-    const keyEnvNames = [
-      'GEMINI_API_KEY',
-      'GEMINI_API_KEY_2',
-      'GEMINI_API_KEY_3',
-      'GEMINI_API_KEY_4',
-      'GEMINI_API_KEY_5',
-    ];
+const RECOVERY_TIME = 24 * 60 * 60 * 1000; // 24 小时后重试失败的 Key
 
-    for (const envName of keyEnvNames) {
-      const key = process.env[envName];
-      if (key) this.keys.push(key);
-    }
+// 获取或初始化 API Key 状态（从数据库）
+async function getKeyState() {
+  let state = await prisma.apiKeyState.findUnique({
+    where: { id: "gemini" },
+  });
 
-    console.log(`[GeminiKeyManager] Initialized with ${this.keys.length} API key(s)`);
+  if (!state) {
+    // 首次运行，创建初始状态
+    state = await prisma.apiKeyState.create({
+      data: {
+        id: "gemini",
+        currentKeyIndex: 0,
+        failedKeys: "[]",
+        failedAt: "{}",
+      },
+    });
   }
 
-  // 获取当前可用的 API Key
-  getCurrentKey(): string | null {
-    if (this.keys.length === 0) return null;
-
-    // 清理过期的失败记录（24小时后重试）
-    const now = Date.now();
-    for (const [key, timestamp] of this.failedKeyTimestamps.entries()) {
-      if (now - timestamp > this.RECOVERY_TIME) {
-        this.failedKeys.delete(key);
-        this.failedKeyTimestamps.delete(key);
-        console.log(`[GeminiKeyManager] Key recovered after 24h cooldown`);
-      }
-    }
-
-    // 找到第一个未失败的 Key
-    for (let i = 0; i < this.keys.length; i++) {
-      const index = (this.currentIndex + i) % this.keys.length;
-      const key = this.keys[index];
-      if (!this.failedKeys.has(key)) {
-        this.currentIndex = index;
-        return key;
-      }
-    }
-
-    // 所有 Key 都失败了，返回第一个（让它报错）
-    console.warn(`[GeminiKeyManager] All keys exhausted, using first key anyway`);
-    return this.keys[0];
-  }
-
-  // 标记当前 Key 为 429 失败，切换到下一个
-  markCurrentKeyFailed(): boolean {
-    const currentKey = this.keys[this.currentIndex];
-    if (currentKey) {
-      this.failedKeys.add(currentKey);
-      this.failedKeyTimestamps.set(currentKey, Date.now());
-      console.log(`[GeminiKeyManager] Key ${this.currentIndex + 1} marked as failed (429), trying next...`);
-    }
-
-    // 尝试切换到下一个可用的 Key
-    const nextKey = this.getCurrentKey();
-    const hasAvailableKey = nextKey !== null && !this.failedKeys.has(nextKey);
-
-    if (hasAvailableKey) {
-      console.log(`[GeminiKeyManager] Switched to key ${this.currentIndex + 1}`);
-    } else {
-      console.warn(`[GeminiKeyManager] No more available keys!`);
-    }
-
-    return hasAvailableKey;
-  }
-
-  // 获取状态信息
-  getStatus(): { total: number; available: number; failed: number } {
-    return {
-      total: this.keys.length,
-      available: this.keys.length - this.failedKeys.size,
-      failed: this.failedKeys.size,
-    };
-  }
+  return state;
 }
 
-// 全局 Key 管理器实例
-const geminiKeyManager = new GeminiKeyManager();
+// 获取当前可用的 API Key（全局状态，从数据库读取）
+async function getCurrentApiKey(): Promise<{ key: string; index: number } | null> {
+  if (GEMINI_API_KEYS.length === 0) return null;
+
+  const state = await getKeyState();
+  const failedKeys: number[] = JSON.parse(state.failedKeys);
+  const failedAt: Record<string, number> = JSON.parse(state.failedAt);
+  const now = Date.now();
+
+  // 清理过期的失败记录（24小时后恢复）
+  let hasRecovered = false;
+  const stillFailedKeys: number[] = [];
+  const stillFailedAt: Record<string, number> = {};
+
+  for (const keyIndex of failedKeys) {
+    const failTime = failedAt[String(keyIndex)];
+    if (failTime && now - failTime > RECOVERY_TIME) {
+      console.log(`[GeminiKeys] Key ${keyIndex + 1} recovered after 24h cooldown`);
+      hasRecovered = true;
+    } else {
+      stillFailedKeys.push(keyIndex);
+      if (failTime) stillFailedAt[String(keyIndex)] = failTime;
+    }
+  }
+
+  // 如果有恢复的 Key，更新数据库
+  if (hasRecovered) {
+    await prisma.apiKeyState.update({
+      where: { id: "gemini" },
+      data: {
+        failedKeys: JSON.stringify(stillFailedKeys),
+        failedAt: JSON.stringify(stillFailedAt),
+      },
+    });
+  }
+
+  // 从当前索引开始，找第一个可用的 Key
+  for (let i = 0; i < GEMINI_API_KEYS.length; i++) {
+    const index = (state.currentKeyIndex + i) % GEMINI_API_KEYS.length;
+    if (!stillFailedKeys.includes(index)) {
+      // 如果找到的不是当前索引，更新数据库
+      if (index !== state.currentKeyIndex) {
+        await prisma.apiKeyState.update({
+          where: { id: "gemini" },
+          data: { currentKeyIndex: index },
+        });
+      }
+      return { key: GEMINI_API_KEYS[index], index };
+    }
+  }
+
+  // 所有 Key 都失败了，返回第一个（让它报错）
+  console.warn(`[GeminiKeys] All ${GEMINI_API_KEYS.length} keys exhausted!`);
+  return { key: GEMINI_API_KEYS[0], index: 0 };
+}
+
+// 标记当前 Key 为 429 失败，立即切换到下一个（全局生效）
+async function markKeyFailed(keyIndex: number): Promise<boolean> {
+  const state = await getKeyState();
+  const failedKeys: number[] = JSON.parse(state.failedKeys);
+  const failedAt: Record<string, number> = JSON.parse(state.failedAt);
+
+  // 添加到失败列表
+  if (!failedKeys.includes(keyIndex)) {
+    failedKeys.push(keyIndex);
+    failedAt[String(keyIndex)] = Date.now();
+
+    console.log(`[GeminiKeys] Key ${keyIndex + 1}/${GEMINI_API_KEYS.length} marked as FAILED (429)`);
+
+    // 切换到下一个可用的 Key
+    let nextIndex = -1;
+    for (let i = 1; i < GEMINI_API_KEYS.length; i++) {
+      const candidateIndex = (keyIndex + i) % GEMINI_API_KEYS.length;
+      if (!failedKeys.includes(candidateIndex)) {
+        nextIndex = candidateIndex;
+        break;
+      }
+    }
+
+    // 更新数据库
+    await prisma.apiKeyState.update({
+      where: { id: "gemini" },
+      data: {
+        currentKeyIndex: nextIndex >= 0 ? nextIndex : 0,
+        failedKeys: JSON.stringify(failedKeys),
+        failedAt: JSON.stringify(failedAt),
+      },
+    });
+
+    if (nextIndex >= 0) {
+      console.log(`[GeminiKeys] Switched to Key ${nextIndex + 1}/${GEMINI_API_KEYS.length}`);
+      return true;
+    } else {
+      console.error(`[GeminiKeys] All keys exhausted! No backup available.`);
+      return false;
+    }
+  }
+
+  return failedKeys.length < GEMINI_API_KEYS.length;
+}
+
+// 获取 Key 状态信息
+async function getKeyStatus(): Promise<{ total: number; available: number; current: number; failed: number[] }> {
+  const state = await getKeyState();
+  const failedKeys: number[] = JSON.parse(state.failedKeys);
+  return {
+    total: GEMINI_API_KEYS.length,
+    available: GEMINI_API_KEYS.length - failedKeys.length,
+    current: state.currentKeyIndex + 1,
+    failed: failedKeys.map(i => i + 1),
+  };
+}
 
 export async function rewritePrompt(prompt: string) {
   if (!process.env.OPENAI_API_KEY) {
@@ -163,14 +225,14 @@ export async function generateImageAction(
   configOptions: ImageGenerationConfig = {},
   referenceImages: string[] = []
 ) {
-  // 使用 Key 管理器获取当前可用的 Key
-  const apiKey = geminiKeyManager.getCurrentKey();
-  if (!apiKey) {
+  // 获取当前可用的 Key（从数据库读取全局状态）
+  const keyInfo = await getCurrentApiKey();
+  if (!keyInfo) {
     throw new Error("Gemini API Key is missing");
   }
 
-  const keyStatus = geminiKeyManager.getStatus();
-  console.log(`[Gemini] Using key ${keyStatus.total - keyStatus.failed}/${keyStatus.total}`);
+  const status = await getKeyStatus();
+  console.log(`[Gemini] Using Key ${status.current}/${status.total} (${status.available} available, failed: [${status.failed.join(',')}])`);
 
   const modelName = GEMINI_IMAGE_MODELS[model];
   const MAX_RETRIES = 5; // 最多重试 5 次
@@ -283,8 +345,10 @@ export async function generateImageAction(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 秒 = 2 分钟
 
-      // 每次请求前获取当前可用的 Key（可能在重试过程中切换了）
-      const currentApiKey = geminiKeyManager.getCurrentKey() || apiKey;
+      // 每次请求前获取当前可用的 Key（可能在重试/并发过程中切换了）
+      const currentKeyInfo = await getCurrentApiKey();
+      const currentApiKey = currentKeyInfo?.key || keyInfo.key;
+      const currentKeyIndex = currentKeyInfo?.index ?? keyInfo.index;
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -302,19 +366,20 @@ export async function generateImageAction(
         const errorText = await response.text();
         const errorMessage = `Gemini API error: ${response.status} - ${errorText}`;
 
-        // 429 错误（配额用尽）- 尝试切换 Key
+        // 429 错误（配额用尽）- 立即切换 Key 并重试
         if (response.status === 429) {
           const isQuotaExhausted = errorText.includes('RESOURCE_EXHAUSTED') ||
             errorText.includes('quota') ||
             errorText.includes('exceeded');
 
           if (isQuotaExhausted) {
-            console.warn(`⚠️  429 Quota exhausted, attempting to switch API key...`);
-            const hasMoreKeys = geminiKeyManager.markCurrentKeyFailed();
+            console.warn(`⚠️  429 Quota exhausted on Key ${currentKeyIndex + 1}, switching...`);
+            const hasMoreKeys = await markKeyFailed(currentKeyIndex);
 
             if (hasMoreKeys) {
-              // 有备用 Key，立即重试（不算作常规重试）
-              console.log(`🔄 Retrying with backup API key...`);
+              // 有备用 Key，立即重试（不增加 attempt 计数）
+              console.log(`🔄 Retrying immediately with next available key...`);
+              attempt--; // 不计入重试次数
               continue;
             } else {
               // 没有更多可用的 Key

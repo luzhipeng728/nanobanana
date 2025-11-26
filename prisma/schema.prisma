@@ -86,3 +86,12 @@ model StickerTask {
   updatedAt       DateTime @updatedAt
   completedAt     DateTime?
 }
+
+// API Key 状态管理（全局单例）
+model ApiKeyState {
+  id              String   @id @default("gemini") // 固定 ID，确保单例
+  currentKeyIndex Int      @default(0)            // 当前使用的 Key 索引
+  failedKeys      String   @default("[]")         // JSON 数组：失败的 Key 索引列表
+  failedAt        String   @default("{}")         // JSON 对象：{ keyIndex: timestamp }
+  updatedAt       DateTime @updatedAt
+}
