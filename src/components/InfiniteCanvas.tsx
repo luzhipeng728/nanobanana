@@ -27,6 +27,7 @@ import VideoNode from "./nodes/VideoNode";
 import ChatNode from "./nodes/ChatNode";
 import StickerGenNode from "./nodes/StickerGenNode";
 import StickerNode from "./nodes/StickerNode";
+import SpriteNode from "./nodes/SpriteNode";
 import ImageModal from "./ImageModal";
 import NodeToolbar from "./NodeToolbar";
 import { CanvasContext } from "@/contexts/CanvasContext";
@@ -34,7 +35,7 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost } from "lucide-react";
 import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
 
@@ -49,6 +50,7 @@ const nodeTypes = {
   chat: ChatNode as any,
   stickerGen: StickerGenNode as any,
   sticker: StickerNode as any,
+  sprite: SpriteNode as any,
 };
 
 const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
@@ -270,6 +272,23 @@ export default function InfiniteCanvas() {
         model: "nano-banana",
         imageSize: "512x512",
       },
+    };
+    setNodes((nds) => nds.concat(newNode));
+  }, [setNodes]);
+
+  // Sprite 动画节点 (gif-creator 风格)
+  const addSpriteNode = useCallback(() => {
+    const newNode: Node = {
+      id: `sprite-${Date.now()}`,
+      type: "sprite",
+      position: {
+        x: Math.random() * 400 + 100,
+        y: Math.random() * 400 + 100,
+      },
+      style: {
+        width: 360,
+      },
+      data: {},
     };
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes]);
@@ -787,11 +806,11 @@ export default function InfiniteCanvas() {
           <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
         </button>
         <button
-          onClick={addStickerGenNode}
+          onClick={addSpriteNode}
           className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
-          title="表情包生成器"
+          title="Sprite 动画"
         >
-          <Smile className="w-5 h-5 text-pink-500 dark:text-pink-400" />
+          <Ghost className="w-5 h-5 text-violet-500 dark:text-violet-400" />
         </button>
         <div className="w-px bg-white/20 dark:bg-white/10 my-1" />
         <button

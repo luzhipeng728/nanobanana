@@ -2,10 +2,11 @@
 
 import { memo, useEffect, useState, useRef, useCallback } from "react";
 import { NodeProps, useReactFlow } from "@xyflow/react";
-import { Sparkles, Loader2, Play, Pause, RotateCcw, Download, CheckCircle2, Maximize2 } from "lucide-react";
+import { Sparkles, Loader2, Play, Pause, RotateCcw, Download, CheckCircle2, Maximize2, FileArchive, RefreshCw, X } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import { NodeButton, NodeLabel } from "@/components/ui/NodeUI";
 import { useCanvas } from "@/contexts/CanvasContext";
+import JSZip from "jszip";
 
 type StickerNodeData = {
   taskId?: string;
@@ -21,7 +22,7 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
   const { openImageModal } = useCanvas();
   // 只有在没有错误、帧不足且 isLoading 为 true 时才显示加载状态
   const isLoading = !data.error && (data.isLoading || (!data.frames || data.frames.length < 10) && data.taskId);
-  
+
   const [frameStatuses, setFrameStatuses] = useState<string[]>(
     data.frameStatuses || Array(10).fill("pending")
   );
@@ -31,6 +32,14 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const animationRef = useRef<NodeJS.Timeout | null>(null);
   const isPollingRef = useRef(false); // 追踪是否正在轮询
+
+  // 新增状态
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadType, setDownloadType] = useState<"gif" | "zip" | null>(null);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [regeneratingFrame, setRegeneratingFrame] = useState<number | null>(null);
+  const [contextMenuFrame, setContextMenuFrame] = useState<number | null>(null);
+  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
 
   // 轮询任务状态 - 只在 taskId 变化时启动
   useEffect(() => {
@@ -172,22 +181,144 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
     setIsPlaying(false);
   };
 
-  // 下载所有有效帧
-  const downloadFrames = async () => {
+  // 下载 GIF
+  const downloadGIF = async () => {
     if (!data.frames || validIndices.length === 0) return;
-    
-    // 创建一个临时链接下载每一帧
-    for (let i = 0; i < data.frames.length; i++) {
-      if (!data.frames[i]) continue; // 跳过 null
-      const link = document.createElement('a');
-      link.href = data.frames[i];
-      link.download = `sticker_frame_${i + 1}.png`;
+
+    setIsDownloading(true);
+    setDownloadType("gif");
+    setShowDownloadMenu(false);
+
+    try {
+      const validFrames = data.frames.filter((f: string | null) => f !== null);
+
+      const response = await fetch("/api/sticker/gif", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          frames: validFrames,
+          fps,
+          width: 512,
+          height: 512,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("GIF 生成失败");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `sticker_${Date.now()}.gif`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("GIF download error:", error);
+      alert("GIF 下载失败");
+    } finally {
+      setIsDownloading(false);
+      setDownloadType(null);
     }
   };
+
+  // 打包下载所有帧 (ZIP)
+  const downloadAllFrames = async () => {
+    if (!data.frames || validIndices.length === 0) return;
+
+    setIsDownloading(true);
+    setDownloadType("zip");
+    setShowDownloadMenu(false);
+
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder("sticker_frames");
+
+      // 下载每一帧并添加到 ZIP
+      for (let i = 0; i < data.frames.length; i++) {
+        if (!data.frames[i]) continue;
+
+        try {
+          const response = await fetch(data.frames[i]);
+          const blob = await response.blob();
+          folder?.file(`frame_${String(i + 1).padStart(2, "0")}.png`, blob);
+        } catch (err) {
+          console.error(`Failed to download frame ${i + 1}:`, err);
+        }
+      }
+
+      // 生成 ZIP 并下载
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `sticker_frames_${Date.now()}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("ZIP download error:", error);
+      alert("打包下载失败");
+    } finally {
+      setIsDownloading(false);
+      setDownloadType(null);
+    }
+  };
+
+  // 重新生成单帧
+  const regenerateFrame = async (frameIndex: number) => {
+    if (!data.taskId || regeneratingFrame !== null) return;
+
+    setRegeneratingFrame(frameIndex);
+    setContextMenuFrame(null);
+
+    try {
+      const response = await fetch("/api/sticker/regenerate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: data.taskId,
+          frameIndex,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("重新生成失败");
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.frameUrl) {
+        // 更新帧
+        const newFrames = [...(data.frames || [])];
+        newFrames[frameIndex] = result.frameUrl;
+        updateNodeData(id, { frames: newFrames });
+      }
+    } catch (error) {
+      console.error("Regenerate frame error:", error);
+      alert("重新生成失败");
+    } finally {
+      setRegeneratingFrame(null);
+    }
+  };
+
+  // 帧右键菜单
+  const handleFrameContextMenu = (e: React.MouseEvent, frameIndex: number) => {
+    e.preventDefault();
+    setContextMenuFrame(frameIndex);
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  };
+
+  // 关闭右键菜单
+  useEffect(() => {
+    const handleClick = () => setContextMenuFrame(null);
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
 
   const completedCount = frameStatuses.filter(s => s === "completed").length;
 
@@ -263,26 +394,35 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
 
       {/* 10帧缩略图网格 */}
       <div className="space-y-1.5">
-        <NodeLabel>帧预览</NodeLabel>
+        <NodeLabel>帧预览 <span className="text-neutral-400">(右键可重新生成)</span></NodeLabel>
         <div className="grid grid-cols-5 gap-1">
           {Array(10).fill(0).map((_, i) => (
             <div
               key={i}
               onClick={() => data.frames?.[i] && setCurrentFrame(i)}
               onDoubleClick={() => data.frames?.[i] && openImageModal(data.frames[i], `帧 ${i + 1}`)}
+              onContextMenu={(e) => data.frames?.[i] && handleFrameContextMenu(e, i)}
               className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
                 i === currentFrame
                   ? "border-pink-500 ring-2 ring-pink-500/30"
                   : "border-neutral-200 dark:border-neutral-700 hover:border-pink-300"
               }`}
-              title="单击选择，双击放大"
+              title="单击选择，双击放大，右键重新生成"
             >
               {data.frames?.[i] ? (
-                <img
-                  src={data.frames[i]}
-                  alt={`Frame ${i + 1}`}
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <img
+                    src={data.frames[i]}
+                    alt={`Frame ${i + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* 重新生成中的遮罩 */}
+                  {regeneratingFrame === i && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                   {frameStatuses[i] === "generating" ? (
@@ -294,7 +434,7 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
                   )}
                 </div>
               )}
-              
+
               {/* 帧序号 */}
               <div className="absolute top-0.5 left-0.5 bg-black/50 text-white text-[7px] px-1 rounded">
                 {i + 1}
@@ -303,6 +443,36 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
           ))}
         </div>
       </div>
+
+      {/* 右键菜单 */}
+      {contextMenuFrame !== null && (
+        <div
+          className="fixed z-50 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 py-1 min-w-[140px]"
+          style={{ left: contextMenuPos.x, top: contextMenuPos.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => regenerateFrame(contextMenuFrame)}
+            disabled={regeneratingFrame !== null}
+            className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-50"
+          >
+            <RefreshCw className="w-4 h-4" />
+            重新生成此帧
+          </button>
+          <button
+            onClick={() => {
+              if (data.frames?.[contextMenuFrame]) {
+                openImageModal(data.frames[contextMenuFrame], `帧 ${contextMenuFrame + 1}`);
+              }
+              setContextMenuFrame(null);
+            }}
+            className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+          >
+            <Maximize2 className="w-4 h-4" />
+            放大查看
+          </button>
+        </div>
+      )}
 
       {/* 播放控制 - 至少5帧可播放 */}
       {validIndices.length >= 5 && (
@@ -322,13 +492,45 @@ const StickerNode = ({ data, id, selected }: NodeProps<any>) => {
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </NodeButton>
-            <NodeButton
-              onClick={downloadFrames}
-              variant="secondary"
-              className="px-3"
-            >
-              <Download className="w-3.5 h-3.5" />
-            </NodeButton>
+
+            {/* 下载菜单 */}
+            <div className="relative">
+              <NodeButton
+                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                variant="secondary"
+                className="px-3"
+                disabled={isDownloading}
+              >
+                {isDownloading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+              </NodeButton>
+
+              {showDownloadMenu && (
+                <div className="absolute bottom-full mb-1 right-0 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 py-1 min-w-[140px] z-50">
+                  <button
+                    onClick={downloadGIF}
+                    disabled={isDownloading}
+                    className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4" />
+                    下载 GIF
+                    {downloadType === "gif" && <Loader2 className="w-3 h-3 animate-spin ml-auto" />}
+                  </button>
+                  <button
+                    onClick={downloadAllFrames}
+                    disabled={isDownloading}
+                    className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-50"
+                  >
+                    <FileArchive className="w-4 h-4" />
+                    下载所有帧 (ZIP)
+                    {downloadType === "zip" && <Loader2 className="w-3 h-3 animate-spin ml-auto" />}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* FPS 控制 */}
