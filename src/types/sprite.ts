@@ -69,3 +69,23 @@ export const DEFAULT_GENERATION_CONFIG: GenerationConfig = {
   actionPrompt: '',
   size: '2K'
 };
+
+// Sprite 流式事件类型
+export type SpriteStreamEvent =
+  | { type: 'status'; step: string; progress: number }
+  | { type: 'sprite_generated'; spriteSheetUrl: string }
+  | { type: 'claude_analysis_start' }
+  | { type: 'claude_analysis_chunk'; chunk: string }
+  | { type: 'claude_analysis_end'; analysis: SpriteAnalysisResult }
+  | { type: 'frame_split_progress'; current: number; total: number }
+  | { type: 'complete'; frameUrls: string[]; spriteConfig: SpriteConfig & { blankFrames?: number[] } }
+  | { type: 'error'; error: string };
+
+// Claude 分析结果
+export interface SpriteAnalysisResult {
+  rows: number;
+  cols: number;
+  totalFrames: number;
+  direction: 'row' | 'column';
+  blankFrames: number[];
+}

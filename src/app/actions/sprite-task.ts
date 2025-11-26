@@ -183,12 +183,32 @@ async function toBase64(imageSource: string): Promise<string> {
 }
 
 /**
+ * 检测 base64 图片的媒体类型
+ */
+function detectImageMediaType(base64: string): "image/png" | "image/jpeg" | "image/gif" | "image/webp" {
+  // PNG: 89 50 4E 47
+  if (base64.startsWith("iVBORw0KGgo")) return "image/png";
+  // JPEG: FF D8 FF
+  if (base64.startsWith("/9j/")) return "image/jpeg";
+  // GIF: 47 49 46 38
+  if (base64.startsWith("R0lGOD")) return "image/gif";
+  // WebP: 52 49 46 46
+  if (base64.startsWith("UklGR")) return "image/webp";
+  // 默认返回 PNG
+  return "image/png";
+}
+
+/**
  * 使用 Claude 分析精灵图的布局
  */
 async function analyzeSpriteWithClaude(imageBase64: string): Promise<SpriteAnalysis> {
   const anthropic = getClaudeClient();
 
   console.log("[Sprite Task] Using Claude to analyze sprite sheet...");
+
+  // 检测图片的真实媒体类型
+  const mediaType = detectImageMediaType(imageBase64);
+  console.log(`[Sprite Task] Detected media type: ${mediaType}`);
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
@@ -201,7 +221,7 @@ async function analyzeSpriteWithClaude(imageBase64: string): Promise<SpriteAnaly
             type: "image",
             source: {
               type: "base64",
-              media_type: "image/png",
+              media_type: mediaType,
               data: imageBase64,
             },
           },

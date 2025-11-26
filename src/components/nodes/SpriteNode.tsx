@@ -12,11 +12,10 @@ import { NodeButton, NodeLabel } from "@/components/ui/NodeUI";
 import { useCanvas } from "@/contexts/CanvasContext";
 import type {
   SpriteConfig, ImageDimensions, GenerationMode, ImageResolution,
-  GenerationConfig
+  GenerationConfig, SpriteStreamEvent
 } from "@/types/sprite";
 import { DEFAULT_SPRITE_CONFIG, DEFAULT_GENERATION_CONFIG } from "@/types/sprite";
 import { generateGif } from "@/utils/gifBuilder";
-import { createSpriteTask, type SpriteTaskResult } from "@/app/actions/sprite-task";
 
 /**
  * SpriteNode - Sprite 动画节点
@@ -66,16 +65,19 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
-  // 任务状态
-  const [taskId, setTaskId] = useState<string | null>(data.taskId || null);
-  const [taskStatus, setTaskStatus] = useState<string | null>(null);
-
   // 帧图片 URL 数组（从 R2 获取）
   const [frames, setFrames] = useState<string[]>(data.frameUrls || []);
 
   // 空白帧信息（由 Claude 分析得到）
   const [hasBlankFrames, setHasBlankFrames] = useState(false);
   const [blankFrameCount, setBlankFrameCount] = useState(0);
+
+  // 流式处理状态
+  const [processingStep, setProcessingStep] = useState<string>("");
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [claudeAnalysis, setClaudeAnalysis] = useState<string>("");
+  const [isClaudeAnalyzing, setIsClaudeAnalyzing] = useState(false);
+  const [frameSplitProgress, setFrameSplitProgress] = useState<{ current: number; total: number } | null>(null);
 
   // 监听连接变化，获取连接的图片
   useEffect(() => {
@@ -130,87 +132,13 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   // 同步到节点数据
   useEffect(() => {
     updateNodeData(id, {
-      taskId,
       spriteConfig: config,
       generationConfig: genConfig,
       spriteSheetUrl,
       frameUrls: frames,
       dimensions,
     });
-  }, [taskId, config, genConfig, spriteSheetUrl, frames, dimensions]);
-
-  // 任务轮询
-  useEffect(() => {
-    if (!taskId) return;
-
-    let isMounted = true;
-    let pollInterval: NodeJS.Timeout;
-
-    const pollTask = async () => {
-      try {
-        const response = await fetch(`/api/sprite-task?taskId=${taskId}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch task status");
-        }
-
-        const task: SpriteTaskResult = await response.json();
-
-        if (!isMounted) return;
-
-        setTaskStatus(task.status);
-
-        if (task.status === "completed") {
-          // 任务完成
-          setIsGenerating(false);
-
-          // 设置精灵图 URL
-          if (task.spriteSheetUrl) {
-            setSpriteSheetUrl(task.spriteSheetUrl);
-          }
-
-          // 设置帧 URL 列表（从 R2）
-          if (task.frameUrls && task.frameUrls.length > 0) {
-            setFrames(task.frameUrls);
-            setCurrentFrame(0);
-          }
-
-          // 设置配置（含空白帧信息）
-          if (task.spriteConfig) {
-            setConfig(prev => ({ ...prev, ...task.spriteConfig }));
-            // 检查空白帧
-            const blankFrames = (task.spriteConfig as any).blankFrames || [];
-            if (blankFrames.length > 0) {
-              setHasBlankFrames(true);
-              setBlankFrameCount(blankFrames.length);
-            }
-          }
-
-          setTaskId(null);
-          clearInterval(pollInterval);
-        } else if (task.status === "failed") {
-          // 任务失败
-          setIsGenerating(false);
-          setError(task.error || "生成失败，请重试");
-          setTaskId(null);
-          clearInterval(pollInterval);
-        }
-        // pending 或 processing 状态继续轮询
-      } catch (err) {
-        console.error("Failed to poll task:", err);
-      }
-    };
-
-    // 立即执行一次
-    pollTask();
-
-    // 设置轮询间隔
-    pollInterval = setInterval(pollTask, 2000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(pollInterval);
-    };
-  }, [taskId]);
+  }, [config, genConfig, spriteSheetUrl, frames, dimensions]);
 
   // 加载模板到画布
   const loadTemplateToCanvas = () => {
@@ -253,7 +181,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     }
   };
 
-  // 生成 Sprite Sheet（使用任务系统）
+  // 生成 Sprite Sheet（使用流式 API）
   const handleGenerate = async () => {
     if (genConfig.mode === 'replica') {
       if (!templateImage || !characterImage) {
@@ -269,26 +197,120 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
 
     setIsGenerating(true);
     setError(null);
-    setTaskStatus("pending");
+    setProcessingStep("");
+    setProcessingProgress(0);
+    setClaudeAnalysis("");
+    setIsClaudeAnalyzing(false);
+    setFrameSplitProgress(null);
+    setHasBlankFrames(false);
+    setBlankFrameCount(0);
 
     try {
-      // 创建任务
-      const { taskId: newTaskId } = await createSpriteTask({
-        mode: genConfig.mode,
-        templateImage: templateImage || undefined,
-        characterImage: characterImage!,
-        prompt: genConfig.prompt || undefined,
-        actionPrompt: genConfig.actionPrompt || undefined,
-        size: genConfig.size,
+      const response = await fetch("/api/sprite/generate-stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: genConfig.mode,
+          templateImage: templateImage || undefined,
+          characterImage: characterImage!,
+          prompt: genConfig.prompt || undefined,
+          actionPrompt: genConfig.actionPrompt || undefined,
+          size: genConfig.size,
+        }),
       });
 
-      console.log(`[SpriteNode] Created task: ${newTaskId}`);
-      setTaskId(newTaskId);
-      // 轮询会在 useEffect 中处理
+      if (!response.ok) {
+        throw new Error("请求失败");
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("无法读取响应流");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // 解析 SSE 事件
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // 保留未完整的行
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const event: SpriteStreamEvent = JSON.parse(line.slice(6));
+
+              switch (event.type) {
+                case "status":
+                  setProcessingStep(event.step);
+                  setProcessingProgress(event.progress);
+                  break;
+
+                case "sprite_generated":
+                  setSpriteSheetUrl(event.spriteSheetUrl);
+                  break;
+
+                case "claude_analysis_start":
+                  setIsClaudeAnalyzing(true);
+                  setClaudeAnalysis("");
+                  break;
+
+                case "claude_analysis_chunk":
+                  setClaudeAnalysis(prev => prev + event.chunk);
+                  break;
+
+                case "claude_analysis_end":
+                  setIsClaudeAnalyzing(false);
+                  break;
+
+                case "frame_split_progress":
+                  setFrameSplitProgress({
+                    current: event.current,
+                    total: event.total,
+                  });
+                  break;
+
+                case "complete":
+                  setFrames(event.frameUrls);
+                  setCurrentFrame(0);
+                  setConfig(prev => ({
+                    ...prev,
+                    rows: event.spriteConfig.rows,
+                    cols: event.spriteConfig.cols,
+                    totalFrames: event.spriteConfig.totalFrames,
+                    direction: event.spriteConfig.direction,
+                  }));
+                  // 检查空白帧
+                  const blankFrames = event.spriteConfig.blankFrames || [];
+                  if (blankFrames.length > 0) {
+                    setHasBlankFrames(true);
+                    setBlankFrameCount(blankFrames.length);
+                  }
+                  setIsGenerating(false);
+                  setProcessingStep("");
+                  break;
+
+                case "error":
+                  setError(event.error);
+                  setIsGenerating(false);
+                  break;
+              }
+            } catch (e) {
+              console.error("Failed to parse SSE event:", e);
+            }
+          }
+        }
+      }
     } catch (err) {
-      setError("创建任务失败");
+      console.error("[SpriteNode] Generate error:", err);
+      setError(err instanceof Error ? err.message : "生成失败");
       setIsGenerating(false);
-      setTaskStatus(null);
     }
   };
 
@@ -555,7 +577,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
             <Sparkles className="w-4 h-4" />
           )}
           {isGenerating
-            ? (taskStatus === 'pending' ? '排队中...' : taskStatus === 'processing' ? '生成中...' : '处理中...')
+            ? (processingStep || '处理中...')
             : (genConfig.mode === 'replica' ? '复制动作' : '创意生成')}
         </NodeButton>
 
@@ -609,17 +631,32 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
               </button>
             </>
           ) : isGenerating ? (
-            <div className="flex flex-col items-center justify-center h-full py-6 text-neutral-400">
+            <div className="flex flex-col items-center justify-center h-full py-4 text-neutral-400">
               <div className="relative">
                 <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
                 <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-pink-500 animate-pulse" />
               </div>
               <span className="text-xs mt-2 text-violet-500 font-medium">
-                {taskStatus === 'pending' ? '排队中...' : '生成中...'}
+                {processingStep || '处理中...'}
               </span>
-              <span className="text-[10px] text-neutral-500 mt-1">
-                AI 正在创作精灵图
-              </span>
+              {/* 进度条 */}
+              <div className="w-full max-w-[200px] mt-2 px-4">
+                <div className="h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-violet-500 to-pink-500 transition-all duration-300"
+                    style={{ width: `${processingProgress}%` }}
+                  />
+                </div>
+                <span className="text-[10px] text-neutral-500 mt-1 block text-center">
+                  {processingProgress}%
+                </span>
+              </div>
+              {/* 帧切割进度 */}
+              {frameSplitProgress && (
+                <span className="text-[10px] text-cyan-500 mt-1">
+                  帧切割: {frameSplitProgress.current}/{frameSplitProgress.total}
+                </span>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full py-4 text-neutral-400">
@@ -629,6 +666,32 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
           )}
         </div>
       </div>
+
+      {/* Claude 分析内容显示 */}
+      {(isClaudeAnalyzing || claudeAnalysis) && (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <NodeLabel>
+              {isClaudeAnalyzing ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />
+                  Claude 分析中...
+                </span>
+              ) : (
+                'Claude 分析结果'
+              )}
+            </NodeLabel>
+          </div>
+          <div className="bg-neutral-100 dark:bg-neutral-800 rounded-lg p-2 max-h-[150px] overflow-y-auto">
+            <pre className="text-[10px] text-neutral-600 dark:text-neutral-300 whitespace-pre-wrap font-mono leading-relaxed">
+              {claudeAnalysis || '等待分析...'}
+              {isClaudeAnalyzing && (
+                <span className="inline-block w-1.5 h-3 bg-cyan-500 animate-pulse ml-0.5" />
+              )}
+            </pre>
+          </div>
+        </div>
+      )}
 
       {/* 配置面板 */}
       {showSettings && spriteSheetUrl && (
