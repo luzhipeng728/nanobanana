@@ -255,8 +255,9 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           isVisible={selected}
           minWidth={MIN_WIDTH}
           minHeight={MIN_HEIGHT}
+          keepAspectRatio={true}
           lineClassName="!border-blue-400"
-          handleClassName="!w-3 !h-3 !bg-blue-500 !rounded-full"
+          handleClassName="!w-3 !h-3 !bg-blue-500 !rounded-full !cursor-nwse-resize"
           onResizeEnd={() => {
             // 用户手动调整尺寸后，标记为已自定义
             updateNodeData(id, { userResized: true });
