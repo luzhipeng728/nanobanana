@@ -254,23 +254,41 @@ async function generateSpriteCreative(
 
   return withRetry(async () => {
     const textPrompt = `
-        Create a high-quality pixel art sprite sheet for game animation.
+Create a sprite sheet for game animation based on the reference character image.
 
-        REFERENCE CHARACTER:
-        See the attached image. You MUST maintain the exact identity, colors, and design of this character.
+**STRICT LAYOUT REQUIREMENTS (MUST FOLLOW EXACTLY):**
+- Output: A single square image divided into a perfect 4x4 grid (16 cells total)
+- Each cell must be EXACTLY 1/4 of the image width and 1/4 of the image height
+- NO margins, NO padding, NO gaps between cells
+- Cells must tile perfectly edge-to-edge
 
-        ACTION:
-        ${actionPrompt}
+**GRID STRUCTURE:**
+┌────┬────┬────┬────┐
+│ 1  │ 2  │ 3  │ 4  │
+├────┼────┼────┼────┤
+│ 5  │ 6  │ 7  │ 8  │
+├────┼────┼────┼────┤
+│ 9  │ 10 │ 11 │ 12 │
+├────┼────┼────┼────┤
+│ 13 │ 14 │ 15 │ 16 │
+└────┴────┴────┴────┘
 
-        REQUIREMENTS:
-        1. Generate a sequence of animation frames showing the character performing the action.
-        2. Arrange the frames in a clean, regular GRID (e.g., 3x3, 4x4, 5x5, or a horizontal strip) so they can be easily sliced.
-        3. Ensure consistent sizing and positioning for each frame.
-        4. Visual Style: ${stylePrompt || "Match the reference character's style"}.
-        5. Background: Solid uniform color (easy to remove) or transparent.
+**CHARACTER REQUIREMENTS:**
+- Maintain the EXACT identity, colors, and design from the reference image
+- Character must be CENTERED in each cell
+- Character size must be IDENTICAL across all 16 frames
+- Character position (centered) must be CONSISTENT in every cell
 
-        OUTPUT FORMAT:
-        A single image file containing the sprite sheet.
+**ANIMATION: ${actionPrompt}**
+- Show smooth animation progression from frame 1 to frame 16
+- Reading order: left-to-right, top-to-bottom
+
+**VISUAL STYLE:**
+- Background: Pure white (#FFFFFF) for ALL cells
+- Style: ${stylePrompt || "Match the reference character's pixel art style"}
+- NO decorations, borders, or labels on the sprite sheet
+
+**CRITICAL: The output must be precisely sliceable into 16 equal parts.**
       `;
 
     // 使用原生 fetch 调用 REST API（和 Generator 一致）
