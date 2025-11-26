@@ -116,3 +116,79 @@ export function NodeScrollArea({ children, className }: { children: React.ReactN
     )
 }
 
+/**
+ * NodeTabSelect - Tab 样式的选择器组件
+ * 比下拉框更直观，用户一眼就能看到所有选项
+ */
+interface TabOption<T extends string> {
+  value: T;
+  label: string;
+  disabled?: boolean;
+}
+
+interface NodeTabSelectProps<T extends string> {
+  value: T;
+  onChange: (value: T) => void;
+  options: TabOption<T>[];
+  disabled?: boolean;
+  className?: string;
+  size?: "sm" | "md";
+  color?: "blue" | "purple" | "orange" | "green" | "cyan";
+}
+
+export function NodeTabSelect<T extends string>({
+  value,
+  onChange,
+  options,
+  disabled = false,
+  className,
+  size = "md",
+  color = "blue",
+}: NodeTabSelectProps<T>) {
+  const colorStyles = {
+    blue: "bg-blue-500 text-white shadow-sm",
+    purple: "bg-purple-500 text-white shadow-sm",
+    orange: "bg-orange-500 text-white shadow-sm",
+    green: "bg-green-500 text-white shadow-sm",
+    cyan: "bg-cyan-500 text-white shadow-sm",
+  };
+
+  const sizeStyles = {
+    sm: "py-1 text-[10px]",
+    md: "py-1.5 text-[11px]",
+  };
+
+  return (
+    <div className={cn(
+      "flex bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-full gap-0.5",
+      disabled && "opacity-50 cursor-not-allowed",
+      className
+    )}>
+      {options.map((option) => {
+        const isSelected = value === option.value;
+        const isDisabled = disabled || option.disabled;
+
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => !isDisabled && onChange(option.value)}
+            disabled={isDisabled}
+            className={cn(
+              "flex-1 font-bold uppercase tracking-wider rounded-full transition-all duration-200",
+              sizeStyles[size],
+              isSelected
+                ? cn("bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm", colorStyles[color].replace("bg-", "").includes("500") ? "" : "")
+                : "text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300",
+              isSelected && colorStyles[color],
+              isDisabled && "cursor-not-allowed opacity-50"
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+

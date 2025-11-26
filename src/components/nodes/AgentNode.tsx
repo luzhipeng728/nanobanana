@@ -23,7 +23,7 @@ import {
 import type { AgentNodeData, AgentPrompt, AgentStreamEvent } from "@/types/agent";
 import { RESOLUTION_OPTIONS } from "@/types/image-gen";
 import { BaseNode } from "./BaseNode";
-import { NodeTextarea, NodeSelect, NodeButton, NodeLabel } from "@/components/ui/NodeUI";
+import { NodeTextarea, NodeSelect, NodeButton, NodeLabel, NodeTabSelect } from "@/components/ui/NodeUI";
 import ReactMarkdown from "react-markdown";
 
 const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
@@ -773,53 +773,59 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         )}
       </div>
 
-      {/* Model, Resolution & Aspect Ratio */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
+      {/* Model, Resolution & Aspect Ratio - 使用 Tab 样式 */}
+      <div className="space-y-3">
+        {/* Model 选择 */}
+        <div className="space-y-1.5">
           <NodeLabel>Model</NodeLabel>
-          <NodeSelect
+          <NodeTabSelect
             value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value as any)}
+            onChange={(val) => setSelectedModel(val as "nano-banana" | "nano-banana-pro")}
+            options={[
+              { value: "nano-banana", label: "Fast" },
+              { value: "nano-banana-pro", label: "Pro" },
+            ]}
             disabled={isRunning}
-          >
-            <option value="nano-banana">Fast</option>
-            <option value="nano-banana-pro">Pro</option>
-          </NodeSelect>
+            color="purple"
+          />
         </div>
-
-        {/* Aspect Ratio - 只有没有参考图（或没勾选给生图模型）时才显示 */}
-        {!(connectedImages.length > 0 && useForImageGen) && (
-          <div className="space-y-1">
-            <NodeLabel>Aspect Ratio</NodeLabel>
-            <NodeSelect
-              value={aspectRatio}
-              onChange={(e) => setAspectRatio(e.target.value)}
-              disabled={isRunning}
-            >
-              <option value="16:9">16:9</option>
-              <option value="9:16">9:16</option>
-              <option value="1:1">1:1</option>
-              <option value="4:3">4:3</option>
-              <option value="3:4">3:4</option>
-            </NodeSelect>
-          </div>
-        )}
 
         {/* Resolution for Pro model */}
         {selectedModel === "nano-banana-pro" && (
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <NodeLabel>Resolution</NodeLabel>
-            <NodeSelect
+            <NodeTabSelect
               value={imageSize}
-              onChange={(e) => setImageSize(e.target.value)}
+              onChange={setImageSize}
+              options={Object.entries(RESOLUTION_OPTIONS).map(([key, option]) => ({
+                value: option.value,
+                label: option.label,
+              }))}
               disabled={isRunning}
-            >
-              {Object.entries(RESOLUTION_OPTIONS).map(([key, option]) => (
-                <option key={key} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </NodeSelect>
+              color="purple"
+              size="sm"
+            />
+          </div>
+        )}
+
+        {/* Aspect Ratio - 只有没有参考图（或没勾选给生图模型）时才显示 */}
+        {!(connectedImages.length > 0 && useForImageGen) && (
+          <div className="space-y-1.5">
+            <NodeLabel>Aspect Ratio</NodeLabel>
+            <NodeTabSelect
+              value={aspectRatio}
+              onChange={setAspectRatio}
+              options={[
+                { value: "16:9", label: "16:9" },
+                { value: "9:16", label: "9:16" },
+                { value: "1:1", label: "1:1" },
+                { value: "4:3", label: "4:3" },
+                { value: "3:4", label: "3:4" },
+              ]}
+              disabled={isRunning}
+              color="purple"
+              size="sm"
+            />
           </div>
         )}
       </div>

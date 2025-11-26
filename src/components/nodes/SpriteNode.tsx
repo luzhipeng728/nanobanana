@@ -1,25 +1,37 @@
 "use client";
 
 import { memo, useEffect, useState, useRef, useCallback } from "react";
-import { NodeProps, useReactFlow } from "@xyflow/react";
+import { NodeProps, useReactFlow, Handle, Position, useEdges } from "@xyflow/react";
 import {
-  Sparkles, Loader2, Play, Pause, Download, RefreshCw,
-  Upload, LayoutTemplate, User, Copy, Zap, ArrowRight, ArrowDown,
-  Settings2, Scan, X, Maximize2, ZoomIn, ZoomOut
+  Sparkles, Loader2, Play, Pause, Download,
+  Copy, Zap, ArrowRight, ArrowDown,
+  Settings2, Scan, X, Maximize2, LayoutTemplate, User
 } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import { NodeButton, NodeLabel } from "@/components/ui/NodeUI";
 import { useCanvas } from "@/contexts/CanvasContext";
 import type {
   SpriteConfig, ImageDimensions, GenerationMode, ImageResolution,
-  GenerationConfig, SpriteNodeData
+  GenerationConfig
 } from "@/types/sprite";
 import { DEFAULT_SPRITE_CONFIG, DEFAULT_GENERATION_CONFIG } from "@/types/sprite";
 import { generateGif } from "@/utils/gifBuilder";
 
+/**
+ * SpriteNode - Sprite 动画节点
+ *
+ * 使用连线方式接收图片输入：
+ * - Replica 模式：需要两个连接（模板 + 角色）
+ * - Creative 模式：需要一个连接（角色）
+ *
+ * 连接点 ID:
+ * - template: 模板 Sprite Sheet 输入（Replica 模式）
+ * - character: 角色图片输入（两种模式都需要）
+ */
 const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
-  const { updateNodeData } = useReactFlow();
+  const { updateNodeData, getNodes } = useReactFlow();
   const { openImageModal } = useCanvas();
+  const edges = useEdges();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -42,6 +54,10 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     data.dimensions || { width: 0, height: 0 }
   );
 
+  // 连接的图片
+  const [templateImage, setTemplateImage] = useState<string | null>(null);
+  const [characterImage, setCharacterImage] = useState<string | null>(null);
+
   // UI 状态
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentFrame, setCurrentFrame] = useState(0);
@@ -50,6 +66,42 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+
+  // 监听连接变化，获取连接的图片
+  useEffect(() => {
+    const nodes = getNodes();
+
+    // 找到连接到本节点的边
+    const connectedEdges = edges.filter(e => e.target === id);
+
+    let newTemplateImage: string | null = null;
+    let newCharacterImage: string | null = null;
+
+    connectedEdges.forEach(edge => {
+      const sourceNode = nodes.find(n => n.id === edge.source);
+      if (!sourceNode || sourceNode.type !== 'image') return;
+
+      const imageUrl = (sourceNode.data as any)?.imageUrl;
+      if (!imageUrl) return;
+
+      // 根据 targetHandle 确定是模板还是角色
+      if (edge.targetHandle === 'template') {
+        newTemplateImage = imageUrl;
+      } else if (edge.targetHandle === 'character') {
+        newCharacterImage = imageUrl;
+      }
+    });
+
+    setTemplateImage(newTemplateImage);
+    setCharacterImage(newCharacterImage);
+
+    // 同步到 genConfig
+    setGenConfig(prev => ({
+      ...prev,
+      templateImage: newTemplateImage,
+      characterImage: newCharacterImage,
+    }));
+  }, [edges, id, getNodes]);
 
   // 更新配置
   const updateConfig = (key: keyof SpriteConfig, value: any) => {
@@ -75,34 +127,10 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     });
   }, [config, genConfig, spriteSheetUrl, dimensions]);
 
-  // 处理文件上传
-  const handleFileUpload = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    target: 'template' | 'character' | 'spriteSheet'
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const result = ev.target?.result as string;
-      if (target === 'template') {
-        setGenConfig(prev => ({ ...prev, templateImage: result }));
-      } else if (target === 'character') {
-        setGenConfig(prev => ({ ...prev, characterImage: result }));
-      } else {
-        setSpriteSheetUrl(result);
-        // 重置配置
-        setConfig(DEFAULT_SPRITE_CONFIG);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   // 加载模板到画布
   const loadTemplateToCanvas = () => {
-    if (genConfig.templateImage) {
-      setSpriteSheetUrl(genConfig.templateImage);
+    if (templateImage) {
+      setSpriteSheetUrl(templateImage);
       setConfig(DEFAULT_SPRITE_CONFIG);
     }
   };
@@ -143,13 +171,13 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   // 生成 Sprite Sheet
   const handleGenerate = async () => {
     if (genConfig.mode === 'replica') {
-      if (!genConfig.templateImage || !genConfig.characterImage) {
-        setError("Replica 模式需要模板和角色图片");
+      if (!templateImage || !characterImage) {
+        setError("Replica 模式需要连接模板和角色图片");
         return;
       }
     } else {
-      if (!genConfig.characterImage || !genConfig.actionPrompt) {
-        setError("Creative 模式需要角色图片和动作描述");
+      if (!characterImage || !genConfig.actionPrompt) {
+        setError("Creative 模式需要连接角色图片并填写动作描述");
         return;
       }
     }
@@ -163,8 +191,8 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode: genConfig.mode,
-          templateImage: genConfig.templateImage,
-          characterImage: genConfig.characterImage,
+          templateImage: templateImage,
+          characterImage: characterImage,
           prompt: genConfig.prompt,
           actionPrompt: genConfig.actionPrompt,
           size: genConfig.size,
@@ -342,6 +370,48 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     );
   };
 
+  // 渲染连接状态指示
+  const renderConnectionStatus = (
+    type: 'template' | 'character',
+    imageUrl: string | null,
+    label: string
+  ) => {
+    return (
+      <div className={`flex items-center gap-2 p-2 rounded-lg border ${
+        imageUrl
+          ? 'bg-green-500/10 border-green-500/30'
+          : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 border-dashed'
+      }`}>
+        <div className={`w-6 h-6 rounded flex items-center justify-center ${
+          imageUrl ? 'bg-green-500/20' : 'bg-neutral-200 dark:bg-neutral-700'
+        }`}>
+          {type === 'template' ? (
+            <LayoutTemplate className={`w-3.5 h-3.5 ${imageUrl ? 'text-green-500' : 'text-neutral-400'}`} />
+          ) : (
+            <User className={`w-3.5 h-3.5 ${imageUrl ? 'text-green-500' : 'text-neutral-400'}`} />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className={`text-xs font-medium ${
+            imageUrl ? 'text-green-600 dark:text-green-400' : 'text-neutral-500'
+          }`}>
+            {label}
+          </span>
+          <span className="text-[10px] text-neutral-400 block">
+            {imageUrl ? '已连接' : '← 连接图片节点'}
+          </span>
+        </div>
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt={label}
+            className="w-8 h-8 rounded object-cover border border-green-500/30"
+          />
+        )}
+      </div>
+    );
+  };
+
   return (
     <BaseNode
       title="Sprite 动画"
@@ -358,6 +428,36 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
         </button>
       }
     >
+      {/* 输入连接点 */}
+      {genConfig.mode === 'replica' && (
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="template"
+          style={{
+            top: '120px',
+            background: templateImage ? '#22c55e' : '#a855f7',
+            border: '2px solid white',
+            width: '12px',
+            height: '12px',
+          }}
+          title="连接模板 Sprite Sheet"
+        />
+      )}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="character"
+        style={{
+          top: genConfig.mode === 'replica' ? '180px' : '120px',
+          background: characterImage ? '#22c55e' : '#ec4899',
+          border: '2px solid white',
+          width: '12px',
+          height: '12px',
+        }}
+        title="连接角色图片"
+      />
+
       {/* 模式切换 */}
       <div className="flex bg-neutral-100 dark:bg-neutral-800 p-1 rounded-lg">
         <button
@@ -382,94 +482,31 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
         </button>
       </div>
 
-      {/* 图片上传区 */}
-      {genConfig.mode === 'replica' ? (
-        <div className="grid grid-cols-2 gap-2">
-          {/* 模板图片 */}
-          <div className="space-y-1">
-            <NodeLabel>模板</NodeLabel>
-            <label className="block cursor-pointer">
-              <div className={`h-24 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-all ${
-                genConfig.templateImage
-                  ? 'border-violet-500/50 bg-violet-500/5'
-                  : 'border-neutral-300 dark:border-neutral-600 hover:border-violet-400'
-              }`}>
-                {genConfig.templateImage ? (
-                  <img src={genConfig.templateImage} className="w-full h-full object-contain rounded-lg" alt="Template" />
-                ) : (
-                  <>
-                    <LayoutTemplate className="w-5 h-5 text-neutral-400 mb-1" />
-                    <span className="text-[10px] text-neutral-400">上传模板</span>
-                  </>
-                )}
-              </div>
-              <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'template')} className="hidden" />
-            </label>
-            {genConfig.templateImage && (
-              <button
-                onClick={loadTemplateToCanvas}
-                className="w-full text-[10px] text-violet-500 hover:text-violet-600 flex items-center justify-center gap-1"
-              >
-                <Play className="w-3 h-3" /> 加载到画布
-              </button>
-            )}
-          </div>
+      {/* 连接状态显示 */}
+      <div className="space-y-2">
+        {genConfig.mode === 'replica' && (
+          renderConnectionStatus('template', templateImage, '模板 Sprite Sheet')
+        )}
+        {renderConnectionStatus('character', characterImage, '角色图片')}
 
-          {/* 角色图片 */}
-          <div className="space-y-1">
-            <NodeLabel>角色</NodeLabel>
-            <label className="block cursor-pointer">
-              <div className={`h-24 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-all ${
-                genConfig.characterImage
-                  ? 'border-pink-500/50 bg-pink-500/5'
-                  : 'border-neutral-300 dark:border-neutral-600 hover:border-pink-400'
-              }`}>
-                {genConfig.characterImage ? (
-                  <img src={genConfig.characterImage} className="w-full h-full object-contain rounded-lg" alt="Character" />
-                ) : (
-                  <>
-                    <User className="w-5 h-5 text-neutral-400 mb-1" />
-                    <span className="text-[10px] text-neutral-400">上传角色</span>
-                  </>
-                )}
-              </div>
-              <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'character')} className="hidden" />
-            </label>
-          </div>
+        {/* 模式说明 */}
+        <div className="text-[10px] text-neutral-400 px-1">
+          {genConfig.mode === 'replica'
+            ? '复制模板动作到新角色'
+            : '为角色生成新动作'}
         </div>
-      ) : (
-        <div className="space-y-2">
-          {/* Creative 模式：角色 + 动作描述 */}
-          <div className="space-y-1">
-            <NodeLabel>角色</NodeLabel>
-            <label className="block cursor-pointer">
-              <div className={`h-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-all ${
-                genConfig.characterImage
-                  ? 'border-pink-500/50 bg-pink-500/5'
-                  : 'border-neutral-300 dark:border-neutral-600 hover:border-pink-400'
-              }`}>
-                {genConfig.characterImage ? (
-                  <img src={genConfig.characterImage} className="w-full h-full object-contain rounded-lg" alt="Character" />
-                ) : (
-                  <>
-                    <User className="w-5 h-5 text-neutral-400 mb-1" />
-                    <span className="text-[10px] text-neutral-400">上传角色图片</span>
-                  </>
-                )}
-              </div>
-              <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'character')} className="hidden" />
-            </label>
-          </div>
+      </div>
 
-          <div className="space-y-1">
-            <NodeLabel>动作描述</NodeLabel>
-            <textarea
-              value={genConfig.actionPrompt}
-              onChange={(e) => setGenConfig(prev => ({ ...prev, actionPrompt: e.target.value }))}
-              placeholder="描述要生成的动作，如：跑步、跳跃、挥手..."
-              className="w-full h-16 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-500"
-            />
-          </div>
+      {/* Creative 模式：动作描述 */}
+      {genConfig.mode === 'creative' && (
+        <div className="space-y-1">
+          <NodeLabel>动作描述</NodeLabel>
+          <textarea
+            value={genConfig.actionPrompt}
+            onChange={(e) => setGenConfig(prev => ({ ...prev, actionPrompt: e.target.value }))}
+            placeholder="描述要生成的动作，如：跑步、跳跃、挥手..."
+            className="w-full h-16 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-violet-500"
+          />
         </div>
       )}
 
@@ -501,7 +538,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
 
         <NodeButton
           onClick={handleGenerate}
-          disabled={isGenerating || (genConfig.mode === 'replica' ? (!genConfig.templateImage || !genConfig.characterImage) : (!genConfig.characterImage || !genConfig.actionPrompt))}
+          disabled={isGenerating || (genConfig.mode === 'replica' ? (!templateImage || !characterImage) : (!characterImage || !genConfig.actionPrompt))}
           className="w-full bg-gradient-to-r from-violet-500 to-pink-500 text-white"
         >
           {isGenerating ? (
@@ -511,6 +548,16 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
           )}
           {genConfig.mode === 'replica' ? '复制动作' : '创意生成'}
         </NodeButton>
+
+        {/* Replica 模式下，如果有模板图片，可以直接加载到画布 */}
+        {genConfig.mode === 'replica' && templateImage && (
+          <button
+            onClick={loadTemplateToCanvas}
+            className="w-full text-[10px] text-violet-500 hover:text-violet-600 flex items-center justify-center gap-1 py-1"
+          >
+            <Play className="w-3 h-3" /> 加载模板到预览
+          </button>
+        )}
       </div>
 
       {/* 分隔线 */}
@@ -519,16 +566,20 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
       {/* Sprite Sheet 预览 */}
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <NodeLabel>Sprite Sheet</NodeLabel>
-          <label className="cursor-pointer text-[10px] text-violet-500 hover:text-violet-600 flex items-center gap-1">
-            <Upload className="w-3 h-3" /> 上传
-            <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'spriteSheet')} className="hidden" />
-          </label>
+          <NodeLabel>Sprite Sheet 预览</NodeLabel>
+          {spriteSheetUrl && (
+            <button
+              onClick={() => setSpriteSheetUrl(null)}
+              className="text-[10px] text-red-500 hover:text-red-600"
+            >
+              清除
+            </button>
+          )}
         </div>
 
         <div
           className="relative bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden"
-          style={{ minHeight: spriteSheetUrl ? 'auto' : '120px' }}
+          style={{ minHeight: spriteSheetUrl ? 'auto' : '80px' }}
         >
           {spriteSheetUrl ? (
             <>
@@ -548,9 +599,9 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
               </button>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full py-6 text-neutral-400">
-              <LayoutTemplate className="w-8 h-8 mb-2 opacity-50" />
-              <span className="text-xs">上传或生成 Sprite Sheet</span>
+            <div className="flex flex-col items-center justify-center h-full py-4 text-neutral-400">
+              <LayoutTemplate className="w-6 h-6 mb-1 opacity-50" />
+              <span className="text-[10px]">等待生成或加载模板</span>
             </div>
           )}
         </div>

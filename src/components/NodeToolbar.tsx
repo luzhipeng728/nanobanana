@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Wand2, Brain, Music, MessageSquare, Smile, Video, Image, ChevronLeft, ChevronRight } from "lucide-react";
+import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'stickerGen';
+type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'sprite';
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, nodeType: NodeType) => void;
@@ -37,11 +37,11 @@ const baseItems = [
     accentColor: '#a855f7',
   },
   {
-    type: 'stickerGen' as NodeType,
-    title: 'Sticker',
-    description: '动态表情包',
-    icon: Smile,
-    accentColor: '#ec4899',
+    type: 'sprite' as NodeType,
+    title: 'Sprite',
+    description: 'Sprite 动画',
+    icon: Ghost,
+    accentColor: '#8b5cf6',
   },
   {
     type: 'musicGen' as NodeType,

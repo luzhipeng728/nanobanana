@@ -7,7 +7,7 @@ import { createImageTask } from "@/app/actions/image-task";
 import { type GeminiImageModel, type ImageGenerationConfig, RESOLUTION_OPTIONS } from "@/types/image-gen";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { Loader2, Wand2, Image as ImageIcon, Sparkles, Maximize, Link2 } from "lucide-react";
-import { NodeTextarea, NodeSelect, NodeLabel, NodeButton } from "@/components/ui/NodeUI";
+import { NodeTextarea, NodeSelect, NodeLabel, NodeButton, NodeTabSelect } from "@/components/ui/NodeUI";
 import { BaseNode } from "./BaseNode";
 
 // Define the data structure for the node
@@ -144,61 +144,64 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       />
 
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <NodeLabel>Model</NodeLabel>
-            <NodeSelect
-              value={selectedModel}
-              onChange={(e) => {
-                const newModel = e.target.value as GeminiImageModel;
-                setSelectedModel(newModel);
-                // Pro 模型默认 auto，Fast 模型默认 1:1
-                if (newModel === "nano-banana-pro" && aspectRatio === "1:1") {
-                  setAspectRatio("auto");
-                } else if (newModel === "nano-banana" && aspectRatio === "auto") {
-                  setAspectRatio("1:1");
-                }
-              }}
-              className="w-full"
-            >
-              <option value="nano-banana">Fast</option>
-              <option value="nano-banana-pro">Pro</option>
-            </NodeSelect>
-          </div>
-
-          {selectedModel === "nano-banana-pro" && (
-            <div>
-              <NodeLabel>Resolution</NodeLabel>
-              <NodeSelect
-                value={imageSize}
-                onChange={(e) => setImageSize(e.target.value)}
-                className="w-full"
-              >
-                {Object.entries(RESOLUTION_OPTIONS).map(([key, option]) => (
-                  <option key={key} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </NodeSelect>
-            </div>
-          )}
+        {/* Model 选择 - Tab 样式 */}
+        <div className="space-y-1.5">
+          <NodeLabel>Model</NodeLabel>
+          <NodeTabSelect
+            value={selectedModel}
+            onChange={(val) => {
+              const newModel = val as GeminiImageModel;
+              setSelectedModel(newModel);
+              // Pro 模型默认 auto，Fast 模型默认 1:1
+              if (newModel === "nano-banana-pro" && aspectRatio === "1:1") {
+                setAspectRatio("auto");
+              } else if (newModel === "nano-banana" && aspectRatio === "auto") {
+                setAspectRatio("1:1");
+              }
+            }}
+            options={[
+              { value: "nano-banana", label: "Fast" },
+              { value: "nano-banana-pro", label: "Pro" },
+            ]}
+            color="blue"
+          />
         </div>
 
-        <div>
+        {/* Resolution for Pro model - Tab 样式 */}
+        {selectedModel === "nano-banana-pro" && (
+          <div className="space-y-1.5">
+            <NodeLabel>Resolution</NodeLabel>
+            <NodeTabSelect
+              value={imageSize}
+              onChange={setImageSize}
+              options={Object.entries(RESOLUTION_OPTIONS).map(([key, option]) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+              color="blue"
+              size="sm"
+            />
+          </div>
+        )}
+
+        {/* Aspect Ratio - Tab 样式 */}
+        <div className="space-y-1.5">
           <NodeLabel>Aspect Ratio {connectedImagesCount > 0 && <span className="text-neutral-400">(参考图覆盖)</span>}</NodeLabel>
-          <NodeSelect
+          <NodeTabSelect
             value={aspectRatio}
-            onChange={(e) => setAspectRatio(e.target.value)}
-            className="w-full"
+            onChange={setAspectRatio}
+            options={[
+              { value: "auto", label: "Auto" },
+              { value: "1:1", label: "1:1" },
+              { value: "16:9", label: "16:9" },
+              { value: "9:16", label: "9:16" },
+              { value: "4:3", label: "4:3" },
+              { value: "3:4", label: "3:4" },
+            ]}
             disabled={connectedImagesCount > 0}
-          >
-            <option value="auto">Auto</option>
-            <option value="1:1">1:1</option>
-            <option value="16:9">16:9</option>
-            <option value="9:16">9:16</option>
-            <option value="4:3">4:3</option>
-            <option value="3:4">3:4</option>
-          </NodeSelect>
+            color="blue"
+            size="sm"
+          />
         </div>
 
         <div>

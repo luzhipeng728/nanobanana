@@ -4,7 +4,7 @@ import { memo, useState, useEffect, useRef } from "react";
 import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { Loader2, Video as VideoIcon, Link2, UserPlus, Sparkles, Eye } from "lucide-react";
-import { NodeTextarea, NodeSelect, NodeLabel, NodeButton, NodeInput } from "@/components/ui/NodeUI";
+import { NodeTextarea, NodeSelect, NodeLabel, NodeButton, NodeInput, NodeTabSelect } from "@/components/ui/NodeUI";
 import { BaseNode } from "./BaseNode";
 import cameoData from "@/data/composer_profiles.json";
 import ReactMarkdown from "react-markdown";
@@ -283,58 +283,64 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       />
 
       <div className="space-y-3">
-        {/* Model Selector */}
-        <div>
+        {/* Model Selector - Tab 样式 */}
+        <div className="space-y-1.5">
           <NodeLabel>Model</NodeLabel>
-          <NodeSelect
+          <NodeTabSelect
             value={model}
-            onChange={(e) => {
-              const val = e.target.value as VideoModel;
-              setModel(val);
-              data.model = val;
+            onChange={(val) => {
+              const newModel = val as VideoModel;
+              setModel(newModel);
+              data.model = newModel;
             }}
-            className="w-full"
-          >
-            <option value="sora">Sora (OpenAI)</option>
-            <option value="veo-3.1-fast-generate-preview">Veo 3.1 Fast (Google)</option>
-          </NodeSelect>
+            options={[
+              { value: "sora", label: "Sora" },
+              { value: "veo-3.1-fast-generate-preview", label: "Veo 3.1" },
+            ]}
+            color="orange"
+          />
         </div>
 
-        <div>
+        {/* Orientation - Tab 样式 */}
+        <div className="space-y-1.5">
           <NodeLabel>Orientation</NodeLabel>
-          <NodeSelect
+          <NodeTabSelect
             value={orientation}
-            onChange={(e) => {
-              const val = e.target.value as "portrait" | "landscape";
-              setOrientation(val);
-              data.orientation = val;
+            onChange={(val) => {
+              const newVal = val as "portrait" | "landscape";
+              setOrientation(newVal);
+              data.orientation = newVal;
             }}
-            className="w-full"
-          >
-            <option value="portrait">Portrait (9:16)</option>
-            <option value="landscape">Landscape (16:9)</option>
-          </NodeSelect>
+            options={[
+              { value: "portrait", label: "Portrait 9:16" },
+              { value: "landscape", label: "Landscape 16:9" },
+            ]}
+            color="orange"
+            size="sm"
+          />
         </div>
 
-        {/* Duration Selector - Only for Veo model */}
+        {/* Duration Selector - Only for Veo model - Tab 样式 */}
         {isVeoModel && (
-          <div>
+          <div className="space-y-1.5">
             <NodeLabel>Duration</NodeLabel>
-            <NodeSelect
-              value={durationSeconds}
-              onChange={(e) => {
-                const val = parseInt(e.target.value);
-                setDurationSeconds(val);
-                data.durationSeconds = val;
+            <NodeTabSelect
+              value={String(durationSeconds)}
+              onChange={(val) => {
+                const num = parseInt(val);
+                setDurationSeconds(num);
+                data.durationSeconds = num;
               }}
-              className="w-full"
-            >
-              <option value={3}>3 秒</option>
-              <option value={4}>4 秒</option>
-              <option value={5}>5 秒</option>
-              <option value={6}>6 秒</option>
-              <option value={8}>8 秒</option>
-            </NodeSelect>
+              options={[
+                { value: "3", label: "3s" },
+                { value: "4", label: "4s" },
+                { value: "5", label: "5s" },
+                { value: "6", label: "6s" },
+                { value: "8", label: "8s" },
+              ]}
+              color="orange"
+              size="sm"
+            />
           </div>
         )}
 
