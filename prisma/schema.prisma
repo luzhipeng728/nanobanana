@@ -87,6 +87,24 @@ model StickerTask {
   completedAt     DateTime?
 }
 
+// Veo 视频生成任务
+model VeoTask {
+  id              String   @id @default(uuid())
+  status          String   // pending, processing, completed, failed
+  prompt          String
+  aspectRatio     String   @default("16:9")   // 16:9 或 9:16
+  resolution      String   @default("720p")   // 720p
+  durationSeconds Int      @default(8)        // 5-8 秒
+  negativePrompt  String?                     // 负面提示词
+  inputImage      String?                     // 可选的输入图片 (图生视频)
+  operationName   String?                     // Google API 的 operation name，用于轮询
+  videoUrl        String?                     // 生成的视频 URL
+  error           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  completedAt     DateTime?
+}
+
 // API Key 状态管理（全局单例）
 model ApiKeyState {
   id              String   @id @default("gemini") // 固定 ID，确保单例

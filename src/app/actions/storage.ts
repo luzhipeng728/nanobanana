@@ -97,3 +97,35 @@ export async function uploadVideoFromUrl(videoUrl: string): Promise<string> {
   }
 }
 
+/**
+ * 从 Base64 上传视频到 R2
+ */
+export async function uploadVideoFromBase64(base64Data: string, mimeType: string = "video/mp4"): Promise<string> {
+  console.log(`[R2] Uploading video from base64, mimeType: ${mimeType}`);
+
+  try {
+    const buffer = Buffer.from(base64Data, "base64");
+    console.log(`[R2] Video size: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
+
+    // 根据 mimeType 确定扩展名
+    const ext = mimeType.includes("mp4") ? "mp4" : mimeType.includes("webm") ? "webm" : "mp4";
+    const fileName = `videos/${uuidv4()}.${ext}`;
+
+    const command = new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: fileName,
+      Body: buffer,
+      ContentType: mimeType,
+    });
+
+    await r2Client.send(command);
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+
+    console.log(`[R2] Video uploaded successfully: ${publicUrl}`);
+    return publicUrl;
+  } catch (error) {
+    console.error("[R2] Error uploading video from base64:", error);
+    throw new Error("Failed to upload video to R2");
+  }
+}
+

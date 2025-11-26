@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useState, useRef } from "react";
 import { NodeProps, NodeResizer, useReactFlow, Handle, Position } from "@xyflow/react";
-import { Video as VideoIcon, Download, Loader2 } from "lucide-react";
+import { Video as VideoIcon, Download, Loader2, Sparkles } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 
 type VideoNodeData = {
@@ -12,6 +12,8 @@ type VideoNodeData = {
   isLoading?: boolean;
   error?: string;
   timestamp?: string;
+  apiSource?: "sora" | "veo"; // 区分不同的视频生成源
+  model?: string; // 模型名称
 };
 
 const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
@@ -20,6 +22,11 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const [pollingStatus, setPollingStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 根据 apiSource 确定轮询配置
+  const isVeo = data.apiSource === "veo";
+  const apiEndpoint = isVeo ? "/api/veo-task" : "/api/video-task";
+  const pollInterval = isVeo ? 10000 : 5000; // Veo 需要更长时间，每 10 秒轮询
 
   // 轮询任务状态
   useEffect(() => {
@@ -32,18 +39,21 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     }
 
     if (data.taskId) {
-      console.log(`[VideoNode ${id}] Starting polling for task ${data.taskId}`);
+      console.log(`[VideoNode ${id}] Starting polling for task ${data.taskId} (source: ${data.apiSource || "sora"})`);
 
       const pollTaskStatus = async () => {
         try {
-          const response = await fetch(`/api/video-task?taskId=${data.taskId}`);
+          const response = await fetch(`${apiEndpoint}?taskId=${data.taskId}`);
           if (!response.ok) {
             console.error(`[VideoNode ${id}] Failed to fetch task status`);
             return;
           }
 
-          const task = await response.json();
-          console.log(`[VideoNode ${id}] Task status: ${task.status}, progress: ${task.progress}%`);
+          const result = await response.json();
+          // Veo API 返回 { task: {...} }，Sora API 直接返回 task 对象
+          const task = isVeo ? result.task : result;
+
+          console.log(`[VideoNode ${id}] Task status: ${task.status}, progress: ${task.progress || 0}%`);
           setPollingStatus(task.status);
           setProgress(task.progress || 0);
 
@@ -77,7 +87,7 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       };
 
       pollTaskStatus();
-      pollingIntervalRef.current = setInterval(pollTaskStatus, 5000);
+      pollingIntervalRef.current = setInterval(pollTaskStatus, pollInterval);
     }
 
     return () => {
@@ -86,7 +96,7 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         pollingIntervalRef.current = null;
       }
     };
-  }, [data.taskId, data.videoUrl, id, updateNodeData]);
+  }, [data.taskId, data.videoUrl, data.apiSource, id, updateNodeData, apiEndpoint, pollInterval, isVeo]);
 
   return (
     <div className="w-full h-full">
@@ -119,13 +129,20 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
                 <div className="relative z-10 flex flex-col items-center gap-3">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-orange-500 blur-xl opacity-20 animate-pulse" />
-                    <Loader2 className="w-8 h-8 text-orange-500 animate-spin relative z-10" />
+                    <div className={`absolute inset-0 ${isVeo ? "bg-cyan-500" : "bg-orange-500"} blur-xl opacity-20 animate-pulse`} />
+                    <Loader2 className={`w-8 h-8 ${isVeo ? "text-cyan-500" : "text-orange-500"} animate-spin relative z-10`} />
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <span className="text-xs font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-red-500 animate-pulse">
-                      {pollingStatus === "processing" ? "Processing..." : pollingStatus === "pending" ? "Queued..." : "Generating..."}
+                    <span className={`text-xs font-bold bg-clip-text text-transparent bg-gradient-to-r ${isVeo ? "from-cyan-500 to-blue-500" : "from-orange-500 to-red-500"} animate-pulse`}>
+                      {isVeo
+                        ? (pollingStatus === "processing" ? "Veo Processing..." : pollingStatus === "pending" ? "Queued..." : "Generating with Veo...")
+                        : (pollingStatus === "processing" ? "Processing..." : pollingStatus === "pending" ? "Queued..." : "Generating...")}
                     </span>
+                    {isVeo && (
+                      <span className="text-[10px] text-neutral-400 mt-1">
+                        This may take 1-3 minutes
+                      </span>
+                    )}
                     {progress > 0 && (
                       <div className="w-32 mt-2">
                         <div className="flex justify-between text-[10px] text-neutral-400 mb-1">
@@ -134,7 +151,7 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                         </div>
                         <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300"
+                            className={`h-full bg-gradient-to-r ${isVeo ? "from-cyan-500 to-blue-500" : "from-orange-500 to-red-500"} transition-all duration-300`}
                             style={{ width: `${progress}%` }}
                           />
                         </div>
@@ -163,15 +180,23 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   Your browser does not support video playback.
                 </video>
 
+                {/* Model badge - Veo or Sora */}
+                {isVeo && (
+                  <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-[9px] font-bold shadow-lg z-10 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    Veo 3.1
+                  </div>
+                )}
+
                 {/* Download button overlay */}
                 <a
                   href={data.videoUrl}
                   download
-                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg z-10"
+                  className={`absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg z-10`}
                   title="Download Video"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Download className="w-4 h-4 text-orange-600" />
+                  <Download className={`w-4 h-4 ${isVeo ? "text-cyan-600" : "text-orange-600"}`} />
                 </a>
               </>
             )}

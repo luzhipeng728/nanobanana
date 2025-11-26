@@ -34,7 +34,7 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { getOrCreateUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Image, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X } from "lucide-react";
 import Gallery from "./Gallery";
 
 const nodeTypes = {
@@ -77,6 +77,13 @@ export default function InfiniteCanvas() {
 
   // Gallery State
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
+  // Image Upload Placement State
+  const [isPlacingImage, setIsPlacingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag and drop handlers for adding nodes
+  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
   // Load canvas from localStorage on mount
   useEffect(() => {
@@ -203,31 +210,42 @@ export default function InfiniteCanvas() {
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes]);
 
+  // 存储待放置图片的位置
+  const pendingImagePositionRef = useRef<{ x: number; y: number } | null>(null);
+
   const handleImageUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      setIsPlacingImage(false);
+      return;
+    }
 
     // Check file type
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
+      alert('请上传图片文件');
+      setIsPlacingImage(false);
       return;
     }
 
     // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert('Image size must be less than 10MB');
+      alert('图片大小不能超过 10MB');
+      setIsPlacingImage(false);
       return;
     }
+
+    // 使用已确定的位置，如果没有则随机
+    const position = pendingImagePositionRef.current || {
+      x: Math.random() * 500 + 100,
+      y: Math.random() * 500 + 100,
+    };
 
     // 先创建一个 loading 状态的节点
     const nodeId = `image-${Date.now()}`;
     const newNode: Node = {
       id: nodeId,
       type: "image",
-      position: {
-        x: Math.random() * 500 + 100,
-        y: Math.random() * 500 + 100,
-      },
+      position,
       style: {
         width: 420,
         height: 270,
@@ -240,6 +258,10 @@ export default function InfiniteCanvas() {
       },
     };
     setNodes((nds) => nds.concat(newNode));
+
+    // 重置状态
+    setIsPlacingImage(false);
+    pendingImagePositionRef.current = null;
 
     try {
       // Upload to R2
@@ -288,8 +310,29 @@ export default function InfiniteCanvas() {
     event.target.value = '';
   }, [setNodes]);
 
-  // Drag and drop handlers for adding nodes
-  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  // 处理工具栏上传按钮点击 - 进入放置模式
+  const handleToolbarImageUploadClick = useCallback(() => {
+    setIsPlacingImage(true);
+  }, []);
+
+  // 处理画布点击 - 在放置模式下确定位置并打开文件选择
+  const handleCanvasClick = useCallback((event: React.MouseEvent) => {
+    if (!isPlacingImage || !reactFlowInstance) return;
+
+    const position = reactFlowInstance.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+
+    pendingImagePositionRef.current = position;
+    fileInputRef.current?.click();
+  }, [isPlacingImage, reactFlowInstance]);
+
+  // 取消放置模式
+  const cancelPlacingImage = useCallback(() => {
+    setIsPlacingImage(false);
+    pendingImagePositionRef.current = null;
+  }, []);
 
   const onDragStart = useCallback((event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
@@ -485,7 +528,12 @@ export default function InfiniteCanvas() {
   }, [setNodes]);
 
   // Add video node programmatically
-  const addVideoNode = useCallback((taskId: string, prompt: string, position: { x: number; y: number }): string => {
+  const addVideoNode = useCallback((
+    taskId: string,
+    prompt: string,
+    position: { x: number; y: number },
+    options?: { apiSource?: "sora" | "veo"; model?: string }
+  ): string => {
     const nodeId = `video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     const newNode: Node = {
@@ -500,6 +548,8 @@ export default function InfiniteCanvas() {
         taskId,
         prompt,
         isLoading: true,
+        apiSource: options?.apiSource || "sora",
+        model: options?.model,
       },
     };
     setNodes((nds) => nds.concat(newNode));
@@ -616,15 +666,6 @@ export default function InfiniteCanvas() {
         >
           <Smile className="w-5 h-5 text-pink-500" />
         </button>
-        <label className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer" title="Upload Image">
-          <Image className="w-5 h-5" />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-          />
-        </label>
         <div className="w-px bg-neutral-300 dark:bg-neutral-700 my-1" />
         <button
           onClick={handleSave}
@@ -702,7 +743,40 @@ export default function InfiniteCanvas() {
       </div>
 
       {/* Node Toolbar */}
-      <NodeToolbar onDragStart={onDragStart} />
+      <NodeToolbar onDragStart={onDragStart} onImageUploadClick={handleToolbarImageUploadClick} />
+
+      {/* Hidden file input for image upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+
+      {/* Image Placement Mode Overlay */}
+      {isPlacingImage && (
+        <div
+          className="absolute inset-0 z-20 cursor-crosshair"
+          onClick={handleCanvasClick}
+        >
+          {/* Top hint bar */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-cyan-500/90 backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg">
+            <ImageIcon className="w-4 h-4" />
+            <span className="text-sm font-medium">点击画布选择图片放置位置</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                cancelPlacingImage();
+              }}
+              className="ml-2 p-1 hover:bg-white/20 rounded-full transition-colors"
+              title="取消"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <AudioProvider>
         <CanvasContext.Provider value={canvasContextValue}>
