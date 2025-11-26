@@ -269,6 +269,7 @@ RULES:
 The final image should look like a seamless grid that can be cut into 16 equal squares.`;
 
     // 使用原生 fetch 调用 REST API（和 Generator 一致）
+    // 使用 Gemini 3 Pro 模型，支持 4K 分辨率
     const requestBody: any = {
       contents: [
         {
@@ -286,18 +287,19 @@ The final image should look like a seamless grid that can be cut into 16 equal s
       ],
       generationConfig: {
         responseModalities: ["IMAGE", "TEXT"],
+        imageConfig: {
+          aspectRatio: "1:1",
+          image_size: "4K",  // Gemini 3 Pro 支持 4K
+        },
       },
+      // Gemini 3 Pro 需要 Google Search 工具
+      tools: [{ googleSearch: {} }],
     };
 
-    // 条件添加 imageConfig（和 Generator 一致，只传 aspectRatio）
-    requestBody.generationConfig.imageConfig = {
-      aspectRatio: "1:1",
-    };
-
-    const modelName = "gemini-2.5-flash-image";
+    const modelName = "gemini-3-pro-image-preview";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
-    console.log(`[Sprite Stream] Calling Gemini API with model: ${modelName}`);
+    console.log(`[Sprite Stream] Calling Gemini API with model: ${modelName} (4K)`);
     console.log(`[Sprite Stream] Character: ${character.data.length} chars (${character.mimeType})`);
 
     const response = await fetch(apiUrl, {
