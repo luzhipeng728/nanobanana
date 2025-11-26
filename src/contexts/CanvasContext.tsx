@@ -23,8 +23,9 @@ interface CanvasContextType {
   getSelectedImageNodes: () => Node[];
   getNode: (nodeId: string) => Node | undefined;
   openImageModal: (imageUrl: string, prompt?: string) => void;
-  nodes: Node[];
-  edges: Edge[];
+  // Use getter functions instead of direct values to prevent unnecessary re-renders
+  getNodes: () => Node[];
+  getEdges: () => Edge[];
 }
 
 export const CanvasContext = createContext<CanvasContextType | null>(null);

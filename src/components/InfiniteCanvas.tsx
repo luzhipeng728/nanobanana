@@ -528,26 +528,42 @@ export default function InfiniteCanvas() {
     return nodeId;
   }, [setNodes]);
 
-  // Get connected image nodes for a given node
+  // Use refs to avoid re-creating callbacks on every render
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+
+  // Keep refs in sync
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
+
+  // Get connected image nodes for a given node - uses refs to avoid dependency on nodes/edges
   const getConnectedImageNodes = useCallback((nodeId: string): Node[] => {
-    const node = nodes.find(n => n.id === nodeId);
+    const currentNodes = nodesRef.current;
+    const currentEdges = edgesRef.current;
+
+    const node = currentNodes.find(n => n.id === nodeId);
     if (!node) return [];
 
     // Get all edges connected to this node (incoming edges)
-    const connectedEdges = edges.filter((edge: Edge) => edge.target === nodeId);
+    const connectedEdges = currentEdges.filter((edge: Edge) => edge.target === nodeId);
 
     // Get all source nodes from connected edges
     const sourceNodes = connectedEdges
-      .map((edge: Edge) => nodes.find(n => n.id === edge.source))
+      .map((edge: Edge) => currentNodes.find(n => n.id === edge.source))
       .filter((n): n is Node => n !== undefined && n.type === 'image');
 
     return sourceNodes;
-  }, [nodes, edges]);
+  }, []); // No dependencies - uses refs
 
-  // Get a single node by ID
+  // Get a single node by ID - uses refs to avoid dependency on nodes
   const getNode = useCallback((nodeId: string) => {
-    return nodes.find(n => n.id === nodeId);
-  }, [nodes]);
+    return nodesRef.current.find(n => n.id === nodeId);
+  }, []); // No dependencies - uses refs
 
   // Open image modal
   const openImageModal = useCallback((imageUrl: string, prompt?: string) => {
@@ -556,7 +572,11 @@ export default function InfiniteCanvas() {
     setIsImageModalOpen(true);
   }, []);
 
-  // Canvas context value
+  // Getter functions that use refs - stable references, no re-renders on node changes
+  const getNodes = useCallback(() => nodesRef.current, []);
+  const getEdges = useCallback(() => edgesRef.current, []);
+
+  // Canvas context value - no longer depends on nodes/edges directly
   const canvasContextValue = useMemo(() => ({
     addImageNode,
     updateImageNode,
@@ -567,9 +587,9 @@ export default function InfiniteCanvas() {
     getSelectedImageNodes: () => [], // Remove selected functionality
     getNode,
     openImageModal,
-    nodes,
-    edges,
-  }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, addStickerNode, getConnectedImageNodes, getNode, openImageModal, nodes, edges]);
+    getNodes,  // Use getter instead of direct value
+    getEdges,  // Use getter instead of direct value
+  }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, addStickerNode, getConnectedImageNodes, getNode, openImageModal, getNodes, getEdges]);
 
   return (
     <div className="w-full h-screen relative bg-neutral-50 dark:bg-black">
