@@ -92,7 +92,7 @@ const VeoVideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       <BaseNode
         title="Veo Video"
         icon={Sparkles}
-        color="cyan"
+        color="orange"
         selected={selected}
         className="w-full h-full min-w-[200px] min-h-[200px] flex flex-col p-0 !border-0 !bg-transparent !shadow-none"
         contentClassName="p-0 flex flex-col h-full"

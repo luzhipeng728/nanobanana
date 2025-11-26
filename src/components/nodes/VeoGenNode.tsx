@@ -97,12 +97,12 @@ const VeoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     <BaseNode
       title="Veo 3.1 Fast"
       icon={Sparkles}
-      color="cyan"
+      color="orange"
       selected={selected}
       className="w-[340px]"
       headerActions={
         connectedImagesCount > 0 ? (
-          <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 font-medium">
+          <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium">
             <Link2 className="w-3 h-3" />
             Image-to-Video
           </span>
