@@ -121,23 +121,14 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick }: NodeToo
           onClick={() => setIsCollapsed(false)}
           className={cn(
             "relative overflow-hidden rounded-2xl p-3",
-            "bg-white/20 dark:bg-black/30",
-            "backdrop-blur-[40px] backdrop-saturate-[180%]",
-            "border border-white/20 dark:border-white/5",
-            "shadow-[0_8px_32px_0_rgba(0,0,0,0.1),_inset_0_0_0_1px_rgba(255,255,255,0.1)]",
-            "dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3),_inset_0_0_0_1px_rgba(255,255,255,0.05)]",
-            "hover:bg-white/30 dark:hover:bg-white/10 transition-all duration-300",
+            "bg-white/[0.02] dark:bg-white/[0.02]",
+            "backdrop-blur-[2px]",
+            "border border-neutral-200/50 dark:border-white/10",
+            "hover:bg-white/10 dark:hover:bg-white/5 transition-all duration-300",
             "group"
           )}
           title="展开工具栏"
         >
-          {/* 高光效果 */}
-          <div
-            className="absolute top-0 left-2 right-2 h-[1px] opacity-50"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,1), transparent)',
-            }}
-          />
           <div className="flex items-center gap-2">
             <div className="relative flex items-center justify-center w-3 h-3">
               <div className="absolute inset-0 bg-blue-400/50 rounded-full animate-ping" />
@@ -152,45 +143,19 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick }: NodeToo
 
   return (
     <div className="absolute left-4 top-20 z-10 w-60">
-      {/* 主容器 - 极致液态玻璃 */}
+      {/* 主容器 - 超透明玻璃 */}
       <div
         className={cn(
           "relative overflow-hidden rounded-[32px]",
-          // 关键：极低不透明度 + 高模糊 = 通透感
-          "bg-white/10 dark:bg-black/20",
-          "backdrop-blur-[40px] backdrop-saturate-[180%]",
-          // 边框模拟玻璃边缘
-          "border border-white/20 dark:border-white/5",
-          // 复杂阴影模拟厚度和折射
-          "shadow-[0_8px_32px_0_rgba(0,0,0,0.1),_inset_0_0_0_1px_rgba(255,255,255,0.1),_inset_0_1px_0_0_rgba(255,255,255,0.2)]",
-          "dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3),_inset_0_0_0_1px_rgba(255,255,255,0.05)]"
+          // 几乎完全透明
+          "bg-white/[0.02] dark:bg-white/[0.02]",
+          "backdrop-blur-[2px]",
+          // 淡边框
+          "border border-neutral-200/50 dark:border-white/10",
+          // 极淡阴影
+          "shadow-[0_0_0_1px_rgba(0,0,0,0.02)]"
         )}
       >
-        {/* 顶部强高光 - 模拟光源反射 */}
-        <div
-          className="absolute top-0 left-6 right-6 h-[1px] opacity-50"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,1), transparent)',
-          }}
-        />
-
-        {/* 液态流动光斑 - 增加灵动感 */}
-        <div
-          className="absolute -top-20 -left-20 w-60 h-60 pointer-events-none opacity-20 dark:opacity-10"
-          style={{
-            background: 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 60%)',
-            filter: 'blur(30px)',
-          }}
-        />
-
-        {/* 彩色环境光折射 */}
-        <div
-          className="absolute bottom-0 right-0 w-40 h-40 pointer-events-none opacity-10 dark:opacity-20 mix-blend-overlay"
-          style={{
-            background: 'conic-gradient(from 0deg, #ff0080, #7928ca, #ff0080)',
-            filter: 'blur(40px)',
-          }}
-        />
 
         {/* 内容区域 */}
         <div className="relative p-4 z-10">
@@ -363,15 +328,6 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick }: NodeToo
           </div>
         </div>
       </div>
-
-      {/* 底部投影 - 增强悬浮立体感 */}
-      <div
-        className="absolute -bottom-4 left-4 right-4 h-4 rounded-[100%] -z-10 opacity-40 dark:opacity-60"
-        style={{
-          background: 'radial-gradient(closest-side, rgba(0,0,0,0.2), transparent)',
-          filter: 'blur(8px)',
-        }}
-      />
     </div>
   );
 }

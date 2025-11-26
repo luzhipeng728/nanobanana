@@ -770,8 +770,8 @@ export default function InfiniteCanvas() {
 
   return (
     <div className="w-full h-screen relative bg-neutral-50 dark:bg-black">
-      {/* Toolbar - Apple Liquid Glass Style */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 p-2 rounded-full bg-white/15 dark:bg-black/25 backdrop-blur-[40px] backdrop-saturate-[180%] border border-white/20 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.12),_inset_0_0_0_1px_rgba(255,255,255,0.1),_inset_0_1px_0_0_rgba(255,255,255,0.2)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4),_inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+      {/* Toolbar - Ultra Transparent Glass */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 p-2 rounded-full bg-white/[0.02] dark:bg-white/[0.02] backdrop-blur-[2px] border border-neutral-200/50 dark:border-white/10 shadow-[0_0_0_1px_rgba(0,0,0,0.02)]">
         <button
           onClick={addGeneratorNode}
           className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
