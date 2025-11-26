@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   ReactFlow,
   Controls,
@@ -97,17 +97,34 @@ export default function InfiniteCanvas() {
     }
   }, []);
 
-  // Auto-save canvas to localStorage whenever nodes or edges change
+  // Auto-save canvas to localStorage with debounce to prevent lag during dragging
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (!isCanvasLoaded) return; // Don't save during initial load
 
-    try {
-      const canvasData = JSON.stringify({ nodes, edges });
-      localStorage.setItem(LOCALSTORAGE_KEY, canvasData);
-      console.log("💾 Auto-saved canvas to localStorage:", nodes.length, "nodes", edges.length, "edges");
-    } catch (error) {
-      console.error("Failed to save canvas to localStorage:", error);
+    // Clear previous timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
+
+    // Debounce: wait 500ms after last change before saving
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        const canvasData = JSON.stringify({ nodes, edges });
+        localStorage.setItem(LOCALSTORAGE_KEY, canvasData);
+        console.log("💾 Auto-saved canvas to localStorage:", nodes.length, "nodes", edges.length, "edges");
+      } catch (error) {
+        console.error("Failed to save canvas to localStorage:", error);
+      }
+    }, 500);
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [nodes, edges, isCanvasLoaded]);
 
   // Check for existing session on mount
