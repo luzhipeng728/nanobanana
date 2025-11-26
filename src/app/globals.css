@@ -54,13 +54,36 @@ body {
   background: #d1d1d1;
 }
 
+/* ========================================
+   性能优化
+   ======================================== */
+
+/* 节点容器 GPU 加速和重绘优化 */
+.react-flow__node {
+  will-change: transform;
+  transform: translateZ(0);
+  contain: layout style;
+}
+
+/* 拖动时禁用所有过渡效果以提升性能 */
+.react-flow__node.dragging,
+.react-flow__node.dragging * {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* 缩放时优化渲染 */
+.react-flow__viewport {
+  will-change: transform;
+}
+
 /* React Flow Customization */
 .react-flow__handle {
   width: 12px;
   height: 12px;
   border-radius: 999px;
   border: 3px solid white;
-  transition: all 0.2s ease;
+  /* 移除频繁的过渡效果 */
 }
 
 .react-flow__handle:hover {
@@ -69,5 +92,5 @@ body {
 
 .react-flow__node.selected .nowheel {
   box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.4);
-  transform: scale(1.02);
+  /* 移除 scale 变换，减少重绘 */
 }

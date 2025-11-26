@@ -16,15 +16,15 @@ interface BaseNodeProps {
   onTitleClick?: () => void;
 }
 
-// Pastel/Cute color palette
+// Pastel/Cute color palette - 优化性能：使用简化阴影
 const colorMap = {
-  purple: "border-purple-200 dark:border-purple-800 shadow-[0_8px_20px_-6px_rgba(168,85,247,0.15)] bg-purple-50/50 dark:bg-purple-950/20",
-  blue: "border-blue-200 dark:border-blue-800 shadow-[0_8px_20px_-6px_rgba(59,130,246,0.15)] bg-blue-50/50 dark:bg-blue-950/20",
-  green: "border-green-200 dark:border-green-800 shadow-[0_8px_20px_-6px_rgba(34,197,94,0.15)] bg-green-50/50 dark:bg-green-950/20",
-  orange: "border-orange-200 dark:border-orange-800 shadow-[0_8px_20px_-6px_rgba(249,115,22,0.15)] bg-orange-50/50 dark:bg-orange-950/20",
-  pink: "border-pink-200 dark:border-pink-800 shadow-[0_8px_20px_-6px_rgba(236,72,153,0.15)] bg-pink-50/50 dark:bg-pink-950/20",
-  red: "border-red-200 dark:border-red-800 shadow-[0_8px_20px_-6px_rgba(239,68,68,0.15)] bg-red-50/50 dark:bg-red-950/20",
-  neutral: "border-neutral-200 dark:border-neutral-800 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.05)] bg-white dark:bg-neutral-900",
+  purple: "border-purple-200 dark:border-purple-800 shadow-lg bg-purple-50/50 dark:bg-purple-950/20",
+  blue: "border-blue-200 dark:border-blue-800 shadow-lg bg-blue-50/50 dark:bg-blue-950/20",
+  green: "border-green-200 dark:border-green-800 shadow-lg bg-green-50/50 dark:bg-green-950/20",
+  orange: "border-orange-200 dark:border-orange-800 shadow-lg bg-orange-50/50 dark:bg-orange-950/20",
+  pink: "border-pink-200 dark:border-pink-800 shadow-lg bg-pink-50/50 dark:bg-pink-950/20",
+  red: "border-red-200 dark:border-red-800 shadow-lg bg-red-50/50 dark:bg-red-950/20",
+  neutral: "border-neutral-200 dark:border-neutral-800 shadow-lg bg-white dark:bg-neutral-900",
 };
 
 const headerColorMap = {
@@ -62,8 +62,11 @@ export function BaseNode({
   return (
     <div
       className={cn(
-        "nowheel group flex flex-col min-w-[320px] backdrop-blur-md rounded-[2rem] border-2 transition-all duration-300 ease-out",
-        selected ? "ring-4 ring-offset-0 ring-opacity-30 scale-[1.02]" : "hover:scale-[1.01] hover:shadow-lg",
+        // 性能优化：移除 backdrop-blur、简化过渡、使用 GPU 加速
+        "nowheel group flex flex-col min-w-[320px] rounded-[2rem] border-2",
+        "will-change-transform transform-gpu",  // GPU 加速
+        "[contain:layout_style_paint]",         // 限制重绘范围
+        selected ? "ring-4 ring-offset-0 ring-opacity-30" : "",
         colorMap[color],
         selected ? `ring-${color}-400/40` : "",
         className
@@ -73,7 +76,7 @@ export function BaseNode({
       {!hideHeader && (
         <div
           className={cn(
-            "flex items-center justify-between px-5 py-4 rounded-t-[2rem] transition-colors duration-300 flex-shrink-0",
+            "flex items-center justify-between px-5 py-4 rounded-t-[2rem] flex-shrink-0",
             headerColorMap[color]
           )}
         >

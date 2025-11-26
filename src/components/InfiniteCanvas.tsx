@@ -240,15 +240,15 @@ export default function InfiniteCanvas() {
       y: Math.random() * 500 + 100,
     };
 
-    // 先创建一个 loading 状态的节点
+    // 先创建一个 loading 状态的节点（正方形占位，图片加载后会自动调整比例）
     const nodeId = `image-${Date.now()}`;
     const newNode: Node = {
       id: nodeId,
       type: "image",
       position,
       style: {
-        width: 420,
-        height: 270,
+        width: 400,
+        height: 400,
       },
       data: {
         imageUrl: undefined,
@@ -454,7 +454,7 @@ export default function InfiniteCanvas() {
     }
   };
 
-  // Add image node programmatically with 16:9 aspect ratio sizing
+  // Add image node programmatically - 初始尺寸为默认占位，图片加载后会自动调整
   const addImageNode = useCallback((
     imageUrl: string | undefined,
     prompt: string,
@@ -468,15 +468,14 @@ export default function InfiniteCanvas() {
   ): string => {
     const nodeId = `image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // 16:9 aspect ratio: width = 400px, height = 225px (image area)
-    // Add padding/borders: total ~420px width × ~270px height
+    // 默认占位尺寸（正方形），图片加载后会根据实际比例自动调整
     const newNode: Node = {
       id: nodeId,
       type: "image",
       position,
       style: {
-        width: 420,  // 16:9 宽度
-        height: 270, // 16:9 高度（包含header和padding）
+        width: 400,  // 默认宽度
+        height: 400, // 默认高度（正方形占位）
       },
       data: {
         imageUrl,
@@ -794,9 +793,15 @@ export default function InfiniteCanvas() {
           minZoom={0.1}
           maxZoom={4}
           className="bg-neutral-50 dark:bg-black"
+          // 性能优化配置
+          onlyRenderVisibleElements={true}  // 只渲染可见区域的节点
+          nodesFocusable={false}            // 禁用节点焦点，减少事件监听
+          edgesFocusable={false}            // 禁用边焦点
+          elevateNodesOnSelect={false}      // 选中时不提升 z-index，避免重排
+          nodeDragThreshold={5}             // 拖动阈值，减少误触发
         >
           <Controls />
-          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+          <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
         </ReactFlow>
       </CanvasContext.Provider>
       </AudioProvider>

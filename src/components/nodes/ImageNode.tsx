@@ -25,14 +25,78 @@ type ImageNodeData = {
   };
 };
 
+// 基础宽度和尺寸限制
+const BASE_WIDTH = 400;
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 600;
+const MIN_HEIGHT = 150;
+const MAX_HEIGHT = 800;
+
 const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { openImageModal, addImageNode } = useCanvas();
-  const { updateNodeData, getNode } = useReactFlow();
+  const { updateNodeData, getNode, setNodes } = useReactFlow();
   // 只有在没有错误、没有图片且 isLoading 为 true 时才显示加载状态
   const isLoading = !data.error && (data.isLoading || (!data.imageUrl && data.taskId));
   const [pollingStatus, setPollingStatus] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasAutoResized = useRef(false); // 避免重复调整尺寸
+
+  // 图片加载完成后根据比例自动调整节点尺寸
+  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    // 如果已经调整过或者节点有自定义尺寸（用户手动调整过），则跳过
+    if (hasAutoResized.current || data.userResized) return;
+
+    const img = e.currentTarget;
+    const naturalWidth = img.naturalWidth;
+    const naturalHeight = img.naturalHeight;
+
+    if (naturalWidth && naturalHeight) {
+      const aspectRatio = naturalWidth / naturalHeight;
+
+      // 根据图片比例计算节点尺寸
+      let newWidth = BASE_WIDTH;
+      let newHeight = BASE_WIDTH / aspectRatio;
+
+      // 限制高度范围
+      if (newHeight > MAX_HEIGHT) {
+        newHeight = MAX_HEIGHT;
+        newWidth = newHeight * aspectRatio;
+      }
+      if (newHeight < MIN_HEIGHT) {
+        newHeight = MIN_HEIGHT;
+        newWidth = newHeight * aspectRatio;
+      }
+
+      // 限制宽度范围
+      newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, newWidth));
+      newHeight = newWidth / aspectRatio;
+
+      // 更新节点尺寸
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.id === id
+            ? {
+                ...node,
+                style: {
+                  ...node.style,
+                  width: Math.round(newWidth),
+                  height: Math.round(newHeight),
+                },
+              }
+            : node
+        )
+      );
+
+      hasAutoResized.current = true;
+      console.log(`[ImageNode ${id}] Auto-resized to ${Math.round(newWidth)}x${Math.round(newHeight)} (ratio: ${aspectRatio.toFixed(2)})`);
+    }
+  }, [id, setNodes, data.userResized]);
+
+  // 当图片 URL 变化时重置自动调整标记
+  useEffect(() => {
+    hasAutoResized.current = false;
+  }, [data.imageUrl]);
 
   // 重新生成图片 - 创建新节点
   const handleRegenerate = useCallback(async (e: React.MouseEvent) => {
@@ -187,12 +251,16 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         {/* NodeResizer for drag-to-resize functionality */}
         <NodeResizer
           isVisible={selected}
-          minWidth={200}
-          minHeight={200}
+          minWidth={MIN_WIDTH}
+          minHeight={MIN_HEIGHT}
           lineClassName="!border-blue-400"
           handleClassName="!w-3 !h-3 !bg-blue-500 !rounded-full"
+          onResizeEnd={() => {
+            // 用户手动调整尺寸后，标记为已自定义
+            updateNodeData(id, { userResized: true });
+          }}
         />
-        <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-blue-100 dark:border-blue-900/30 bg-white dark:bg-neutral-950 h-full">
+        <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-blue-100 dark:border-blue-900/30 bg-white dark:bg-neutral-950 h-full will-change-transform transform-gpu [contain:layout_style_paint]">
           <div
             className="relative cursor-pointer flex-1 min-h-[150px] h-full"
             onClick={handleImageClick}
@@ -228,7 +296,9 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                 <img
                   src={data.imageUrl}
                   alt="Generated"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="w-full h-full object-contain bg-neutral-50 dark:bg-neutral-900"
+                  loading="lazy"
+                  onLoad={handleImageLoad}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg">

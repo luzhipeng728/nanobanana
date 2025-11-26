@@ -132,7 +132,7 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           handleClassName="!w-3 !h-3 !bg-orange-500 !rounded-full"
         />
 
-        <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-orange-100 dark:border-orange-900/30 bg-white dark:bg-neutral-950 h-full">
+        <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-orange-100 dark:border-orange-900/30 bg-white dark:bg-neutral-950 h-full will-change-transform transform-gpu [contain:layout_style_paint]">
           <div
             className="relative flex-1 min-h-[150px] h-full cursor-pointer"
           >
@@ -187,7 +187,7 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
               <>
                 <video
                   controls
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 rounded-[calc(2rem-2px)]"
+                  className="w-full h-full object-cover rounded-[calc(2rem-2px)]"
                   style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                 >
                   <source src={data.videoUrl} type="video/mp4" />
