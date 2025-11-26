@@ -35,6 +35,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const frameIndexRef = useRef<number>(0); // 用 ref 跟踪帧索引，避免重复创建动画循环
 
   // Sprite 配置
   const [config, setConfig] = useState<SpriteConfig>(
@@ -285,12 +286,16 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     const frameInterval = 1000 / config.fps;
 
     const animate = (time: number) => {
-      if (!isPlaying) return;
+      if (!isPlaying) {
+        animationRef.current = 0;
+        return;
+      }
 
       if (time - lastTime >= frameInterval) {
         lastTime = time;
 
-        const frameIndex = currentFrame % config.totalFrames;
+        // 使用 ref 跟踪帧索引
+        const frameIndex = frameIndexRef.current % config.totalFrames;
 
         // 根据方向计算行列
         let row, col;
@@ -315,22 +320,28 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
           );
         }
 
-        setCurrentFrame(prev => (prev + 1) % config.totalFrames);
+        // 更新帧索引
+        frameIndexRef.current = (frameIndexRef.current + 1) % config.totalFrames;
+        // 同步到 state 用于显示
+        setCurrentFrame(frameIndexRef.current);
       }
 
       animationRef.current = requestAnimationFrame(animate);
     };
 
     if (isPlaying) {
+      frameIndexRef.current = 0; // 重置帧索引
+      setCurrentFrame(0);
       animationRef.current = requestAnimationFrame(animate);
     }
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = 0;
       }
     };
-  }, [spriteSheetUrl, dimensions, config, isPlaying, currentFrame]);
+  }, [spriteSheetUrl, dimensions, config, isPlaying]); // 移除 currentFrame 依赖
 
   // 渲染网格叠加
   const renderGridOverlay = () => {
