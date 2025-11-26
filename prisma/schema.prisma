@@ -21,6 +21,7 @@ model User {
   videoTasks  VideoTask[]
   stickerTasks StickerTask[]
   veoTasks    VeoTask[]
+  spriteTasks SpriteTask[]
 }
 
 model Canvas {
@@ -155,4 +156,31 @@ model ApiKeyState {
   failedKeys      String   @db.Text               // JSON 数组：失败的 Key 索引列表
   failedAt        String   @db.Text               // JSON 对象：{ keyIndex: timestamp }
   updatedAt       DateTime @updatedAt
+}
+
+// Sprite 精灵图生成任务
+model SpriteTask {
+  id              String    @id @default(uuid())
+  status          String    // pending, processing, completed, failed
+  mode            String    // replica, creative
+  templateImage   String?   @db.LongText   // Replica 模式：模板精灵图
+  characterImage  String    @db.LongText   // 角色图片
+  prompt          String?   @db.Text       // 风格提示词
+  actionPrompt    String?   @db.Text       // Creative 模式：动作描述
+  size            String    @default("2K") // 分辨率 1K/2K/4K
+  aspectRatio     String    @default("1:1")
+  spriteSheetUrl  String?   @db.LongText   // 生成的精灵图（R2 URL）
+  frameUrls       String?   @db.LongText   // 切割后的帧 URL 列表 JSON
+  spriteConfig    String?   @db.Text       // AI 分析后的精灵图配置 JSON（含空白帧信息）
+  error           String?   @db.Text
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  completedAt     DateTime?
+  deletedAt       DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([deletedAt])
 }

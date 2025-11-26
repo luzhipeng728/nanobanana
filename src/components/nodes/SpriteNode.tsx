@@ -1,11 +1,11 @@
 "use client";
 
-import { memo, useEffect, useState, useRef, useCallback } from "react";
+import { memo, useEffect, useState, useRef } from "react";
 import { NodeProps, useReactFlow, Handle, Position, useEdges } from "@xyflow/react";
 import {
   Sparkles, Loader2, Play, Pause, Download,
   Copy, Zap, ArrowRight, ArrowDown,
-  Settings2, Scan, X, Maximize2, LayoutTemplate, User
+  Settings2, Scan, X, Maximize2, LayoutTemplate, User, RefreshCw
 } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import { NodeButton, NodeLabel } from "@/components/ui/NodeUI";
@@ -16,6 +16,7 @@ import type {
 } from "@/types/sprite";
 import { DEFAULT_SPRITE_CONFIG, DEFAULT_GENERATION_CONFIG } from "@/types/sprite";
 import { generateGif } from "@/utils/gifBuilder";
+import { createSpriteTask, type SpriteTaskResult } from "@/app/actions/sprite-task";
 
 /**
  * SpriteNode - Sprite 动画节点
@@ -65,8 +66,16 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
-  // 拆分后的帧图片数组
-  const [frames, setFrames] = useState<string[]>([]);
+  // 任务状态
+  const [taskId, setTaskId] = useState<string | null>(data.taskId || null);
+  const [taskStatus, setTaskStatus] = useState<string | null>(null);
+
+  // 帧图片 URL 数组（从 R2 获取）
+  const [frames, setFrames] = useState<string[]>(data.frameUrls || []);
+
+  // 空白帧信息（由 Claude 分析得到）
+  const [hasBlankFrames, setHasBlankFrames] = useState(false);
+  const [blankFrameCount, setBlankFrameCount] = useState(0);
 
   // 监听连接变化，获取连接的图片
   useEffect(() => {
@@ -121,12 +130,87 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   // 同步到节点数据
   useEffect(() => {
     updateNodeData(id, {
+      taskId,
       spriteConfig: config,
       generationConfig: genConfig,
       spriteSheetUrl,
+      frameUrls: frames,
       dimensions,
     });
-  }, [config, genConfig, spriteSheetUrl, dimensions]);
+  }, [taskId, config, genConfig, spriteSheetUrl, frames, dimensions]);
+
+  // 任务轮询
+  useEffect(() => {
+    if (!taskId) return;
+
+    let isMounted = true;
+    let pollInterval: NodeJS.Timeout;
+
+    const pollTask = async () => {
+      try {
+        const response = await fetch(`/api/sprite-task?taskId=${taskId}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch task status");
+        }
+
+        const task: SpriteTaskResult = await response.json();
+
+        if (!isMounted) return;
+
+        setTaskStatus(task.status);
+
+        if (task.status === "completed") {
+          // 任务完成
+          setIsGenerating(false);
+
+          // 设置精灵图 URL
+          if (task.spriteSheetUrl) {
+            setSpriteSheetUrl(task.spriteSheetUrl);
+          }
+
+          // 设置帧 URL 列表（从 R2）
+          if (task.frameUrls && task.frameUrls.length > 0) {
+            setFrames(task.frameUrls);
+            setCurrentFrame(0);
+          }
+
+          // 设置配置（含空白帧信息）
+          if (task.spriteConfig) {
+            setConfig(prev => ({ ...prev, ...task.spriteConfig }));
+            // 检查空白帧
+            const blankFrames = (task.spriteConfig as any).blankFrames || [];
+            if (blankFrames.length > 0) {
+              setHasBlankFrames(true);
+              setBlankFrameCount(blankFrames.length);
+            }
+          }
+
+          setTaskId(null);
+          clearInterval(pollInterval);
+        } else if (task.status === "failed") {
+          // 任务失败
+          setIsGenerating(false);
+          setError(task.error || "生成失败，请重试");
+          setTaskId(null);
+          clearInterval(pollInterval);
+        }
+        // pending 或 processing 状态继续轮询
+      } catch (err) {
+        console.error("Failed to poll task:", err);
+      }
+    };
+
+    // 立即执行一次
+    pollTask();
+
+    // 设置轮询间隔
+    pollInterval = setInterval(pollTask, 2000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+    };
+  }, [taskId]);
 
   // 加载模板到画布
   const loadTemplateToCanvas = () => {
@@ -169,7 +253,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     }
   };
 
-  // 生成 Sprite Sheet
+  // 生成 Sprite Sheet（使用任务系统）
   const handleGenerate = async () => {
     if (genConfig.mode === 'replica') {
       if (!templateImage || !characterImage) {
@@ -185,34 +269,26 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
 
     setIsGenerating(true);
     setError(null);
+    setTaskStatus("pending");
 
     try {
-      const response = await fetch("/api/sprite/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode: genConfig.mode,
-          templateImage: templateImage,
-          characterImage: characterImage,
-          prompt: genConfig.prompt,
-          actionPrompt: genConfig.actionPrompt,
-          size: genConfig.size,
-        }),
+      // 创建任务
+      const { taskId: newTaskId } = await createSpriteTask({
+        mode: genConfig.mode,
+        templateImage: templateImage || undefined,
+        characterImage: characterImage!,
+        prompt: genConfig.prompt || undefined,
+        actionPrompt: genConfig.actionPrompt || undefined,
+        size: genConfig.size,
       });
 
-      const result = await response.json();
-
-      if (result.success && result.imageUrl) {
-        setSpriteSheetUrl(result.imageUrl);
-        // 生成后自动分析
-        setTimeout(() => handleAutoDetect(), 500);
-      } else {
-        setError(result.error || "生成失败");
-      }
+      console.log(`[SpriteNode] Created task: ${newTaskId}`);
+      setTaskId(newTaskId);
+      // 轮询会在 useEffect 中处理
     } catch (err) {
-      setError("生成请求失败");
-    } finally {
+      setError("创建任务失败");
       setIsGenerating(false);
+      setTaskStatus(null);
     }
   };
 
@@ -252,11 +328,10 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     }
   };
 
-  // 加载图片尺寸
+  // 加载图片尺寸（仅用于 GIF 导出）
   useEffect(() => {
     if (!spriteSheetUrl) {
       setDimensions({ width: 0, height: 0 });
-      setFrames([]);
       return;
     }
 
@@ -268,57 +343,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     img.src = spriteSheetUrl;
   }, [spriteSheetUrl]);
 
-  // 拆分精灵图为单独的帧
-  const splitSpriteSheet = useCallback(() => {
-    if (!spriteSheetUrl || dimensions.width === 0) return;
-
-    const img = new Image();
-    img.onload = () => {
-      const frameWidth = dimensions.width / config.cols;
-      const frameHeight = dimensions.height / config.rows;
-      const newFrames: string[] = [];
-
-      for (let i = 0; i < config.totalFrames; i++) {
-        let col, row;
-        if (config.direction === 'column') {
-          row = i % config.rows;
-          col = Math.floor(i / config.rows);
-        } else {
-          col = i % config.cols;
-          row = Math.floor(i / config.cols);
-        }
-
-        // 用 canvas 切割每一帧
-        const canvas = document.createElement('canvas');
-        canvas.width = frameWidth;
-        canvas.height = frameHeight;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(
-            img,
-            col * frameWidth, row * frameHeight,
-            frameWidth, frameHeight,
-            0, 0,
-            frameWidth, frameHeight
-          );
-          newFrames.push(canvas.toDataURL('image/png'));
-        }
-      }
-
-      setFrames(newFrames);
-      setCurrentFrame(0);
-    };
-    img.src = spriteSheetUrl;
-  }, [spriteSheetUrl, dimensions, config.cols, config.rows, config.totalFrames, config.direction]);
-
-  // 当配置或精灵图变化时，重新拆分
-  useEffect(() => {
-    if (spriteSheetUrl && dimensions.width > 0) {
-      splitSpriteSheet();
-    }
-  }, [spriteSheetUrl, dimensions, config.cols, config.rows, config.totalFrames, config.direction, splitSpriteSheet]);
-
-  // 动画播放 - 简单切换帧
+  // 动画播放 - 简单切换帧（使用 R2 URL 列表）
   useEffect(() => {
     if (frames.length === 0 || !isPlaying) return;
 
@@ -529,7 +554,9 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
           ) : (
             <Sparkles className="w-4 h-4" />
           )}
-          {genConfig.mode === 'replica' ? '复制动作' : '创意生成'}
+          {isGenerating
+            ? (taskStatus === 'pending' ? '排队中...' : taskStatus === 'processing' ? '生成中...' : '处理中...')
+            : (genConfig.mode === 'replica' ? '复制动作' : '创意生成')}
         </NodeButton>
 
         {/* Replica 模式下，如果有模板图片，可以直接加载到画布 */}
@@ -581,6 +608,19 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
                 <Maximize2 className="w-3 h-3 text-white" />
               </button>
             </>
+          ) : isGenerating ? (
+            <div className="flex flex-col items-center justify-center h-full py-6 text-neutral-400">
+              <div className="relative">
+                <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+                <Sparkles className="w-3 h-3 absolute -top-1 -right-1 text-pink-500 animate-pulse" />
+              </div>
+              <span className="text-xs mt-2 text-violet-500 font-medium">
+                {taskStatus === 'pending' ? '排队中...' : '生成中...'}
+              </span>
+              <span className="text-[10px] text-neutral-500 mt-1">
+                AI 正在创作精灵图
+              </span>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full py-4 text-neutral-400">
               <LayoutTemplate className="w-6 h-6 mb-1 opacity-50" />
@@ -747,6 +787,26 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
             {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             导出 GIF
           </NodeButton>
+        </div>
+      )}
+
+      {/* 空白帧警告（由 Claude 分析检测到） */}
+      {hasBlankFrames && blankFrameCount > 0 && (
+        <div className="flex items-start gap-2 p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-700 dark:text-amber-400 text-xs">
+          <RefreshCw className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-medium">检测到 {blankFrameCount} 个空白帧</p>
+            <p className="text-[10px] opacity-80 mt-0.5">
+              部分帧可能是空白的，已自动跳过，建议重新生成获得更好效果
+            </p>
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="mt-1.5 px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-[10px] font-medium transition-colors"
+            >
+              重新生成
+            </button>
+          </div>
         </div>
       )}
 
