@@ -36,15 +36,12 @@ async function withRetry<T>(
 
 /**
  * 将图片 URL 或 base64 统一转换为纯 base64 数据
- * 如果是 URL，先下载图片再转换
  */
 async function toBase64(imageSource: string): Promise<string> {
-  // 如果已经是 base64 data URL，直接提取数据部分
   if (imageSource.startsWith("data:image/")) {
     return imageSource.replace(/^data:image\/(png|jpeg|jpg|webp|gif);base64,/, "");
   }
 
-  // 如果是 URL，下载并转换为 base64
   if (imageSource.startsWith("http://") || imageSource.startsWith("https://")) {
     console.log("[Sprite Generate] Downloading image from URL:", imageSource.substring(0, 50) + "...");
 
@@ -60,7 +57,6 @@ async function toBase64(imageSource: string): Promise<string> {
     return base64;
   }
 
-  // 假设是纯 base64 字符串
   return imageSource;
 }
 
@@ -74,47 +70,45 @@ async function generateSpriteReplica(
 ): Promise<string> {
   const genAI = getGeminiClient();
 
-  // 先转换图片为 base64（处理 URL 情况）
   const cleanTemplate = await toBase64(templateSource);
   const cleanCharacter = await toBase64(characterSource);
 
   return withRetry(async () => {
+    // 完全复制 Vibe-Agent 的提示词
     const textPrompt = `
-Create a high-quality pixel art sprite sheet based on the visual style of the character provided in the second image.
-
-CRITICAL INSTRUCTIONS:
-1. The layout, grid structure, and poses MUST EXACTLY match the first image (the template sprite sheet).
-2. DO NOT STRETCH the sprites. Maintain the original internal aspect ratio of the characters.
-3. If the output aspect ratio (${aspectRatio}) differs from the template, add padding (empty space) rather than stretching the content.
-4. Apply the character's appearance (colors, clothing, features) to the poses in the template.
-5. Keep consistent lighting, shadows, and rendering style across all frames.
-6. Background should be a solid uniform color (easy to remove) - preferably white or light gray.
-7. IMPORTANT: Maintain perfect character consistency across ALL frames - same proportions, same style, same details.
-8. Each frame must be clearly distinguishable but smoothly connected for animation.
-${prompt ? `Additional instructions: ${prompt}` : ""}
-`;
+        Create a high-quality pixel art sprite sheet based on the visual style of the character provided in the second image.
+        CRITICAL INSTRUCTIONS:
+        1. The layout, grid structure, and poses MUST EXACTLY match the first image (the template sprite sheet).
+        2. DO NOT STRETCH the sprites. Maintain the original internal aspect ratio of the characters.
+        3. If the output aspect ratio (${aspectRatio}) differs from the template, add padding (empty space) rather than stretching the content.
+        4. Apply the character's appearance (colors, clothing, features) to the poses in the template.
+        ${prompt ? `Additional instructions: ${prompt}` : ''}
+      `;
 
     const response = await genAI.models.generateContent({
-      model: "gemini-3-pro-image-preview",
+      model: 'gemini-3-pro-image-preview',
       contents: {
         parts: [
           { text: textPrompt },
           {
             inlineData: {
-              mimeType: "image/png",
+              mimeType: 'image/png',
               data: cleanTemplate
             }
           },
           {
             inlineData: {
-              mimeType: "image/png",
+              mimeType: 'image/png',
               data: cleanCharacter
             }
           }
         ]
       },
       config: {
-        responseModalities: ["image", "text"],
+        imageConfig: {
+          imageSize: size,
+          aspectRatio: aspectRatio
+        }
       }
     });
 
@@ -139,53 +133,48 @@ async function generateSpriteCreative(
 ): Promise<string> {
   const genAI = getGeminiClient();
 
-  // 先转换图片为 base64（处理 URL 情况）
   const cleanCharacter = await toBase64(characterSource);
 
   return withRetry(async () => {
+    // 完全复制 Vibe-Agent 的提示词
     const textPrompt = `
-Create a high-quality sprite sheet for game animation.
+        Create a high-quality pixel art sprite sheet for game animation.
 
-REFERENCE CHARACTER:
-See the attached image. You MUST maintain the exact identity, colors, proportions, clothing, and design of this character throughout ALL frames.
+        REFERENCE CHARACTER:
+        See the attached image. You MUST maintain the exact identity, colors, and design of this character.
 
-ACTION TO ANIMATE:
-${actionPrompt}
+        ACTION:
+        ${actionPrompt}
 
-CRITICAL REQUIREMENTS:
-1. Generate a sequence of 8-16 animation frames showing the character performing the action.
-2. Arrange the frames in a clean, regular GRID (4x4 preferred, or 4x2 horizontal strip) so they can be easily sliced.
-3. IMPORTANT: The animation MUST be loopable - the last frame should transition smoothly back to the first frame.
-4. Start and end with a neutral/idle pose to ensure seamless looping.
-5. Ensure PERFECT character consistency across ALL frames:
-   - Same body proportions and size
-   - Same clothing and accessories
-   - Same art style and level of detail
-   - Same viewing angle (keep perspective consistent)
-6. Each frame must show a distinct but smoothly connected pose for fluid animation.
-7. Visual Style: ${stylePrompt || "Match the reference character's style exactly"}.
-8. Background: Solid uniform color (white or light gray, easy to remove for transparency).
-9. Each frame should be clearly separated with consistent spacing and equal sizes.
+        REQUIREMENTS:
+        1. Generate a sequence of animation frames showing the character performing the action.
+        2. Arrange the frames in a clean, regular GRID (e.g., 3x3, 4x4, 5x5, or a horizontal strip) so they can be easily sliced.
+        3. Ensure consistent sizing and positioning for each frame.
+        4. Visual Style: ${stylePrompt || "Match the reference character's style"}.
+        5. Background: Solid uniform color (easy to remove) or transparent.
 
-OUTPUT FORMAT:
-A single image file containing the sprite sheet with all animation frames arranged in a 4x4 or similar regular grid.
-`;
+        OUTPUT FORMAT:
+        A single image file containing the sprite sheet.
+      `;
 
     const response = await genAI.models.generateContent({
-      model: "gemini-3-pro-image-preview",
+      model: 'gemini-3-pro-image-preview',
       contents: {
         parts: [
           { text: textPrompt },
           {
             inlineData: {
-              mimeType: "image/png",
+              mimeType: 'image/png',
               data: cleanCharacter
             }
           }
         ]
       },
       config: {
-        responseModalities: ["image", "text"],
+        imageConfig: {
+          imageSize: size,
+          aspectRatio: "1:1"
+        }
       }
     });
 
@@ -242,7 +231,6 @@ export async function POST(request: NextRequest) {
         aspectRatio || "1:1"
       );
     } else {
-      // Creative 模式
       if (!actionPrompt) {
         return NextResponse.json({ error: "Creative 模式需要动作描述" }, { status: 400 });
       }

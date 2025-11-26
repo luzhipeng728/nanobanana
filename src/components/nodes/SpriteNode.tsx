@@ -35,7 +35,6 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const frameIndexRef = useRef<number>(0); // 用 ref 跟踪帧索引，避免重复创建动画循环
 
   // Sprite 配置
   const [config, setConfig] = useState<SpriteConfig>(
@@ -262,86 +261,72 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     const img = new Image();
     img.onload = () => {
       setDimensions({ width: img.width, height: img.height });
-      imgRef.current = img;
+      imgRef.current = img; // 用于 GIF 导出
     };
     img.src = spriteSheetUrl;
   }, [spriteSheetUrl]);
 
-  // 动画播放
+  // 动画播放 - 完全复制 Vibe-Agent 的实现
   useEffect(() => {
     if (!spriteSheetUrl || !canvasRef.current || dimensions.width === 0) return;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !imgRef.current) return;
-
-    const frameWidth = dimensions.width / config.cols;
-    const frameHeight = dimensions.height / config.rows;
-
-    // 设置 canvas 尺寸
-    canvas.width = frameWidth;
-    canvas.height = frameHeight;
-
-    let lastTime = 0;
-    const frameInterval = 1000 / config.fps;
+    const img = new Image();
+    img.src = spriteSheetUrl;
 
     const animate = (time: number) => {
-      if (!isPlaying) {
-        animationRef.current = 0;
-        return;
+      if (!canvasRef.current) return;
+
+      const frameInterval = 1000 / config.fps;
+      const totalFrames = config.totalFrames;
+
+      // 用时间直接计算帧索引，确保跳帧而非滚动
+      const frameIndex = Math.floor(time / frameInterval) % totalFrames;
+      setCurrentFrame(frameIndex);
+
+      const ctx = canvasRef.current.getContext('2d');
+      if (!ctx) return;
+
+      const frameWidth = dimensions.width / config.cols;
+      const frameHeight = dimensions.height / config.rows;
+
+      let col, row;
+      if (config.direction === 'column') {
+        row = frameIndex % config.rows;
+        col = Math.floor(frameIndex / config.rows);
+      } else {
+        col = frameIndex % config.cols;
+        row = Math.floor(frameIndex / config.cols);
       }
 
-      if (time - lastTime >= frameInterval) {
-        lastTime = time;
+      // 每帧设置 canvas 尺寸
+      canvasRef.current.width = frameWidth;
+      canvasRef.current.height = frameHeight;
 
-        // 使用 ref 跟踪帧索引
-        const frameIndex = frameIndexRef.current % config.totalFrames;
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      ctx.imageSmoothingEnabled = false;
 
-        // 根据方向计算行列
-        let row, col;
-        if (config.direction === 'column') {
-          row = frameIndex % config.rows;
-          col = Math.floor(frameIndex / config.rows);
-        } else {
-          col = frameIndex % config.cols;
-          row = Math.floor(frameIndex / config.cols);
-        }
+      // 绘制当前帧
+      ctx.drawImage(
+        img,
+        col * frameWidth, row * frameHeight,
+        frameWidth, frameHeight,
+        0, 0,
+        frameWidth, frameHeight
+      );
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.imageSmoothingEnabled = false;
-
-        if (imgRef.current) {
-          ctx.drawImage(
-            imgRef.current,
-            col * frameWidth, row * frameHeight,
-            frameWidth, frameHeight,
-            0, 0,
-            frameWidth, frameHeight
-          );
-        }
-
-        // 更新帧索引
-        frameIndexRef.current = (frameIndexRef.current + 1) % config.totalFrames;
-        // 同步到 state 用于显示
-        setCurrentFrame(frameIndexRef.current);
+      if (isPlaying) {
+        animationRef.current = requestAnimationFrame(animate);
       }
-
-      animationRef.current = requestAnimationFrame(animate);
     };
 
     if (isPlaying) {
-      frameIndexRef.current = 0; // 重置帧索引
-      setCurrentFrame(0);
       animationRef.current = requestAnimationFrame(animate);
     }
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = 0;
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [spriteSheetUrl, dimensions, config, isPlaying]); // 移除 currentFrame 依赖
+  }, [spriteSheetUrl, config, dimensions, isPlaying]);
 
   // 渲染网格叠加
   const renderGridOverlay = () => {
