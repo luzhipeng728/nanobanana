@@ -137,18 +137,24 @@ function getClaudeClient() {
 async function withRetry<T>(
   operation: () => Promise<T>,
   retries = 3,
-  delay = 1000
+  delay = 2000
 ): Promise<T> {
   try {
     return await operation();
   } catch (error: any) {
-    const isOverloaded =
+    const isRetryable =
       error.status === 503 ||
+      error.status === 500 ||
       error.code === 503 ||
-      (error.message && error.message.includes("overloaded"));
+      error.code === 500 ||
+      (error.message && (
+        error.message.includes("overloaded") ||
+        error.message.includes("INTERNAL") ||
+        error.message.includes("internal error")
+      ));
 
-    if (retries > 0 && isOverloaded) {
-      console.warn(`Model overloaded. Retrying in ${delay}ms... (${retries} retries left)`);
+    if (retries > 0 && isRetryable) {
+      console.warn(`[Sprite Task] API error (${error.status || 'unknown'}). Retrying in ${delay}ms... (${retries} retries left)`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return withRetry(operation, retries - 1, delay * 2);
     }
