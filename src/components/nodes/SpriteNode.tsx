@@ -32,9 +32,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   const { updateNodeData, getNodes } = useReactFlow();
   const { openImageModal } = useCanvas();
   const edges = useEdges();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>(0);
-  const imgRef = useRef<HTMLImageElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null); // 用于 GIF 导出
 
   // Sprite 配置
   const [config, setConfig] = useState<SpriteConfig>(
@@ -266,67 +264,42 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     img.src = spriteSheetUrl;
   }, [spriteSheetUrl]);
 
-  // 动画播放 - 完全复制 Vibe-Agent 的实现
+  // 动画播放 - 使用简单的帧索引更新
   useEffect(() => {
-    if (!spriteSheetUrl || !canvasRef.current || dimensions.width === 0) return;
+    if (!spriteSheetUrl || dimensions.width === 0 || !isPlaying) return;
 
-    const img = new Image();
-    img.src = spriteSheetUrl;
+    const frameInterval = 1000 / config.fps;
 
-    const animate = (time: number) => {
-      if (!canvasRef.current) return;
+    const timer = setInterval(() => {
+      setCurrentFrame(prev => (prev + 1) % config.totalFrames);
+    }, frameInterval);
 
-      const frameInterval = 1000 / config.fps;
-      const totalFrames = config.totalFrames;
+    return () => clearInterval(timer);
+  }, [spriteSheetUrl, config.fps, config.totalFrames, dimensions.width, isPlaying]);
 
-      // 用时间直接计算帧索引，确保跳帧而非滚动
-      const frameIndex = Math.floor(time / frameInterval) % totalFrames;
-      setCurrentFrame(frameIndex);
+  // 计算当前帧的位置
+  const getFramePosition = () => {
+    if (dimensions.width === 0) return { x: 0, y: 0 };
 
-      const ctx = canvasRef.current.getContext('2d');
-      if (!ctx) return;
+    const frameWidth = dimensions.width / config.cols;
+    const frameHeight = dimensions.height / config.rows;
 
-      const frameWidth = dimensions.width / config.cols;
-      const frameHeight = dimensions.height / config.rows;
-
-      let col, row;
-      if (config.direction === 'column') {
-        row = frameIndex % config.rows;
-        col = Math.floor(frameIndex / config.rows);
-      } else {
-        col = frameIndex % config.cols;
-        row = Math.floor(frameIndex / config.cols);
-      }
-
-      // 每帧设置 canvas 尺寸
-      canvasRef.current.width = frameWidth;
-      canvasRef.current.height = frameHeight;
-
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      ctx.imageSmoothingEnabled = false;
-
-      // 绘制当前帧
-      ctx.drawImage(
-        img,
-        col * frameWidth, row * frameHeight,
-        frameWidth, frameHeight,
-        0, 0,
-        frameWidth, frameHeight
-      );
-
-      if (isPlaying) {
-        animationRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    if (isPlaying) {
-      animationRef.current = requestAnimationFrame(animate);
+    let col, row;
+    if (config.direction === 'column') {
+      row = currentFrame % config.rows;
+      col = Math.floor(currentFrame / config.rows);
+    } else {
+      col = currentFrame % config.cols;
+      row = Math.floor(currentFrame / config.cols);
     }
 
-    return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    return {
+      x: col * frameWidth,
+      y: row * frameHeight,
+      width: frameWidth,
+      height: frameHeight
     };
-  }, [spriteSheetUrl, config, dimensions, isPlaying]);
+  };
 
   // 渲染网格叠加
   const renderGridOverlay = () => {
@@ -687,11 +660,30 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
 
           <div className="relative bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAE/xkYGP4TMDAwYJNkaGBgYCQYrGggkYYBo0+AYQ4oKJCpAgA99AFTn+FxvgAAAABJRU5ErkJggg==')] bg-neutral-800 rounded-lg overflow-hidden flex items-center justify-center p-2"
                style={{ minHeight: '120px' }}>
-            <canvas
-              ref={canvasRef}
-              className="max-w-full max-h-[150px]"
-              style={{ imageRendering: 'pixelated' }}
-            />
+            {/* 用 CSS 裁剪来显示单帧 */}
+            {(() => {
+              const pos = getFramePosition();
+              const frameWidth = pos.width || 100;
+              const frameHeight = pos.height || 100;
+              // 缩放以适应容器
+              const scale = Math.min(150 / frameWidth, 150 / frameHeight, 1);
+              const displayWidth = frameWidth * scale;
+              const displayHeight = frameHeight * scale;
+
+              return (
+                <div
+                  style={{
+                    width: displayWidth,
+                    height: displayHeight,
+                    backgroundImage: `url(${spriteSheetUrl})`,
+                    backgroundPosition: `-${pos.x * scale}px -${pos.y * scale}px`,
+                    backgroundSize: `${dimensions.width * scale}px ${dimensions.height * scale}px`,
+                    backgroundRepeat: 'no-repeat',
+                    imageRendering: 'pixelated',
+                  }}
+                />
+              );
+            })()}
 
             <button
               onClick={() => setIsPlaying(!isPlaying)}
