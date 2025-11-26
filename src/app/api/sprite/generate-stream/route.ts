@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { GoogleGenAI } from "@google/genai";
 import Anthropic from "@anthropic-ai/sdk";
 import { createCanvas, loadImage } from "canvas";
 import { uploadBufferToR2 } from "@/lib/r2";
@@ -11,13 +10,13 @@ import type {
   SpriteAnalysisResult,
 } from "@/types/sprite";
 
-// 初始化 Gemini 客户端
-function getGeminiClient() {
+// 获取 Gemini API Key
+function getGeminiApiKey(): string {
   const apiKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GOOGLE_AI_API_KEY 未配置");
   }
-  return new GoogleGenAI({ apiKey });
+  return apiKey;
 }
 
 // 初始化 Claude 客户端
@@ -130,8 +129,7 @@ async function generateSpriteReplica(
   size: ImageResolution,
   aspectRatio: string = "1:1"
 ): Promise<string> {
-  const genAI = getGeminiClient();
-
+  const apiKey = getGeminiApiKey();
   const cleanTemplate = await toBase64(templateSource);
   const cleanCharacter = await toBase64(characterSource);
 
@@ -146,37 +144,63 @@ async function generateSpriteReplica(
         ${prompt ? `Additional instructions: ${prompt}` : ""}
       `;
 
-    const response = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-image",
-      contents: {
-        parts: [
-          { text: textPrompt },
-          {
-            inlineData: {
-              mimeType: "image/png",
-              data: cleanTemplate,
+    // 使用原生 fetch 调用 REST API（和 Generator 一致）
+    const requestBody = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: textPrompt },
+            {
+              inline_data: {
+                mime_type: "image/png",
+                data: cleanTemplate,
+              },
             },
-          },
-          {
-            inlineData: {
-              mimeType: "image/png",
-              data: cleanCharacter,
+            {
+              inline_data: {
+                mime_type: "image/png",
+                data: cleanCharacter,
+              },
             },
-          },
-        ],
-      },
-      config: {
+          ],
+        },
+      ],
+      generationConfig: {
+        responseModalities: ["IMAGE", "TEXT"],
         imageConfig: {
-          imageSize: size,
           aspectRatio: aspectRatio,
+          image_size: size,
         },
       },
+    };
+
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent`;
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify(requestBody),
     });
 
-    if (response.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-          return part.inlineData.data as string; // 返回纯 base64
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+
+    if (result.candidates?.[0]?.content?.parts) {
+      for (const part of result.candidates[0].content.parts) {
+        if (part.inlineData?.data) {
+          return part.inlineData.data as string;
+        }
+        // REST API 返回的是 inline_data
+        if (part.inline_data?.data) {
+          return part.inline_data.data as string;
         }
       }
     }
@@ -192,8 +216,7 @@ async function generateSpriteCreative(
   stylePrompt: string,
   size: ImageResolution
 ): Promise<string> {
-  const genAI = getGeminiClient();
-
+  const apiKey = getGeminiApiKey();
   const cleanCharacter = await toBase64(characterSource);
 
   return withRetry(async () => {
@@ -217,31 +240,57 @@ async function generateSpriteCreative(
         A single image file containing the sprite sheet.
       `;
 
-    const response = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-image",
-      contents: {
-        parts: [
-          { text: textPrompt },
-          {
-            inlineData: {
-              mimeType: "image/png",
-              data: cleanCharacter,
+    // 使用原生 fetch 调用 REST API（和 Generator 一致）
+    const requestBody = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: textPrompt },
+            {
+              inline_data: {
+                mime_type: "image/png",
+                data: cleanCharacter,
+              },
             },
-          },
-        ],
-      },
-      config: {
+          ],
+        },
+      ],
+      generationConfig: {
+        responseModalities: ["IMAGE", "TEXT"],
         imageConfig: {
-          imageSize: size,
           aspectRatio: "1:1",
+          image_size: size,
         },
       },
+    };
+
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent`;
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify(requestBody),
     });
 
-    if (response.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData) {
-          return part.inlineData.data as string; // 返回纯 base64
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+
+    if (result.candidates?.[0]?.content?.parts) {
+      for (const part of result.candidates[0].content.parts) {
+        if (part.inlineData?.data) {
+          return part.inlineData.data as string;
+        }
+        // REST API 返回的是 inline_data
+        if (part.inline_data?.data) {
+          return part.inline_data.data as string;
         }
       }
     }
