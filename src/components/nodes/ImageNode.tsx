@@ -123,10 +123,12 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       // 获取当前节点位置，在右边创建新节点
       const currentNode = getNode(id);
       if (currentNode) {
+        // 偏移量考虑当前节点宽度 + 间隙，避免重叠
+        const currentWidth = (currentNode.style?.width as number) || BASE_WIDTH;
         addImageNode(
           undefined,
           data.prompt,
-          { x: currentNode.position.x + 450, y: currentNode.position.y },
+          { x: currentNode.position.x + currentWidth + 50, y: currentNode.position.y },
           taskId,
           data.generationConfig
         );

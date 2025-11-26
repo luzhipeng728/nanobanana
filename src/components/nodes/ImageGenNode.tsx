@@ -90,12 +90,13 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       console.log(`Created image task: ${taskId}`);
 
       // Immediately create an Image node with the task ID
+      // 偏移量考虑 ImageGenNode 宽度(300) + 间隙，避免重叠
       const currentNode = getNode(id);
       if (currentNode) {
         addImageNode(
           undefined, // No imageUrl yet
           prompt,
-          { x: currentNode.position.x + 350, y: currentNode.position.y },
+          { x: currentNode.position.x + 380, y: currentNode.position.y },
           taskId, // Pass taskId to the image node
           // 保存生图配置，用于重新生成
           {

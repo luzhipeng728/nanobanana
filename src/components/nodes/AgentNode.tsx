@@ -335,10 +335,12 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     const totalCount = promptsList.length;
 
     // 创建图片节点位置计算（2×n 网格布局：最多2行，然后往右排）
-    const NODE_WIDTH = 420;
-    const NODE_HEIGHT = 270;
-    const HORIZONTAL_GAP = 50;
-    const VERTICAL_GAP = 50;
+    // 使用最大可能尺寸计算布局，避免节点重叠
+    // 对应 ImageNode 的 MAX_WIDTH=600, MAX_HEIGHT=800
+    const NODE_WIDTH = 450;   // 留出足够宽度
+    const NODE_HEIGHT = 500;  // 考虑竖图的情况
+    const HORIZONTAL_GAP = 30;
+    const VERTICAL_GAP = 30;
 
     // 检查位置是否被占用
     const isPositionOccupied = (x: number, y: number) => {
