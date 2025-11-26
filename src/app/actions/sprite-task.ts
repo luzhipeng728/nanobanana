@@ -357,7 +357,7 @@ async function generateSpriteReplica(
       `;
 
     const response = await genAI.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'gemini-2.5-flash-image',
       contents: {
         parts: [
           { text: textPrompt },
@@ -428,7 +428,7 @@ async function generateSpriteCreative(
       `;
 
     const response = await genAI.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'gemini-2.5-flash-image',
       contents: {
         parts: [
           { text: textPrompt },
