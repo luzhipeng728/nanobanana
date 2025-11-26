@@ -65,6 +65,9 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
+  // 拆分后的帧图片数组
+  const [frames, setFrames] = useState<string[]>([]);
+
   // 监听连接变化，获取连接的图片
   useEffect(() => {
     const nodes = getNodes();
@@ -253,6 +256,7 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
   useEffect(() => {
     if (!spriteSheetUrl) {
       setDimensions({ width: 0, height: 0 });
+      setFrames([]);
       return;
     }
 
@@ -264,42 +268,68 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
     img.src = spriteSheetUrl;
   }, [spriteSheetUrl]);
 
-  // 动画播放 - 使用简单的帧索引更新
+  // 拆分精灵图为单独的帧
+  const splitSpriteSheet = useCallback(() => {
+    if (!spriteSheetUrl || dimensions.width === 0) return;
+
+    const img = new Image();
+    img.onload = () => {
+      const frameWidth = dimensions.width / config.cols;
+      const frameHeight = dimensions.height / config.rows;
+      const newFrames: string[] = [];
+
+      for (let i = 0; i < config.totalFrames; i++) {
+        let col, row;
+        if (config.direction === 'column') {
+          row = i % config.rows;
+          col = Math.floor(i / config.rows);
+        } else {
+          col = i % config.cols;
+          row = Math.floor(i / config.cols);
+        }
+
+        // 用 canvas 切割每一帧
+        const canvas = document.createElement('canvas');
+        canvas.width = frameWidth;
+        canvas.height = frameHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(
+            img,
+            col * frameWidth, row * frameHeight,
+            frameWidth, frameHeight,
+            0, 0,
+            frameWidth, frameHeight
+          );
+          newFrames.push(canvas.toDataURL('image/png'));
+        }
+      }
+
+      setFrames(newFrames);
+      setCurrentFrame(0);
+    };
+    img.src = spriteSheetUrl;
+  }, [spriteSheetUrl, dimensions, config.cols, config.rows, config.totalFrames, config.direction]);
+
+  // 当配置或精灵图变化时，重新拆分
   useEffect(() => {
-    if (!spriteSheetUrl || dimensions.width === 0 || !isPlaying) return;
+    if (spriteSheetUrl && dimensions.width > 0) {
+      splitSpriteSheet();
+    }
+  }, [spriteSheetUrl, dimensions, config.cols, config.rows, config.totalFrames, config.direction, splitSpriteSheet]);
+
+  // 动画播放 - 简单切换帧
+  useEffect(() => {
+    if (frames.length === 0 || !isPlaying) return;
 
     const frameInterval = 1000 / config.fps;
 
     const timer = setInterval(() => {
-      setCurrentFrame(prev => (prev + 1) % config.totalFrames);
+      setCurrentFrame(prev => (prev + 1) % frames.length);
     }, frameInterval);
 
     return () => clearInterval(timer);
-  }, [spriteSheetUrl, config.fps, config.totalFrames, dimensions.width, isPlaying]);
-
-  // 计算当前帧的位置
-  const getFramePosition = () => {
-    if (dimensions.width === 0) return { x: 0, y: 0 };
-
-    const frameWidth = dimensions.width / config.cols;
-    const frameHeight = dimensions.height / config.rows;
-
-    let col, row;
-    if (config.direction === 'column') {
-      row = currentFrame % config.rows;
-      col = Math.floor(currentFrame / config.rows);
-    } else {
-      col = currentFrame % config.cols;
-      row = Math.floor(currentFrame / config.cols);
-    }
-
-    return {
-      x: col * frameWidth,
-      y: row * frameHeight,
-      width: frameWidth,
-      height: frameHeight
-    };
-  };
+  }, [frames.length, config.fps, isPlaying]);
 
   // 渲染网格叠加
   const renderGridOverlay = () => {
@@ -649,41 +679,24 @@ const SpriteNode = ({ data, id, selected }: NodeProps<any>) => {
       )}
 
       {/* 动画预览 */}
-      {spriteSheetUrl && dimensions.width > 0 && (
+      {spriteSheetUrl && frames.length > 0 && (
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <NodeLabel>动画预览</NodeLabel>
             <span className="text-[10px] text-neutral-500">
-              {currentFrame + 1}/{config.totalFrames}
+              {currentFrame + 1}/{frames.length}
             </span>
           </div>
 
           <div className="relative bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAE/xkYGP4TMDAwYJNkaGBgYCQYrGggkYYBo0+AYQ4oKJCpAgA99AFTn+FxvgAAAABJRU5ErkJggg==')] bg-neutral-800 rounded-lg overflow-hidden flex items-center justify-center p-2"
                style={{ minHeight: '120px' }}>
-            {/* 用 CSS 裁剪来显示单帧 */}
-            {(() => {
-              const pos = getFramePosition();
-              const frameWidth = pos.width || 100;
-              const frameHeight = pos.height || 100;
-              // 缩放以适应容器
-              const scale = Math.min(150 / frameWidth, 150 / frameHeight, 1);
-              const displayWidth = frameWidth * scale;
-              const displayHeight = frameHeight * scale;
-
-              return (
-                <div
-                  style={{
-                    width: displayWidth,
-                    height: displayHeight,
-                    backgroundImage: `url(${spriteSheetUrl})`,
-                    backgroundPosition: `-${pos.x * scale}px -${pos.y * scale}px`,
-                    backgroundSize: `${dimensions.width * scale}px ${dimensions.height * scale}px`,
-                    backgroundRepeat: 'no-repeat',
-                    imageRendering: 'pixelated',
-                  }}
-                />
-              );
-            })()}
+            {/* 直接显示拆分后的当前帧图片 */}
+            <img
+              src={frames[currentFrame]}
+              alt={`Frame ${currentFrame + 1}`}
+              className="max-w-full max-h-[150px] object-contain"
+              style={{ imageRendering: 'pixelated' }}
+            />
 
             <button
               onClick={() => setIsPlaying(!isPlaying)}
