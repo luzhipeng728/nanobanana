@@ -163,7 +163,7 @@ export const handleGeneratePrompt: ToolHandler = async (params, sendEvent) => {
   };
 };
 
-// 工具4: 网络搜索
+// 工具4: 网络搜索 - 使用 Tavily API
 export const handleWebSearch: ToolHandler = async (params, sendEvent) => {
   const { query, search_type } = params;
 
@@ -173,34 +173,47 @@ export const handleWebSearch: ToolHandler = async (params, sendEvent) => {
   });
 
   try {
-    // 使用 Exa 搜索或其他搜索 API
-    // 这里简化处理，返回模拟结果
-    // 实际实现时可以调用 mcp__exa__web_search_exa 或其他搜索服务
+    const tavilyApiKey = process.env.TAVILY_API_KEY;
 
-    const searchResults = {
-      prompt_techniques: [
-        '使用具体的风格描述词，如 "cinematic lighting", "photorealistic"',
-        '添加负面提示词排除不想要的元素',
-        '使用括号和权重来强调重要元素',
-        '描述时从整体到细节，保持逻辑清晰'
-      ],
-      style_reference: [
-        '赛博朋克: neon lights, rain-soaked streets, holographic displays, dark atmosphere',
-        '皮克斯风格: 3D rendered, warm lighting, expressive characters, vibrant colors',
-        '日系动漫: anime style, cel shading, large eyes, detailed backgrounds'
-      ],
-      problem_solving: [
-        '中文显示问题: 减少文字量，使用更短的文字',
-        '布局拥挤: 使用 "generous spacing", "clean layout"',
-        '风格不一致: 添加更多风格关键词，使用 "consistent style throughout"'
-      ],
-      trend_research: [
-        '2024流行: 玻璃态设计 (glassmorphism), 渐变色, 3D元素',
-        'AI艺术趋势: 超现实主义, 概念艺术, 混合媒体风格'
-      ]
-    };
+    if (!tavilyApiKey) {
+      console.warn('[WebSearch] TAVILY_API_KEY not configured, using fallback data');
+      // 如果没有配置 API key，返回备用数据
+      return getFallbackSearchResults(query, search_type, sendEvent);
+    }
 
-    const results = searchResults[search_type as keyof typeof searchResults] || [];
+    console.log(`[WebSearch] Searching for: ${query}`);
+
+    // 调用 Tavily API
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        api_key: tavilyApiKey,
+        query: query,
+        search_depth: 'basic',
+        max_results: 5,
+        include_answer: true,
+        include_raw_content: false,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Tavily API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`[WebSearch] Found ${data.results?.length || 0} results`);
+
+    // 提取搜索结果
+    const results = data.results?.map((r: any) => ({
+      title: r.title,
+      content: r.content,
+      url: r.url,
+    })) || [];
+
+    const summary = data.answer || results.map((r: any) => r.content).join('\n\n');
 
     await sendEvent({
       type: 'search_result',
@@ -212,19 +225,69 @@ export const handleWebSearch: ToolHandler = async (params, sendEvent) => {
       data: {
         query,
         search_type,
+        answer: data.answer,
         results,
-        summary: results.join('\n')
+        summary
       },
       shouldContinue: true
     };
   } catch (error) {
-    return {
-      success: false,
-      error: `搜索失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      shouldContinue: true
-    };
+    console.error('[WebSearch] Error:', error);
+    // 出错时返回备用数据
+    return getFallbackSearchResults(query, search_type, sendEvent);
   }
 };
+
+// 备用搜索结果（当 API 不可用时）
+async function getFallbackSearchResults(
+  query: string,
+  search_type: string,
+  sendEvent: (event: SuperAgentStreamEvent) => Promise<void>
+) {
+  const fallbackResults = {
+    prompt_techniques: [
+      '使用具体的风格描述词，如 "cinematic lighting", "photorealistic"',
+      '添加负面提示词排除不想要的元素',
+      '使用括号和权重来强调重要元素',
+      '描述时从整体到细节，保持逻辑清晰'
+    ],
+    style_reference: [
+      '赛博朋克: neon lights, rain-soaked streets, holographic displays, dark atmosphere',
+      '皮克斯风格: 3D rendered, warm lighting, expressive characters, vibrant colors',
+      '日系动漫: anime style, cel shading, large eyes, detailed backgrounds'
+    ],
+    problem_solving: [
+      '中文显示问题: 减少文字量，使用更短的文字',
+      '布局拥挤: 使用 "generous spacing", "clean layout"',
+      '风格不一致: 添加更多风格关键词，使用 "consistent style throughout"'
+    ],
+    trend_research: [
+      '2024流行: 玻璃态设计 (glassmorphism), 渐变色, 3D元素',
+      'AI艺术趋势: 超现实主义, 概念艺术, 混合媒体风格'
+    ]
+  };
+
+  const results = fallbackResults[search_type as keyof typeof fallbackResults] || [
+    `关于 "${query}" 的搜索结果（离线模式）`
+  ];
+
+  await sendEvent({
+    type: 'search_result',
+    summary: `找到 ${results.length} 条相关信息（备用数据）`
+  });
+
+  return {
+    success: true,
+    data: {
+      query,
+      search_type,
+      results,
+      summary: results.join('\n'),
+      fallback: true
+    },
+    shouldContinue: true
+  };
+}
 
 // 工具5: 图片分析
 export const handleAnalyzeImage: ToolHandler = async (params, sendEvent) => {
