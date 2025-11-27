@@ -366,14 +366,18 @@ export async function generateImageAction(
         const errorText = await response.text();
         const errorMessage = `Gemini API error: ${response.status} - ${errorText}`;
 
-        // 429 错误（配额用尽）- 立即切换 Key 并重试
-        if (response.status === 429) {
+        // 429 错误（配额用尽）或 503 错误（服务过载）- 立即切换 Key 并重试
+        if (response.status === 429 || response.status === 503) {
           const isQuotaExhausted = errorText.includes('RESOURCE_EXHAUSTED') ||
             errorText.includes('quota') ||
             errorText.includes('exceeded');
+          const isOverloaded = errorText.includes('overloaded') ||
+            errorText.includes('unavailable') ||
+            response.status === 503;
 
-          if (isQuotaExhausted) {
-            console.warn(`⚠️  429 Quota exhausted on Key ${currentKeyIndex + 1}, switching...`);
+          if (isQuotaExhausted || isOverloaded) {
+            const reason = response.status === 429 ? 'Quota exhausted' : 'Overloaded';
+            console.warn(`⚠️  ${response.status} ${reason} on Key ${currentKeyIndex + 1}, switching...`);
             const hasMoreKeys = await markKeyFailed(currentKeyIndex);
 
             if (hasMoreKeys) {
@@ -382,9 +386,18 @@ export async function generateImageAction(
               attempt--; // 不计入重试次数
               continue;
             } else {
-              // 没有更多可用的 Key
-              console.error(`❌ All API keys exhausted!`);
-              throw new Error("All Gemini API keys quota exhausted. Please try again later.");
+              // 没有更多可用的 Key，尝试 Vertex AI fallback
+              console.warn(`⚠️  All API keys exhausted! Trying Vertex AI fallback...`);
+              try {
+                const vertexResult = await generateImageWithVertexAI(prompt, model, configOptions, referenceImages);
+                if (vertexResult.success) {
+                  console.log(`✅ Vertex AI fallback succeeded!`);
+                  return vertexResult;
+                }
+              } catch (vertexError) {
+                console.error(`❌ Vertex AI fallback failed:`, vertexError);
+              }
+              throw new Error("All Gemini API keys exhausted and Vertex AI fallback failed. Please try again later.");
             }
           }
         }
@@ -491,4 +504,251 @@ export async function generateImageAction(
     success: false,
     error: "Max retries exceeded",
   };
+}
+
+// ============================================================================
+// Vertex AI Fallback - 当所有 API Keys 都用尽时使用
+// ============================================================================
+
+// Vertex AI 配置
+const VERTEX_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || "";
+const VERTEX_LOCATION = process.env.GOOGLE_CLOUD_LOCATION || "us-central1";
+const VERTEX_MODEL_ID = "gemini-2.0-flash-preview-image-generation"; // Vertex AI 使用的模型
+
+/**
+ * 获取 Google Cloud Access Token
+ * 支持两种方式：服务账号 JSON 或 ADC（本地开发）
+ */
+async function getVertexAccessToken(): Promise<string> {
+  // 方式1: 使用服务账号 JSON（生产环境）
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (serviceAccountJson) {
+    const serviceAccount = JSON.parse(serviceAccountJson);
+    const jwt = await createVertexJWT(serviceAccount);
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        assertion: jwt,
+      }),
+    });
+    const tokenData = await tokenResponse.json();
+    if (!tokenData.access_token) {
+      throw new Error(`Failed to get access token: ${JSON.stringify(tokenData)}`);
+    }
+    return tokenData.access_token;
+  }
+
+  // 方式2: 使用 ADC (Application Default Credentials) - 本地开发环境
+  const fs = await import("fs");
+  const path = await import("path");
+  const os = await import("os");
+
+  const adcPath = path.join(os.homedir(), ".config", "gcloud", "application_default_credentials.json");
+
+  if (fs.existsSync(adcPath)) {
+    const adcContent = fs.readFileSync(adcPath, "utf-8");
+    const adc = JSON.parse(adcContent);
+
+    if (adc.type === "authorized_user") {
+      const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: adc.client_id,
+          client_secret: adc.client_secret,
+          refresh_token: adc.refresh_token,
+          grant_type: "refresh_token",
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        const error = await tokenResponse.text();
+        throw new Error(`Failed to refresh ADC token: ${error}`);
+      }
+
+      const tokenData = await tokenResponse.json();
+      return tokenData.access_token;
+    }
+  }
+
+  throw new Error("No Google Cloud credentials found. Set GOOGLE_SERVICE_ACCOUNT_JSON or run 'gcloud auth application-default login'");
+}
+
+/**
+ * 创建 JWT for Google OAuth
+ */
+async function createVertexJWT(serviceAccount: { client_email: string; private_key: string }): Promise<string> {
+  const header = {
+    alg: "RS256",
+    typ: "JWT",
+  };
+
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: serviceAccount.client_email,
+    scope: "https://www.googleapis.com/auth/cloud-platform",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+  };
+
+  const base64Header = Buffer.from(JSON.stringify(header)).toString("base64url");
+  const base64Payload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const unsignedToken = `${base64Header}.${base64Payload}`;
+
+  const crypto = await import("crypto");
+  const sign = crypto.createSign("RSA-SHA256");
+  sign.update(unsignedToken);
+  const signature = sign.sign(serviceAccount.private_key, "base64url");
+
+  return `${unsignedToken}.${signature}`;
+}
+
+/**
+ * 使用 Vertex AI 生成图片（Fallback）
+ */
+async function generateImageWithVertexAI(
+  prompt: string,
+  model: GeminiImageModel,
+  configOptions: ImageGenerationConfig,
+  referenceImages: string[]
+): Promise<{ success: boolean; imageUrl?: string; error?: string; prompt?: string; model?: string }> {
+  console.log(`[VertexAI Fallback] Starting image generation...`);
+  console.log(`[VertexAI Fallback] Project: ${VERTEX_PROJECT_ID}, Location: ${VERTEX_LOCATION}`);
+
+  if (!VERTEX_PROJECT_ID) {
+    throw new Error("GOOGLE_CLOUD_PROJECT not configured for Vertex AI fallback");
+  }
+
+  try {
+    // 获取 access token
+    const accessToken = await getVertexAccessToken();
+    console.log(`[VertexAI Fallback] Got access token`);
+
+    // 构建 parts
+    const parts: any[] = [{ text: prompt }];
+
+    // 添加参考图片
+    if (referenceImages.length > 0) {
+      console.log(`[VertexAI Fallback] Fetching ${referenceImages.length} reference images...`);
+      for (const imageUrl of referenceImages) {
+        try {
+          const response = await fetch(imageUrl);
+          if (!response.ok) continue;
+
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const base64Data = buffer.toString('base64');
+          const mimeType = response.headers.get('content-type') || 'image/jpeg';
+
+          parts.push({
+            inlineData: {
+              mimeType,
+              data: base64Data,
+            },
+          });
+        } catch (error) {
+          console.error(`[VertexAI Fallback] Error fetching reference image:`, error);
+        }
+      }
+    }
+
+    // 构建请求体
+    const requestBody: any = {
+      contents: [
+        {
+          role: "user",
+          parts,
+        },
+      ],
+      generationConfig: {
+        responseModalities: ["TEXT", "IMAGE"],
+      },
+    };
+
+    // 添加 imageConfig
+    if (configOptions.aspectRatio || configOptions.imageSize) {
+      requestBody.generationConfig.imageConfig = {
+        ...(configOptions.aspectRatio && { aspectRatio: configOptions.aspectRatio }),
+        ...(configOptions.imageSize && { imageSize: configOptions.imageSize }),
+        personGeneration: "allow_all", // Vertex AI 需要显式设置
+      };
+    }
+
+    // Vertex AI API URL
+    const apiUrl = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/publishers/google/models/${VERTEX_MODEL_ID}:generateContent`;
+
+    console.log(`[VertexAI Fallback] API URL: ${apiUrl}`);
+
+    // 设置超时
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 分钟
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[VertexAI Fallback] API error: ${response.status} - ${errorText}`);
+      throw new Error(`Vertex AI API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`[VertexAI Fallback] Response received`);
+
+    // 解析响应
+    const candidates = data?.candidates;
+    if (!candidates || candidates.length === 0) {
+      throw new Error("No candidates returned from Vertex AI");
+    }
+
+    const responseParts = candidates[0]?.content?.parts;
+    if (!responseParts || responseParts.length === 0) {
+      throw new Error("No content parts returned from Vertex AI");
+    }
+
+    // 查找图片数据
+    for (const part of responseParts) {
+      if (part.inlineData && part.inlineData.data) {
+        console.log(`[VertexAI Fallback] Image data found`);
+        const base64Data = part.inlineData.data;
+        const mimeType = part.inlineData.mimeType || "image/png";
+        const buffer = Buffer.from(base64Data, "base64");
+
+        console.log(`[VertexAI Fallback] Image size: ${buffer.length} bytes`);
+
+        // 上传到 R2
+        const imageUrl = await uploadBufferToR2(buffer, mimeType);
+        console.log(`[VertexAI Fallback] Image uploaded: ${imageUrl}`);
+
+        return {
+          success: true,
+          imageUrl,
+          prompt,
+          model: `vertex-ai/${VERTEX_MODEL_ID}`,
+        };
+      }
+    }
+
+    throw new Error("No image data found in Vertex AI response");
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`[VertexAI Fallback] Error:`, errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
 }
