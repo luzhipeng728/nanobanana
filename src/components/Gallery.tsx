@@ -14,6 +14,9 @@ import {
   User,
   Users,
   Trash2,
+  Copy,
+  Check,
+  Plus,
 } from "lucide-react";
 
 interface GalleryImage {
@@ -42,6 +45,27 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [myOnly, setMyOnly] = useState(false);  // 只看自己的
   const [deletingId, setDeletingId] = useState<string | null>(null);  // 正在删除的图片 ID
+  const [copied, setCopied] = useState(false);  // 复制提示词状态
+
+  // 复制提示词
+  const handleCopyPrompt = useCallback(async (prompt: string) => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Copy failed:", error);
+    }
+  }, []);
+
+  // 添加到画布
+  const handleAddToCanvas = useCallback((image: GalleryImage) => {
+    if (onImageClick) {
+      onImageClick(image.imageUrl, image.prompt);
+      setSelectedImage(null);
+      onClose();
+    }
+  }, [onImageClick, onClose]);
 
   const fetchImages = useCallback(async (pageNum: number, onlyMine: boolean) => {
     setLoading(true);
@@ -121,21 +145,16 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose, selectedImage]);
 
-  const handleDownload = async (imageUrl: string, prompt: string) => {
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `nanobanana-${prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "_")}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Download failed:", error);
-    }
+  const handleDownload = (imageUrl: string, prompt: string) => {
+    const fileName = `nanobanana-${prompt.slice(0, 30).replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "_")}.png`;
+    // 使用服务端 API 下载，绕过 CORS
+    const downloadUrl = `/api/download?url=${encodeURIComponent(imageUrl)}&filename=${encodeURIComponent(fileName)}`;
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const formatDate = (dateStr: string) => {
@@ -340,54 +359,108 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
         )}
       </div>
 
-      {/* Image Detail Modal */}
+      {/* Image Detail Modal - 左右布局 */}
       {selectedImage && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 md:p-8"
           onClick={() => setSelectedImage(null)}
         >
           <div
-            className="relative max-w-[90vw] max-h-[90vh] flex flex-col"
+            className="relative w-full max-w-6xl h-[90vh] bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src={selectedImage.imageUrl}
-              alt={selectedImage.prompt}
-              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
-            />
-            <div className="mt-4 bg-white/10 backdrop-blur-xl rounded-xl p-4 max-w-2xl mx-auto">
-              <p className="text-white text-sm mb-3">{selectedImage.prompt}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs px-3 py-1 rounded-full bg-purple-500/80 text-white flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    {getModelLabel(selectedImage.model)}
-                  </span>
-                  <span className="text-xs px-3 py-1 rounded-full bg-white/20 text-white flex items-center gap-1">
+            {/* 左侧：图片 */}
+            <div className="flex-1 flex items-center justify-center bg-black p-4 md:p-8 min-h-[40vh] md:min-h-0">
+              <img
+                src={selectedImage.imageUrl}
+                alt={selectedImage.prompt}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              />
+            </div>
+
+            {/* 右侧：信息面板 */}
+            <div className="w-full md:w-[400px] flex flex-col bg-neutral-900 border-t md:border-t-0 md:border-l border-neutral-800">
+              {/* 头部信息 */}
+              <div className="p-4 border-b border-neutral-800">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-3 py-1 rounded-full bg-purple-500/80 text-white flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      {getModelLabel(selectedImage.model)}
+                    </span>
+                    {selectedImage.isOwner && (
+                      <span className="text-xs px-2 py-1 rounded-full bg-green-500/80 text-white">
+                        我的
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setSelectedImage(null)}
+                    className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-neutral-400">
+                  <span className="flex items-center gap-1">
                     <User className="w-3 h-3" />
                     {selectedImage.username}
-                    {selectedImage.isOwner && " (我)"}
                   </span>
-                  <span className="text-xs text-white/70 flex items-center gap-1">
+                  <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     {formatDate(selectedImage.createdAt)}
                   </span>
                 </div>
+              </div>
+
+              {/* 提示词区域 */}
+              <div className="flex-1 p-4 overflow-y-auto">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium text-neutral-300">提示词</h3>
+                  <button
+                    onClick={() => handleCopyPrompt(selectedImage.prompt)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs transition-colors"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-green-400" />
+                        已复制
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        复制
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="bg-neutral-800/50 rounded-lg p-3 border border-neutral-700">
+                  <p className="text-sm text-neutral-200 whitespace-pre-wrap break-words leading-relaxed">
+                    {selectedImage.prompt}
+                  </p>
+                </div>
+              </div>
+
+              {/* 操作按钮 */}
+              <div className="p-4 border-t border-neutral-800 space-y-2">
+                {onImageClick && (
+                  <button
+                    onClick={() => handleAddToCanvas(selectedImage)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white text-sm font-medium transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    添加到画布
+                  </button>
+                )}
                 <button
                   onClick={() => handleDownload(selectedImage.imageUrl, selectedImage.prompt)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-sm transition-colors"
                 >
                   <Download className="w-4 h-4" />
-                  下载
+                  下载图片
                 </button>
               </div>
             </div>
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute -top-12 right-0 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
           </div>
         </div>
       )}

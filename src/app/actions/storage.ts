@@ -4,6 +4,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { r2Client, R2_BUCKET_NAME } from "@/lib/r2";
 import { v4 as uuidv4 } from "uuid";
+import { compressImage } from "@/lib/image-utils";
 
 export async function getPresignedUploadUrl(contentType: string = "image/png") {
   // 根据 contentType 确定扩展名
@@ -35,19 +36,48 @@ export async function uploadImageToR2(formData: FormData) {
     throw new Error("No file provided");
   }
 
-  // Get file extension
-  const ext = file.name.split('.').pop() || 'png';
-  const fileName = `nanobanana/uploads/${uuidv4()}.${ext}`;
-
   // Convert file to buffer
   const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+  const originalBuffer = Buffer.from(arrayBuffer);
+
+  // Compress image if needed (max 2MB for uploads, to keep UI responsive)
+  let finalBuffer: Buffer;
+  let finalMimeType: string;
+  let finalExt: string;
+
+  try {
+    const compressed = await compressImage(originalBuffer, {
+      maxWidth: 2048,
+      maxHeight: 2048,
+      maxSizeBytes: 1 * 1024 * 1024, // 1MB max
+      quality: 0.85,
+      format: 'jpeg'
+    });
+
+    finalBuffer = compressed.buffer;
+    finalMimeType = compressed.mimeType;
+    finalExt = 'jpg';
+
+    if (compressed.wasCompressed) {
+      console.log(
+        `[Storage] Image compressed: ${(originalBuffer.length / 1024).toFixed(1)}KB -> ${(finalBuffer.length / 1024).toFixed(1)}KB`
+      );
+    }
+  } catch (compressError) {
+    // If compression fails, use original
+    console.warn('[Storage] Image compression failed, using original:', compressError);
+    finalBuffer = originalBuffer;
+    finalMimeType = file.type;
+    finalExt = file.name.split('.').pop() || 'png';
+  }
+
+  const fileName = `nanobanana/uploads/${uuidv4()}.${finalExt}`;
 
   const command = new PutObjectCommand({
     Bucket: R2_BUCKET_NAME,
     Key: fileName,
-    Body: buffer,
-    ContentType: file.type,
+    Body: finalBuffer,
+    ContentType: finalMimeType,
   });
 
   try {

@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import { uploadBufferToR2 } from "@/lib/r2";
 import { GEMINI_IMAGE_MODELS, type GeminiImageModel, type ImageGenerationConfig } from "@/types/image-gen";
 import { prisma } from "@/lib/prisma";
+import { fetchAndCompressImage } from "@/lib/image-utils";
 
 // OpenAI Client for Prompt Rewriting
 const openai = new OpenAI({
@@ -249,40 +250,39 @@ export async function generateImageAction(
     },
   ];
 
-  // Add reference images if provided
+  // Add reference images if provided (with compression)
   if (referenceImages.length > 0) {
-    console.log(`Fetching ${referenceImages.length} reference images...`);
+    console.log(`[Generate] Fetching and compressing ${referenceImages.length} reference images...`);
 
     for (const imageUrl of referenceImages) {
       try {
-        // Fetch the image
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-          console.warn(`Failed to fetch reference image: ${imageUrl}`);
+        // Fetch and compress the image (确保 < 1MB)
+        const compressed = await fetchAndCompressImage(imageUrl, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          maxSizeBytes: 800 * 1024, // 800KB，留余量确保 < 1MB
+          quality: 0.8,
+          format: 'jpeg'
+        });
+
+        if (!compressed) {
+          console.warn(`[Generate] Failed to compress reference image: ${imageUrl}`);
           continue;
         }
-
-        // Get image data as buffer
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const base64Data = buffer.toString('base64');
-
-        // Determine mime type from response or default to jpeg
-        const mimeType = response.headers.get('content-type') || 'image/jpeg';
 
         // Add to parts array
         parts.push({
           inline_data: {
-            mime_type: mimeType,
-            data: base64Data,
+            mime_type: compressed.mimeType,
+            data: compressed.base64,
           },
         });
       } catch (error) {
-        console.error(`Error fetching reference image ${imageUrl}:`, error);
+        console.error(`[Generate] Error processing reference image ${imageUrl}:`, error);
       }
     }
 
-    console.log(`Successfully added ${parts.length - 1} reference images`);
+    console.log(`[Generate] Successfully added ${parts.length - 1} compressed reference images`);
   }
 
   // Build request body
@@ -630,27 +630,29 @@ async function generateImageWithVertexAI(
     // 构建 parts
     const parts: any[] = [{ text: prompt }];
 
-    // 添加参考图片
+    // 添加参考图片（with compression）
     if (referenceImages.length > 0) {
-      console.log(`[VertexAI Fallback] Fetching ${referenceImages.length} reference images...`);
+      console.log(`[VertexAI Fallback] Fetching and compressing ${referenceImages.length} reference images...`);
       for (const imageUrl of referenceImages) {
         try {
-          const response = await fetch(imageUrl);
-          if (!response.ok) continue;
+          const compressed = await fetchAndCompressImage(imageUrl, {
+            maxWidth: 1600,
+            maxHeight: 1600,
+            maxSizeBytes: 800 * 1024, // 800KB，确保 < 1MB
+            quality: 0.8,
+            format: 'jpeg'
+          });
 
-          const arrayBuffer = await response.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          const base64Data = buffer.toString('base64');
-          const mimeType = response.headers.get('content-type') || 'image/jpeg';
+          if (!compressed) continue;
 
           parts.push({
             inlineData: {
-              mimeType,
-              data: base64Data,
+              mimeType: compressed.mimeType,
+              data: compressed.base64,
             },
           });
         } catch (error) {
-          console.error(`[VertexAI Fallback] Error fetching reference image:`, error);
+          console.error(`[VertexAI Fallback] Error processing reference image:`, error);
         }
       }
     }

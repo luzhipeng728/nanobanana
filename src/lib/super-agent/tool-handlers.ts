@@ -4,6 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { SKILL_LIBRARY, matchSkillByKeywords } from './skills';
 import type { ToolResult, FinalOutput, SuperAgentStreamEvent } from '@/types/super-agent';
 import { runDeepResearch, ResearchProgressEvent } from './deep-research';
+import { fetchAndCompressImage } from '@/lib/image-utils';
 
 // 初始化 Anthropic 客户端
 function getAnthropicClient(): Anthropic {
@@ -504,15 +505,21 @@ export const handleAnalyzeImage: ToolHandler = async (params, sendEvent) => {
   try {
     const anthropic = getAnthropicClient();
 
-    // 下载图片并转为 base64
-    const response = await fetch(image_url);
-    if (!response.ok) {
-      throw new Error(`无法下载图片: ${response.status}`);
+    // 下载图片并压缩 (确保 < 1MB)
+    const compressed = await fetchAndCompressImage(image_url, {
+      maxWidth: 1600,
+      maxHeight: 1600,
+      maxSizeBytes: 800 * 1024, // 800KB，确保 < 1MB
+      quality: 0.8,
+      format: 'jpeg'
+    });
+
+    if (!compressed) {
+      throw new Error(`无法下载或压缩图片: ${image_url}`);
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    const mimeType = response.headers.get('content-type') || 'image/jpeg';
+    const base64 = compressed.base64;
+    const mimeType = compressed.mimeType;
 
     // 使用 Claude Vision 分析
     const focusPoints = analysis_focus || ['style', 'layout', 'colors', 'elements', 'text'];

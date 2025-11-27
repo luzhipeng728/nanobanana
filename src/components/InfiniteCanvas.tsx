@@ -95,6 +95,9 @@ export default function InfiniteCanvas() {
   const [isPlacingImage, setIsPlacingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Gallery Image Placement State (从画廊添加图片)
+  const [pendingGalleryImage, setPendingGalleryImage] = useState<{ url: string; prompt: string } | null>(null);
+
   // Drag and drop handlers for adding nodes
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
@@ -419,23 +422,50 @@ export default function InfiniteCanvas() {
     setIsPlacingImage(true);
   }, []);
 
-  // 处理画布点击 - 在放置模式下确定位置并打开文件选择
+  // 处理画布点击 - 在放置模式下确定位置并打开文件选择或放置画廊图片
   const handleCanvasClick = useCallback((event: React.MouseEvent) => {
-    if (!isPlacingImage || !reactFlowInstance) return;
+    if (!reactFlowInstance) return;
 
     const position = reactFlowInstance.screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
     });
 
-    pendingImagePositionRef.current = position;
-    fileInputRef.current?.click();
-  }, [isPlacingImage, reactFlowInstance]);
+    // 如果是画廊图片放置模式
+    if (pendingGalleryImage) {
+      const nodeId = `image-${Date.now()}`;
+      const newNode: Node = {
+        id: nodeId,
+        type: "image",
+        position,
+        data: {
+          imageUrl: pendingGalleryImage.url,
+          prompt: pendingGalleryImage.prompt,
+          isLoading: false,
+        },
+      };
+      setNodes((nds) => [...nds, newNode]);
+      setPendingGalleryImage(null);
+      return;
+    }
+
+    // 如果是上传图片放置模式
+    if (isPlacingImage) {
+      pendingImagePositionRef.current = position;
+      fileInputRef.current?.click();
+    }
+  }, [isPlacingImage, pendingGalleryImage, reactFlowInstance, setNodes]);
 
   // 取消放置模式
   const cancelPlacingImage = useCallback(() => {
     setIsPlacingImage(false);
+    setPendingGalleryImage(null);
     pendingImagePositionRef.current = null;
+  }, []);
+
+  // 从画廊添加图片 - 进入放置模式
+  const handleGalleryImageClick = useCallback((imageUrl: string, prompt: string) => {
+    setPendingGalleryImage({ url: imageUrl, prompt });
   }, []);
 
   const onDragStart = useCallback((event: React.DragEvent, nodeType: string) => {
@@ -951,15 +981,17 @@ export default function InfiniteCanvas() {
       )}
 
       {/* Image Placement Mode Overlay */}
-      {isPlacingImage && (
+      {(isPlacingImage || pendingGalleryImage) && (
         <div
           className="absolute inset-0 z-20 cursor-crosshair"
           onClick={handleCanvasClick}
         >
           {/* Top hint bar */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-cyan-500/90 backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg">
+          <div className={`absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 ${pendingGalleryImage ? 'bg-purple-500/90' : 'bg-cyan-500/90'} backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg`}>
             <ImageIcon className="w-4 h-4" />
-            <span className="text-sm font-medium">点击画布选择图片放置位置</span>
+            <span className="text-sm font-medium">
+              {pendingGalleryImage ? '点击画布放置画廊图片' : '点击画布选择图片放置位置'}
+            </span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -1091,6 +1123,7 @@ export default function InfiniteCanvas() {
       <Gallery
         isOpen={isGalleryOpen}
         onClose={() => setIsGalleryOpen(false)}
+        onImageClick={handleGalleryImageClick}
       />
     </div>
   );
