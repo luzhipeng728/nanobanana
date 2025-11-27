@@ -281,17 +281,13 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           "flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md bg-white dark:bg-neutral-950 h-full will-change-transform transform-gpu [contain:layout_style_paint]",
           !isLoading && "border-2 border-blue-100 dark:border-blue-900/30"
         )}>
-          {/* 生成中的旋转渐变边框动效 */}
+          {/* 生成中的金属光线旋转边框动效 */}
           {isLoading && (
             <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none z-20">
-              <div
-                className="absolute inset-[-3px] animate-spin-slow"
-                style={{
-                  background: "conic-gradient(from 0deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6)",
-                  animationDuration: "2.5s"
-                }}
-              />
-              <div className="absolute inset-[3px] rounded-[calc(2rem-3px)] bg-neutral-100 dark:bg-neutral-900" />
+              {/* 金属光线发光层 */}
+              <div className="metallic-border-glow rounded-[2rem]" />
+              {/* 内部遮罩 */}
+              <div className="absolute inset-[2px] rounded-[calc(2rem-2px)] bg-neutral-100 dark:bg-neutral-900" />
             </div>
           )}
 

@@ -197,17 +197,13 @@ export const StreamingThought = memo(function StreamingThought({
         className
       )}
     >
-      {/* 流式时的旋转渐变边框动效 */}
+      {/* 流式时的金属光线旋转边框动效 */}
       {isStreaming && (
         <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-          <div
-            className="absolute inset-[-2px] animate-spin-slow"
-            style={{
-              background: "conic-gradient(from 0deg, #a855f7, #ec4899, #3b82f6, #a855f7)",
-              animationDuration: "3s"
-            }}
-          />
-          <div className="absolute inset-[2px] rounded-2xl bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30 dark:from-slate-900/80 dark:via-purple-900/20 dark:to-blue-900/20" />
+          {/* 紫色金属光线发光层 */}
+          <div className="metallic-border-glow-purple rounded-2xl" />
+          {/* 内部遮罩 */}
+          <div className="absolute inset-[2px] rounded-[14px] bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30 dark:from-slate-900/80 dark:via-purple-900/20 dark:to-blue-900/20" />
         </div>
       )}
 
@@ -591,11 +587,11 @@ export const PromptCard = memo(function PromptCard({
         className
       )}
     >
-      {/* 生成中的动画边框 */}
+      {/* 生成中的金属光线边框 */}
       {status === "generating" && (
         <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
-          <div className="absolute inset-[-2px] bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 opacity-50 animate-spin-slow" style={{ animationDuration: "3s" }} />
-          <div className="absolute inset-[1px] bg-white dark:bg-neutral-900 rounded-xl" />
+          <div className="metallic-border-glow-purple rounded-xl" />
+          <div className="absolute inset-[2px] bg-white dark:bg-neutral-900 rounded-[10px]" />
         </div>
       )}
 
