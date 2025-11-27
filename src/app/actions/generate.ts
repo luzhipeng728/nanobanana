@@ -433,7 +433,18 @@ export async function generateImageAction(
 
       const parts = candidates[0]?.content?.parts;
       if (!parts || parts.length === 0) {
-        throw new Error("No content parts returned");
+        // 打印 candidate 的详细信息用于调试
+        const candidate = candidates[0];
+        console.log("❌ Candidate has no content parts:");
+        console.log("  finishReason:", candidate?.finishReason);
+        console.log("  safetyRatings:", JSON.stringify(candidate?.safetyRatings, null, 2));
+        if (candidate?.finishReason === "SAFETY") {
+          throw new Error("Gemini 安全审核拦截：生成的内容被判定为不安全");
+        }
+        if (candidate?.finishReason === "RECITATION") {
+          throw new Error("Gemini 内容审核：检测到可能的版权内容");
+        }
+        throw new Error(`No content parts returned (finishReason: ${candidate?.finishReason || 'unknown'})`);
       }
 
       // Find the image part (inlineData) - iterate through parts
