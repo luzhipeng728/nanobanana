@@ -126,21 +126,21 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
       requiredInputs: ['产品名称', '步骤列表'],
       optionalInputs: ['品牌颜色', '风格偏好']
     },
-    basePrompt: `A modern tutorial infographic showing how to use {{PRODUCT_NAME}}. The image is divided into a step-by-step visual guide with numbered steps flowing from left to right. {{STEPS_CONTENT}} The overall design is clean, modern UI style with {{COLORS}} accent colors, dark mode interface, soft glow effects, professional product demonstration style, 4K resolution.`,
+    basePrompt: `A modern step-by-step tutorial infographic with {{STEP_COUNT}} numbered steps arranged horizontally. Each step shows a clear UI screenshot or illustration with a numbered circle badge and Chinese label below. {{STEPS_CONTENT}} Clean modern design with {{COLORS}} accent colors, dark gradient background, glassmorphism card style, soft glow effects, arrows connecting each step. All Chinese text must be exactly as specified with no other text. Professional infographic style, 8K resolution.`,
     variables: [
       {
-        name: 'PRODUCT_NAME',
-        description: '产品名称',
+        name: 'STEP_COUNT',
+        description: '步骤数量',
         type: 'text',
         required: true,
-        examples: ['an AI infinite canvas platform', 'a photo editing app']
+        examples: ['4', '3', '5']
       },
       {
         name: 'STEPS_CONTENT',
-        description: '步骤内容，每个步骤包含：描述 + 标签',
+        description: '步骤内容，每个步骤包含：描述 + 中文标签',
         type: 'list',
         required: true,
-        examples: ['Step 1: A left sidebar panel showing tool icons with "AI智能体" highlighted, label "选择工具". Step 2: A canvas showing the node placed, label "放置节点".']
+        examples: ['Step 1 shows a sidebar with tool selection, Chinese label "选择工具". Step 2 shows dragging to canvas, Chinese label "拖拽到画布".']
       },
       {
         name: 'COLORS',
@@ -153,16 +153,15 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
     ],
     examples: [
       {
-        userRequest: '帮我做一个AI画布的使用教程，包含选择工具、上传图片、输入提示词、生成图片4个步骤',
-        filledPrompt: 'A modern tutorial infographic showing how to use an AI infinite canvas platform. The image is divided into a step-by-step visual guide with numbered steps flowing from left to right. Step 1: A left sidebar panel showing tool icons with "AI智能体" highlighted and being dragged with a cursor arrow, label "选择AI智能体 拖拽到画布". Step 2: A canvas workspace showing the agent node placed, with a photo being uploaded and connected by a glowing line to the agent node, label "上传照片 连线到节点". Step 3: A text input box showing creative prompt being typed, label "输入你的创意想法". Step 4: Multiple beautiful AI-generated images appearing on the canvas, label "精美图片生成完成". The overall design is clean, modern UI style with purple and cyan accent colors, dark mode interface, soft glow effects, professional product demonstration style, 4K resolution.',
-        chineseTexts: ['AI智能体', '选择AI智能体 拖拽到画布', '上传照片 连线到节点', '输入你的创意想法', '精美图片生成完成']
+        userRequest: '做一个4步骤的使用教程',
+        filledPrompt: 'A modern step-by-step tutorial infographic with 4 numbered steps arranged horizontally. Each step shows a clear UI screenshot or illustration with a numbered circle badge and Chinese label below. Step 1 shows selecting a tool from sidebar, Chinese label "选择工具". Step 2 shows dragging to canvas, Chinese label "拖拽到画布". Step 3 shows typing prompt, Chinese label "输入提示词". Step 4 shows generated images, Chinese label "生成完成". Clean modern design with purple and cyan accent colors, dark gradient background, glassmorphism card style, soft glow effects, arrows connecting each step. All Chinese text must be exactly as specified with no other text. Professional infographic style, 8K resolution.',
+        chineseTexts: ['选择工具', '拖拽到画布', '输入提示词', '生成完成']
       }
     ],
     qualityChecklist: [
       '步骤编号是否清晰可见',
-      '每个步骤的标签文字是否正确',
+      '每个步骤的中文标签是否正确',
       '步骤之间的流程箭头是否连贯',
-      'UI元素是否符合现代设计风格',
       '整体布局是否平衡'
     ],
     commonIssues: [
@@ -170,11 +169,6 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
         issue: '步骤过多导致图片拥挤',
         solution: '限制在4-5个步骤',
         promptFix: 'with clear separation and generous white space between steps'
-      },
-      {
-        issue: '步骤标签文字不清晰',
-        solution: '使用更大的标签文字',
-        promptFix: 'with large, clearly readable Chinese labels'
       }
     ]
   },
@@ -191,86 +185,49 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
       requiredInputs: ['角色描述', '故事大纲', '场景数量'],
       optionalInputs: ['场景标题', '角色台词']
     },
-    basePrompt: `A modern tutorial infographic showing advanced AI canvas workflow for sequential Pixar-style cinematic story scene generation. Dark gradient background with glowing purple and cyan neon accents. The image displays a complete creative workflow.
-
-LEFT SECTION "角色创建": Shows {{CHARACTER_COUNT}} Pixar-style cinematic 3D character cards with dramatic lighting - {{CHARACTER_DESCRIPTIONS}} - each character in glowing card frames, title label "第一步：生成角色 选择主角".
-
-MIDDLE SECTION "故事输入": Shows the selected character images connected with glowing cyan flow lines to a central glowing AI agent node icon, below it a text input panel clearly displaying the complete story prompt "{{STORY_PROMPT}}", and text requirement "{{TEXT_REQUIREMENT}}", title label "第二步：输入故事与文字要求".
-
-RIGHT SECTION "成品呈现": Shows exactly {{SCENE_COUNT}} sequential Pixar-style cinematic story scene images in a horizontal filmstrip layout, all featuring the same characters in consistent Pixar cinematic style with dramatic film lighting and epic composition. {{SCENE_DESCRIPTIONS}} Title label "第三步：连贯场景生成".
-
-All Chinese text must be exactly as specified with no other text. Bottom banner reads "{{FOOTER_TEXT}}". Clean modern UI design, glassmorphism style, Pixar cinematic animation aesthetic with dramatic lighting and epic scale, professional product illustration, 8K resolution.`,
+    basePrompt: `A Pixar-style cinematic 3D animation scene. {{SCENE_DESCRIPTION}} The character is {{CHARACTER_DESCRIPTION}}, maintaining consistent design throughout. {{TEXT_PLACEMENT}} Pixar animation style with dramatic cinematic lighting, rich vibrant colors, expressive character emotions, epic film composition, shallow depth of field, professional animation quality. All Chinese text must be exactly as specified with no other text. 8K resolution, masterpiece quality.`,
     variables: [
       {
-        name: 'CHARACTER_COUNT',
-        description: '角色数量',
+        name: 'CHARACTER_DESCRIPTION',
+        description: '角色详细描述（保持一致性）',
         type: 'text',
         required: true,
-        examples: ['3', '2', '4']
+        examples: ['a curious 8-year-old girl with pigtails wearing a yellow dress', 'a brave young boy with messy brown hair and a red scarf']
       },
       {
-        name: 'CHARACTER_DESCRIPTIONS',
-        description: '角色详细描述',
-        type: 'list',
-        required: true,
-        examples: ['a determined young astronaut girl with short black hair named 星河, a weathered robot companion named 锈铁']
-      },
-      {
-        name: 'STORY_PROMPT',
-        description: '故事梗概',
+        name: 'SCENE_DESCRIPTION',
+        description: '场景详细描述',
         type: 'text',
         required: true,
-        examples: ['人类文明消亡千年后，少女星河在废墟中被唤醒...']
+        examples: ['The character discovers a magical glowing fairy in an enchanted forest clearing with dappled sunlight']
       },
       {
-        name: 'TEXT_REQUIREMENT',
-        description: '文字显示要求',
+        name: 'TEXT_PLACEMENT',
+        description: '中文文字及位置',
         type: 'text',
         required: false,
-        defaultValue: '每张图片顶部显示场景标题，底部显示角色台词',
-        examples: ['每张图片顶部显示场景标题，底部显示角色台词']
-      },
-      {
-        name: 'SCENE_COUNT',
-        description: '场景数量',
-        type: 'text',
-        required: true,
-        examples: ['4', '6', '3']
-      },
-      {
-        name: 'SCENE_DESCRIPTIONS',
-        description: '各场景详细描述',
-        type: 'list',
-        required: true,
-        examples: ['Scene 1: 星河 opening her eyes inside a cracked cryogenic pod, top text "觉醒", bottom dialogue "沉睡了多久...".']
-      },
-      {
-        name: 'FOOTER_TEXT',
-        description: '底部标语',
-        type: 'text',
-        required: false,
-        defaultValue: '无限画布 · 让AI讲述你的故事',
-        examples: ['无限画布 · 让AI讲述你的故事 · https://canvas.luzhipeng.com']
+        defaultValue: '',
+        examples: ['Chinese text "初次相遇" at top center as scene title, Chinese text "你是谁？" at bottom as dialogue in speech bubble style.']
       }
     ],
-    examples: [],
+    examples: [
+      {
+        userRequest: '皮克斯风格故事，小女孩遇见小精灵',
+        filledPrompt: 'A Pixar-style cinematic 3D animation scene. A curious young girl discovers a tiny glowing fairy creature in a magical forest clearing, sunlight streaming through the trees creating a warm atmosphere. The character is an 8-year-old girl with pigtails wearing a simple yellow dress, maintaining consistent design throughout. Chinese text "初次相遇" displayed at top center as scene title, Chinese text "你好，小精灵！" at bottom center as dialogue. Pixar animation style with dramatic cinematic lighting, rich vibrant colors, expressive character emotions, epic film composition, shallow depth of field, professional animation quality. All Chinese text must be exactly as specified with no other text. 8K resolution, masterpiece quality.',
+        chineseTexts: ['初次相遇', '你好，小精灵！']
+      }
+    ],
     qualityChecklist: [
-      '角色在各场景中是否保持一致',
-      '场景是否按剧情顺序排列',
-      '标题和台词文字是否正确显示',
-      '皮克斯动画风格是否到位',
-      '光影效果是否有电影感'
+      '角色设计是否符合皮克斯风格',
+      '场景氛围是否有电影感',
+      '中文文字是否正确显示',
+      '光影效果是否戏剧化'
     ],
     commonIssues: [
       {
-        issue: '角色在不同场景中外观不一致',
-        solution: '更详细地描述角色固定特征',
-        promptFix: 'maintaining exact same character design, clothing, and proportions across all scenes'
-      },
-      {
-        issue: '场景文字显示错误',
-        solution: '明确指定文字位置和内容',
-        promptFix: 'with text exactly positioned at top center for title and bottom center for dialogue'
+        issue: '角色风格不够皮克斯',
+        solution: '强调3D动画特征',
+        promptFix: 'with exaggerated Pixar-style proportions, large expressive eyes, smooth 3D rendered skin'
       }
     ]
   },
@@ -280,79 +237,49 @@ All Chinese text must be exactly as specified with no other text. Bottom banner 
     metadata: {
       id: 'ppt-generator',
       name: 'PPT演示文稿生成',
-      description: '生成专业的PPT演示文稿设计图，包含多页幻灯片预览',
+      description: '生成专业的PPT演示文稿页面设计',
       keywords: ['PPT', '演示文稿', '幻灯片', '汇报', '发布会', '商务演示', '年度报告', '提案', '路演', '展示'],
       category: 'data-visualization',
       difficulty: 'medium',
-      requiredInputs: ['PPT主题', '页面内容列表'],
+      requiredInputs: ['PPT主题', '页面内容'],
       optionalInputs: ['风格偏好', '颜色主题']
     },
-    basePrompt: `A modern tutorial infographic showing AI canvas workflow for professional PPT presentation generation. Dark gradient background with glowing purple and cyan neon accents. The image displays a complete creative workflow.
-
-LEFT SECTION "输入需求": Shows a text input panel with glowing border, clearly displaying the complete prompt "{{USER_REQUIREMENT}}", title label "第一步：描述你的PPT需求".
-
-MIDDLE SECTION "智能生成": Shows an AI agent node with magical processing particles and light beams, multiple content cards being generated and flowing outward showing outline structure, title label "第二步：AI自动规划结构与内容".
-
-RIGHT SECTION "成品呈现": Shows exactly {{SLIDE_COUNT}} professional PPT slide previews in a cascading elegant layout, all in consistent modern tech style with {{STYLE_DESCRIPTION}}. {{SLIDES_CONTENT}} Title label "第三步：专业PPT一键生成".
-
-All Chinese text must be exactly as specified with no other text. Bottom banner reads "{{FOOTER_TEXT}}". Clean modern UI design, glassmorphism style, professional product illustration, 8K resolution.`,
+    basePrompt: `A professional PPT slide design with {{STYLE_DESCRIPTION}}. {{SLIDE_CONTENT}} Clean modern presentation design with professional typography, balanced layout, consistent color scheme. All Chinese text must be exactly as specified with no other text. High quality presentation graphic, 16:9 aspect ratio, 4K resolution.`,
     variables: [
-      {
-        name: 'USER_REQUIREMENT',
-        description: '用户的PPT需求描述',
-        type: 'text',
-        required: true,
-        examples: ['为科技公司年度发布会制作一份产品发布PPT，主题是智能家居新品发布']
-      },
-      {
-        name: 'SLIDE_COUNT',
-        description: '幻灯片数量',
-        type: 'text',
-        required: true,
-        examples: ['5', '6', '4']
-      },
       {
         name: 'STYLE_DESCRIPTION',
         description: '风格描述',
         type: 'text',
         required: false,
-        defaultValue: 'dark blue gradient backgrounds and cyan accent lighting',
-        examples: ['dark blue gradient backgrounds and cyan accent lighting', 'minimalist white background with gold accents']
+        defaultValue: 'dark gradient background and glowing accent colors',
+        examples: ['dark blue gradient background with cyan accents', 'minimalist white background with gold accents', 'tech style with neon glow effects']
       },
       {
-        name: 'SLIDES_CONTENT',
-        description: '各幻灯片内容描述',
-        type: 'list',
-        required: true,
-        examples: ['Slide 1: Title slide with large text "智领未来" as main title. Slide 2: Company intro slide with title "关于我们".']
-      },
-      {
-        name: 'FOOTER_TEXT',
-        description: '底部标语',
+        name: 'SLIDE_CONTENT',
+        description: '幻灯片内容描述',
         type: 'text',
-        required: false,
-        defaultValue: '无限画布 · AI让演示更专业',
-        examples: ['无限画布 · AI让演示更专业 · https://canvas.luzhipeng.com']
+        required: true,
+        examples: ['Title slide showing large Chinese title "智领未来" at center, subtitle "2024年度产品发布会" below, company logo at bottom right.']
       }
     ],
-    examples: [],
+    examples: [
+      {
+        userRequest: '科技公司发布会PPT封面页',
+        filledPrompt: 'A professional PPT slide design with dark blue gradient background and glowing cyan accent lights. Title slide showing large Chinese title "智领未来" prominently at center with futuristic font style, subtitle "2024年度产品发布会" below in smaller text, abstract tech patterns in background, company logo placeholder at bottom right. Clean modern presentation design with professional typography, balanced layout, consistent color scheme. All Chinese text must be exactly as specified with no other text. High quality presentation graphic, 16:9 aspect ratio, 4K resolution.',
+        chineseTexts: ['智领未来', '2024年度产品发布会']
+      }
+    ],
     qualityChecklist: [
-      '幻灯片标题是否清晰可读',
+      '标题是否清晰可读',
       '内容层次是否分明',
-      '设计风格是否统一',
-      '颜色搭配是否协调',
-      '整体布局是否专业'
+      '设计风格是否专业',
+      '颜色搭配是否协调'
     ],
     commonIssues: [
       {
-        issue: '幻灯片内容过于拥挤',
-        solution: '减少每页内容量',
-        promptFix: 'with minimal text and generous white space on each slide'
-      },
-      {
-        issue: '设计风格不统一',
-        solution: '强调一致性',
-        promptFix: 'maintaining exact same design language, fonts, and color scheme across all slides'
+        issue: '内容过于拥挤',
+        solution: '减少内容量',
+        promptFix: 'with minimal text and generous white space'
       }
     ]
   },
@@ -369,27 +296,8 @@ All Chinese text must be exactly as specified with no other text. Bottom banner 
       requiredInputs: ['架构层级', '各层组件'],
       optionalInputs: ['颜色主题', '连接关系']
     },
-    basePrompt: `A modern tutorial infographic showing AI canvas workflow for enterprise architecture diagram generation. Dark gradient background with glowing purple and cyan neon accents. The image displays a complete creative workflow.
-
-LEFT SECTION "输入需求": Shows a text input panel with glowing border, clearly displaying the complete prompt "{{USER_REQUIREMENT}}", title label "第一步：描述你的架构图需求".
-
-MIDDLE SECTION "智能解析": Shows an AI agent node with magical processing particles, title label "第二步：AI解析架构层级".
-
-RIGHT SECTION "成品呈现": Shows a complete professional {{LAYER_COUNT}}-layer architecture diagram with large spacing between layers, dark background with glowing borders, each layer is a wide rounded rectangle container with colored left border:
-
-{{LAYERS_CONTENT}}
-
-Vertical flowing arrows connecting each layer from top to bottom. All boxes have generous padding and clear readable text. Title label "第三步：专业架构图一键生成".
-
-All Chinese text must be exactly as specified with no other text. Bottom banner reads "{{FOOTER_TEXT}}". Clean modern UI design, glassmorphism style, 8K resolution.`,
+    basePrompt: `A professional {{LAYER_COUNT}}-layer technical architecture diagram with dark gradient background. {{LAYERS_CONTENT}} Each layer is a wide rounded rectangle with colored left border and contains component boxes inside. Vertical arrows connect layers from top to bottom. All boxes have generous padding and clear readable Chinese text. Clean modern tech style with glassmorphism effects, glowing borders, professional diagram aesthetic. All Chinese text must be exactly as specified with no other text. 8K resolution.`,
     variables: [
-      {
-        name: 'USER_REQUIREMENT',
-        description: '用户的架构图需求',
-        type: 'text',
-        required: true,
-        examples: ['绘制一个电商平台技术架构图，包含用户端、网关层、业务层、数据层、基础设施层']
-      },
       {
         name: 'LAYER_COUNT',
         description: '架构层数',
@@ -402,35 +310,27 @@ All Chinese text must be exactly as specified with no other text. Bottom banner 
         description: '各层内容描述',
         type: 'list',
         required: true,
-        examples: ['LAYER 1 (top layer, orange left border) - Title "用户接入层": Contains 4 large boxes: "iOS APP", "Android APP", "小程序", "PC网页".']
-      },
-      {
-        name: 'FOOTER_TEXT',
-        description: '底部标语',
-        type: 'text',
-        required: false,
-        defaultValue: '无限画布 · AI让架构更清晰',
-        examples: ['无限画布 · AI让架构更清晰 · https://canvas.luzhipeng.com']
+        examples: ['Top layer (orange border) with title "用户接入层" contains boxes: "iOS APP", "Android APP", "小程序", "PC网页". Second layer (blue border) with title "网关层" contains boxes: "API网关", "负载均衡".']
       }
     ],
-    examples: [],
+    examples: [
+      {
+        userRequest: '电商平台技术架构图',
+        filledPrompt: 'A professional 4-layer technical architecture diagram with dark gradient background. Top layer (orange left border) with Chinese title "用户接入层" contains component boxes: "iOS APP", "Android APP", "小程序", "Web端". Second layer (cyan left border) with title "网关层" contains: "API网关", "负载均衡", "CDN". Third layer (green left border) with title "业务层" contains: "用户服务", "订单服务", "商品服务", "支付服务". Bottom layer (purple left border) with title "数据层" contains: "MySQL", "Redis", "MongoDB". Each layer is a wide rounded rectangle with colored left border and contains component boxes inside. Vertical arrows connect layers from top to bottom. All boxes have generous padding and clear readable Chinese text. Clean modern tech style with glassmorphism effects, glowing borders, professional diagram aesthetic. All Chinese text must be exactly as specified with no other text. 8K resolution.',
+        chineseTexts: ['用户接入层', '网关层', '业务层', '数据层', 'iOS APP', 'Android APP', '小程序', 'Web端', 'API网关', '负载均衡', 'CDN', '用户服务', '订单服务', '商品服务', '支付服务', 'MySQL', 'Redis', 'MongoDB']
+      }
+    ],
     qualityChecklist: [
       '层级关系是否清晰',
       '组件名称是否正确显示',
       '连接箭头是否正确',
-      '颜色编码是否一致',
-      '整体布局是否平衡'
+      '颜色编码是否一致'
     ],
     commonIssues: [
       {
         issue: '层级之间间距不足',
         solution: '增加层级间距',
-        promptFix: 'with generous vertical spacing between layers (at least 50px visual gap)'
-      },
-      {
-        issue: '组件框太小',
-        solution: '增大组件框尺寸',
-        promptFix: 'with large component boxes that have clear padding around text'
+        promptFix: 'with generous vertical spacing between layers'
       }
     ]
   },
@@ -447,29 +347,8 @@ All Chinese text must be exactly as specified with no other text. Bottom banner 
       requiredInputs: ['目的地', '天数', '每日行程'],
       optionalInputs: ['预算', '偏好']
     },
-    basePrompt: `A modern tutorial infographic showing AI canvas workflow for travel itinerary visual guide generation. Dark gradient background with glowing purple and cyan neon accents. The image displays a complete creative workflow.
-
-LEFT SECTION "输入需求": Shows a text input panel with glowing border, clearly displaying the complete prompt "{{USER_REQUIREMENT}}", title label "第一步：描述你的旅行计划".
-
-MIDDLE SECTION "智能规划": Shows an AI agent node with magical processing particles, travel-related icons floating around like plane, map pin, food, camera, title label "第二步：AI智能规划行程".
-
-RIGHT SECTION "成品呈现": Shows a beautiful visual travel itinerary with {{DAY_COUNT}} day cards arranged horizontally, each card has consistent modern design with dark background and gradient colored top border, containing timeline and details:
-
-{{DAYS_CONTENT}}
-
-Below the day cards, a summary bar showing "{{SUMMARY_TEXT}}".
-
-Title label "第三步：可视化行程一键生成".
-
-All Chinese text must be exactly as specified with no other text. Bottom banner reads "{{FOOTER_TEXT}}". Clean modern UI design, glassmorphism style, professional product illustration, 8K resolution.`,
+    basePrompt: `A beautiful travel itinerary visualization with {{DAY_COUNT}} day cards arranged horizontally. Dark gradient background with subtle glow effects. {{HEADER_TEXT}} Each day card has dark background with colored top border gradient, containing a timeline with time and activity icons. {{DAYS_CONTENT}} {{SUMMARY_BAR}} Modern glassmorphism card style, clean typography, travel icons, professional infographic design. All Chinese text must be exactly as specified with no other text. 8K resolution.`,
     variables: [
-      {
-        name: 'USER_REQUIREMENT',
-        description: '用户的旅行需求',
-        type: 'text',
-        required: true,
-        examples: ['计划国庆去成都旅行，4天3晚，预算5000元，两个人']
-      },
       {
         name: 'DAY_COUNT',
         description: '天数',
@@ -478,35 +357,40 @@ All Chinese text must be exactly as specified with no other text. Bottom banner 
         examples: ['4', '3', '5']
       },
       {
+        name: 'HEADER_TEXT',
+        description: '顶部标题',
+        type: 'text',
+        required: false,
+        defaultValue: '',
+        examples: ['Large title at top: "苏州四日游 · 品味江南古韵"']
+      },
+      {
         name: 'DAYS_CONTENT',
         description: '每日行程内容',
         type: 'list',
         required: true,
-        examples: ['DAY CARD 1 (orange top border) - Header "Day 1 · 初见成都": Timeline shows "14:00 抵达双流机场", "15:30 入住太古里民宿"...']
+        examples: ['Day 1 card (orange gradient top) with header "Day 1 · 初见姑苏" shows timeline: "09:00 抵达苏州站", "10:30 游览拙政园", "14:00 平江路古街".']
       },
       {
-        name: 'SUMMARY_TEXT',
-        description: '总结信息',
+        name: 'SUMMARY_BAR',
+        description: '底部总结栏',
         type: 'text',
         required: false,
         defaultValue: '',
-        examples: ['总预算：2400元 · 剩余：2600元 · 人均：1200元']
-      },
-      {
-        name: 'FOOTER_TEXT',
-        description: '底部标语',
-        type: 'text',
-        required: false,
-        defaultValue: '无限画布 · AI让旅行更精彩',
-        examples: ['无限画布 · AI让旅行更精彩 · https://canvas.luzhipeng.com']
+        examples: ['Summary bar at bottom showing: "总预算: 3200元 · 人均: 1600元 · 住宿2晚 · 精选15个景点"']
       }
     ],
-    examples: [],
+    examples: [
+      {
+        userRequest: '苏州4日游行程可视化',
+        filledPrompt: 'A beautiful travel itinerary visualization with 4 day cards arranged horizontally. Dark gradient background with subtle purple and cyan glow effects. Large title at top: "苏州四日游 · 品味江南古韵". Each day card has dark background with colored top border gradient, containing a timeline with time and activity icons. Day 1 card (orange gradient top) with header "Day 1 · 初见姑苏" shows: "09:00 抵达苏州站", "10:30 游览拙政园", "14:00 平江路古街", "16:30 苏州博物馆". Day 2 card (red gradient top) with header "Day 2 · 园林之美" shows: "08:30 游览虎丘", "11:00 留园参观", "14:00 狮子林". Day 3 card (cyan gradient top) with header "Day 3 · 水乡古镇" shows: "08:00 前往周庄", "10:00 游船体验", "12:30 古镇午餐". Day 4 card (yellow gradient top) with header "Day 4 · 文化体验" shows: "09:00 寒山寺", "14:00 苏州丝绸博物馆", "18:00 返程". Summary bar at bottom: "总预算: 3200元 · 人均: 1600元 · 住宿2晚 · 精选15个景点". Modern glassmorphism card style, clean typography, travel icons, professional infographic design. All Chinese text must be exactly as specified with no other text. 8K resolution.',
+        chineseTexts: ['苏州四日游 · 品味江南古韵', 'Day 1 · 初见姑苏', 'Day 2 · 园林之美', 'Day 3 · 水乡古镇', 'Day 4 · 文化体验']
+      }
+    ],
     qualityChecklist: [
       '日期卡片是否排列整齐',
       '时间线是否清晰',
       '地点名称是否正确',
-      '预算信息是否准确',
       '整体设计是否美观'
     ],
     commonIssues: [
@@ -530,56 +414,35 @@ All Chinese text must be exactly as specified with no other text. Bottom banner 
       requiredInputs: ['收入', '支出明细'],
       optionalInputs: ['时间范围', '分析建议']
     },
-    basePrompt: `A modern tutorial infographic showing AI canvas workflow for family budget visualization generation. Dark gradient background with glowing purple and cyan neon accents. The image displays a complete creative workflow.
-
-LEFT SECTION "输入需求": Shows a text input panel with glowing border, clearly displaying the complete prompt "{{USER_REQUIREMENT}}", title label "第一步：输入收支明细".
-
-MIDDLE SECTION "智能分析": Shows an AI agent node with magical processing particles and chart icons floating around, title label "第二步：AI智能分析".
-
-RIGHT SECTION "成品呈现": Shows a beautiful financial dashboard with dark background containing {{CHART_COUNT}} visual elements:
-
-{{CHARTS_CONTENT}}
-
-Title label "第三步：可视化账单一键生成".
-
-All Chinese text must be exactly as specified with no other text. Bottom banner reads "{{FOOTER_TEXT}}". Clean modern UI design, glassmorphism style, 8K resolution.`,
+    basePrompt: `A beautiful financial dashboard visualization with dark gradient background. {{TITLE_TEXT}} The dashboard contains: {{CHARTS_CONTENT}} Modern glassmorphism card style, clean data visualization, professional financial infographic design with green for income and red/orange for expenses. All Chinese text must be exactly as specified with no other text. 8K resolution.`,
     variables: [
       {
-        name: 'USER_REQUIREMENT',
-        description: '用户的记账需求',
+        name: 'TITLE_TEXT',
+        description: '标题',
         type: 'text',
-        required: true,
-        examples: ['帮我生成11月家庭账单可视化图表，收入15000元，房贷5500元，餐饮2800元...']
-      },
-      {
-        name: 'CHART_COUNT',
-        description: '图表数量',
-        type: 'text',
-        required: true,
-        examples: ['4', '3']
+        required: false,
+        defaultValue: '',
+        examples: ['Large title at top: "11月家庭账单"']
       },
       {
         name: 'CHARTS_CONTENT',
-        description: '各图表内容描述',
+        description: '图表内容描述',
         type: 'list',
         required: true,
-        examples: ['ELEMENT 1 (top left): A summary card with title "11月家庭账单" showing "总收入：15000元" in green text...']
-      },
-      {
-        name: 'FOOTER_TEXT',
-        description: '底部标语',
-        type: 'text',
-        required: false,
-        defaultValue: '无限画布 · AI让生活更清晰',
-        examples: ['无限画布 · AI让生活更清晰 · https://canvas.luzhipeng.com']
+        examples: ['A summary card showing "总收入: 15000元" in green and "总支出: 12300元" in orange. A colorful pie chart showing expense breakdown with legend: "房贷 45%", "餐饮 23%", "交通 12%". A bar chart showing monthly comparison.']
       }
     ],
-    examples: [],
+    examples: [
+      {
+        userRequest: '11月家庭账单可视化',
+        filledPrompt: 'A beautiful financial dashboard visualization with dark gradient background. Large title at top: "11月家庭账单". The dashboard contains: Top summary card showing "总收入: 15000元" in green text and "总支出: 12300元" in orange text, with "结余: 2700元" highlighted. A colorful donut pie chart showing expense breakdown with legend items: "房贷 5500元 (45%)" in blue, "餐饮 2800元 (23%)" in orange, "交通 1500元 (12%)" in green, "其他 2500元 (20%)" in purple. A horizontal bar chart comparing this month vs last month. Modern glassmorphism card style, clean data visualization, professional financial infographic design with green for income and red/orange for expenses. All Chinese text must be exactly as specified with no other text. 8K resolution.',
+        chineseTexts: ['11月家庭账单', '总收入', '总支出', '结余', '房贷', '餐饮', '交通', '其他']
+      }
+    ],
     qualityChecklist: [
       '数据是否准确显示',
       '图表类型是否合适',
       '颜色编码是否清晰',
-      '百分比计算是否正确',
       '整体布局是否平衡'
     ],
     commonIssues: [
