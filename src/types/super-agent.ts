@@ -121,7 +121,9 @@ export type SuperAgentStreamEvent =
   | { type: 'skill_matching'; status: string }
   | { type: 'skill_matched'; skillId: string; skillName: string; confidence: number }
   | { type: 'skill_not_matched'; reason: string }
-  | { type: 'thought'; iteration: number; content: string }
+  // 流式思考事件
+  | { type: 'thinking_chunk'; iteration: number; chunk: string }  // 实时思考片段
+  | { type: 'thought'; iteration: number; content: string }       // 完整思考（向后兼容）
   | { type: 'action'; iteration: number; tool: string; input: Record<string, any> }
   | { type: 'observation'; iteration: number; result: any }
   | { type: 'search_start'; query: string }

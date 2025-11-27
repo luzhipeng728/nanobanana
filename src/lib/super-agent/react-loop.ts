@@ -1,6 +1,12 @@
-// ReAct 核心循环 - 推理-行动-观察循环
+// ReAct 核心循环 - 推理-行动-观察循环（流式版本）
 
 import Anthropic from '@anthropic-ai/sdk';
+import type {
+  ContentBlock,
+  TextBlock,
+  ToolUseBlock,
+  RawMessageStreamEvent
+} from '@anthropic-ai/sdk/resources';
 import { formatToolsForClaude } from './tools';
 import { buildSystemPrompt } from './system-prompt';
 import { executeToolCall } from './tool-handlers';
@@ -23,6 +29,15 @@ function getAnthropicClient(): Anthropic {
   });
 }
 
+// 流式响应收集器
+interface StreamCollector {
+  contentBlocks: ContentBlock[];
+  currentBlockIndex: number;
+  currentText: string;
+  currentToolInput: string;
+  stopReason: string | null;
+}
+
 // 构建初始用户消息
 function buildInitialMessage(
   userRequest: string,
@@ -35,10 +50,16 @@ function buildInitialMessage(
     referenceImages.forEach((url, i) => {
       message += `- 图片 ${i + 1}: ${url}\n`;
     });
-    message += `\n请在适当时机使用 \`analyze_image\` 工具分析这些图片。\n`;
   }
 
-  message += `\n## 开始任务\n\n请开始 ReAct 工作流程：\n1. 首先使用 \`skill_matcher\` 分析需求并匹配技能\n2. 根据匹配结果决定后续步骤\n3. 生成、评估、优化提示词\n4. 最终使用 \`finalize_output\` 输出结果`;
+  message += `\n## 开始探索\n\n请根据用户需求，自主决定如何完成任务。你可以：
+- 直接生成提示词（如果需求简单清晰）
+- 先搜索相关信息（如果需要实时数据或参考）
+- 查看是否有匹配的技能模板（如果想借鉴现有模板）
+- 分析参考图片（如果用户提供了）
+
+**你来决定流程，不需要遵循固定步骤。**
+当你准备好最终提示词时，调用 \`finalize_output\` 输出结果。`;
 
   return message;
 }
@@ -84,8 +105,8 @@ export async function runReActLoop(
     console.log(`[SuperAgent] Iteration ${state.iteration}/${state.maxIterations}`);
 
     try {
-      // 调用 Claude
-      const response = await anthropic.messages.create({
+      // 流式调用 Claude
+      const stream = anthropic.messages.stream({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
         system: systemPrompt,
@@ -93,37 +114,134 @@ export async function runReActLoop(
         messages
       });
 
+      // 流式响应收集器
+      const collector: StreamCollector = {
+        contentBlocks: [],
+        currentBlockIndex: -1,
+        currentText: '',
+        currentToolInput: '',
+        stopReason: null
+      };
+
       // 收集本轮的思考和行动
       let currentThought = '';
       const toolCalls: Array<{ id: string; name: string; input: Record<string, any> }> = [];
 
-      // 处理响应内容
-      for (const block of response.content) {
-        if (block.type === 'text') {
-          currentThought += block.text;
+      // 处理流式事件
+      for await (const event of stream) {
+        switch (event.type) {
+          case 'content_block_start': {
+            collector.currentBlockIndex = event.index;
+            collector.currentText = '';
+            collector.currentToolInput = '';
 
-          // 发送思考事件
-          await sendEvent({
-            type: 'thought',
-            iteration: state.iteration,
-            content: block.text
-          });
-        } else if (block.type === 'tool_use') {
-          toolCalls.push({
-            id: block.id,
-            name: block.name,
-            input: block.input as Record<string, any>
-          });
+            if (event.content_block.type === 'text') {
+              collector.contentBlocks[event.index] = {
+                type: 'text',
+                text: ''
+              } as TextBlock;
+            } else if (event.content_block.type === 'tool_use') {
+              collector.contentBlocks[event.index] = {
+                type: 'tool_use',
+                id: event.content_block.id,
+                name: event.content_block.name,
+                input: {}
+              } as ToolUseBlock;
 
-          // 发送行动事件
-          await sendEvent({
-            type: 'action',
-            iteration: state.iteration,
-            tool: block.name,
-            input: block.input as Record<string, any>
-          });
+              // 发送工具开始事件
+              await sendEvent({
+                type: 'action',
+                iteration: state.iteration,
+                tool: event.content_block.name,
+                input: {} // 输入稍后会通过 delta 传入
+              });
+            }
+            break;
+          }
+
+          case 'content_block_delta': {
+            const idx = event.index;
+            if (event.delta.type === 'text_delta') {
+              const chunk = event.delta.text;
+              collector.currentText += chunk;
+              currentThought += chunk;
+
+              // 更新 contentBlocks
+              const block = collector.contentBlocks[idx] as TextBlock;
+              if (block) {
+                block.text += chunk;
+              }
+
+              // 实时发送思考 chunk
+              await sendEvent({
+                type: 'thinking_chunk',
+                iteration: state.iteration,
+                chunk
+              });
+            } else if (event.delta.type === 'input_json_delta') {
+              collector.currentToolInput += event.delta.partial_json;
+            }
+            break;
+          }
+
+          case 'content_block_stop': {
+            const idx = event.index;
+            const block = collector.contentBlocks[idx];
+
+            if (block?.type === 'tool_use') {
+              // 解析工具输入
+              try {
+                const input = collector.currentToolInput
+                  ? JSON.parse(collector.currentToolInput)
+                  : {};
+                (block as ToolUseBlock).input = input;
+
+                toolCalls.push({
+                  id: block.id,
+                  name: block.name,
+                  input
+                });
+
+                // 发送完整的工具调用事件
+                await sendEvent({
+                  type: 'action',
+                  iteration: state.iteration,
+                  tool: block.name,
+                  input
+                });
+              } catch (e) {
+                console.error('[SuperAgent] Failed to parse tool input:', e);
+              }
+            } else if (block?.type === 'text' && collector.currentText) {
+              // 发送完整思考事件
+              await sendEvent({
+                type: 'thought',
+                iteration: state.iteration,
+                content: collector.currentText
+              });
+            }
+            break;
+          }
+
+          case 'message_stop': {
+            // 消息结束
+            break;
+          }
+
+          case 'message_delta': {
+            if (event.delta.stop_reason) {
+              collector.stopReason = event.delta.stop_reason;
+            }
+            break;
+          }
         }
       }
+
+      // 构建最终响应对象（用于消息历史）
+      const response = {
+        content: collector.contentBlocks.filter(Boolean),
+        stop_reason: collector.stopReason
+      };
 
       // 如果有工具调用，执行它们
       if (toolCalls.length > 0) {
@@ -201,24 +319,37 @@ export async function runReActLoop(
           content: toolResults
         });
       } else {
-        // 没有工具调用，检查是否是结束
+        // 没有工具调用 - 模型输出了纯文本
         if (response.stop_reason === 'end_turn') {
-          // Claude 主动结束但没有使用 finalize_output，提示继续
           messages.push({
             role: 'assistant',
             content: response.content
           });
-          messages.push({
-            role: 'user',
-            content: `请继续完成任务。你必须使用 \`finalize_output\` 工具来输出最终结果。
 
-当前状态：
-- 迭代次数: ${state.iteration}/${state.maxIterations}
-- 评估分数: ${state.evaluationScore}
-- 匹配技能: ${state.matchedSkill || '无'}
+          // 检查是否已经有足够的探索
+          const hasEnoughExploration = state.iteration >= 2 || state.thoughtHistory.length >= 2;
 
-${state.evaluationScore >= 85 ? '评估分数已达标，请使用 finalize_output 输出最终结果。' : '请继续优化提示词或使用 finalize_output 输出当前最佳结果。'}`
-          });
+          if (hasEnoughExploration) {
+            // 温和提醒：可以继续探索或准备输出
+            messages.push({
+              role: 'user',
+              content: `你的思考很好。现在你可以：
+1. 继续探索（使用工具获取更多信息）
+2. 准备输出（使用 \`finalize_output\` 输出最终提示词）
+
+如果你认为已经有足够的信息，请直接调用 \`finalize_output\` 输出结果。`
+            });
+          } else {
+            // 早期阶段：鼓励继续探索
+            messages.push({
+              role: 'user',
+              content: `继续你的探索。你可以：
+- 使用 \`research_topic\` 深入研究
+- 使用 \`web_search\` 快速查询
+- 使用 \`skill_matcher\` 查看模板
+- 或者直接调用 \`finalize_output\` 输出结果（如果你已经准备好）`
+            });
+          }
         }
       }
 

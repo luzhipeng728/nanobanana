@@ -53,6 +53,7 @@ const TOOL_NAMES: Record<string, string> = {
   load_skill: "加载技能",
   generate_prompt: "生成提示词",
   web_search: "搜索资料",
+  research_topic: "深度研究",
   analyze_image: "分析图片",
   optimize_prompt: "优化提示词",
   evaluate_prompt: "质量评估",
@@ -75,6 +76,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
   const [isProcessing, setIsProcessing] = useState(false);
   const [thoughtSteps, setThoughtSteps] = useState<ThoughtStep[]>([]);
   const [currentIteration, setCurrentIteration] = useState(0);
+  const [streamingThought, setStreamingThought] = useState(""); // 实时流式思考内容
   const [matchedSkill, setMatchedSkill] = useState<{
     id: string;
     name: string;
@@ -262,6 +264,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     switch (event.type) {
       case "start":
         setProgress(10);
+        setStreamingThought(""); // 清空流式内容
         break;
 
       case "skill_matched":
@@ -277,9 +280,16 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         setMatchedSkill(null);
         break;
 
+      // 实时流式思考 chunk
+      case "thinking_chunk":
+        setCurrentIteration(event.iteration);
+        setStreamingThought((prev) => prev + event.chunk);
+        break;
+
       case "thought":
         setCurrentIteration(event.iteration);
         setProgress(Math.min(80, 20 + event.iteration * 10));
+        setStreamingThought(""); // 完整思考到达时清空流式内容
         setThoughtSteps((prev) => {
           const existing = prev.find((s) => s.iteration === event.iteration);
           if (existing) {
@@ -303,6 +313,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         break;
 
       case "action":
+        setStreamingThought(""); // 工具调用时清空
         setThoughtSteps((prev) =>
           prev.map((s) =>
             s.iteration === event.iteration
@@ -322,8 +333,18 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         );
         break;
 
+      // 深度研究事件
+      case "research_progress":
+        setStreamingThought(`深度研究中... (第 ${event.round}/${event.maxRounds} 轮)`);
+        break;
+
+      case "research_complete":
+        setStreamingThought(`研究完成，收集了 ${event.coverage.toFixed(0)}% 信息`);
+        break;
+
       case "complete":
         setProgress(90);
+        setStreamingThought("");
         // Convert result prompts to PromptItemWithStatus
         const promptsWithStatus: PromptItemWithStatus[] = (event.result.prompts || []).map((p: PromptItem) => ({
           ...p,
@@ -334,6 +355,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
 
       case "error":
         setError(event.error);
+        setStreamingThought("");
         break;
     }
   }, []);
@@ -661,7 +683,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
           <div className="flex items-center justify-between text-[10px]">
             <span className="text-neutral-500 flex items-center gap-1">
               <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-              {isProcessing ? "分析中..." : generatingCount > 0 ? `生成中 (${generatingCount})` : "准备中..."}
+              {isProcessing ? "探索中..." : generatingCount > 0 ? `生成中 (${generatingCount})` : "准备中..."}
             </span>
             <span className="text-purple-600 font-medium">{progress}%</span>
           </div>
@@ -670,6 +692,20 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
               className="bg-purple-500 h-full transition-all duration-300 ease-out"
               style={{ width: `${progress}%` }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* 实时思考流 - 流式显示 AI 正在思考的内容 */}
+      {isProcessing && streamingThought && (
+        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 space-y-1">
+          <div className="flex items-center gap-2 text-[10px] text-purple-600 dark:text-purple-400 font-medium">
+            <Brain className="w-3 h-3 animate-pulse" />
+            正在思考 (迭代 {currentIteration})
+          </div>
+          <div className="text-[11px] text-neutral-600 dark:text-neutral-300 leading-relaxed max-h-24 overflow-y-auto whitespace-pre-wrap">
+            {streamingThought}
+            <span className="animate-pulse">▌</span>
           </div>
         </div>
       )}
