@@ -92,10 +92,10 @@ export const SUPER_AGENT_TOOLS: AgentTool[] = [
     ]
   },
 
-  // 工具4: 网络搜索
+  // 工具4: 网络搜索（单次快速搜索）
   {
     name: 'web_search',
-    description: '搜索网络获取最新的提示词技巧、风格参考、最佳实践等信息。当需要了解最新趋势、解决特定问题或获取参考资料时使用。',
+    description: '单次快速搜索网络。适用于简单查询。如果需要深入研究某个主题（如天气、旅游、技术细节），请使用 research_topic 工具。',
     parameters: [
       {
         name: 'query',
@@ -109,6 +109,32 @@ export const SUPER_AGENT_TOOLS: AgentTool[] = [
         description: '搜索类型：prompt_techniques(提示词技巧), style_reference(风格参考), problem_solving(问题解决), trend_research(趋势研究)',
         required: true,
         enum: ['prompt_techniques', 'style_reference', 'problem_solving', 'trend_research']
+      }
+    ]
+  },
+
+  // 工具4.5: 深度研究（探索式多轮搜索）
+  {
+    name: 'research_topic',
+    description: '深度研究一个主题，自动进行多轮搜索直到收集足够信息。适用于：天气预报、旅游攻略、技术文档、产品信息等需要全面了解的场景。会自动评估信息充足度并决定是否继续搜索。',
+    parameters: [
+      {
+        name: 'topic',
+        type: 'string',
+        description: '研究主题，如 "苏州下周天气预报"、"北京三日游攻略"',
+        required: true
+      },
+      {
+        name: 'required_info',
+        type: 'array',
+        description: '需要收集的具体信息类型，如 ["每日天气", "温度", "降水概率"] 或 ["景点推荐", "美食", "交通"]',
+        required: true
+      },
+      {
+        name: 'context',
+        type: 'string',
+        description: '补充背景信息，帮助更精准搜索',
+        required: false
       }
     ]
   },

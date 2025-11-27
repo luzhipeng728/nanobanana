@@ -126,6 +126,11 @@ export type SuperAgentStreamEvent =
   | { type: 'observation'; iteration: number; result: any }
   | { type: 'search_start'; query: string }
   | { type: 'search_result'; summary: string }
+  // 深度研究事件
+  | { type: 'research_start'; topic: string; requiredInfo: string[] }
+  | { type: 'research_progress'; round: number; maxRounds: number; status: string }
+  | { type: 'research_evaluation'; round: number; coverage: number; missing: string[]; sufficient: boolean }
+  | { type: 'research_complete'; topic: string; rounds: number; coverage: number }
   | { type: 'image_analysis_start' }
   | { type: 'image_analysis_chunk'; chunk: string }
   | { type: 'image_analysis_end'; analysis: string }

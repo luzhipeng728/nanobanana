@@ -238,6 +238,240 @@ export const handleWebSearch: ToolHandler = async (params, sendEvent) => {
   }
 };
 
+// 工具4.5: 深度研究（探索式多轮搜索）
+export const handleResearchTopic: ToolHandler = async (params, sendEvent) => {
+  const { topic, required_info, context } = params;
+  const requiredInfoList = required_info as string[];
+
+  await sendEvent({
+    type: 'research_start',
+    topic,
+    requiredInfo: requiredInfoList
+  });
+
+  const tavilyApiKey = process.env.TAVILY_API_KEY;
+  if (!tavilyApiKey) {
+    console.warn('[ResearchTopic] TAVILY_API_KEY not configured');
+    return {
+      success: false,
+      error: 'TAVILY_API_KEY 未配置，无法进行深度研究',
+      shouldContinue: true
+    };
+  }
+
+  // 研究状态
+  const researchState = {
+    collectedInfo: new Map<string, string[]>(), // 每种信息类型收集到的内容
+    searchRound: 0,
+    maxRounds: 4, // 最多4轮搜索
+    allResults: [] as any[],
+    queriesUsed: [] as string[]
+  };
+
+  // 初始化收集状态
+  requiredInfoList.forEach(info => {
+    researchState.collectedInfo.set(info, []);
+  });
+
+  // 生成搜索查询的辅助函数
+  const generateQueries = (round: number): string[] => {
+    const queries: string[] = [];
+    const baseContext = context ? ` ${context}` : '';
+
+    if (round === 0) {
+      // 第一轮：直接搜索主题
+      queries.push(`${topic}${baseContext}`);
+      // 针对每个必需信息生成查询
+      requiredInfoList.slice(0, 2).forEach(info => {
+        queries.push(`${topic} ${info}`);
+      });
+    } else {
+      // 后续轮次：针对缺失信息进行补充搜索
+      const missingInfo = requiredInfoList.filter(
+        info => (researchState.collectedInfo.get(info)?.length || 0) < 2
+      );
+
+      missingInfo.slice(0, 3).forEach(info => {
+        // 使用不同的查询变体
+        const variants = [
+          `${topic} ${info} 详细`,
+          `${topic} ${info} 最新`,
+          `${info} ${topic.split(' ')[0]}` // 尝试不同的词序
+        ];
+        queries.push(variants[round % variants.length]);
+      });
+    }
+
+    // 过滤已使用的查询
+    return queries.filter(q => !researchState.queriesUsed.includes(q));
+  };
+
+  // 评估信息充足度
+  const evaluateSufficiency = (): { sufficient: boolean; coverage: number; missing: string[] } => {
+    let coveredCount = 0;
+    const missing: string[] = [];
+
+    requiredInfoList.forEach(info => {
+      const collected = researchState.collectedInfo.get(info) || [];
+      if (collected.length >= 2) {
+        coveredCount++;
+      } else if (collected.length === 0) {
+        missing.push(info);
+      }
+    });
+
+    const coverage = requiredInfoList.length > 0
+      ? (coveredCount / requiredInfoList.length) * 100
+      : 100;
+
+    return {
+      sufficient: coverage >= 70 || researchState.searchRound >= researchState.maxRounds,
+      coverage,
+      missing
+    };
+  };
+
+  // 执行单次搜索
+  const executeSearch = async (query: string): Promise<any[]> => {
+    try {
+      console.log(`[ResearchTopic] Searching: ${query}`);
+      researchState.queriesUsed.push(query);
+
+      const response = await fetch('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: tavilyApiKey,
+          query: query,
+          search_depth: 'advanced', // 使用高级搜索获取更多信息
+          max_results: 5,
+          include_answer: true,
+          include_raw_content: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Tavily API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.results || [];
+    } catch (error) {
+      console.error(`[ResearchTopic] Search error for "${query}":`, error);
+      return [];
+    }
+  };
+
+  // 分类收集到的信息
+  const categorizeResults = (results: any[]) => {
+    results.forEach(result => {
+      const content = (result.content || '').toLowerCase();
+      const title = (result.title || '').toLowerCase();
+      const combined = `${title} ${content}`;
+
+      requiredInfoList.forEach(info => {
+        const infoLower = info.toLowerCase();
+        // 检查内容是否与该信息类型相关
+        const keywords = infoLower.split(/\s+/);
+        const matches = keywords.filter(kw => combined.includes(kw)).length;
+
+        if (matches > 0 || combined.includes(infoLower)) {
+          const collected = researchState.collectedInfo.get(info) || [];
+          // 避免重复
+          if (!collected.includes(result.content)) {
+            collected.push(result.content);
+            researchState.collectedInfo.set(info, collected);
+          }
+        }
+      });
+    });
+  };
+
+  // 主循环：探索式搜索
+  while (researchState.searchRound < researchState.maxRounds) {
+    researchState.searchRound++;
+
+    await sendEvent({
+      type: 'research_progress',
+      round: researchState.searchRound,
+      maxRounds: researchState.maxRounds,
+      status: `正在进行第 ${researchState.searchRound} 轮搜索...`
+    });
+
+    const queries = generateQueries(researchState.searchRound - 1);
+
+    if (queries.length === 0) {
+      console.log('[ResearchTopic] No new queries to execute');
+      break;
+    }
+
+    // 并行执行搜索
+    const searchPromises = queries.map(q => executeSearch(q));
+    const results = await Promise.all(searchPromises);
+
+    // 合并结果
+    const allNewResults = results.flat();
+    researchState.allResults.push(...allNewResults);
+
+    // 分类结果
+    categorizeResults(allNewResults);
+
+    // 评估充足度
+    const evaluation = evaluateSufficiency();
+
+    await sendEvent({
+      type: 'research_evaluation',
+      round: researchState.searchRound,
+      coverage: evaluation.coverage,
+      missing: evaluation.missing,
+      sufficient: evaluation.sufficient
+    });
+
+    console.log(`[ResearchTopic] Round ${researchState.searchRound}: coverage=${evaluation.coverage.toFixed(1)}%, missing=${evaluation.missing.join(', ')}`);
+
+    if (evaluation.sufficient) {
+      console.log('[ResearchTopic] Information sufficient, stopping search');
+      break;
+    }
+
+    // 添加小延迟避免 API 限流
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  // 整理最终结果
+  const finalEvaluation = evaluateSufficiency();
+  const summary: Record<string, string[]> = {};
+  researchState.collectedInfo.forEach((value, key) => {
+    summary[key] = value.slice(0, 5); // 每种类型最多保留5条
+  });
+
+  await sendEvent({
+    type: 'research_complete',
+    topic,
+    rounds: researchState.searchRound,
+    coverage: finalEvaluation.coverage
+  });
+
+  return {
+    success: true,
+    data: {
+      topic,
+      required_info: requiredInfoList,
+      search_rounds: researchState.searchRound,
+      coverage: finalEvaluation.coverage,
+      missing_info: finalEvaluation.missing,
+      collected_info: summary,
+      total_results: researchState.allResults.length,
+      queries_used: researchState.queriesUsed,
+      // 提供一个综合摘要供 AI 使用
+      research_summary: Object.entries(summary)
+        .map(([key, values]) => `【${key}】\n${values.slice(0, 3).join('\n')}`)
+        .join('\n\n')
+    },
+    shouldContinue: true
+  };
+};
+
 // 备用搜索结果（当 API 不可用时）
 async function getFallbackSearchResults(
   query: string,
@@ -556,6 +790,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   load_skill: handleLoadSkill,
   generate_prompt: handleGeneratePrompt,
   web_search: handleWebSearch,
+  research_topic: handleResearchTopic,
   analyze_image: handleAnalyzeImage,
   optimize_prompt: handleOptimizePrompt,
   evaluate_prompt: handleEvaluatePrompt,
