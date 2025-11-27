@@ -363,9 +363,12 @@ export async function runReActLoop(
         });
 
         // 尝试构建一个回退结果
+        const lastThought = state.thoughtHistory.length > 0
+          ? state.thoughtHistory[state.thoughtHistory.length - 1].thought
+          : '';
         const fallbackPrompt = state.currentPrompt ||
-          (state.thoughtHistory.length > 0
-            ? `Based on the analysis: ${state.thoughtHistory[state.thoughtHistory.length - 1].substring(0, 500)}`
+          (lastThought
+            ? `Based on the analysis: ${lastThought.substring(0, 500)}`
             : `Generate an image based on the user's request`);
 
         const forceResult: FinalOutput = {
