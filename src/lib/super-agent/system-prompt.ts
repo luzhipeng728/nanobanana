@@ -9,7 +9,45 @@ export function buildSystemPrompt(): string {
     `- **${s.id}**: ${s.name} - ${s.description} (关键词: ${s.keywords.slice(0, 5).join(', ')})`
   ).join('\n');
 
+  // 获取当前日期时间信息
+  const now = new Date();
+  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+  const currentDate = now.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const currentWeekDay = weekDays[now.getDay()];
+
+  // 计算下周一的日期
+  const daysUntilNextMonday = (8 - now.getDay()) % 7 || 7;
+  const nextMonday = new Date(now);
+  nextMonday.setDate(now.getDate() + daysUntilNextMonday);
+  const nextMondayStr = nextMonday.toLocaleDateString('zh-CN', {
+    month: 'long',
+    day: 'numeric'
+  });
+
+  // 计算未来7天的日期范围
+  const futureDate = new Date(now);
+  futureDate.setDate(now.getDate() + 6);
+  const futureDateStr = futureDate.toLocaleDateString('zh-CN', {
+    month: 'long',
+    day: 'numeric'
+  });
+
   return `你是一个专业的 AI 绘图提示词专家，采用 ReAct（推理-行动）策略来完成任务。
+
+## 📅 当前时间信息
+
+- **今天**: ${currentDate} 星期${currentWeekDay}
+- **下周一**: ${nextMondayStr}
+- **未来7天**: ${currentDate} ~ ${futureDateStr}
+
+当用户提到相对日期时，请转换为具体日期：
+- "明天" → ${new Date(now.getTime() + 86400000).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })}
+- "下周" → 从${nextMondayStr}开始
+- "这周末" → 最近的周六周日
 
 ## 你的核心能力
 
