@@ -28,6 +28,7 @@ import ChatNode from "./nodes/ChatNode";
 import StickerGenNode from "./nodes/StickerGenNode";
 import StickerNode from "./nodes/StickerNode";
 import SpriteNode from "./nodes/SpriteNode";
+import SuperAgentNode from "./nodes/SuperAgentNode";
 import ImageModal from "./ImageModal";
 import NodeToolbar from "./NodeToolbar";
 import { CanvasContext } from "@/contexts/CanvasContext";
@@ -35,7 +36,7 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles } from "lucide-react";
 import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
 
@@ -51,6 +52,7 @@ const nodeTypes = {
   stickerGen: StickerGenNode as any,
   sticker: StickerNode as any,
   sprite: SpriteNode as any,
+  superAgent: SuperAgentNode as any,
 };
 
 const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
@@ -293,6 +295,23 @@ export default function InfiniteCanvas() {
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes]);
 
+  // 超级智能体节点 (提示词专家)
+  const addSuperAgentNode = useCallback(() => {
+    const newNode: Node = {
+      id: `superAgent-${Date.now()}`,
+      type: "superAgent",
+      position: {
+        x: Math.random() * 400 + 100,
+        y: Math.random() * 400 + 100,
+      },
+      style: {
+        width: 450,
+      },
+      data: {},
+    };
+    setNodes((nds) => nds.concat(newNode));
+  }, [setNodes]);
+
   // 存储待放置图片的位置
   const pendingImagePositionRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -444,7 +463,7 @@ export default function InfiniteCanvas() {
         id: `${type}-${Date.now()}`,
         type,
         position,
-        style: type === 'sprite' ? { width: 360 } : undefined,
+        style: type === 'sprite' ? { width: 360 } : type === 'superAgent' ? { width: 450 } : undefined,
         data: type === 'imageGen'
           ? { prompt: '' }
           : type === 'agent'
@@ -456,6 +475,8 @@ export default function InfiniteCanvas() {
           : type === 'chat'
           ? { messages: [], systemPrompt: 'You are a helpful AI assistant that generates image prompts. When user asks for images, wrap your prompt suggestions in ```text\n[prompt text]\n``` blocks.' }
           : type === 'sprite'
+          ? {}
+          : type === 'superAgent'
           ? {}
           : {},
       };
@@ -792,28 +813,6 @@ export default function InfiniteCanvas() {
     <div className="w-full h-screen relative bg-neutral-50 dark:bg-black">
       {/* Toolbar - Ultra Transparent Glass */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 p-2 rounded-full bg-white/[0.02] dark:bg-white/[0.02] backdrop-blur-[2px] border border-neutral-200/50 dark:border-white/10 shadow-[0_0_0_1px_rgba(0,0,0,0.02)]">
-        <button
-          onClick={addGeneratorNode}
-          className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
-          title="Add Generator"
-        >
-          <Wand2 className="w-5 h-5 text-neutral-700 dark:text-neutral-200" />
-        </button>
-        <button
-          onClick={addAgentNode}
-          className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
-          title="Add AI Agent"
-        >
-          <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-        </button>
-        <button
-          onClick={addSpriteNode}
-          className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
-          title="Sprite 动画"
-        >
-          <Ghost className="w-5 h-5 text-violet-500 dark:text-violet-400" />
-        </button>
-        <div className="w-px bg-white/20 dark:bg-white/10 my-1" />
         <button
           onClick={handleSave}
           className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"

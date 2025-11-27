@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight } from "lucide-react";
+import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'sprite';
+type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'sprite' | 'superAgent';
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, nodeType: NodeType) => void;
@@ -35,6 +35,13 @@ const baseItems = [
     description: 'AI 智能体',
     icon: Brain,
     accentColor: '#a855f7',
+  },
+  {
+    type: 'superAgent' as NodeType,
+    title: 'Prompt Expert',
+    description: '超级提示词专家',
+    icon: Sparkles,
+    accentColor: '#7c3aed',
   },
   {
     type: 'sprite' as NodeType,
@@ -111,7 +118,11 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick }: NodeToo
   };
 
   // 根据解锁状态决定显示的工具列表
-  const items = videoUnlocked ? [...baseItems.slice(0, 4), videoItem, baseItems[4]] : baseItems;
+  // baseItems: imageGen(0), agent(1), superAgent(2), sprite(3), musicGen(4), chat(5)
+  // 解锁后在 sprite 后面插入 video
+  const items = videoUnlocked
+    ? [...baseItems.slice(0, 4), videoItem, ...baseItems.slice(4)]
+    : baseItems;
 
   // 折叠状态：显示小按钮
   if (isCollapsed) {
