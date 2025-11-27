@@ -29,10 +29,9 @@ type ImageNodeData = {
 
 // 基础宽度和尺寸限制
 const BASE_WIDTH = 400;
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 600;
-const MIN_HEIGHT = 150;
-const MAX_HEIGHT = 800;
+const MIN_WIDTH = 150;
+const MIN_HEIGHT = 100;
+// 不限制最大尺寸，让用户自由调整
 
 const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { openImageModal, addImageNode } = useCanvas();
@@ -56,23 +55,19 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     if (naturalWidth && naturalHeight) {
       const aspectRatio = naturalWidth / naturalHeight;
 
-      // 根据图片比例计算节点尺寸
+      // 根据图片比例计算节点尺寸（初始尺寸基于 BASE_WIDTH）
       let newWidth = BASE_WIDTH;
       let newHeight = BASE_WIDTH / aspectRatio;
 
-      // 限制高度范围
-      if (newHeight > MAX_HEIGHT) {
-        newHeight = MAX_HEIGHT;
-        newWidth = newHeight * aspectRatio;
-      }
+      // 只限制最小尺寸，不限制最大尺寸
       if (newHeight < MIN_HEIGHT) {
         newHeight = MIN_HEIGHT;
         newWidth = newHeight * aspectRatio;
       }
-
-      // 限制宽度范围
-      newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, newWidth));
-      newHeight = newWidth / aspectRatio;
+      if (newWidth < MIN_WIDTH) {
+        newWidth = MIN_WIDTH;
+        newHeight = newWidth / aspectRatio;
+      }
 
       // 更新节点尺寸
       setNodes((nodes) =>
@@ -248,8 +243,6 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           isVisible={selected}
           minWidth={MIN_WIDTH}
           minHeight={MIN_HEIGHT}
-          maxWidth={MAX_WIDTH}
-          maxHeight={MAX_HEIGHT}
           keepAspectRatio={true}
           lineClassName="!border-blue-400/50 !border-[1.5px]"
           handleClassName="!w-2 !h-2 !bg-blue-500 !border !border-white !rounded-full !shadow-sm"
