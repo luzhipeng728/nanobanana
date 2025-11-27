@@ -215,96 +215,129 @@ body {
    金属光线边框动画
    ======================================== */
 
-/* 单条发光线旋转边框 - 金属质感 */
+/* 单条发光线旋转边框 - 金属质感（加强版） */
 .metallic-border-glow {
   position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from var(--glow-angle, 0deg),
-    transparent 0deg,
-    transparent 340deg,
-    rgba(255, 255, 255, 0.1) 345deg,
-    rgba(200, 220, 255, 0.6) 350deg,
-    rgba(255, 255, 255, 1) 355deg,
-    rgba(200, 220, 255, 0.6) 358deg,
-    transparent 360deg
-  );
-  animation: metallic-spin 2s linear infinite;
-  filter: blur(0.5px);
-}
-
-/* 额外的发光层 */
-.metallic-border-glow::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: conic-gradient(
-    from var(--glow-angle, 0deg),
-    transparent 0deg,
-    transparent 345deg,
-    rgba(100, 180, 255, 0.4) 352deg,
-    rgba(255, 255, 255, 0.8) 355deg,
-    rgba(100, 180, 255, 0.4) 358deg,
-    transparent 360deg
-  );
-  animation: metallic-spin 2s linear infinite;
-  filter: blur(4px);
-}
-
-@keyframes metallic-spin {
-  from {
-    --glow-angle: 0deg;
-    transform: rotate(0deg);
-  }
-  to {
-    --glow-angle: 360deg;
-    transform: rotate(360deg);
-  }
-}
-
-/* 注册 CSS 自定义属性以支持动画 */
-@property --glow-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
-/* 紫色版本 - 用于思考过程 */
-.metallic-border-glow-purple {
-  position: absolute;
-  inset: -2px;
+  inset: -3px;
   border-radius: inherit;
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
-    transparent 335deg,
-    rgba(139, 92, 246, 0.2) 345deg,
-    rgba(168, 85, 247, 0.6) 350deg,
-    rgba(255, 255, 255, 0.9) 355deg,
-    rgba(168, 85, 247, 0.6) 358deg,
-    rgba(139, 92, 246, 0.2) 362deg,
-    transparent 365deg,
+    transparent 300deg,
+    rgba(56, 189, 248, 0.3) 320deg,
+    rgba(59, 130, 246, 0.6) 335deg,
+    rgba(147, 197, 253, 0.9) 345deg,
+    rgba(255, 255, 255, 1) 355deg,
+    rgba(147, 197, 253, 0.9) 365deg,
+    rgba(59, 130, 246, 0.6) 375deg,
+    rgba(56, 189, 248, 0.3) 390deg,
+    transparent 400deg,
     transparent 360deg
   );
-  animation: metallic-spin 2.5s linear infinite;
+  animation: metallic-spin 4s linear infinite;
+}
+
+/* 额外的发光层 - 更亮更大 */
+.metallic-border-glow::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 320deg,
+    rgba(59, 130, 246, 0.4) 340deg,
+    rgba(255, 255, 255, 0.9) 355deg,
+    rgba(59, 130, 246, 0.4) 370deg,
+    transparent 390deg
+  );
+  animation: metallic-spin 4s linear infinite;
+  filter: blur(8px);
+}
+
+/* 第三层 - 更大的发光晕 */
+.metallic-border-glow::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 330deg,
+    rgba(59, 130, 246, 0.3) 350deg,
+    rgba(255, 255, 255, 0.5) 355deg,
+    rgba(59, 130, 246, 0.3) 360deg,
+    transparent 380deg
+  );
+  animation: metallic-spin 4s linear infinite;
+  filter: blur(16px);
+}
+
+@keyframes metallic-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 紫色版本 - 用于思考过程（加强版） */
+.metallic-border-glow-purple {
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 300deg,
+    rgba(139, 92, 246, 0.3) 320deg,
+    rgba(168, 85, 247, 0.6) 335deg,
+    rgba(196, 181, 253, 0.9) 345deg,
+    rgba(255, 255, 255, 1) 355deg,
+    rgba(196, 181, 253, 0.9) 365deg,
+    rgba(168, 85, 247, 0.6) 375deg,
+    rgba(139, 92, 246, 0.3) 390deg,
+    transparent 400deg,
+    transparent 360deg
+  );
+  animation: metallic-spin 4s linear infinite;
 }
 
 .metallic-border-glow-purple::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -4px;
   border-radius: inherit;
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
-    transparent 348deg,
-    rgba(168, 85, 247, 0.5) 352deg,
-    rgba(255, 255, 255, 0.7) 355deg,
-    rgba(168, 85, 247, 0.5) 358deg,
-    transparent 362deg
+    transparent 320deg,
+    rgba(168, 85, 247, 0.5) 340deg,
+    rgba(255, 255, 255, 0.9) 355deg,
+    rgba(168, 85, 247, 0.5) 370deg,
+    transparent 390deg
   );
-  animation: metallic-spin 2.5s linear infinite;
-  filter: blur(6px);
+  animation: metallic-spin 4s linear infinite;
+  filter: blur(8px);
+}
+
+.metallic-border-glow-purple::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 330deg,
+    rgba(168, 85, 247, 0.4) 350deg,
+    rgba(255, 255, 255, 0.6) 355deg,
+    rgba(168, 85, 247, 0.4) 360deg,
+    transparent 380deg
+  );
+  animation: metallic-spin 4s linear infinite;
+  filter: blur(16px);
 }
