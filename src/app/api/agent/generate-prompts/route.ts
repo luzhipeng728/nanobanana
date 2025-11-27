@@ -58,7 +58,7 @@ async function analyzeImagesWithClaudeStream(
   let fullText = "";
   
   const stream = anthropic.messages.stream({
-    model: "claude-opus-4-5-20251101",
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 2048,
     messages: [
       {
@@ -337,7 +337,7 @@ ${imageAnalysis}
         console.log(`[Agent] Starting Claude stream for prompt generation`);
 
         const stream = anthropic.messages.stream({
-          model: "claude-opus-4-5-20251101",
+          model: "claude-haiku-4-5-20251001",
           max_tokens: 4096,
           system: AGENT_SYSTEM_PROMPT,
           messages: [{ role: "user", content: userInput }],
