@@ -3,11 +3,6 @@
 import { NextRequest } from 'next/server';
 import { runReActLoop } from '@/lib/super-agent';
 import type { SuperAgentStreamEvent } from '@/types/super-agent';
-import {
-  addChatRound,
-  generateResponseSummary,
-  getChatHistoryCount,
-} from '@/lib/chat-history';
 
 export const maxDuration = 300; // 5 分钟超时
 
@@ -48,11 +43,10 @@ export async function POST(request: NextRequest) {
   (async () => {
     try {
       const body = await request.json();
-      const { userRequest, referenceImages, enableDeepResearch, nodeId } = body as {
+      const { userRequest, referenceImages, enableDeepResearch } = body as {
         userRequest: string;
         referenceImages?: string[];
         enableDeepResearch?: boolean;
-        nodeId?: string;  // 节点 ID，用于会话历史
       };
 
       if (!userRequest || typeof userRequest !== 'string') {
@@ -64,47 +58,18 @@ export async function POST(request: NextRequest) {
         return;
       }
 
-      // 获取历史记录数（用于日志）
-      let historyCount = 0;
-      if (nodeId) {
-        historyCount = await getChatHistoryCount(nodeId);
-        console.log(`[SuperAgent API] Node ${nodeId} has ${historyCount} rounds of history`);
-      }
-
       console.log('[SuperAgent API] Starting ReAct loop...');
       console.log('[SuperAgent API] User request:', userRequest.substring(0, 100));
       console.log('[SuperAgent API] Reference images:', referenceImages?.length || 0);
       console.log('[SuperAgent API] Deep research enabled:', enableDeepResearch);
-      console.log('[SuperAgent API] Node ID:', nodeId || 'none');
 
-      // 运行 ReAct 循环（传入 nodeId）
+      // 运行 ReAct 循环
       const result = await runReActLoop(
         userRequest,
         referenceImages,
         sendEvent,
-        { enableDeepResearch, nodeId }
+        { enableDeepResearch }
       );
-
-      // 保存会话历史（如果有 nodeId）
-      if (nodeId && result.prompts && result.prompts.length > 0 && !isAborted) {
-        try {
-          const responseSummary = generateResponseSummary(result.prompts);
-          await addChatRound(
-            nodeId,
-            'super-agent',
-            userRequest,
-            responseSummary,
-            {
-              prompts: result.prompts,
-              matchedSkill: result.matchedSkill || undefined,
-              iterationCount: result.iterationCount,
-            }
-          );
-          console.log(`[SuperAgent API] Saved chat round for node ${nodeId}`);
-        } catch (err) {
-          console.error(`[SuperAgent API] Failed to save chat history:`, err);
-        }
-      }
 
       if (!isAborted) {
         console.log('[SuperAgent API] ReAct loop completed');

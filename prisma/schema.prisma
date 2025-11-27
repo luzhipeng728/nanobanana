@@ -184,19 +184,3 @@ model SpriteTask {
   @@index([status])
   @@index([deletedAt])
 }
-
-// 节点会话历史（Agent 和 PromptExpert 节点的上下文记录）
-model NodeChatHistory {
-  id              String    @id @default(uuid())
-  nodeId          String    // 前端节点 ID
-  nodeType        String    // agent | super-agent
-  roundNumber     Int       // 轮次序号（1-5）
-  userMessage     String    @db.LongText   // 用户请求
-  assistantResponse String  @db.LongText   // 助手响应摘要
-  metadata        String?   @db.LongText   // JSON: { prompts, matchedSkill, iterationCount }
-  createdAt       DateTime  @default(now())
-
-  @@unique([nodeId, roundNumber])  // 同一节点的轮次唯一
-  @@index([nodeId])
-  @@index([nodeType])
-}
