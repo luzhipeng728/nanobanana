@@ -20,6 +20,11 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import {
+  AnimatedProgress,
+  PromptCard,
+  ThinkingIndicator,
+} from "@/components/ui/StreamingUI";
 import type { AgentNodeData, AgentPrompt, AgentStreamEvent } from "@/types/agent";
 import { RESOLUTION_OPTIONS } from "@/types/image-gen";
 import { BaseNode } from "./BaseNode";
@@ -830,30 +835,14 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         )}
       </div>
 
-      {/* Status & Progress */}
+      {/* Status & Progress - 使用新的动画进度条 */}
       {status !== "idle" && (
-        <div className="space-y-2 bg-neutral-50 dark:bg-neutral-900/50 p-2 rounded-lg border border-neutral-100 dark:border-neutral-800">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="text-neutral-600 dark:text-neutral-400 truncate flex items-center gap-2">
-              <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-              {currentStep}
-              {generatingCount > 0 && status === "creating" && (
-                <span className="text-purple-600 dark:text-purple-400 font-medium">
-                  ({generatingCount})
-                </span>
-              )}
-            </span>
-            <span className="text-purple-600 dark:text-purple-400 font-medium">
-              {progress}%
-            </span>
-          </div>
-          <div className="w-full bg-neutral-200 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="bg-purple-500 h-full transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
+        <AnimatedProgress
+          progress={progress}
+          status={`${currentStep}${generatingCount > 0 && status === "creating" ? ` (${generatingCount})` : ""}`}
+          variant="gradient"
+          color="purple"
+        />
       )}
 
       {/* Claude 分析流式展示 */}
@@ -913,36 +902,25 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         </div>
       )}
 
-      {/* Generated Prompts */}
+      {/* Generated Prompts - 使用新的 PromptCard 组件 */}
       {prompts.length > 0 && (
         <div className="space-y-2">
-          <NodeLabel>场景 ({prompts.length})</NodeLabel>
-          <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-800">
-            {prompts.map((prompt) => (
-              <div
+          <div className="flex items-center gap-2">
+            <NodeLabel className="mb-0">场景</NodeLabel>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 font-bold">
+              {prompts.length}
+            </span>
+          </div>
+          <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800">
+            {prompts.map((prompt, index) => (
+              <PromptCard
                 key={prompt.id}
-                className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-2.5 transition-colors hover:border-purple-200 dark:hover:border-purple-900/50"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 truncate">
-                    {prompt.scene}
-                  </span>
-                  <span className="text-[10px] text-neutral-500 ml-2 flex-shrink-0">
-                    {prompt.status === "pending" && "等待中"}
-                    {prompt.status === "generating" && (
-                      <span className="flex items-center gap-1 text-purple-600">
-                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                        生成中
-                      </span>
-                    )}
-                    {prompt.status === "completed" && <CheckCircle2 className="w-3 h-3 text-green-500" />}
-                    {prompt.status === "error" && <XCircle className="w-3 h-3 text-red-500" />}
-                  </span>
-                </div>
-                <div className="text-[10px] text-neutral-500 line-clamp-2 leading-relaxed">
-                  {prompt.prompt}
-                </div>
-              </div>
+                scene={prompt.scene}
+                prompt={prompt.prompt}
+                status={prompt.status}
+                error={prompt.error}
+                className={index === 0 ? "animate-fade-in" : ""}
+              />
             ))}
           </div>
         </div>

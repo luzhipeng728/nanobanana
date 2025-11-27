@@ -76,11 +76,11 @@ export default function ImageModal({ isOpen, imageUrl, prompt, onClose }: ImageM
   };
 
   const handleZoomIn = () => {
-    setZoom((prev) => Math.min(prev + 0.25, 2)); // 最大 200%
+    setZoom((prev) => Math.min(prev * 1.25, 10)); // 最大 1000%，使用乘法使缩放更自然
   };
 
   const handleZoomOut = () => {
-    setZoom((prev) => Math.max(prev - 0.25, 0.1)); // 最小 10%
+    setZoom((prev) => Math.max(prev / 1.25, 0.1)); // 最小 10%，使用除法使缩放更自然
   };
 
   const handleFitScreen = () => {
@@ -124,8 +124,9 @@ export default function ImageModal({ isOpen, imageUrl, prompt, onClose }: ImageM
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setZoom((prev) => Math.max(0.1, Math.min(2, prev + delta)));
+    // 使用乘法缩放使体验更自然
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom((prev) => Math.max(0.1, Math.min(10, prev * factor)));
   };
 
   return (

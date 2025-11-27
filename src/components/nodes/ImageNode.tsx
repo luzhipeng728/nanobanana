@@ -277,25 +277,48 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           contentClassName="p-0 flex flex-col h-full"
           hideHeader={true}
         >
-        <div className="flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md border-2 border-blue-100 dark:border-blue-900/30 bg-white dark:bg-neutral-950 h-full will-change-transform transform-gpu [contain:layout_style_paint]">
+        <div className={cn(
+          "flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md bg-white dark:bg-neutral-950 h-full will-change-transform transform-gpu [contain:layout_style_paint]",
+          !isLoading && "border-2 border-blue-100 dark:border-blue-900/30"
+        )}>
+          {/* 生成中的旋转渐变边框动效 */}
+          {isLoading && (
+            <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none z-20">
+              <div
+                className="absolute inset-[-3px] animate-spin-slow"
+                style={{
+                  background: "conic-gradient(from 0deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6)",
+                  animationDuration: "2.5s"
+                }}
+              />
+              <div className="absolute inset-[3px] rounded-[calc(2rem-3px)] bg-neutral-100 dark:bg-neutral-900" />
+            </div>
+          )}
+
           <div className="relative flex-1 min-h-[150px] h-full">
             {isLoading ? (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-900 relative overflow-hidden">
+              <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-900 relative overflow-hidden rounded-[calc(2rem-3px)]">
                 {/* Shimmer effect */}
-                <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                
-                <div className="relative z-10 flex flex-col items-center gap-3">
+                <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+                {/* 动态光斑 */}
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/20 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "500ms" }} />
+
+                <div className="relative z-10 flex flex-col items-center gap-4">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 animate-pulse" />
-                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin relative z-10" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 blur-2xl opacity-30 animate-pulse scale-150" />
+                    <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
+                      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                    </div>
                   </div>
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="text-xs font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse">
-                      {pollingStatus === "processing" ? "Processing..." : pollingStatus === "pending" ? "Queued..." : "Generating..."}
+                  <div className="flex flex-col items-center gap-1.5">
+                    <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-pulse">
+                      {pollingStatus === "processing" ? "生成中..." : pollingStatus === "pending" ? "排队中..." : "准备中..."}
                     </span>
                     {data.taskId && (
-                      <span className="text-[10px] text-neutral-400 font-mono">
-                        ID: {data.taskId.substring(0, 8)}
+                      <span className="text-[10px] text-neutral-400 font-mono px-2 py-0.5 rounded-full bg-neutral-200/50 dark:bg-neutral-800/50">
+                        {data.taskId.substring(0, 8)}
                       </span>
                     )}
                   </div>

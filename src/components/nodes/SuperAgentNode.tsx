@@ -11,15 +11,9 @@ import {
   ChevronUp,
   Search,
   Image as ImageIcon,
-  CheckCircle2,
-  AlertCircle,
   XCircle,
   Copy,
-  Check,
-  Zap,
   Brain,
-  Target,
-  Wand2,
   Link2,
   Eye,
   Palette,
@@ -34,20 +28,16 @@ import type {
 import { RESOLUTION_OPTIONS } from "@/types/image-gen";
 import { BaseNode } from "./BaseNode";
 import { NodeTextarea, NodeButton, NodeLabel, NodeTabSelect } from "@/components/ui/NodeUI";
+import {
+  StreamingThought,
+  AnimatedProgress,
+  StepTimeline,
+  PromptCard,
+  SkillBadge,
+  ThinkingIndicator,
+} from "@/components/ui/StreamingUI";
 
-// Tool icons mapping
-const TOOL_ICONS: Record<string, React.ReactNode> = {
-  skill_matcher: <Target className="w-3 h-3" />,
-  load_skill: <Zap className="w-3 h-3" />,
-  generate_prompt: <Wand2 className="w-3 h-3" />,
-  web_search: <Search className="w-3 h-3" />,
-  analyze_image: <ImageIcon className="w-3 h-3" />,
-  optimize_prompt: <Sparkles className="w-3 h-3" />,
-  evaluate_prompt: <CheckCircle2 className="w-3 h-3" />,
-  finalize_output: <Check className="w-3 h-3" />,
-};
-
-// Tool names mapping
+// Tool names mapping (for step timeline)
 const TOOL_NAMES: Record<string, string> = {
   skill_matcher: "匹配技能",
   load_skill: "加载技能",
@@ -677,84 +667,66 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         )}
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar - 使用新的动画进度条 */}
       {(isProcessing || progress > 0) && progress < 100 && (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-[10px]">
-            <span className="text-neutral-500 flex items-center gap-1">
-              <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-              {isProcessing ? "探索中..." : generatingCount > 0 ? `生成中 (${generatingCount})` : "准备中..."}
-            </span>
-            <span className="text-purple-600 font-medium">{progress}%</span>
-          </div>
-          <div className="w-full bg-neutral-200 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="bg-purple-500 h-full transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
+        <AnimatedProgress
+          progress={progress}
+          status={isProcessing ? "探索中..." : generatingCount > 0 ? `生成中 (${generatingCount})` : "准备中..."}
+          variant="gradient"
+          color="purple"
+        />
       )}
 
-      {/* 实时思考流 - 流式显示 AI 正在思考的内容 */}
+      {/* 实时思考流 - 使用新的流式展示组件 */}
       {isProcessing && streamingThought && (
-        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 space-y-1">
-          <div className="flex items-center gap-2 text-[10px] text-purple-600 dark:text-purple-400 font-medium">
-            <Brain className="w-3 h-3 animate-pulse" />
-            正在思考 (迭代 {currentIteration})
-          </div>
-          <div className="text-[11px] text-neutral-600 dark:text-neutral-300 leading-relaxed max-h-24 overflow-y-auto whitespace-pre-wrap">
-            {streamingThought}
-            <span className="animate-pulse">▌</span>
-          </div>
-        </div>
+        <StreamingThought
+          content={streamingThought}
+          iteration={currentIteration}
+          isStreaming={true}
+          toolName={thoughtSteps.length > 0 ? thoughtSteps[thoughtSteps.length - 1]?.action : undefined}
+          className="animate-fade-in"
+        />
       )}
 
-      {/* Skill match badge */}
+      {/* Skill match badge - 使用新的技能徽章 */}
       {matchedSkill && (
-        <div className="px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-2">
-          <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-xs text-emerald-700 dark:text-emerald-300">
-            匹配技能: <strong>{matchedSkill.name}</strong>
-          </span>
-          <span className="ml-auto text-[10px] text-emerald-600/70">
-            {Math.round(matchedSkill.confidence * 100)}%
-          </span>
-        </div>
+        <SkillBadge
+          name={matchedSkill.name}
+          confidence={matchedSkill.confidence}
+          className="animate-scale-in"
+        />
       )}
 
-      {/* ReAct process */}
+      {/* ReAct process - 使用新的步骤时间线 */}
       {thoughtSteps.length > 0 && (
         <div className="space-y-2">
           <button
             onClick={() => setShowDetails(!showDetails)}
-            className="w-full flex items-center justify-between px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-xs text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2.5 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-800/50 dark:to-neutral-800 rounded-xl text-xs text-neutral-600 dark:text-neutral-300 hover:from-neutral-100 hover:to-neutral-150 dark:hover:from-neutral-800 dark:hover:to-neutral-700 transition-all border border-neutral-200/50 dark:border-neutral-700/50"
           >
             <span className="flex items-center gap-2">
-              <Brain className="w-3 h-3" />
-              思考过程 ({thoughtSteps.length} 步)
+              <Brain className="w-3.5 h-3.5 text-purple-500" />
+              <span className="font-medium">思考过程</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300">
+                {thoughtSteps.length} 步
+              </span>
             </span>
-            {showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
           {showDetails && (
-            <div ref={stepsContainerRef} className="max-h-32 overflow-y-auto space-y-1 pr-1">
-              {thoughtSteps.map((step) => (
-                <div
-                  key={step.iteration}
-                  className="flex items-center gap-2 px-2 py-1.5 bg-neutral-50 dark:bg-neutral-800/50 rounded text-[10px]"
-                >
-                  <span className="w-4 h-4 flex items-center justify-center bg-purple-100 dark:bg-purple-900/50 rounded text-purple-600 dark:text-purple-300 font-medium">
-                    {step.iteration}
-                  </span>
-                  {step.action && (
-                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded text-purple-600 dark:text-purple-300">
-                      {TOOL_ICONS[step.action]}
-                      {TOOL_NAMES[step.action]}
-                    </span>
-                  )}
-                </div>
-              ))}
+            <div ref={stepsContainerRef} className="max-h-40 overflow-y-auto pr-1 animate-fade-in">
+              <StepTimeline
+                steps={thoughtSteps.map((step) => ({
+                  id: step.iteration,
+                  title: step.action ? TOOL_NAMES[step.action] || step.action : `迭代 ${step.iteration}`,
+                  description: step.thought?.substring(0, 50),
+                  status: step.observation ? "completed" : isProcessing && step.iteration === currentIteration ? "active" : "pending",
+                }))}
+                variant="vertical"
+                color="purple"
+                compact
+              />
             </div>
           )}
         </div>
@@ -768,68 +740,36 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         </div>
       )}
 
-      {/* Generated Prompts */}
+      {/* Generated Prompts - 使用新的 PromptCard 组件 */}
       {prompts.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <NodeLabel>场景 ({prompts.length})</NodeLabel>
+            <div className="flex items-center gap-2">
+              <NodeLabel className="mb-0">场景</NodeLabel>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 font-bold">
+                {prompts.length}
+              </span>
+            </div>
             <button
               onClick={handleCopyAll}
-              className="text-[10px] text-purple-600 hover:text-purple-500 flex items-center gap-1"
+              className="text-[10px] text-purple-600 hover:text-purple-500 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
             >
               <Copy className="w-3 h-3" />
               复制全部
             </button>
           </div>
-          <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
-            {prompts.map((prompt) => (
-              <div
+          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800">
+            {prompts.map((prompt, index) => (
+              <PromptCard
                 key={prompt.id}
-                className="bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-lg p-2.5 transition-colors hover:border-purple-200 dark:hover:border-purple-900/50"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 truncate">
-                    {prompt.scene}
-                  </span>
-                  <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
-                    {prompt.status === "pending" && !autoGenerate && (
-                      <button
-                        onClick={() => handleGenerateSingle(prompt)}
-                        className="p-1 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded transition-colors"
-                        title="生成此图"
-                      >
-                        <Wand2 className="w-3 h-3 text-purple-500" />
-                      </button>
-                    )}
-                    <span className="text-[10px] text-neutral-500">
-                      {prompt.status === "pending" && "等待中"}
-                      {prompt.status === "generating" && (
-                        <span className="flex items-center gap-1 text-purple-600">
-                          <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                          生成中
-                        </span>
-                      )}
-                      {prompt.status === "completed" && <CheckCircle2 className="w-3 h-3 text-green-500" />}
-                      {prompt.status === "error" && <XCircle className="w-3 h-3 text-red-500" />}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-[10px] text-neutral-500 line-clamp-2 leading-relaxed">
-                  {prompt.prompt}
-                </div>
-                {prompt.chineseTexts.length > 0 && (
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    {prompt.chineseTexts.map((text, i) => (
-                      <span
-                        key={i}
-                        className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded text-[9px] text-purple-700 dark:text-purple-300"
-                      >
-                        "{text}"
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+                scene={prompt.scene}
+                prompt={prompt.prompt}
+                chineseTexts={prompt.chineseTexts}
+                status={prompt.status}
+                error={prompt.error}
+                onGenerate={!autoGenerate && prompt.status === "pending" ? () => handleGenerateSingle(prompt) : undefined}
+                className={index === 0 ? "animate-fade-in" : ""}
+              />
             ))}
           </div>
         </div>
