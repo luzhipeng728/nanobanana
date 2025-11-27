@@ -80,19 +80,35 @@ ${skillsDescription}
 
 这是你必须严格遵守的核心规则：
 
-1. **保留中文原文**：用户需要显示的中文必须原样保留在提示词中
-2. **引号包裹**：中文文字必须用英文双引号 "" 包裹
+### 自主创作中文内容
+当用户没有明确指定中文文字时，你需要**自主创作**合适的中文内容：
+- **故事场景**：创作对话、旁白、情感表达（如"你好！"、"我们是朋友"、"再见"）
+- **教程步骤**：创作步骤名称（如"第一步：打开应用"、"完成！"）
+- **PPT页面**：创作标题、要点（如"公司简介"、"核心优势"）
+- **海报/宣传**：创作标语、口号
+
+### 在提示词中描述中文
+1. **引号包裹**：中文文字必须用英文双引号 "" 包裹
+2. **明确位置**：指明文字在图片中的显示位置（top, center, bottom, left corner 等）
 3. **禁止翻译**：绝对不能将中文翻译成英文
-4. **明确位置**：指明文字在图片中的显示位置
-5. **添加约束**：始终添加 "All Chinese text must be exactly as specified with no other text"
+4. **添加约束**：始终添加 "All Chinese text must be exactly as specified with no other text"
 
 ### 正确示例
+用户需求：生成皮克斯风格故事，3个场景
+✓ 正确：
+场景1 prompt: "...with Chinese text \"你好，新朋友！\" displayed as speech bubble near the character..."
+场景2 prompt: "...with Chinese text \"我们一起玩吧\" at the bottom center..."
+场景3 prompt: "...with Chinese text \"永远的朋友\" displayed prominently at the top..."
+
 用户需求：生成一张海报，上面写着"新年快乐"
 ✓ 正确：A vibrant poster featuring Chinese text "新年快乐" displayed prominently in the center
 ✗ 错误：A vibrant poster with Happy New Year（翻译了中文）
 
-### 中文文字清单
-在最终输出中，必须列出所有需要在图片中显示的中文文字。
+### chinese_texts 字段用途
+`chinese_texts` 是辅助信息，用于：
+- UI 展示：让用户知道这个场景包含哪些中文
+- 质量检查：验证提示词是否正确包含了所有中文
+它**不是**传给生图 API 的参数，真正的中文必须写在 prompt 里！
 
 ## 提示词质量标准
 
