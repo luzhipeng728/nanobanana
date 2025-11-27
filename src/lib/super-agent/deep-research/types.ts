@@ -11,7 +11,7 @@ export interface SearchResultItem {
   snippet?: string;
   publishedDate?: string;
   author?: string;
-  source: 'exa' | 'tavily';
+  source: 'google' | 'exa' | 'tavily';
   score?: number;
   highlights?: string[];
 }
@@ -106,8 +106,9 @@ export interface SearchQuery {
   query: string;
   searchType: 'neural' | 'keyword' | 'auto';
   targetInfo: string[];           // 目标获取的信息类型
-  source: 'exa' | 'tavily' | 'both';
+  source: 'google' | 'exa' | 'tavily' | 'both';
   priority: number;               // 1-5, 5 最高
+  dateRestrict?: string;          // 日期限制，如 'd1', 'd7', 'm1'
 }
 
 /**
@@ -213,6 +214,7 @@ export interface DeepResearchInput {
   requiredInfo?: string[];        // 需要获取的信息类型
   outputMode?: 'summary' | 'detailed' | 'adaptive';
   maxRounds?: number;             // 覆盖默认最大轮数
+  dateRestrict?: string;          // 日期限制，如 'd1'=今天, 'd7'=一周内, 'm1'=一个月内
 }
 
 /**

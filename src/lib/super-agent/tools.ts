@@ -120,19 +120,23 @@ export const SUPER_AGENT_TOOLS: AgentTool[] = [
 
 **核心能力：**
 - 自主决策：智能判断信息是否充足，自动决定继续搜索还是停止
-- 多源并行：同时使用 Exa 和 Tavily 搜索，最大化召回率
+- Google 搜索：使用 Google Custom Search 获取高质量结果
 - 智能分类：自动将信息分为背景、关键事实、最新动态、观点、统计、案例等类别
 - 质量评估：规则+LLM 混合评估，确保信息真正有用
 
 **适用场景：**
-- 需要实时信息：天气、新闻、股票、活动
+- 需要实时信息：天气、新闻、股票、活动（⚠️ 需要设置 date_restrict 参数！）
 - 需要全面了解：旅游攻略、产品对比、技术调研
 - 需要多角度：争议话题、不同观点、专业分析
 
 **输出格式：**
 返回结构化研究报告，包含概述、关键发现、分类信息和来源列表。
 
-**注意：** 这是一个耗时操作（可能需要 10-30 秒），请在确实需要深度信息时使用。`,
+**⚠️ 重要：时效性查询必须设置 date_restrict！**
+- 查询"今日新闻"时 → date_restrict: "d1"
+- 查询"本周热点"时 → date_restrict: "d7"
+- 查询"最近一个月"时 → date_restrict: "m1"
+否则可能返回过时的历史内容！`,
     parameters: [
       {
         name: 'topic',
@@ -153,6 +157,12 @@ export const SUPER_AGENT_TOOLS: AgentTool[] = [
         required: false
       },
       {
+        name: 'date_restrict',
+        type: 'string',
+        description: '⚠️ 时效性限制（重要！）。格式：d[N]=N天内, w[N]=N周内, m[N]=N月内, y[N]=N年内。例如：d1=今天, d3=3天内, w1=一周内, m1=一个月内。对于"今日新闻"、"本周热点"等时效性查询必须设置此参数！',
+        required: false
+      },
+      {
         name: 'output_mode',
         type: 'string',
         description: '输出模式：summary(精炼摘要)、detailed(详细报告含原始数据)、adaptive(根据信息量自适应)',
@@ -162,7 +172,7 @@ export const SUPER_AGENT_TOOLS: AgentTool[] = [
       {
         name: 'max_rounds',
         type: 'number',
-        description: '最大探索轮数，默认4轮。每轮会执行多个并行搜索。',
+        description: '最大探索轮数，默认3轮。每轮会执行多个搜索查询。',
         required: false
       }
     ]

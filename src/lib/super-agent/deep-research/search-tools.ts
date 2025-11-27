@@ -6,6 +6,76 @@ import { SearchResultItem, SearchQuery } from './types';
 const GOOGLE_API_KEY = process.env.GOOGLE_SEARCH_API_KEY;
 const GOOGLE_CX = process.env.GOOGLE_SEARCH_ENGINE_ID;
 
+// 时效性关键词（用于自动添加日期限制）
+const TIME_SENSITIVE_KEYWORDS = [
+  '今日', '今天', '昨天', '昨日', '本周', '这周', '近日', '最近', '最新',
+  '刚刚', '现在', '实时', '速报', '快讯', '突发', '即时',
+  'today', 'yesterday', 'this week', 'latest', 'breaking', 'recent', 'now',
+  // 日期模式
+  /\d{4}年\d{1,2}月\d{1,2}日/,
+  /\d{1,2}月\d{1,2}日/,
+  /\d{4}-\d{2}-\d{2}/,
+  /\d{2}\/\d{2}\/\d{4}/
+];
+
+/**
+ * 检测查询是否具有时效性要求
+ */
+function isTimeSensitiveQuery(query: string): boolean {
+  const lowerQuery = query.toLowerCase();
+
+  for (const keyword of TIME_SENSITIVE_KEYWORDS) {
+    if (keyword instanceof RegExp) {
+      if (keyword.test(query)) return true;
+    } else {
+      if (lowerQuery.includes(keyword.toLowerCase())) return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * 根据查询内容推断日期限制
+ */
+function inferDateRestrict(query: string): string | undefined {
+  const lowerQuery = query.toLowerCase();
+
+  // 今日/今天 → 1天
+  if (lowerQuery.includes('今日') || lowerQuery.includes('今天') || lowerQuery.includes('today')) {
+    return 'd1';
+  }
+
+  // 昨天/昨日 → 2天
+  if (lowerQuery.includes('昨天') || lowerQuery.includes('昨日') || lowerQuery.includes('yesterday')) {
+    return 'd2';
+  }
+
+  // 本周/这周 → 7天
+  if (lowerQuery.includes('本周') || lowerQuery.includes('这周') || lowerQuery.includes('this week')) {
+    return 'd7';
+  }
+
+  // 最新/最近/近日 → 7天
+  if (lowerQuery.includes('最新') || lowerQuery.includes('最近') || lowerQuery.includes('近日') ||
+      lowerQuery.includes('latest') || lowerQuery.includes('recent')) {
+    return 'd7';
+  }
+
+  // 包含具体日期的查询 → 7天（给一些容错空间）
+  if (/\d{4}年\d{1,2}月\d{1,2}日/.test(query) || /\d{1,2}月\d{1,2}日/.test(query)) {
+    return 'd7';
+  }
+
+  // 速报/快讯/突发 → 3天
+  if (lowerQuery.includes('速报') || lowerQuery.includes('快讯') || lowerQuery.includes('突发') ||
+      lowerQuery.includes('breaking')) {
+    return 'd3';
+  }
+
+  return undefined;
+}
+
 /**
  * Google Custom Search 客户端
  */
@@ -190,10 +260,18 @@ export class UnifiedSearchManager {
     for (const q of queries) {
       stats.googleQueries++;
 
+      // 优先使用查询自带的日期限制，其次根据目标信息推断
+      const dateRestrict = q.dateRestrict ||
+        (q.targetInfo?.includes('latest_updates') ? 'm1' : undefined) ||
+        inferDateRestrict(q.query);
+
+      if (dateRestrict) {
+        console.log(`[Google] Using date restriction: ${dateRestrict} for query: "${q.query}"`);
+      }
+
       const results = await this.googleClient.search(q.query, {
         num: 10,
-        // 如果搜索最新内容，限制日期
-        dateRestrict: q.targetInfo?.includes('latest_updates') ? 'm1' : undefined
+        dateRestrict
       });
 
       for (const r of results) {

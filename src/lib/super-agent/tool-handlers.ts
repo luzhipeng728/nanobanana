@@ -241,9 +241,12 @@ export const handleWebSearch: ToolHandler = async (params, sendEvent) => {
 
 // 工具4.5: 深度研究智能体（独立子智能体）
 export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
-  const { topic, required_info, context, output_mode, max_rounds } = params;
+  const { topic, required_info, context, output_mode, max_rounds, date_restrict } = params;
 
   console.log(`[DeepResearch] Starting deep research on: ${topic}`);
+  if (date_restrict) {
+    console.log(`[DeepResearch] Date restriction: ${date_restrict}`);
+  }
 
   // 创建事件转发器，将子智能体事件转换为主智能体事件格式
   const forwardEvent = async (event: ResearchProgressEvent): Promise<void> => {
@@ -332,11 +335,12 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
         context,
         requiredInfo: required_info as string[] | undefined,
         outputMode: output_mode as 'summary' | 'detailed' | 'adaptive' | undefined,
-        maxRounds: max_rounds as number | undefined
+        maxRounds: max_rounds as number | undefined,
+        dateRestrict: date_restrict as string | undefined
       },
       forwardEvent,
       {
-        maxRounds: max_rounds || 10,
+        maxRounds: max_rounds || 3,
         includeRawData: output_mode === 'detailed',
         includeTrace: output_mode === 'detailed',
         outputMode: output_mode || 'adaptive'

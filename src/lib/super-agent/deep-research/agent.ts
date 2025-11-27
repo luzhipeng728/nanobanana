@@ -27,6 +27,7 @@ export class DeepResearchAgent {
   private evaluator: SufficiencyEvaluator;
   private sendEvent: ProgressEventSender;
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  private dateRestrict?: string; // 日期限制参数
 
   constructor(
     input: DeepResearchInput,
@@ -42,6 +43,9 @@ export class DeepResearchAgent {
     if (input.outputMode) {
       this.config.outputMode = input.outputMode;
     }
+
+    // 保存日期限制
+    this.dateRestrict = input.dateRestrict;
 
     this.sendEvent = sendEvent;
 
@@ -182,6 +186,14 @@ export class DeepResearchAgent {
       console.log('[DeepResearchAgent] No new queries to execute');
       this.stateManager.markComplete('无更多可探索内容');
       return;
+    }
+
+    // 如果有日期限制，给所有查询添加
+    if (this.dateRestrict) {
+      searchPlan.queries.forEach(q => {
+        q.dateRestrict = this.dateRestrict;
+      });
+      console.log(`[DeepResearchAgent] Applied date restriction: ${this.dateRestrict}`);
     }
 
     // 发送轮次开始事件
