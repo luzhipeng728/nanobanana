@@ -418,6 +418,16 @@ export async function generateImageAction(
       // Parse response
       const candidates = data?.candidates;
       if (!candidates || candidates.length === 0) {
+        // 检查是否有安全审核拦截信息
+        if (data?.promptFeedback) {
+          console.log("⚠️ Gemini promptFeedback:", JSON.stringify(data.promptFeedback, null, 2));
+          const blockReason = data.promptFeedback.blockReason;
+          if (blockReason) {
+            throw new Error(`Gemini 审核拦截: ${blockReason}`);
+          }
+        }
+        // 打印完整响应用于调试
+        console.log("❌ Full Gemini response (no candidates):", JSON.stringify(data, null, 2).substring(0, 1000));
         throw new Error("No candidates returned from Gemini API");
       }
 
