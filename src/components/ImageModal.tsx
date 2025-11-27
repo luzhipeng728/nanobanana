@@ -20,6 +20,10 @@ export default function ImageModal({ isOpen, imageUrl, prompt, onClose }: ImageM
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 改进 prompt 判断：去除首尾空白后检查
+  const trimmedPrompt = prompt?.trim();
+  const hasPrompt = trimmedPrompt && trimmedPrompt.length > 0;
+
   // ESC 键关闭弹框
   useEffect(() => {
     if (!isOpen) return;
@@ -43,7 +47,6 @@ export default function ImageModal({ isOpen, imageUrl, prompt, onClose }: ImageM
       setImageSize({ width: img.width, height: img.height });
 
       // 获取可视区域尺寸（考虑右侧面板）
-      const hasPrompt = prompt && prompt.length > 0;
       const viewportWidth = window.innerWidth - (hasPrompt ? 480 : 160); // 右侧面板 400px + padding
       const viewportHeight = window.innerHeight - 160;
 
@@ -56,7 +59,7 @@ export default function ImageModal({ isOpen, imageUrl, prompt, onClose }: ImageM
       setZoom(fitScale);
     };
     img.src = imageUrl;
-  }, [isOpen, imageUrl, prompt]);
+  }, [isOpen, imageUrl, hasPrompt]);
 
   // 重置状态
   useEffect(() => {
@@ -81,9 +84,9 @@ export default function ImageModal({ isOpen, imageUrl, prompt, onClose }: ImageM
   };
 
   const handleCopyPrompt = async () => {
-    if (!prompt) return;
+    if (!trimmedPrompt) return;
     try {
-      await navigator.clipboard.writeText(prompt);
+      await navigator.clipboard.writeText(trimmedPrompt);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -144,15 +147,13 @@ export default function ImageModal({ isOpen, imageUrl, prompt, onClose }: ImageM
     setZoom((prev) => Math.max(0.1, Math.min(10, prev * factor)));
   };
 
-  const hasPrompt = prompt && prompt.length > 0;
-
   return (
     <div
-      className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-md flex"
+      className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-md flex flex-row"
       onClick={handleBackdropClick}
     >
       {/* 左侧：图片区域 */}
-      <div className={`flex-1 flex flex-col ${hasPrompt ? '' : 'w-full'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 ${hasPrompt ? '' : 'w-full'}`}>
         {/* 顶部工具栏 */}
         <div className="h-16 bg-gradient-to-b from-black/50 to-transparent flex items-center justify-between px-6 z-10">
           <div className="flex items-center gap-3">
@@ -272,7 +273,7 @@ export default function ImageModal({ isOpen, imageUrl, prompt, onClose }: ImageM
           <div className="flex-1 p-4 overflow-y-auto">
             <div className="bg-neutral-800/50 rounded-lg p-4 border border-neutral-700">
               <p className="text-sm text-neutral-200 whitespace-pre-wrap break-words leading-relaxed">
-                {prompt}
+                {trimmedPrompt}
               </p>
             </div>
           </div>
