@@ -991,7 +991,8 @@ export default function InfiniteCanvas() {
           maxZoom={4}
           className="bg-neutral-50 dark:bg-black"
           // 性能优化配置
-          onlyRenderVisibleElements={true}  // 只渲染可见区域的节点
+          // 注意：不能开启 onlyRenderVisibleElements，否则节点离开视口时会卸载，导致轮询状态丢失
+          onlyRenderVisibleElements={false}
           nodesFocusable={false}            // 禁用节点焦点，减少事件监听
           edgesFocusable={false}            // 禁用边焦点
           elevateNodesOnSelect={false}      // 选中时不提升 z-index，避免重排
