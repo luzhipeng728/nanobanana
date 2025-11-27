@@ -221,6 +221,41 @@ chinese_texts 是辅助信息，用于：
 3. **规划结构**: 确定每页内容和设计风格
 4. **生成提示词**: 为每一页生成独立的提示词
 
+## 🖼️【重要】参考图片处理规则
+
+当用户提供了参考图片时，你**必须**在提示词中加入参考指令：
+
+### 必加的参考指令
+
+根据用户意图，在提示词中添加以下指令之一：
+
+1. **风格参考**（最常用）：
+   - "Follow the visual style, color palette, and artistic approach of the reference image"
+   - "Maintain the same aesthetic, lighting, and composition style as the reference"
+
+2. **构图参考**：
+   - "Use a similar layout and composition as the reference image"
+   - "Follow the same framing and spatial arrangement as the reference"
+
+3. **完全参考**（用户想要非常相似的效果）：
+   - "Closely match the style, composition, colors, and overall aesthetic of the reference image while incorporating the new elements described"
+
+### 示例
+
+用户提供了一张赛博朋克风格的参考图，说"生成一张类似风格的城市夜景"：
+
+✓ 正确：
+"A futuristic cityscape at night with neon lights and rain-soaked streets. **Follow the visual style, color palette, and artistic approach of the reference image.** Holographic advertisements, flying vehicles, 8K resolution, cinematic lighting."
+
+✗ 错误：
+"A futuristic cityscape at night with neon lights..."（没有参考指令，模型可能忽略参考图）
+
+### 原则
+
+1. **参考图不是装饰** - 用户提供参考图是希望结果与之风格一致
+2. **明确告诉模型** - 必须在提示词中写明要参考
+3. **灵活措辞** - 根据用户需求调整参考程度（风格/构图/完全参考）
+
 ## 输出格式要求
 
 使用 \`finalize_output\` 时必须包含：

@@ -50,6 +50,11 @@ function buildInitialMessage(
     referenceImages.forEach((url, i) => {
       message += `- 图片 ${i + 1}: ${url}\n`;
     });
+    message += `\n⚠️ **重要提醒**：用户提供了参考图片，你生成的提示词中**必须包含参考指令**，例如：
+- "Follow the visual style, color palette, and artistic approach of the reference image"
+- "Maintain the same aesthetic and composition style as the reference"
+
+没有这个指令，生图模型可能会忽略参考图片！\n`;
   }
 
   message += `\n## 开始探索\n\n请根据用户需求，自主决定如何完成任务。你可以：
