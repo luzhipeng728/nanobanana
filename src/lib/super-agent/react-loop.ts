@@ -69,15 +69,23 @@ function buildInitialMessage(
   return message;
 }
 
+// ReAct 循环选项
+export interface ReActLoopOptions {
+  enableDeepResearch?: boolean; // 是否启用深度研究
+}
+
 // 运行 ReAct 循环（流式版本）
 export async function runReActLoop(
   userRequest: string,
   referenceImages: string[] | undefined,
-  sendEvent: (event: SuperAgentStreamEvent) => Promise<void>
+  sendEvent: (event: SuperAgentStreamEvent) => Promise<void>,
+  options: ReActLoopOptions = {}
 ): Promise<FinalOutput> {
+  const { enableDeepResearch = false } = options;
+
   const anthropic = getAnthropicClient();
   const systemPrompt = buildSystemPrompt();
-  const tools = formatToolsForClaude();
+  const tools = formatToolsForClaude({ enableDeepResearch });
 
   // 初始化状态
   const state: ReActState = {

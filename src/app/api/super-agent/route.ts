@@ -43,9 +43,10 @@ export async function POST(request: NextRequest) {
   (async () => {
     try {
       const body = await request.json();
-      const { userRequest, referenceImages } = body as {
+      const { userRequest, referenceImages, enableDeepResearch } = body as {
         userRequest: string;
         referenceImages?: string[];
+        enableDeepResearch?: boolean;
       };
 
       if (!userRequest || typeof userRequest !== 'string') {
@@ -60,12 +61,14 @@ export async function POST(request: NextRequest) {
       console.log('[SuperAgent API] Starting ReAct loop...');
       console.log('[SuperAgent API] User request:', userRequest.substring(0, 100));
       console.log('[SuperAgent API] Reference images:', referenceImages?.length || 0);
+      console.log('[SuperAgent API] Deep research enabled:', enableDeepResearch);
 
       // 运行 ReAct 循环
       const result = await runReActLoop(
         userRequest,
         referenceImages,
-        sendEvent
+        sendEvent,
+        { enableDeepResearch }
       );
 
       if (!isAborted) {

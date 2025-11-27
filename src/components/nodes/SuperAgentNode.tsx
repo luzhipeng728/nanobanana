@@ -43,7 +43,7 @@ const TOOL_NAMES: Record<string, string> = {
   load_skill: "加载技能",
   generate_prompt: "生成提示词",
   web_search: "搜索资料",
-  research_topic: "深度研究",
+  deep_research: "🔬 深度研究",  // 新的深度研究智能体
   analyze_image: "分析图片",
   optimize_prompt: "优化提示词",
   evaluate_prompt: "质量评估",
@@ -86,6 +86,9 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
   const [imageSize, setImageSize] = useState<string>("2K");
   const [aspectRatio, setAspectRatio] = useState<string>("16:9");
   const [autoGenerate, setAutoGenerate] = useState(true);
+
+  // Deep research toggle
+  const [enableDeepResearch, setEnableDeepResearch] = useState(false);
 
   // Generation state
   const [generatingCount, setGeneratingCount] = useState(0);
@@ -324,12 +327,33 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         break;
 
       // 深度研究事件
+      case "research_start":
+        setStreamingThought(`🔬 启动深度研究: ${(event as any).topic}`);
+        break;
+
       case "research_progress":
-        setStreamingThought(`深度研究中... (第 ${event.round}/${event.maxRounds} 轮)`);
+        // 显示更详细的进度信息
+        const status = (event as any).status || `第 ${event.round}/${event.maxRounds} 轮搜索中...`;
+        setStreamingThought(`🔬 ${status}`);
+        setProgress(Math.min(85, 30 + (event.round / event.maxRounds) * 50));
+        break;
+
+      case "research_evaluation":
+        const evalEvent = event as any;
+        setStreamingThought(
+          `📊 评估中... 覆盖率: ${evalEvent.coverage?.toFixed(0) || 0}%` +
+          (evalEvent.sufficient ? ' ✅ 信息充足' : ' ⏳ 继续搜索')
+        );
         break;
 
       case "research_complete":
-        setStreamingThought(`研究完成，收集了 ${event.coverage.toFixed(0)}% 信息`);
+        setStreamingThought(`✅ 研究完成！收集了 ${event.coverage.toFixed(0)}% 信息，共 ${event.rounds} 轮`);
+        setProgress(85);
+        break;
+
+      case "search_result":
+        // 显示搜索结果
+        setStreamingThought(`🔍 ${(event as any).summary}`);
         break;
 
       case "complete":
@@ -375,6 +399,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         body: JSON.stringify({
           userRequest,
           referenceImages,
+          enableDeepResearch,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -440,7 +465,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     } finally {
       setIsProcessing(false);
     }
-  }, [userRequest, connectedImages, useForAnalysis, isProcessing, handleStreamEvent, autoGenerate, generateImagesInBatches]);
+  }, [userRequest, connectedImages, useForAnalysis, isProcessing, handleStreamEvent, autoGenerate, generateImagesInBatches, enableDeepResearch]);
 
   // Stop generation
   const handleStop = useCallback(() => {
@@ -627,19 +652,37 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         )}
       </div>
 
-      {/* Auto generate toggle */}
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={autoGenerate}
-          onChange={(e) => setAutoGenerate(e.target.checked)}
-          disabled={isProcessing}
-          className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-        />
-        <span className="text-[11px] text-neutral-700 dark:text-neutral-300">
-          生成提示词后自动生成图片
-        </span>
-      </label>
+      {/* Options toggles */}
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={autoGenerate}
+            onChange={(e) => setAutoGenerate(e.target.checked)}
+            disabled={isProcessing}
+            className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+          />
+          <span className="text-[11px] text-neutral-700 dark:text-neutral-300">
+            生成提示词后自动生成图片
+          </span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={enableDeepResearch}
+            onChange={(e) => setEnableDeepResearch(e.target.checked)}
+            disabled={isProcessing}
+            className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+          />
+          <span className="text-[11px] text-neutral-700 dark:text-neutral-300 flex items-center gap-1">
+            <Search className="w-3 h-3 text-purple-500" />
+            启用深度研究
+            <span className="text-[9px] px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+              较慢
+            </span>
+          </span>
+        </label>
+      </div>
 
       {/* Generate button */}
       <div className="flex gap-2">

@@ -3,6 +3,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { SKILL_LIBRARY, matchSkillByKeywords } from './skills';
 import type { ToolResult, FinalOutput, SuperAgentStreamEvent } from '@/types/super-agent';
+import { runDeepResearch, ResearchProgressEvent } from './deep-research';
 
 // 初始化 Anthropic 客户端
 function getAnthropicClient(): Anthropic {
@@ -238,239 +239,206 @@ export const handleWebSearch: ToolHandler = async (params, sendEvent) => {
   }
 };
 
-// 工具4.5: 深度研究（探索式多轮搜索）
-export const handleResearchTopic: ToolHandler = async (params, sendEvent) => {
-  const { topic, required_info, context } = params;
-  const requiredInfoList = required_info as string[];
+// 工具4.5: 深度研究智能体（独立子智能体）
+export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
+  const { topic, required_info, context, output_mode, max_rounds } = params;
 
-  await sendEvent({
-    type: 'research_start',
-    topic,
-    requiredInfo: requiredInfoList
-  });
+  console.log(`[DeepResearch] Starting deep research on: ${topic}`);
 
-  const tavilyApiKey = process.env.TAVILY_API_KEY;
-  if (!tavilyApiKey) {
-    console.warn('[ResearchTopic] TAVILY_API_KEY not configured');
+  // 创建事件转发器，将子智能体事件转换为主智能体事件格式
+  const forwardEvent = async (event: ResearchProgressEvent): Promise<void> => {
+    switch (event.type) {
+      case 'start':
+        await sendEvent({
+          type: 'research_start',
+          topic: event.topic,
+          requiredInfo: params.required_info || []
+        });
+        break;
+
+      case 'round_start':
+        await sendEvent({
+          type: 'research_progress',
+          round: event.round,
+          maxRounds: event.maxRounds,
+          status: `🔬 深度研究第 ${event.round}/${event.maxRounds} 轮：正在搜索 ${event.queries.length} 个查询...`
+        });
+        break;
+
+      case 'search_complete':
+        await sendEvent({
+          type: 'search_result',
+          summary: `${event.source} 搜索完成，获得 ${event.resultsCount} 条结果`
+        });
+        break;
+
+      case 'processing':
+        await sendEvent({
+          type: 'research_progress',
+          round: 0,
+          maxRounds: 0,
+          status: `⚙️ ${event.action}`
+        });
+        break;
+
+      case 'evaluation':
+        await sendEvent({
+          type: 'research_evaluation',
+          round: 0,
+          coverage: event.scores.coverage,
+          missing: [],
+          sufficient: event.decision === 'stop'
+        });
+        break;
+
+      case 'round_complete':
+        await sendEvent({
+          type: 'research_progress',
+          round: event.round,
+          maxRounds: 10,
+          status: `✅ 第 ${event.round} 轮完成：新增 ${event.newInfoCount} 条信息，累计 ${event.totalInfoCount} 条`
+        });
+        break;
+
+      case 'pivot':
+        await sendEvent({
+          type: 'research_progress',
+          round: 0,
+          maxRounds: 0,
+          status: `🔄 调整策略：${event.reason} → ${event.newDirection}`
+        });
+        break;
+
+      case 'complete':
+        await sendEvent({
+          type: 'research_complete',
+          topic,
+          rounds: event.report.totalRounds,
+          coverage: event.report.quality.coverageScore
+        });
+        break;
+
+      case 'error':
+        console.error('[DeepResearch] Error:', event.error);
+        break;
+    }
+  };
+
+  try {
+    // 调用 DeepResearch 子智能体
+    const report = await runDeepResearch(
+      {
+        topic,
+        context,
+        requiredInfo: required_info as string[] | undefined,
+        outputMode: output_mode as 'summary' | 'detailed' | 'adaptive' | undefined,
+        maxRounds: max_rounds as number | undefined
+      },
+      forwardEvent,
+      {
+        maxRounds: max_rounds || 10,
+        includeRawData: output_mode === 'detailed',
+        includeTrace: output_mode === 'detailed',
+        outputMode: output_mode || 'adaptive'
+      }
+    );
+
+    // 构建返回结果
+    return {
+      success: true,
+      data: {
+        topic: report.topic,
+        total_rounds: report.totalRounds,
+        total_time_ms: report.totalTime,
+        sources_count: report.sourcesCount,
+
+        // 摘要信息
+        overview: report.summary.overview,
+        key_findings: report.summary.keyFindings,
+
+        // 分类信息
+        categorized_info: report.summary.categories,
+
+        // 质量指标
+        coverage_score: report.quality.coverageScore,
+        quality_score: report.quality.qualityScore,
+        confidence: report.quality.confidence,
+        limitations: report.quality.limitations,
+
+        // 原始数据（如果请求）
+        sources: report.rawData?.sources,
+
+        // 便于 AI 使用的综合摘要
+        research_summary: formatResearchSummary(report)
+      },
+      shouldContinue: true
+    };
+  } catch (error) {
+    console.error('[DeepResearch] Error:', error);
     return {
       success: false,
-      error: 'TAVILY_API_KEY 未配置，无法进行深度研究',
+      error: `深度研究失败: ${error instanceof Error ? error.message : '未知错误'}`,
       shouldContinue: true
     };
   }
+};
 
-  // 研究状态
-  const researchState = {
-    collectedInfo: new Map<string, string[]>(), // 每种信息类型收集到的内容
-    searchRound: 0,
-    maxRounds: 4, // 最多4轮搜索
-    allResults: [] as any[],
-    queriesUsed: [] as string[]
-  };
+// 格式化研究摘要，便于 AI 使用
+function formatResearchSummary(report: any): string {
+  const parts: string[] = [];
 
-  // 初始化收集状态
-  requiredInfoList.forEach(info => {
-    researchState.collectedInfo.set(info, []);
-  });
-
-  // 生成搜索查询的辅助函数
-  const generateQueries = (round: number): string[] => {
-    const queries: string[] = [];
-    const baseContext = context ? ` ${context}` : '';
-
-    if (round === 0) {
-      // 第一轮：直接搜索主题
-      queries.push(`${topic}${baseContext}`);
-      // 针对每个必需信息生成查询
-      requiredInfoList.slice(0, 2).forEach(info => {
-        queries.push(`${topic} ${info}`);
-      });
-    } else {
-      // 后续轮次：针对缺失信息进行补充搜索
-      const missingInfo = requiredInfoList.filter(
-        info => (researchState.collectedInfo.get(info)?.length || 0) < 2
-      );
-
-      missingInfo.slice(0, 3).forEach(info => {
-        // 使用不同的查询变体
-        const variants = [
-          `${topic} ${info} 详细`,
-          `${topic} ${info} 最新`,
-          `${info} ${topic.split(' ')[0]}` // 尝试不同的词序
-        ];
-        queries.push(variants[round % variants.length]);
-      });
-    }
-
-    // 过滤已使用的查询
-    return queries.filter(q => !researchState.queriesUsed.includes(q));
-  };
-
-  // 评估信息充足度
-  const evaluateSufficiency = (): { sufficient: boolean; coverage: number; missing: string[] } => {
-    let coveredCount = 0;
-    const missing: string[] = [];
-
-    requiredInfoList.forEach(info => {
-      const collected = researchState.collectedInfo.get(info) || [];
-      if (collected.length >= 2) {
-        coveredCount++;
-      } else if (collected.length === 0) {
-        missing.push(info);
-      }
-    });
-
-    const coverage = requiredInfoList.length > 0
-      ? (coveredCount / requiredInfoList.length) * 100
-      : 100;
-
-    return {
-      sufficient: coverage >= 70 || researchState.searchRound >= researchState.maxRounds,
-      coverage,
-      missing
-    };
-  };
-
-  // 执行单次搜索
-  const executeSearch = async (query: string): Promise<any[]> => {
-    try {
-      console.log(`[ResearchTopic] Searching: ${query}`);
-      researchState.queriesUsed.push(query);
-
-      const response = await fetch('https://api.tavily.com/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          api_key: tavilyApiKey,
-          query: query,
-          search_depth: 'advanced', // 使用高级搜索获取更多信息
-          max_results: 5,
-          include_answer: true,
-          include_raw_content: false,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Tavily API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data.results || [];
-    } catch (error) {
-      console.error(`[ResearchTopic] Search error for "${query}":`, error);
-      return [];
-    }
-  };
-
-  // 分类收集到的信息
-  const categorizeResults = (results: any[]) => {
-    results.forEach(result => {
-      const content = (result.content || '').toLowerCase();
-      const title = (result.title || '').toLowerCase();
-      const combined = `${title} ${content}`;
-
-      requiredInfoList.forEach(info => {
-        const infoLower = info.toLowerCase();
-        // 检查内容是否与该信息类型相关
-        const keywords = infoLower.split(/\s+/);
-        const matches = keywords.filter(kw => combined.includes(kw)).length;
-
-        if (matches > 0 || combined.includes(infoLower)) {
-          const collected = researchState.collectedInfo.get(info) || [];
-          // 避免重复
-          if (!collected.includes(result.content)) {
-            collected.push(result.content);
-            researchState.collectedInfo.set(info, collected);
-          }
-        }
-      });
-    });
-  };
-
-  // 主循环：探索式搜索
-  while (researchState.searchRound < researchState.maxRounds) {
-    researchState.searchRound++;
-
-    await sendEvent({
-      type: 'research_progress',
-      round: researchState.searchRound,
-      maxRounds: researchState.maxRounds,
-      status: `正在进行第 ${researchState.searchRound} 轮搜索...`
-    });
-
-    const queries = generateQueries(researchState.searchRound - 1);
-
-    if (queries.length === 0) {
-      console.log('[ResearchTopic] No new queries to execute');
-      break;
-    }
-
-    // 并行执行搜索
-    const searchPromises = queries.map(q => executeSearch(q));
-    const results = await Promise.all(searchPromises);
-
-    // 合并结果
-    const allNewResults = results.flat();
-    researchState.allResults.push(...allNewResults);
-
-    // 分类结果
-    categorizeResults(allNewResults);
-
-    // 评估充足度
-    const evaluation = evaluateSufficiency();
-
-    await sendEvent({
-      type: 'research_evaluation',
-      round: researchState.searchRound,
-      coverage: evaluation.coverage,
-      missing: evaluation.missing,
-      sufficient: evaluation.sufficient
-    });
-
-    console.log(`[ResearchTopic] Round ${researchState.searchRound}: coverage=${evaluation.coverage.toFixed(1)}%, missing=${evaluation.missing.join(', ')}`);
-
-    if (evaluation.sufficient) {
-      console.log('[ResearchTopic] Information sufficient, stopping search');
-      break;
-    }
-
-    // 添加小延迟避免 API 限流
-    await new Promise(resolve => setTimeout(resolve, 500));
+  // 概述
+  if (report.summary.overview) {
+    parts.push(`【概述】\n${report.summary.overview}`);
   }
 
-  // 整理最终结果
-  const finalEvaluation = evaluateSufficiency();
-  const summary: Record<string, string[]> = {};
-  researchState.collectedInfo.forEach((value, key) => {
-    summary[key] = value.slice(0, 5); // 每种类型最多保留5条
-  });
+  // 关键发现
+  if (report.summary.keyFindings?.length > 0) {
+    parts.push(`【关键发现】\n${report.summary.keyFindings.map((f: string, i: number) => `${i + 1}. ${f}`).join('\n')}`);
+  }
 
-  await sendEvent({
-    type: 'research_complete',
-    topic,
-    rounds: researchState.searchRound,
-    coverage: finalEvaluation.coverage
-  });
+  // 分类信息
+  const categories = report.summary.categories || {};
+  for (const [category, items] of Object.entries(categories)) {
+    if (Array.isArray(items) && items.length > 0) {
+      const categoryName = getCategoryLabel(category);
+      parts.push(`【${categoryName}】\n${(items as string[]).slice(0, 3).join('\n')}`);
+    }
+  }
 
-  return {
-    success: true,
-    data: {
-      topic,
-      required_info: requiredInfoList,
-      search_rounds: researchState.searchRound,
-      coverage: finalEvaluation.coverage,
-      missing_info: finalEvaluation.missing,
-      collected_info: summary,
-      total_results: researchState.allResults.length,
-      queries_used: researchState.queriesUsed,
-      // 提供一个综合摘要供 AI 使用
-      research_summary: Object.entries(summary)
-        .map(([key, values]) => `【${key}】\n${values.slice(0, 3).join('\n')}`)
-        .join('\n\n')
-    },
-    shouldContinue: true
+  // 来源
+  if (report.rawData?.sources?.length > 0) {
+    const sourcesText = report.rawData.sources
+      .slice(0, 5)
+      .map((s: any) => `- ${s.title}: ${s.url}`)
+      .join('\n');
+    parts.push(`【参考来源】\n${sourcesText}`);
+  }
+
+  // 质量说明
+  parts.push(`【研究质量】覆盖率: ${report.quality.coverageScore.toFixed(1)}%, 置信度: ${(report.quality.confidence * 100).toFixed(1)}%`);
+
+  if (report.quality.limitations?.length > 0) {
+    parts.push(`【注意事项】\n${report.quality.limitations.join('\n')}`);
+  }
+
+  return parts.join('\n\n');
+}
+
+// 获取分类中文标签
+function getCategoryLabel(category: string): string {
+  const labels: Record<string, string> = {
+    background: '背景信息',
+    key_facts: '关键事实',
+    latest_updates: '最新动态',
+    opinions: '观点/争议',
+    statistics: '数据/统计',
+    examples: '案例/示例',
+    references: '参考资料',
+    other: '其他信息'
   };
-};
+  return labels[category] || category;
+}
 
 // 备用搜索结果（当 API 不可用时）
 async function getFallbackSearchResults(
@@ -806,7 +774,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   load_skill: handleLoadSkill,
   generate_prompt: handleGeneratePrompt,
   web_search: handleWebSearch,
-  research_topic: handleResearchTopic,
+  deep_research: handleDeepResearch,  // 新的深度研究智能体
   analyze_image: handleAnalyzeImage,
   optimize_prompt: handleOptimizePrompt,
   evaluate_prompt: handleEvaluatePrompt,
