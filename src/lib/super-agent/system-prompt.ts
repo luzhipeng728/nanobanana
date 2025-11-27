@@ -105,7 +105,7 @@ ${skillsDescription}
 ✗ 错误：A vibrant poster with Happy New Year（翻译了中文）
 
 ### chinese_texts 字段用途
-`chinese_texts` 是辅助信息，用于：
+chinese_texts 是辅助信息，用于：
 - UI 展示：让用户知道这个场景包含哪些中文
 - 质量检查：验证提示词是否正确包含了所有中文
 它**不是**传给生图 API 的参数，真正的中文必须写在 prompt 里！
