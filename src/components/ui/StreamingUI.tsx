@@ -193,22 +193,17 @@ export const StreamingThought = memo(function StreamingThought({
         "bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30",
         "dark:from-slate-900/80 dark:via-purple-900/20 dark:to-blue-900/20",
         "shadow-sm",
-        !isStreaming && "border border-purple-100/50 dark:border-purple-800/30",
+        "border",
+        isStreaming
+          ? "border-purple-300 dark:border-purple-600"
+          : "border-purple-100/50 dark:border-purple-800/30",
         className
       )}
     >
-      {/* 流式时的金属光线旋转边框动效 - z-0 确保在最底层 */}
-      {isStreaming && (
-        <div className="absolute inset-[-4px] rounded-2xl pointer-events-none z-0">
-          {/* 紫色金属光线发光层 */}
-          <div className="metallic-border-glow-purple rounded-2xl" />
-        </div>
-      )}
-
       {/* 顶部渐变光效 */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent z-20" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent z-10" />
 
-      {/* 动态背景光斑 - 移到内容下面 */}
+      {/* 动态背景光斑 */}
       {isStreaming && (
         <>
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-purple-400/10 rounded-full blur-3xl animate-pulse z-0" />
@@ -216,8 +211,8 @@ export const StreamingThought = memo(function StreamingThought({
         </>
       )}
 
-      {/* Header - z-10 确保在边框上面 */}
-      <div className="relative z-10 flex items-center gap-2 px-3 py-2 border-b border-purple-100/30 dark:border-purple-800/20 bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30 dark:from-slate-900/80 dark:via-purple-900/20 dark:to-blue-900/20 rounded-t-2xl">
+      {/* Header */}
+      <div className="relative flex items-center gap-2 px-3 py-2 border-b border-purple-100/30 dark:border-purple-800/20">
         <div className="relative">
           <Brain className="w-4 h-4 text-purple-500 dark:text-purple-400" />
           {isStreaming && (
@@ -237,9 +232,9 @@ export const StreamingThought = memo(function StreamingThought({
         )}
       </div>
 
-      {/* Tool Badge - z-10 确保在边框上面 */}
+      {/* Tool Badge */}
       {toolName && toolInfo && (
-        <div className="relative z-10 px-3 pt-2 bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30 dark:from-slate-900/80 dark:via-purple-900/20 dark:to-blue-900/20">
+        <div className="px-3 pt-2">
           <div className={cn(
             "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium border",
             toolInfo.color
@@ -255,10 +250,10 @@ export const StreamingThought = memo(function StreamingThought({
         </div>
       )}
 
-      {/* Content - z-10 确保在边框上面 */}
+      {/* Content */}
       <div
         ref={containerRef}
-        className="relative z-10 p-3 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800 bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30 dark:from-slate-900/80 dark:via-purple-900/20 dark:to-blue-900/20 rounded-b-2xl"
+        className="relative p-3 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800"
       >
         <div className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap">
           {content}

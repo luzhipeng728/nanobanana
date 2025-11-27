@@ -215,64 +215,63 @@ body {
    金属光线边框动画
    ======================================== */
 
-/* 单条发光线旋转边框 - 金属质感（加强版） */
+/* 单条发光线旋转边框 - 金属质感（精简版，不向内渗透） */
 .metallic-border-glow {
   position: absolute;
-  inset: -3px;
+  inset: 0;
   border-radius: inherit;
+  border: 3px solid transparent;
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
     transparent 300deg,
-    rgba(56, 189, 248, 0.3) 320deg,
-    rgba(59, 130, 246, 0.6) 335deg,
-    rgba(147, 197, 253, 0.9) 345deg,
+    rgba(56, 189, 248, 0.4) 320deg,
+    rgba(59, 130, 246, 0.7) 335deg,
+    rgba(147, 197, 253, 1) 345deg,
     rgba(255, 255, 255, 1) 355deg,
-    rgba(147, 197, 253, 0.9) 365deg,
-    rgba(59, 130, 246, 0.6) 375deg,
-    rgba(56, 189, 248, 0.3) 390deg,
+    rgba(147, 197, 253, 1) 365deg,
+    rgba(59, 130, 246, 0.7) 375deg,
+    rgba(56, 189, 248, 0.4) 390deg,
     transparent 400deg,
     transparent 360deg
-  );
+  ) border-box;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   animation: metallic-spin 4s linear infinite;
 }
 
-/* 额外的发光层 - 更亮更大 */
+/* 外发光层 - 只向外扩散 */
 .metallic-border-glow::after {
   content: '';
   position: absolute;
-  inset: -4px;
-  border-radius: inherit;
+  inset: -6px;
+  border-radius: calc(inherit + 6px);
+  border: 4px solid transparent;
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
     transparent 320deg,
-    rgba(59, 130, 246, 0.4) 340deg,
+    rgba(59, 130, 246, 0.6) 340deg,
     rgba(255, 255, 255, 0.9) 355deg,
-    rgba(59, 130, 246, 0.4) 370deg,
+    rgba(59, 130, 246, 0.6) 370deg,
     transparent 390deg
-  );
+  ) border-box;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   animation: metallic-spin 4s linear infinite;
-  filter: blur(8px);
-}
-
-/* 第三层 - 更大的发光晕 */
-.metallic-border-glow::before {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    transparent 330deg,
-    rgba(59, 130, 246, 0.3) 350deg,
-    rgba(255, 255, 255, 0.5) 355deg,
-    rgba(59, 130, 246, 0.3) 360deg,
-    transparent 380deg
-  );
-  animation: metallic-spin 4s linear infinite;
-  filter: blur(16px);
+  filter: blur(4px);
 }
 
 @keyframes metallic-spin {
@@ -284,60 +283,62 @@ body {
   }
 }
 
-/* 紫色版本 - 用于思考过程（加强版） */
+/* 紫色版本 - 用于思考过程（精简版，不向内渗透） */
 .metallic-border-glow-purple {
   position: absolute;
-  inset: -3px;
+  inset: 0;
   border-radius: inherit;
+  /* 使用边框而非背景，避免向内渗透 */
+  border: 3px solid transparent;
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
     transparent 300deg,
-    rgba(139, 92, 246, 0.3) 320deg,
-    rgba(168, 85, 247, 0.6) 335deg,
-    rgba(196, 181, 253, 0.9) 345deg,
+    rgba(139, 92, 246, 0.4) 320deg,
+    rgba(168, 85, 247, 0.7) 335deg,
+    rgba(196, 181, 253, 1) 345deg,
     rgba(255, 255, 255, 1) 355deg,
-    rgba(196, 181, 253, 0.9) 365deg,
-    rgba(168, 85, 247, 0.6) 375deg,
-    rgba(139, 92, 246, 0.3) 390deg,
+    rgba(196, 181, 253, 1) 365deg,
+    rgba(168, 85, 247, 0.7) 375deg,
+    rgba(139, 92, 246, 0.4) 390deg,
     transparent 400deg,
     transparent 360deg
-  );
+  ) border-box;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   animation: metallic-spin 4s linear infinite;
 }
 
+/* 外发光层 - 只向外扩散 */
 .metallic-border-glow-purple::after {
   content: '';
   position: absolute;
-  inset: -4px;
-  border-radius: inherit;
+  inset: -6px;
+  border-radius: calc(inherit + 6px);
+  border: 4px solid transparent;
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
     transparent 320deg,
-    rgba(168, 85, 247, 0.5) 340deg,
+    rgba(168, 85, 247, 0.6) 340deg,
     rgba(255, 255, 255, 0.9) 355deg,
-    rgba(168, 85, 247, 0.5) 370deg,
+    rgba(168, 85, 247, 0.6) 370deg,
     transparent 390deg
-  );
+  ) border-box;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   animation: metallic-spin 4s linear infinite;
-  filter: blur(8px);
-}
-
-.metallic-border-glow-purple::before {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    transparent 330deg,
-    rgba(168, 85, 247, 0.4) 350deg,
-    rgba(255, 255, 255, 0.6) 355deg,
-    rgba(168, 85, 247, 0.4) 360deg,
-    transparent 380deg
-  );
-  animation: metallic-spin 4s linear infinite;
-  filter: blur(16px);
+  filter: blur(4px);
 }
