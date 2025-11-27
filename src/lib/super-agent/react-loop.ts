@@ -362,30 +362,33 @@ export async function runReActLoop(
           content: '已达到最大迭代次数，将输出当前最佳结果。'
         });
 
-        // 如果有当前提示词，输出它
-        if (state.currentPrompt) {
-          const forceResult: FinalOutput = {
-            finalPrompt: state.currentPrompt,
-            prompts: [{
-              id: `prompt-${Date.now()}`,
-              scene: '默认场景',
-              prompt: state.currentPrompt,
-              chineseTexts: []
-            }],
-            chineseTexts: [],
-            generationTips: ['已达到最大迭代次数，建议手动检查和优化提示词'],
-            recommendedModel: 'nano-banana-pro',
-            iterationCount: state.iteration,
-            matchedSkill: state.matchedSkill
-          };
+        // 尝试构建一个回退结果
+        const fallbackPrompt = state.currentPrompt ||
+          (state.thoughtHistory.length > 0
+            ? `Based on the analysis: ${state.thoughtHistory[state.thoughtHistory.length - 1].substring(0, 500)}`
+            : `Generate an image based on the user's request`);
 
-          await sendEvent({
-            type: 'complete',
-            result: forceResult
-          });
+        const forceResult: FinalOutput = {
+          finalPrompt: fallbackPrompt,
+          prompts: [{
+            id: `prompt-${Date.now()}`,
+            scene: '默认场景',
+            prompt: fallbackPrompt,
+            chineseTexts: []
+          }],
+          chineseTexts: [],
+          generationTips: ['已达到最大迭代次数，建议手动检查和优化提示词'],
+          recommendedModel: 'nano-banana-pro',
+          iterationCount: state.iteration,
+          matchedSkill: state.matchedSkill
+        };
 
-          return forceResult;
-        }
+        await sendEvent({
+          type: 'complete',
+          result: forceResult
+        });
+
+        return forceResult;
       }
 
     } catch (error) {
@@ -402,11 +405,52 @@ export async function runReActLoop(
           content: `发生错误: ${error instanceof Error ? error.message : '未知错误'}。请尝试其他方法继续完成任务。`
         });
       } else {
-        throw error;
+        // 达到最大迭代次数，返回一个回退结果而不是抛出错误
+        const fallbackResult: FinalOutput = {
+          finalPrompt: state.currentPrompt || '无法生成提示词，请重试',
+          prompts: [{
+            id: `prompt-${Date.now()}`,
+            scene: '错误恢复',
+            prompt: state.currentPrompt || '无法生成提示词，请重试',
+            chineseTexts: []
+          }],
+          chineseTexts: [],
+          generationTips: [`执行出错: ${error instanceof Error ? error.message : '未知错误'}`],
+          recommendedModel: 'nano-banana-pro',
+          iterationCount: state.iteration,
+          matchedSkill: state.matchedSkill
+        };
+
+        await sendEvent({
+          type: 'complete',
+          result: fallbackResult
+        });
+
+        return fallbackResult;
       }
     }
   }
 
-  // 如果循环结束但没有结果
-  throw new Error('ReAct 循环结束但未生成结果');
+  // 如果循环结束但没有结果，返回一个回退结果
+  const emergencyResult: FinalOutput = {
+    finalPrompt: state.currentPrompt || '循环结束但未能生成结果，请重试',
+    prompts: [{
+      id: `prompt-${Date.now()}`,
+      scene: '紧急回退',
+      prompt: state.currentPrompt || '循环结束但未能生成结果，请重试',
+      chineseTexts: []
+    }],
+    chineseTexts: [],
+    generationTips: ['ReAct 循环异常结束，建议重新尝试'],
+    recommendedModel: 'nano-banana-pro',
+    iterationCount: state.iteration,
+    matchedSkill: state.matchedSkill
+  };
+
+  await sendEvent({
+    type: 'complete',
+    result: emergencyResult
+  });
+
+  return emergencyResult;
 }
