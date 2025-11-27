@@ -718,24 +718,40 @@ export const handleFinalizeOutput: ToolHandler = async (params, sendEvent) => {
   console.log('[SuperAgent] finalize_output received prompts:', JSON.stringify(prompts, null, 2));
 
   // 处理 prompts 数组，生成 PromptItem 列表
-  // 支持多种可能的字段名：prompt, text, content
-  // 也支持 AI 返回 JSON 字符串而不是对象的情况
+  // 支持多种格式：
+  // 1. 对象: { scene, prompt, chinese_texts }
+  // 2. JSON 字符串: '{"scene": "...", "prompt": "..."}'
+  // 3. 纯字符串: 直接作为 prompt 使用
   const promptItems = (prompts || []).map((p: any, index: number) => {
-    // 如果 p 是字符串，尝试解析为 JSON
-    let parsed = p;
+    let promptText = '';
+    let scene = `场景 ${index + 1}`;
+    let chineseTexts: string[] = [];
+
     if (typeof p === 'string') {
+      // 尝试解析为 JSON
       try {
-        parsed = JSON.parse(p);
+        const parsed = JSON.parse(p);
+        promptText = parsed.prompt || parsed.text || parsed.content || '';
+        scene = parsed.scene || parsed.title || parsed.name || scene;
+        chineseTexts = parsed.chinese_texts || parsed.chineseTexts || parsed.texts || [];
         console.log(`[SuperAgent] Parsed JSON string for prompt ${index + 1}`);
       } catch (e) {
-        console.error(`[SuperAgent] Failed to parse prompt ${index + 1} as JSON:`, p);
-        return null;
-      }
-    }
+        // 不是 JSON，直接作为提示词使用
+        promptText = p;
+        console.log(`[SuperAgent] Using raw string as prompt ${index + 1}`);
 
-    const promptText = parsed.prompt || parsed.text || parsed.content || '';
-    const scene = parsed.scene || parsed.title || parsed.name || `场景 ${index + 1}`;
-    const chineseTexts = parsed.chinese_texts || parsed.chineseTexts || parsed.texts || [];
+        // 尝试从提示词中提取中文文字
+        const chineseMatches = p.match(/"([^"]*[\u4e00-\u9fa5]+[^"]*)"/g);
+        if (chineseMatches) {
+          chineseTexts = chineseMatches.map((m: string) => m.replace(/"/g, ''));
+        }
+      }
+    } else if (typeof p === 'object' && p !== null) {
+      // 对象格式
+      promptText = p.prompt || p.text || p.content || '';
+      scene = p.scene || p.title || p.name || scene;
+      chineseTexts = p.chinese_texts || p.chineseTexts || p.texts || [];
+    }
 
     console.log(`[SuperAgent] Prompt ${index + 1}: scene="${scene}", prompt="${promptText.substring(0, 50)}..."`);
 
@@ -745,7 +761,7 @@ export const handleFinalizeOutput: ToolHandler = async (params, sendEvent) => {
       prompt: promptText,
       chineseTexts
     };
-  }).filter((p: any) => p && p.prompt && p.prompt.trim().length > 0); // 过滤空 prompt 和 null
+  }).filter((p: any) => p && p.prompt && p.prompt.trim().length > 0);
 
   if (promptItems.length === 0) {
     console.error('[SuperAgent] No valid prompts found in:', prompts);
