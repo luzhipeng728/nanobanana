@@ -39,6 +39,7 @@ import { uploadImageToR2 } from "@/app/actions/storage";
 import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles } from "lucide-react";
 import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
+import ModelCapabilityTip from "./ModelCapabilityTip";
 
 const nodeTypes = {
   imageGen: ImageGenNode as any,
@@ -918,6 +919,9 @@ export default function InfiniteCanvas() {
           </button>
         )}
       </div>
+
+      {/* Model Capability Tip */}
+      <ModelCapabilityTip />
 
       {/* Node Toolbar */}
       <NodeToolbar onDragStart={onDragStart} onImageUploadClick={handleToolbarImageUploadClick} />
