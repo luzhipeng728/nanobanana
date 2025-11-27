@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
         // 流式分析图片
         const analysisStream = anthropic.messages.stream({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-haiku-4-5-20251001",
           max_tokens: 1024,
           messages: [
             {
@@ -195,7 +195,7 @@ Generate a detailed prompt (50-80 words) with cinematic depth.
 Output ONLY the prompt text in English, nothing else.`;
 
       const promptResponse = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 500,
         messages: [{ role: "user", content: promptSystemMessage }],
       });

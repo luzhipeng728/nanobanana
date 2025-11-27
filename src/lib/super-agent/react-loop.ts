@@ -112,7 +112,7 @@ export async function runReActLoop(
     try {
       // 流式调用 Claude
       const stream = anthropic.messages.stream({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 4096,
         system: systemPrompt,
         tools,

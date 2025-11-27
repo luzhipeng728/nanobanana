@@ -38,7 +38,7 @@ async function analyzeOriginalImage(
   let analysisText = "";
   
   const stream = anthropic.messages.stream({
-    model: "claude-sonnet-4-5-20250929",
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 1500,
     messages: [
       {
@@ -107,7 +107,7 @@ async function generateAllFramePrompts(
   animationPrompt: string
 ): Promise<string[]> {
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-5-20250929",
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 3000,
     messages: [{
       role: "user",
