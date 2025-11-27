@@ -120,9 +120,9 @@ export default function ModelCapabilityTip() {
                   <p className="font-medium text-gray-700 dark:text-gray-200">
                     Gemini 3 Pro Image
                   </p>
-                  <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 font-medium">
+                  <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">
                     <DollarSign className="w-3 h-3" />
-                    ~$0.03/张
+                    $0.13~0.24/张
                   </span>
                 </div>
                 <ul className="space-y-1 ml-1">
