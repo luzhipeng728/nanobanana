@@ -19,6 +19,8 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  History,
+  Trash2,
 } from "lucide-react";
 import {
   AnimatedProgress,
@@ -61,6 +63,10 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
   // 快捷提示词展开状态
   const [showQuickPrompts, setShowQuickPrompts] = useState(false);
+
+  // 会话历史相关状态
+  const [historyCount, setHistoryCount] = useState(0);
+  const [isClearing, setIsClearing] = useState(false);
 
   // 快捷提示词配置
   const quickPrompts = [
@@ -309,6 +315,38 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     setConnectedImages(imageUrls);
   }, [id, getConnectedImageNodes, connectedEdgeCount]); // 添加 connectedEdgeCount 作为触发器
 
+  // 获取会话历史数量
+  useEffect(() => {
+    const fetchHistoryCount = async () => {
+      try {
+        const res = await fetch(`/api/chat-history?nodeId=${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setHistoryCount(data.count || 0);
+        }
+      } catch (err) {
+        console.error('Failed to fetch history count:', err);
+      }
+    };
+    fetchHistoryCount();
+  }, [id]);
+
+  // 清除会话历史
+  const handleClearHistory = useCallback(async () => {
+    if (isClearing || historyCount === 0) return;
+    setIsClearing(true);
+    try {
+      const res = await fetch(`/api/chat-history?nodeId=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setHistoryCount(0);
+      }
+    } catch (err) {
+      console.error('Failed to clear history:', err);
+    } finally {
+      setIsClearing(false);
+    }
+  }, [id, isClearing, historyCount]);
+
   const statusIcons = {
     idle: Brain,
     searching: Search,
@@ -538,6 +576,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         body: JSON.stringify({
           userRequest,
           referenceImages,
+          nodeId: id,  // 传递节点 ID 用于会话历史
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -599,6 +638,8 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
               } else if (event.type === "complete") {
                 if (event.status) setStatus(event.status);
                 if (event.progress !== undefined) setProgress(event.progress);
+                // 更新历史记录数量
+                setHistoryCount(prev => Math.min(prev + 1, 5));
               }
             } catch (e) {
               console.error("Failed to parse event:", e);
@@ -637,6 +678,21 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       className="w-[350px]"
       headerActions={
         <div className="flex items-center gap-1.5">
+          {/* 历史记录显示 */}
+          {historyCount > 0 && (
+            <span
+              className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-medium cursor-pointer hover:bg-amber-200 dark:hover:bg-amber-800/40 transition-colors"
+              onClick={handleClearHistory}
+              title="点击清除历史记录"
+            >
+              {isClearing ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <History className="w-3 h-3" />
+              )}
+              {historyCount} 轮上下文
+            </span>
+          )}
           {connectedImages.length > 0 ? (
             <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">
               <Link2 className="w-3 h-3" />

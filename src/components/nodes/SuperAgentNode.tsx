@@ -18,6 +18,7 @@ import {
   Eye,
   Palette,
   StopCircle,
+  History,
 } from "lucide-react";
 import type {
   SuperAgentStreamEvent,
@@ -94,6 +95,10 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
   const [generatingCount, setGeneratingCount] = useState(0);
   const [progress, setProgress] = useState(0);
 
+  // 会话历史相关状态
+  const [historyCount, setHistoryCount] = useState(0);
+  const [isClearing, setIsClearing] = useState(false);
+
   // Refs
   const stepsContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -118,6 +123,38 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
       stepsContainerRef.current.scrollTop = stepsContainerRef.current.scrollHeight;
     }
   }, [thoughtSteps]);
+
+  // 获取会话历史数量
+  useEffect(() => {
+    const fetchHistoryCount = async () => {
+      try {
+        const res = await fetch(`/api/chat-history?nodeId=${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setHistoryCount(data.count || 0);
+        }
+      } catch (err) {
+        console.error('Failed to fetch history count:', err);
+      }
+    };
+    fetchHistoryCount();
+  }, [id]);
+
+  // 清除会话历史
+  const handleClearHistory = useCallback(async () => {
+    if (isClearing || historyCount === 0) return;
+    setIsClearing(true);
+    try {
+      const res = await fetch(`/api/chat-history?nodeId=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setHistoryCount(0);
+      }
+    } catch (err) {
+      console.error('Failed to clear history:', err);
+    } finally {
+      setIsClearing(false);
+    }
+  }, [id, isClearing, historyCount]);
 
   // Batch generate images
   const generateImagesInBatches = useCallback(async (promptsList: PromptItemWithStatus[]) => {
@@ -400,6 +437,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
           userRequest,
           referenceImages,
           enableDeepResearch,
+          nodeId: id,  // 传递节点 ID 用于会话历史
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -440,6 +478,8 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
                     status: "pending" as const,
                   }));
                 console.log('[SuperAgentNode] Filtered prompts:', finalPrompts.length);
+                // 更新历史记录数量
+                setHistoryCount(prev => Math.min(prev + 1, 5));
               }
             } catch (e) {
               console.warn("Failed to parse event:", line);
@@ -495,6 +535,21 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
       className="w-[380px]"
       headerActions={
         <div className="flex items-center gap-1.5">
+          {/* 历史记录显示 */}
+          {historyCount > 0 && (
+            <span
+              className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-medium cursor-pointer hover:bg-amber-200 dark:hover:bg-amber-800/40 transition-colors"
+              onClick={handleClearHistory}
+              title="点击清除历史记录"
+            >
+              {isClearing ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <History className="w-3 h-3" />
+              )}
+              {historyCount} 轮上下文
+            </span>
+          )}
           {connectedImages.length > 0 ? (
             <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">
               <Link2 className="w-3 h-3" />

@@ -10,6 +10,7 @@ import type {
 import { formatToolsForClaude } from './tools';
 import { buildSystemPrompt } from './system-prompt';
 import { executeToolCall } from './tool-handlers';
+import { buildReActInitialMessageWithHistory } from '@/lib/chat-history';
 import type {
   ReActState,
   ThoughtStep,
@@ -72,6 +73,7 @@ function buildInitialMessage(
 // ReAct 循环选项
 export interface ReActLoopOptions {
   enableDeepResearch?: boolean; // 是否启用深度研究
+  nodeId?: string;              // 节点 ID，用于会话历史
 }
 
 // 运行 ReAct 循环（流式版本）
@@ -81,7 +83,7 @@ export async function runReActLoop(
   sendEvent: (event: SuperAgentStreamEvent) => Promise<void>,
   options: ReActLoopOptions = {}
 ): Promise<FinalOutput> {
-  const { enableDeepResearch = false } = options;
+  const { enableDeepResearch = false, nodeId } = options;
 
   const anthropic = getAnthropicClient();
   const systemPrompt = buildSystemPrompt();
@@ -98,11 +100,22 @@ export async function runReActLoop(
     matchedSkill: null
   };
 
+  // 构建初始消息（可能包含历史记录）
+  let initialMessage: string;
+  if (nodeId) {
+    // 使用带历史的消息构建器
+    initialMessage = await buildReActInitialMessageWithHistory(nodeId, userRequest, referenceImages);
+    console.log(`[SuperAgent] Built initial message with history for node ${nodeId}`);
+  } else {
+    // 无历史，使用原来的方法
+    initialMessage = buildInitialMessage(userRequest, referenceImages);
+  }
+
   // 构建消息历史
   const messages: Anthropic.MessageParam[] = [
     {
       role: 'user',
-      content: buildInitialMessage(userRequest, referenceImages)
+      content: initialMessage
     }
   ];
 

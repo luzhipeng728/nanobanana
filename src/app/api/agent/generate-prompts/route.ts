@@ -2,6 +2,12 @@ import { NextRequest } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgentPrompt, AgentStreamEvent } from "@/types/agent";
+import {
+  buildMessagesWithHistory,
+  addChatRound,
+  generateResponseSummary,
+  getChatHistoryCount,
+} from "@/lib/chat-history";
 
 // 参考图数据类型
 interface ReferenceImages {
@@ -227,16 +233,24 @@ export async function POST(request: NextRequest) {
   (async () => {
     try {
       const body = await request.json();
-      const { userRequest, promptCount, referenceImages } = body as {
+      const { userRequest, promptCount, referenceImages, nodeId } = body as {
         userRequest: string;
         promptCount?: number;
         referenceImages?: ReferenceImages;
+        nodeId?: string;  // 节点 ID，用于会话历史
       };
 
       if (!userRequest) {
         await sendEvent({ type: "error", error: "用户需求不能为空" });
         await writer.close();
         return;
+      }
+
+      // 获取历史记录数（用于显示）
+      let historyCount = 0;
+      if (nodeId) {
+        historyCount = await getChatHistoryCount(nodeId);
+        console.log(`[Agent] Node ${nodeId} has ${historyCount} rounds of history`);
       }
 
       // 检查必需的 API Keys
@@ -304,20 +318,30 @@ export async function POST(request: NextRequest) {
         baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
       });
 
-      let userInput = userRequest;
-      
+      // 构建用户输入（可能包含历史记录）
+      let baseRequest = userRequest;
+
       // 如果有图片分析结果，添加到用户输入中
       if (imageAnalysis) {
-        userInput = `用户需求：${userRequest}
+        baseRequest = `用户需求：${userRequest}
 
 【参考图片分析】（由 Claude 视觉模型分析）
 ${imageAnalysis}
 
 请结合用户需求和参考图片的风格特点来生成图像 prompts。`;
       }
-      
+
       if (promptCount && promptCount > 0) {
-        userInput += `\n\n请生成 ${promptCount} 个连贯的场景 prompt。`;
+        baseRequest += `\n\n请生成 ${promptCount} 个连贯的场景 prompt。`;
+      }
+
+      // 如果有 nodeId，构建带历史的消息
+      let userInput = baseRequest;
+      if (nodeId) {
+        userInput = await buildMessagesWithHistory(nodeId, baseRequest);
+        if (historyCount > 0) {
+          console.log(`[Agent] Built message with ${historyCount} rounds of history`);
+        }
       }
 
       await sendEvent({
@@ -546,6 +570,24 @@ ${imageAnalysis}
         type: "prompts",
         prompts,
       });
+
+      // 保存会话历史（如果有 nodeId）
+      if (nodeId && prompts.length > 0) {
+        try {
+          const responseSummary = generateResponseSummary(prompts);
+          await addChatRound(
+            nodeId,
+            'agent',
+            userRequest,  // 使用原始用户请求，不包含历史
+            responseSummary,
+            { prompts }
+          );
+          console.log(`[Agent] Saved chat round for node ${nodeId}`);
+        } catch (err) {
+          console.error(`[Agent] Failed to save chat history:`, err);
+          // 不影响主流程
+        }
+      }
 
       await sendEvent({
         type: "status",
