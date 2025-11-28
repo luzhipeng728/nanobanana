@@ -11,15 +11,34 @@ interface SlideshowViewerProps {
 }
 
 // 生成 Cloudflare Image Resizing URL
-function getThumbnailUrl(url: string, width: number = 200): string {
+function getResizedUrl(url: string, options: { width?: number; quality?: number; blur?: number } = {}): string {
+  const { width, quality = 80, blur } = options;
+
   // 检查是否是 doubao.luzhipeng.com 的图片
   if (url.includes('doubao.luzhipeng.com')) {
-    // 提取路径部分
-    const urlObj = new URL(url);
-    const path = urlObj.pathname;
-    return `https://doubao.luzhipeng.com/cdn-cgi/image/width=${width},quality=80,format=auto${path}`;
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
+      const params = ['format=auto'];
+      if (width) params.push(`width=${width}`);
+      if (quality) params.push(`quality=${quality}`);
+      if (blur) params.push(`blur=${blur}`);
+      return `https://doubao.luzhipeng.com/cdn-cgi/image/${params.join(',')}${path}`;
+    } catch {
+      return url;
+    }
   }
   return url;
+}
+
+// 缩略图 URL
+function getThumbnailUrl(url: string): string {
+  return getResizedUrl(url, { width: 160, quality: 70 });
+}
+
+// 模糊预览图 URL（用于渐进式加载）
+function getBlurPreviewUrl(url: string): string {
+  return getResizedUrl(url, { width: 50, quality: 30, blur: 10 });
 }
 
 export default function SlideshowViewer({
@@ -372,26 +391,43 @@ export default function SlideshowViewer({
           </div>
         )}
 
-        {/* 当前大图 */}
-        <img
-          key={currentIndex}
-          src={images[currentIndex]}
-          alt={`图片 ${currentIndex + 1}`}
-          className={cn(
-            "max-w-full max-h-full object-contain transition-opacity duration-300",
-            isImageLoading ? "opacity-0" : "opacity-100"
-          )}
+        {/* 当前大图 - 渐进式加载：先显示模糊小图，再加载清晰大图 */}
+        <div
+          className="relative max-w-full max-h-full"
           style={{
             transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
             transition: isDragging ? "none" : "transform 0.2s ease-out",
           }}
-          onLoad={() => setIsImageLoading(false)}
-          onError={() => {
-            setIsImageLoading(false);
-            setImageError(true);
-          }}
-          draggable={false}
-        />
+        >
+          {/* 模糊预览图（立即显示） */}
+          <img
+            key={`blur-${currentIndex}`}
+            src={getBlurPreviewUrl(images[currentIndex])}
+            alt=""
+            className={cn(
+              "max-w-full max-h-[calc(100vh-160px)] object-contain transition-opacity duration-500",
+              isImageLoading ? "opacity-100" : "opacity-0"
+            )}
+            style={{ filter: "blur(20px)", transform: "scale(1.1)" }}
+            aria-hidden="true"
+          />
+          {/* 清晰大图（加载完成后显示） */}
+          <img
+            key={`main-${currentIndex}`}
+            src={images[currentIndex]}
+            alt={`图片 ${currentIndex + 1}`}
+            className={cn(
+              "absolute inset-0 max-w-full max-h-[calc(100vh-160px)] object-contain transition-opacity duration-500",
+              isImageLoading ? "opacity-0" : "opacity-100"
+            )}
+            onLoad={() => setIsImageLoading(false)}
+            onError={() => {
+              setIsImageLoading(false);
+              setImageError(true);
+            }}
+            draggable={false}
+          />
+        </div>
 
         {/* 缩放提示 */}
         {scale <= 1 && !isImageLoading && !imageError && (
@@ -419,7 +455,7 @@ export default function SlideshowViewer({
               onClick={() => setCurrentIndex(index)}
             >
               <img
-                src={getThumbnailUrl(url, 160)}
+                src={getThumbnailUrl(url)}
                 alt={`缩略图 ${index + 1}`}
                 className="w-full h-full object-cover"
                 loading="lazy"
