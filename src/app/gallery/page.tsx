@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { triggerCoverGenerationBatch } from "@/lib/cover-generator";
 import GalleryClient from "./GalleryClient";
 
+// 强制动态渲染，每次请求都执行服务端代码
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "作品画廊 | NanoBanana",
   description: "探索用户创作的精彩幻灯片作品",
@@ -10,6 +13,7 @@ export const metadata: Metadata = {
 
 // 服务端获取初始数据
 async function getInitialSlides() {
+  console.log("[Gallery] Fetching slides...");
   try {
     const slideshows = await prisma.slideshow.findMany({
       orderBy: { createdAt: "desc" },
@@ -22,6 +26,8 @@ async function getInitialSlides() {
         createdAt: true,
       },
     });
+
+    console.log(`[Gallery] Found ${slideshows.length} slides`);
 
     const items = slideshows.map((s) => {
       const images = JSON.parse(s.images) as string[];
@@ -39,6 +45,8 @@ async function getInitialSlides() {
     const needsCoverIds = items
       .filter((item) => item.needsCover)
       .map((item) => item.id);
+
+    console.log(`[Gallery] Slides needing cover: ${needsCoverIds.length}`);
 
     if (needsCoverIds.length > 0) {
       triggerCoverGenerationBatch(needsCoverIds);
