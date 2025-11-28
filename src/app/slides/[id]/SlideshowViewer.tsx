@@ -126,11 +126,19 @@ export default function SlideshowViewer({
     resetTransform();
   }, [currentIndex, resetTransform]);
 
-  // 图片切换时重置加载状态
+  // 图片切换时重置加载状态，并检查缓存
   useEffect(() => {
     setIsImageLoading(true);
     setImageError(false);
-  }, [currentIndex]);
+
+    // 检查图片是否已缓存（立即可用）
+    const img = new Image();
+    img.src = images[currentIndex];
+    if (img.complete) {
+      // 图片已缓存，直接标记为加载完成
+      setIsImageLoading(false);
+    }
+  }, [currentIndex, images]);
 
   // 上一张
   const goToPrev = useCallback(() => {
