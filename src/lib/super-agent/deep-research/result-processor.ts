@@ -30,8 +30,11 @@ export class ResultProcessor {
     uniqueResults: SearchResultItem[];
     categorized: CategorizedInfo[];
   }> {
+    console.log(`[ResultProcessor] processResults called with ${results.length} results`);
+
     // 1. 去重
     const uniqueResults = this.deduplicateResults(results, existingUrls);
+    console.log(`[ResultProcessor] After dedup: ${uniqueResults.length} unique results`);
 
     if (uniqueResults.length === 0) {
       return { uniqueResults: [], categorized: [] };
@@ -105,13 +108,19 @@ export class ResultProcessor {
     // 批量处理，避免过多 API 调用
     const batchSize = 5;
     const categorized: CategorizedInfo[] = [];
+    const totalBatches = Math.ceil(results.length / batchSize);
+
+    console.log(`[ResultProcessor] Categorizing ${results.length} results in ${totalBatches} batches`);
 
     for (let i = 0; i < results.length; i += batchSize) {
+      const batchNum = Math.floor(i / batchSize) + 1;
       const batch = results.slice(i, i + batchSize);
+      console.log(`[ResultProcessor] Processing batch ${batchNum}/${totalBatches}`);
       const batchCategorized = await this.categorizeBatch(batch);
       categorized.push(...batchCategorized);
     }
 
+    console.log(`[ResultProcessor] Categorization complete: ${categorized.length} items`);
     return categorized;
   }
 

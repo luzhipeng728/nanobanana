@@ -217,14 +217,14 @@ export class DeepResearchAgent {
       resultsCount: results.length
     });
 
-    // 3. 处理结果（使用快速规则分类，不再调用 LLM）
+    // 3. 处理结果（使用 GLM 智能分类，速度快效果好）
     await this.sendEvent({
       type: 'processing',
-      action: '分析和分类搜索结果'
+      action: '使用 AI 分析和分类搜索结果'
     });
 
     const existingUrls = new Set(this.stateManager.getCollectedUrls());
-    const { uniqueResults, categorized } = await this.resultProcessor.processResultsFast(
+    const { uniqueResults, categorized } = await this.resultProcessor.processResults(
       results,
       existingUrls
     );
@@ -233,31 +233,50 @@ export class DeepResearchAgent {
     this.stateManager.addRawResults(uniqueResults);
     this.stateManager.addCategorizedInfoBatch(categorized);
 
-    // 4. 记录探索步骤（复用之前的 evaluation，不再重复调用 LLM）
-    // 使用规则评估快速计算当前分数
-    const currentCoverage = evaluation.ruleBasedScore + (categorized.length * 5); // 简单估算新增覆盖
-    const estimatedScore = Math.min(currentCoverage, 100);
+    // 4. 记录探索步骤
+    // 基于实际收集的结果重新计算分数
+    const totalResults = this.stateManager.getState().rawResults.length;
+    const totalCategorized = this.stateManager.getStats().categorizedInfoCount;
+
+    // 覆盖分数：基于结果数量和分类数量
+    const coverageScore = Math.min(
+      (totalResults / 50) * 50 + (totalCategorized / 20) * 50,
+      100
+    );
+
+    // 质量分数：基于分类信息的丰富度
+    let qualityScore: number;
+    if (totalResults >= 50 && totalCategorized >= 15) {
+      qualityScore = 80;
+    } else if (totalResults >= 30 && totalCategorized >= 10) {
+      qualityScore = 70;
+    } else if (totalResults >= 15 && totalCategorized >= 5) {
+      qualityScore = 60;
+    } else {
+      qualityScore = 50;
+    }
 
     this.stateManager.recordExplorationStep({
       round,
       queries: searchPlan.queries.map(q => q.query),
       resultsCount: results.length,
       newInfoCount: categorized.length,
-      coverageAfter: estimatedScore,
-      qualityAfter: evaluation.llmScore, // 复用之前的 LLM 分数
+      coverageAfter: coverageScore,
+      qualityAfter: qualityScore,
       decision: evaluation.recommendation,
       reasoning: searchPlan.reasoning
     });
 
-    // 更新分数（基于简单估算）
-    this.stateManager.updateScores(estimatedScore, evaluation.llmScore);
+    // 更新分数
+    this.stateManager.updateScores(coverageScore, qualityScore);
+    console.log(`[DeepResearchAgent] Scores updated - Coverage: ${coverageScore.toFixed(1)}%, Quality: ${qualityScore.toFixed(1)}%`);
 
     // 发送评估事件
     await this.sendEvent({
       type: 'evaluation',
       scores: {
-        coverage: estimatedScore,
-        quality: evaluation.llmScore
+        coverage: coverageScore,
+        quality: qualityScore
       },
       decision: evaluation.recommendation
     });
