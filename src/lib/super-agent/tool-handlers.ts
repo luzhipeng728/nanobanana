@@ -812,6 +812,36 @@ export const handleFinalizeOutput: ToolHandler = async (params, sendEvent) => {
 
     console.log(`[SuperAgent] Prompt ${index + 1}: scene="${scene}", prompt="${promptText.substring(0, 50)}..."`);
 
+    // 验证 prompt 是否是有效的图片生成提示词（而非思考过程或分析文字）
+    const invalidPatterns = [
+      /^Based on/i,           // 思考过程开头
+      /^According to/i,       // 分析开头
+      /^## /,                 // Markdown 标题
+      /^行动\d+/,              // 行动标记
+      /^The analysis/i,       // 分析文字
+      /^Let me/i,             // 思考语句
+      /^I (will|should|need)/i, // 意图说明
+      /^Here('s| is)/i,       // 介绍语句
+      /^\d+\.\s/,             // 数字列表
+      /^首先|^然后|^最后/,     // 中文步骤词
+      /生成.*提示词/,          // 中文说明
+    ];
+
+    const isInvalidPrompt = invalidPatterns.some(pattern => pattern.test(promptText.trim()));
+
+    if (isInvalidPrompt) {
+      console.error(`[SuperAgent] ❌ Invalid prompt detected (not an image description): "${promptText.substring(0, 100)}..."`);
+      console.error(`[SuperAgent] This looks like thinking/analysis text, not an image generation prompt`);
+      // 标记为无效，但仍返回以便调试
+      return {
+        id: `prompt-${Date.now()}-${index}`,
+        scene,
+        prompt: '', // 置空，会被过滤掉
+        chineseTexts,
+        _invalidReason: 'Detected as thinking/analysis text, not an image prompt'
+      };
+    }
+
     return {
       id: `prompt-${Date.now()}-${index}`,
       scene,

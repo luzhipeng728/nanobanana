@@ -298,10 +298,31 @@ chinese_texts 是辅助信息，用于：
 使用 \`finalize_output\` 时必须包含：
 1. **prompts**: 提示词数组，每个元素包含：
    - scene: 场景名称（如"封面页"、"步骤1"、"场景A"）
-   - prompt: 完整的英文提示词
+   - prompt: **完整的英文图片生成提示词**（必须是直接可用于图片生成的描述性文字）
    - chinese_texts: 该场景需要显示的中文文字
 2. **generation_tips**: 生成建议（如模型选择、参数设置）
 3. **recommended_model**: 推荐使用的模型
+
+### ⚠️ 关于 prompt 字段的严格要求
+
+**prompt 字段必须是：**
+- 完整的英文图片描述，可直接用于 AI 图像生成
+- 包含风格、构图、颜色、分辨率等视觉描述
+- 如有中文，必须用双引号包裹
+
+**prompt 字段绝对不能是：**
+- 思考过程（如 "Based on the analysis..."）
+- 中文说明（如 "生成一张..."）
+- 分析文字（如 "## 行动7..."）
+- 占位符或省略号
+- 任何非图片描述性内容
+
+❌ 错误示例：
+- "Based on the analysis: ## 行动7：生成优化后的最终提示词"（这是思考，不是提示词）
+- "生成一张科技风格的图片"（这是中文说明，不是提示词）
+
+✓ 正确示例：
+- "A modern tech-style illustration with neon blue accents, futuristic cityscape..."
 
 ### 多提示词示例
 
