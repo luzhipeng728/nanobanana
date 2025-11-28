@@ -27,6 +27,10 @@ interface CanvasContextType {
   // Use getter functions instead of direct values to prevent unnecessary re-renders
   getNodes: () => Node[];
   getEdges: () => Edge[];
+  // Slideshow mode - 幻灯片选择模式
+  slideshowMode: boolean;
+  slideshowSelections: Map<string, number>; // nodeId -> order (1-based)
+  toggleSlideshowSelection: (nodeId: string) => void;
 }
 
 export const CanvasContext = createContext<CanvasContextType | null>(null);

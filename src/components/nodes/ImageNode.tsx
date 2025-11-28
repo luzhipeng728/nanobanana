@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useState, useRef, useCallback } from "react";
 import { Handle, Position, NodeProps, NodeResizer, useReactFlow, addEdge } from "@xyflow/react";
-import { Image as ImageIcon, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { Image as ImageIcon, ExternalLink, Loader2, RefreshCw, Check } from "lucide-react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { BaseNode } from "./BaseNode";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,7 @@ const MIN_HEIGHT = 100;
 // 不限制最大尺寸，让用户自由调整
 
 const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
-  const { openImageModal, addImageNode } = useCanvas();
+  const { openImageModal, addImageNode, slideshowMode, slideshowSelections, toggleSlideshowSelection } = useCanvas();
   const { updateNodeData, getNode, setNodes, setEdges } = useReactFlow();
   // 只有在没有错误、没有图片且 isLoading 为 true 时才显示加载状态
   const isLoading = !data.error && (data.isLoading || (!data.imageUrl && data.taskId));
@@ -447,7 +447,7 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                 </div>
 
                 {/* 重新生成按钮 - 右上角 */}
-                {data.generationConfig && (
+                {data.generationConfig && !slideshowMode && (
                   <button
                     onClick={handleRegenerate}
                     disabled={isRegenerating}
@@ -463,6 +463,30 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                       "w-4 h-4 text-blue-600",
                       isRegenerating && "animate-spin"
                     )} />
+                  </button>
+                )}
+
+                {/* 幻灯片选择按钮 - 左上角 */}
+                {slideshowMode && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSlideshowSelection(id);
+                    }}
+                    className={cn(
+                      "absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 z-20",
+                      "shadow-lg border-2",
+                      slideshowSelections.has(id)
+                        ? "bg-green-500 border-green-400 text-white"
+                        : "bg-white/90 hover:bg-white border-neutral-300 text-neutral-600"
+                    )}
+                    title={slideshowSelections.has(id) ? `已选择 #${slideshowSelections.get(id)}` : "点击选择"}
+                  >
+                    {slideshowSelections.has(id) ? (
+                      <span className="text-sm font-bold">{slideshowSelections.get(id)}</span>
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
                   </button>
                 )}
               </>

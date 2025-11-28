@@ -38,7 +38,7 @@ import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles, Share2, Loader2 } from "lucide-react";
 import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
 import ModelCapabilityTip from "./ModelCapabilityTip";
@@ -92,6 +92,13 @@ export default function InfiniteCanvas() {
 
   // Selection Mode State (for box selection)
   const [selectionMode, setSelectionMode] = useState(false);
+
+  // Slideshow Mode State (for publishing slideshow)
+  const [slideshowMode, setSlideshowMode] = useState(false);
+  const [slideshowSelections, setSlideshowSelections] = useState<Map<string, number>>(new Map());
+  const [slideshowTitle, setSlideshowTitle] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
 
   // Image Upload Placement State
   const [isPlacingImage, setIsPlacingImage] = useState(false);
@@ -852,6 +859,102 @@ export default function InfiniteCanvas() {
     setIsImageModalOpen(true);
   }, []);
 
+  // Toggle slideshow selection for a node
+  const toggleSlideshowSelection = useCallback((nodeId: string) => {
+    setSlideshowSelections(prev => {
+      const newMap = new Map(prev);
+      if (newMap.has(nodeId)) {
+        // Remove this node and re-order remaining selections
+        const removedOrder = newMap.get(nodeId)!;
+        newMap.delete(nodeId);
+        // Re-order: decrease order for items after the removed one
+        newMap.forEach((order, id) => {
+          if (order > removedOrder) {
+            newMap.set(id, order - 1);
+          }
+        });
+      } else {
+        // Add with next order number
+        const nextOrder = newMap.size + 1;
+        newMap.set(nodeId, nextOrder);
+      }
+      return newMap;
+    });
+  }, []);
+
+  // Enter slideshow mode
+  const enterSlideshowMode = useCallback(() => {
+    setSlideshowMode(true);
+    setSlideshowSelections(new Map());
+    setSlideshowTitle("");
+    setPublishedUrl(null);
+  }, []);
+
+  // Exit slideshow mode
+  const exitSlideshowMode = useCallback(() => {
+    setSlideshowMode(false);
+    setSlideshowSelections(new Map());
+    setSlideshowTitle("");
+    setPublishedUrl(null);
+  }, []);
+
+  // Publish slideshow
+  const publishSlideshow = useCallback(async () => {
+    if (slideshowSelections.size === 0) {
+      alert("请至少选择一张图片");
+      return;
+    }
+    if (!slideshowTitle.trim()) {
+      alert("请输入幻灯片标题");
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      // Get image URLs in order
+      const orderedNodeIds = Array.from(slideshowSelections.entries())
+        .sort((a, b) => a[1] - b[1])
+        .map(([nodeId]) => nodeId);
+
+      const imageUrls: string[] = [];
+      const currentNodes = nodesRef.current;
+
+      for (const nodeId of orderedNodeIds) {
+        const node = currentNodes.find(n => n.id === nodeId);
+        if (node && node.data?.imageUrl && typeof node.data.imageUrl === 'string') {
+          imageUrls.push(node.data.imageUrl as string);
+        }
+      }
+
+      if (imageUrls.length === 0) {
+        alert("选中的节点没有有效的图片");
+        return;
+      }
+
+      // Call API to create slideshow
+      const response = await fetch("/api/slideshow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: slideshowTitle.trim(),
+          images: imageUrls,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setPublishedUrl(result.url);
+      } else {
+        alert(result.error || "发布失败");
+      }
+    } catch (error) {
+      console.error("Publish slideshow error:", error);
+      alert("发布失败，请重试");
+    } finally {
+      setIsPublishing(false);
+    }
+  }, [slideshowSelections, slideshowTitle]);
+
   // Getter functions that use refs - stable references, no re-renders on node changes
   const getNodes = useCallback(() => nodesRef.current, []);
   const getEdges = useCallback(() => edgesRef.current, []);
@@ -869,7 +972,11 @@ export default function InfiniteCanvas() {
     openImageModal,
     getNodes,  // Use getter instead of direct value
     getEdges,  // Use getter instead of direct value
-  }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, addStickerNode, getConnectedImageNodes, getNode, openImageModal, getNodes, getEdges]);
+    // Slideshow mode
+    slideshowMode,
+    slideshowSelections,
+    toggleSlideshowSelection,
+  }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, addStickerNode, getConnectedImageNodes, getNode, openImageModal, getNodes, getEdges, slideshowMode, slideshowSelections, toggleSlideshowSelection]);
 
   return (
     <div className="w-full h-screen relative bg-neutral-50 dark:bg-black">
@@ -942,6 +1049,13 @@ export default function InfiniteCanvas() {
           <LayoutGrid className="w-5 h-5" />
         </button>
         <button
+          onClick={enterSlideshowMode}
+          className="p-2 rounded-full hover:bg-green-500/20 transition-colors text-green-600 dark:text-green-400"
+          title="发布幻灯片"
+        >
+          <Share2 className="w-5 h-5" />
+        </button>
+        <button
           onClick={clearLocalCache}
           className="p-2 rounded-full hover:bg-red-500/20 transition-colors text-red-600 dark:text-red-400"
           title="清空画布"
@@ -1012,6 +1126,107 @@ export default function InfiniteCanvas() {
           >
             <X className="w-4 h-4" />
           </button>
+        </div>
+      )}
+
+      {/* Slideshow Mode Panel */}
+      {slideshowMode && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white dark:bg-neutral-900 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-4 min-w-[400px]">
+          {publishedUrl ? (
+            // 发布成功状态
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2 text-green-600">
+                <Share2 className="w-5 h-5" />
+                <span className="font-semibold">发布成功！</span>
+              </div>
+              <div className="flex items-center gap-2 w-full">
+                <input
+                  type="text"
+                  value={`${window.location.origin}${publishedUrl}`}
+                  readOnly
+                  className="flex-1 px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-sm font-mono"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}${publishedUrl}`);
+                    alert("链接已复制！");
+                  }}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
+                >
+                  复制链接
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.open(publishedUrl, "_blank")}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+                >
+                  打开预览
+                </button>
+                <button
+                  onClick={exitSlideshowMode}
+                  className="px-4 py-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-lg text-sm font-medium hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
+                >
+                  完成
+                </button>
+              </div>
+            </div>
+          ) : (
+            // 选择和编辑状态
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Share2 className="w-5 h-5 text-green-600" />
+                  <span className="font-semibold text-neutral-800 dark:text-neutral-100">发布幻灯片</span>
+                </div>
+                <button
+                  onClick={exitSlideshowMode}
+                  className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
+                  title="取消"
+                >
+                  <X className="w-4 h-4 text-neutral-500" />
+                </button>
+              </div>
+
+              <div className="text-sm text-neutral-500">
+                点击图片节点选择并排序，已选择 <span className="font-bold text-green-600">{slideshowSelections.size}</span> 张图片
+              </div>
+
+              <input
+                type="text"
+                value={slideshowTitle}
+                onChange={(e) => setSlideshowTitle(e.target.value)}
+                placeholder="输入幻灯片标题..."
+                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-transparent text-sm focus:ring-2 focus:ring-green-500 outline-none"
+              />
+
+              <div className="flex gap-2">
+                <button
+                  onClick={publishSlideshow}
+                  disabled={isPublishing || slideshowSelections.size === 0 || !slideshowTitle.trim()}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isPublishing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      发布中...
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-4 h-4" />
+                      发布
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setSlideshowSelections(new Map())}
+                  className="px-4 py-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-xl text-sm font-medium hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                >
+                  清空选择
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

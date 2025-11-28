@@ -184,3 +184,14 @@ model SpriteTask {
   @@index([status])
   @@index([deletedAt])
 }
+
+// 幻灯片分享
+model Slideshow {
+  id        String   @id @default(uuid())  // 同时作为分享链接的 slug
+  title     String                         // 幻灯片标题
+  images    String   @db.LongText          // JSON 数组：按顺序存储图片 URL
+  userId    String?                        // 创建者（可选，便于统计）
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
