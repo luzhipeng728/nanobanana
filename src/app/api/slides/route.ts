@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         cover: s.cover || images[0] || null, // 优先使用专属封面
         imageCount: images.length,
         createdAt: s.createdAt,
-        needsCover: !s.cover && !images[0], // 标记需要生成封面
+        needsCover: !s.cover, // 没有专属封面就需要生成
       };
     });
 
@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
       .map((item) => item.id);
 
     if (needsCoverIds.length > 0) {
+      console.log(`[Slides API] Triggering cover generation for ${needsCoverIds.length} slides:`, needsCoverIds);
       // 异步触发封面生成（不阻塞响应）
       triggerCoverGeneration(needsCoverIds).catch((err) => {
         console.error("[Slides API] Failed to trigger cover generation:", err);
