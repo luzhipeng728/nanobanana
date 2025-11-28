@@ -110,29 +110,23 @@ export class ResultProcessor {
       .map((r, i) => `[${i}] 标题: ${r.title}\n内容: ${r.content?.substring(0, 500) || r.snippet}`)
       .join('\n\n---\n\n');
 
-    const prompt = `你是一个信息分类专家。请分析以下搜索结果，并为每条内容分配最合适的分类。
+    const prompt = `分类以下搜索结果。
 
-研究主题: ${this.topic}
+主题: ${this.topic}
 
-可用分类:
-${categoryDescriptions}
+分类选项: ${INFO_CATEGORIES.join(', ')}
 
 搜索结果:
 ${resultsText}
 
-请以 JSON 格式返回分类结果，格式如下:
-{
-  "classifications": [
-    {
-      "index": 0,
-      "category": "key_facts",
-      "relevance": 0.85,
-      "keyInfo": "提取的关键信息摘要（1-2句话）"
-    }
-  ]
-}
+只返回JSON，格式:
+{"classifications":[{"index":0,"category":"key_facts","relevance":0.8,"keyInfo":"摘要"}]}
 
-只返回 JSON，不要其他内容。`;
+注意:
+- index 对应搜索结果编号
+- category 必须是分类选项之一
+- relevance 0-1 数值
+- keyInfo 简短摘要`;
 
     try {
       const response = await anthropic.messages.create({
@@ -149,7 +143,7 @@ ${resultsText}
       // 尝试多种方式提取和解析 JSON
       const parsed = this.safeParseJSON(content.text);
       if (!parsed) {
-        console.warn('[ResultProcessor] Failed to parse LLM response, using fallback');
+        console.warn('[ResultProcessor] Failed to parse LLM response, using fallback. Response:', content.text.substring(0, 200));
         return this.fallbackCategorize(results);
       }
 
