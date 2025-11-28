@@ -5,7 +5,7 @@ import { SKILL_LIBRARY, matchSkillByKeywords } from './skills';
 import type { ToolResult, FinalOutput, SuperAgentStreamEvent } from '@/types/super-agent';
 import { runDeepResearch, ResearchProgressEvent } from './deep-research';
 import { fetchAndCompressImage } from '@/lib/image-utils';
-import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from '@/lib/claude-config';
+import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS, DEEP_RESEARCH_MAX_ROUNDS } from '@/lib/claude-config';
 
 // 初始化 Anthropic 客户端
 function getAnthropicClient(): Anthropic {
@@ -345,7 +345,7 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
       },
       forwardEvent,
       {
-        maxRounds: max_rounds || 3,
+        maxRounds: max_rounds || DEEP_RESEARCH_MAX_ROUNDS,  // 使用环境变量配置，默认 10 轮
         includeRawData: output_mode === 'detailed',
         includeTrace: output_mode === 'detailed',
         outputMode: output_mode || 'adaptive'

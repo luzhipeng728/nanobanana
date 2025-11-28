@@ -172,7 +172,7 @@ export const SUPER_AGENT_TOOLS: AgentTool[] = [
       {
         name: 'max_rounds',
         type: 'number',
-        description: '最大探索轮数，默认3轮。每轮会执行多个搜索查询。',
+        description: '最大探索轮数，默认10轮。每轮会执行多个搜索查询。',
         required: false
       }
     ]
