@@ -1,6 +1,85 @@
 // ReAct 核心循环 - 推理-行动-观察循环（流式版本）
 
 import Anthropic from '@anthropic-ai/sdk';
+
+/**
+ * 安全解析 JSON，支持多种容错方式
+ * 处理 Claude 返回的可能不完整或格式有问题的 JSON
+ */
+function safeParseJSON(text: string): Record<string, any> | null {
+  if (!text || !text.trim()) {
+    return null;
+  }
+
+  // 1. 尝试直接解析
+  try {
+    return JSON.parse(text);
+  } catch {
+    // 继续尝试修复
+  }
+
+  // 2. 尝试提取 JSON 对象
+  const jsonMatches = text.match(/\{[\s\S]*\}/g);
+  if (jsonMatches) {
+    for (const jsonStr of jsonMatches) {
+      try {
+        return JSON.parse(jsonStr);
+      } catch {
+        // 继续尝试修复
+      }
+
+      // 3. 尝试修复常见问题
+      let fixed = jsonStr
+        // 移除尾部多余的逗号
+        .replace(/,\s*([}\]])/g, '$1')
+        // 修复未闭合的字符串（在 JSON 末尾添加引号和括号）
+        .replace(/,\s*"[^"]*$/g, '}')
+        // 修复单引号
+        .replace(/'/g, '"');
+
+      try {
+        return JSON.parse(fixed);
+      } catch {
+        // 继续尝试
+      }
+
+      // 4. 尝试截断到最后一个完整的属性
+      try {
+        // 找到最后一个完整的 key-value 对
+        const lastCompleteComma = fixed.lastIndexOf('",');
+        if (lastCompleteComma > 0) {
+          const truncated = fixed.substring(0, lastCompleteComma + 1) + '}';
+          return JSON.parse(truncated);
+        }
+      } catch {
+        // 放弃这个匹配
+      }
+    }
+  }
+
+  // 5. 尝试提取 JSON 数组
+  const arrayMatches = text.match(/\[[\s\S]*\]/g);
+  if (arrayMatches) {
+    for (const arrayStr of arrayMatches) {
+      try {
+        return JSON.parse(arrayStr);
+      } catch {
+        // 尝试修复
+        let fixed = arrayStr
+          .replace(/,\s*\]/g, ']')
+          .replace(/'/g, '"');
+        try {
+          return JSON.parse(fixed);
+        } catch {
+          // 继续
+        }
+      }
+    }
+  }
+
+  console.warn('[safeParseJSON] Failed to parse JSON, returning null:', text.substring(0, 200));
+  return null;
+}
 import type {
   ContentBlock,
   TextBlock,
@@ -203,29 +282,33 @@ export async function runReActLoop(
             const block = collector.contentBlocks[idx];
 
             if (block?.type === 'tool_use') {
-              // 解析工具输入
+              // 解析工具输入（带容错）
+              let input: Record<string, any> = {};
               try {
-                const input = collector.currentToolInput
-                  ? JSON.parse(collector.currentToolInput)
-                  : {};
-                (block as ToolUseBlock).input = input;
-
-                toolCalls.push({
-                  id: block.id,
-                  name: block.name,
-                  input
-                });
-
-                // 发送完整的工具调用事件
-                await sendEvent({
-                  type: 'action',
-                  iteration: state.iteration,
-                  tool: block.name,
-                  input
-                });
+                if (collector.currentToolInput) {
+                  input = safeParseJSON(collector.currentToolInput) || {};
+                }
               } catch (e) {
-                console.error('[SuperAgent] Failed to parse tool input:', e);
+                console.error('[SuperAgent] Failed to parse tool input, using empty object:', e);
+                // 容错：使用空对象继续
+                input = {};
               }
+
+              (block as ToolUseBlock).input = input;
+
+              toolCalls.push({
+                id: block.id,
+                name: block.name,
+                input
+              });
+
+              // 发送完整的工具调用事件
+              await sendEvent({
+                type: 'action',
+                iteration: state.iteration,
+                tool: block.name,
+                input
+              });
             } else if (block?.type === 'text' && collector.currentText) {
               // 发送完整思考事件
               await sendEvent({
