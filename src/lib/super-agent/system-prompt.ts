@@ -2,7 +2,12 @@
 
 import { getSkillsSummary } from './skills';
 
-export function buildSystemPrompt(): string {
+export interface SystemPromptOptions {
+  enableDeepResearch?: boolean;
+}
+
+export function buildSystemPrompt(options: SystemPromptOptions = {}): string {
+  const { enableDeepResearch = false } = options;
   const skillsSummary = getSkillsSummary();
 
   const skillsDescription = skillsSummary.map(s =>
@@ -110,12 +115,12 @@ ${skillsDescription}
 1. **skill_matcher**: 分析用户需求，匹配最合适的预设技能
 2. **load_skill**: 加载技能的完整模板和详细信息
 3. **generate_prompt**: 生成提示词（使用模板或自主创作）
-4. **web_search**: 单次快速搜索（适用于简单查询）
-5. **deep_research**: 🔬 **深度研究智能体**（见下方详细说明）
-6. **analyze_image**: 分析用户提供的参考图片
-7. **optimize_prompt**: 优化现有提示词
-8. **evaluate_prompt**: 评估提示词质量（0-100分）
-9. **finalize_output**: 输出最终结果并结束任务
+4. **web_search**: 搜索网络获取信息
+5. **analyze_image**: 分析用户提供的参考图片
+6. **optimize_prompt**: 优化现有提示词
+7. **evaluate_prompt**: 评估提示词质量（0-100分）
+8. **finalize_output**: 输出最终结果并结束任务
+${enableDeepResearch ? `9. **deep_research**: 🔬 **深度研究智能体**（见下方详细说明）
 
 ### 🔬 deep_research 深度研究智能体
 
@@ -133,26 +138,22 @@ ${skillsDescription}
 ✅ 需要多角度：争议话题、专业分析、市场研究
 ✅ 信息不确定：不知道具体需要什么，需要探索
 
-**何时用 web_search：**
-✅ 简单查询：单一事实、快速验证
-✅ 已知答案：只需确认某个信息
-
 **调用示例：**
-\`\`\`json
+\\\`\\\`\\\`json
 {
   "topic": "苏州下周天气预报",
   "required_info": ["每日温度", "降水概率", "穿衣建议"],
   "context": "用户计划下周出差",
   "output_mode": "adaptive"
 }
-\`\`\`
+\\\`\\\`\\\`
 
 **输出内容：**
 - overview: 总体概述
 - key_findings: 关键发现列表
 - categorized_info: 按类别整理的信息
 - sources: 信息来源列表
-- research_summary: 便于你使用的综合摘要
+- research_summary: 便于你使用的综合摘要` : ''}
 
 ## ReAct 自主探索
 
@@ -172,7 +173,7 @@ ${skillsDescription}
 
 **示例2: 复杂需求**
 用户：「苏州7日游行程图，显示每天天气」
-→ 先 research_topic 搜索天气 → skill_matcher → load_skill → generate_prompt → ...
+→ 先 web_search 搜索天气 → skill_matcher → load_skill → generate_prompt → ...
 
 **示例3: 风格参考**
 用户：「赛博朋克风格的公司介绍」
@@ -180,8 +181,7 @@ ${skillsDescription}
 
 ### 工具使用建议（不是规则）
 
-- **research_topic**: 需要实时信息（天气、新闻、数据）或多维度信息时
-- **web_search**: 快速查询单一问题
+- **web_search**: 需要实时信息（天气、新闻、数据）时${enableDeepResearch ? '\n- **deep_research**: 需要深入研究某个主题时（会自动多轮搜索）' : ''}
 - **skill_matcher**: 想看看是否有现成模板可参考时
 - **analyze_image**: 用户提供了参考图时
 - **finalize_output**: 当你确信提示词足够好时

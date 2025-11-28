@@ -170,7 +170,7 @@ export async function runReActLoop(
   const { enableDeepResearch = false, historyMessages = [] } = options;
 
   const anthropic = getAnthropicClient();
-  const systemPrompt = buildSystemPrompt();
+  const systemPrompt = buildSystemPrompt({ enableDeepResearch });  // 传递参数控制 system prompt 中的工具说明
   const tools = formatToolsForClaude({ enableDeepResearch });
 
   // 初始化状态
