@@ -1295,8 +1295,8 @@ export default function InfiniteCanvas() {
               panOnDrag={!selectionMode}        // 普通模式下拖动为平移
               // 触摸设备优化 - 双指始终可缩放
               zoomOnPinch={true}                // 双指捏合缩放
-              panOnScroll={!isTouchDevice}      // 非触摸设备滚轮平移
-              zoomOnScroll={!isTouchDevice}     // 非触摸设备滚轮缩放
+              panOnScroll={false}               // 滚轮不用于平移（PC端滚轮应该是缩放）
+              zoomOnScroll={!isTouchDevice}     // PC端滚轮缩放，触摸设备禁用
               preventScrolling={true}           // 阻止页面滚动
             >
               <Controls />
