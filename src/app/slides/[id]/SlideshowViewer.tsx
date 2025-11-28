@@ -36,9 +36,9 @@ function getThumbnailUrl(url: string): string {
   return getResizedUrl(url, { width: 160, quality: 70 });
 }
 
-// 模糊预览图 URL（用于渐进式加载）
+// 模糊预览图 URL（用于渐进式加载）- 用较大尺寸保证快速加载且不太模糊
 function getBlurPreviewUrl(url: string): string {
-  return getResizedUrl(url, { width: 50, quality: 30, blur: 10 });
+  return getResizedUrl(url, { width: 400, quality: 50 });
 }
 
 export default function SlideshowViewer({
@@ -368,15 +368,7 @@ export default function SlideshowViewer({
           </>
         )}
 
-        {/* 加载指示器 */}
-        {isImageLoading && !imageError && (
-          <div className="absolute inset-0 flex items-center justify-center z-5">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 text-white/50 animate-spin" />
-              <span className="text-sm text-white/50">加载中...</span>
-            </div>
-          </div>
-        )}
+        {/* 加载指示器 - 只在模糊图也没加载时显示 */}
 
         {/* 加载失败提示 */}
         {imageError && (
@@ -399,14 +391,13 @@ export default function SlideshowViewer({
             transition: isDragging ? "none" : "transform 0.2s ease-out",
           }}
         >
-          {/* 模糊预览图（立即显示） */}
+          {/* 预览图（快速加载的小图） */}
           {isImageLoading && (
             <img
-              key={`blur-${currentIndex}`}
+              key={`preview-${currentIndex}`}
               src={getBlurPreviewUrl(images[currentIndex])}
               alt=""
               className="absolute max-w-[90vw] max-h-[calc(100vh-160px)] w-auto h-auto object-contain"
-              style={{ filter: "blur(20px)", transform: "scale(1.05)" }}
               aria-hidden="true"
             />
           )}
