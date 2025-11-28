@@ -689,6 +689,57 @@ export const handleEvaluatePrompt: ToolHandler = async (params, sendEvent) => {
   };
 };
 
+/**
+ * 安全解析 JSON 字符串（用于 prompts 数组元素）
+ */
+function safeParsePromptJSON(text: string): Record<string, any> | null {
+  if (!text || !text.trim()) return null;
+
+  // 1. 直接解析
+  try {
+    return JSON.parse(text);
+  } catch {
+    // 继续修复
+  }
+
+  // 2. 尝试修复常见问题
+  let fixed = text
+    .replace(/,\s*([}\]])/g, '$1')  // 移除尾部逗号
+    .replace(/'/g, '"');             // 单引号转双引号
+
+  try {
+    return JSON.parse(fixed);
+  } catch {
+    // 继续
+  }
+
+  // 3. 尝试提取 JSON 对象
+  const match = text.match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      // 尝试修复提取的对象
+      fixed = match[0].replace(/,\s*([}\]])/g, '$1').replace(/'/g, '"');
+      try {
+        return JSON.parse(fixed);
+      } catch {
+        // 放弃
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * 从文本中提取中文引号内的文字
+ */
+function extractChineseTexts(text: string): string[] {
+  const matches = text.match(/"([^"]*[\u4e00-\u9fa5]+[^"]*)"/g);
+  return matches ? matches.map(m => m.replace(/"/g, '')) : [];
+}
+
 // 工具8: 最终输出（支持多提示词）
 export const handleFinalizeOutput: ToolHandler = async (params, sendEvent) => {
   const {
@@ -700,40 +751,63 @@ export const handleFinalizeOutput: ToolHandler = async (params, sendEvent) => {
 
   console.log('[SuperAgent] finalize_output received prompts:', JSON.stringify(prompts, null, 2));
 
+  // 防御性处理：确保 prompts 是数组
+  let promptsArray: any[] = [];
+  if (Array.isArray(prompts)) {
+    promptsArray = prompts;
+  } else if (typeof prompts === 'string') {
+    // 可能是 JSON 字符串形式的数组
+    const parsed = safeParsePromptJSON(prompts);
+    if (Array.isArray(parsed)) {
+      promptsArray = parsed;
+    } else if (parsed && typeof parsed === 'object') {
+      // 单个对象，包装成数组
+      promptsArray = [parsed];
+    } else {
+      // 纯字符串，当作单个 prompt
+      promptsArray = [{ prompt: prompts, scene: '默认场景' }];
+    }
+  } else if (typeof prompts === 'object' && prompts !== null) {
+    // 单个对象
+    promptsArray = [prompts];
+  }
+
+  console.log(`[SuperAgent] Parsed prompts array length: ${promptsArray.length}`);
+
   // 处理 prompts 数组，生成 PromptItem 列表
   // 支持多种格式：
   // 1. 对象: { scene, prompt, chinese_texts }
   // 2. JSON 字符串: '{"scene": "...", "prompt": "..."}'
   // 3. 纯字符串: 直接作为 prompt 使用
-  const promptItems = (prompts || []).map((p: any, index: number) => {
+  const promptItems = promptsArray.map((p: any, index: number) => {
     let promptText = '';
     let scene = `场景 ${index + 1}`;
     let chineseTexts: string[] = [];
 
     if (typeof p === 'string') {
-      // 尝试解析为 JSON
-      try {
-        const parsed = JSON.parse(p);
+      // 尝试解析为 JSON（使用安全解析）
+      const parsed = safeParsePromptJSON(p);
+      if (parsed) {
         promptText = parsed.prompt || parsed.text || parsed.content || '';
         scene = parsed.scene || parsed.title || parsed.name || scene;
-        chineseTexts = parsed.chinese_texts || parsed.chineseTexts || parsed.texts || [];
+        chineseTexts = Array.isArray(parsed.chinese_texts) ? parsed.chinese_texts :
+                       Array.isArray(parsed.chineseTexts) ? parsed.chineseTexts :
+                       Array.isArray(parsed.texts) ? parsed.texts : [];
         console.log(`[SuperAgent] Parsed JSON string for prompt ${index + 1}`);
-      } catch (e) {
+      } else {
         // 不是 JSON，直接作为提示词使用
         promptText = p;
         console.log(`[SuperAgent] Using raw string as prompt ${index + 1}`);
-
-        // 尝试从提示词中提取中文文字
-        const chineseMatches = p.match(/"([^"]*[\u4e00-\u9fa5]+[^"]*)"/g);
-        if (chineseMatches) {
-          chineseTexts = chineseMatches.map((m: string) => m.replace(/"/g, ''));
-        }
+        // 提取中文文字
+        chineseTexts = extractChineseTexts(p);
       }
     } else if (typeof p === 'object' && p !== null) {
       // 对象格式
       promptText = p.prompt || p.text || p.content || '';
       scene = p.scene || p.title || p.name || scene;
-      chineseTexts = p.chinese_texts || p.chineseTexts || p.texts || [];
+      chineseTexts = Array.isArray(p.chinese_texts) ? p.chinese_texts :
+                     Array.isArray(p.chineseTexts) ? p.chineseTexts :
+                     Array.isArray(p.texts) ? p.texts : [];
     }
 
     console.log(`[SuperAgent] Prompt ${index + 1}: scene="${scene}", prompt="${promptText.substring(0, 50)}..."`);
@@ -748,6 +822,13 @@ export const handleFinalizeOutput: ToolHandler = async (params, sendEvent) => {
 
   if (promptItems.length === 0) {
     console.error('[SuperAgent] No valid prompts found in:', prompts);
+    // 返回一个默认结果而不是空数组
+    promptItems.push({
+      id: `prompt-${Date.now()}-fallback`,
+      scene: '默认场景',
+      prompt: '无法解析提示词，请重试',
+      chineseTexts: []
+    });
   }
 
   // 汇总所有中文文字
