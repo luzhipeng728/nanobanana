@@ -38,7 +38,7 @@ import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles, Share2, Loader2 } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, GalleryVerticalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles, Share2, Loader2 } from "lucide-react";
 import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
 import ModelCapabilityTip from "./ModelCapabilityTip";
@@ -1055,6 +1055,15 @@ export default function InfiniteCanvas() {
         >
           <Share2 className="w-5 h-5" />
         </button>
+        <a
+          href="/gallery"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-2 rounded-full hover:bg-purple-500/20 transition-colors text-purple-600 dark:text-purple-400"
+          title="作品画廊"
+        >
+          <GalleryVerticalEnd className="w-5 h-5" />
+        </a>
         <button
           onClick={clearLocalCache}
           className="p-2 rounded-full hover:bg-red-500/20 transition-colors text-red-600 dark:text-red-400"
