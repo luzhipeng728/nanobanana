@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Images, Calendar, ExternalLink } from "lucide-react";
+import { ArrowLeft, Images, Calendar, ExternalLink, Loader2 } from "lucide-react";
 
 interface SlideItem {
   id: string;
@@ -11,6 +11,7 @@ interface SlideItem {
   cover: string | null;
   imageCount: number;
   createdAt: string;
+  needsCover?: boolean;
 }
 
 interface GalleryClientProps {
@@ -111,7 +112,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                   className="group bg-white dark:bg-neutral-800/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-neutral-200/50 dark:border-white/5 hover:border-purple-300 dark:hover:border-purple-500/30"
                 >
                   {/* Cover Image */}
-                  <div className="aspect-[4/3] relative bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                  <div className="aspect-[4/3] relative bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 overflow-hidden">
                     {slide.cover ? (
                       <Image
                         src={slide.cover}
@@ -121,8 +122,22 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Images className="w-12 h-12 text-neutral-300 dark:text-neutral-600" />
+                      // 没有封面时显示标题作为占位
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                        {slide.needsCover ? (
+                          // 正在生成封面
+                          <>
+                            <Loader2 className="w-8 h-8 text-purple-400 animate-spin mb-2" />
+                            <span className="text-xs text-purple-500 dark:text-purple-400">生成封面中...</span>
+                          </>
+                        ) : (
+                          // 显示标题作为封面
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-purple-600 dark:text-purple-300 line-clamp-3">
+                              {slide.title}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     {/* Hover Overlay */}

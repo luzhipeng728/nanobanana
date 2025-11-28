@@ -17,6 +17,7 @@ async function getInitialSlides() {
         id: true,
         title: true,
         images: true,
+        cover: true,
         createdAt: true,
       },
     });
@@ -26,9 +27,10 @@ async function getInitialSlides() {
       return {
         id: s.id,
         title: s.title,
-        cover: images[0] || null,
+        cover: s.cover || images[0] || null, // 优先使用专属封面
         imageCount: images.length,
         createdAt: s.createdAt.toISOString(),
+        needsCover: !s.cover && !images[0], // 标记需要生成封面
       };
     });
   } catch (error) {
