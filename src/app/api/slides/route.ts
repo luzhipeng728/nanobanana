@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { triggerCoverGenerationBatch } from "@/lib/cover-generator";
 
 // 获取所有公开的幻灯片列表
 export async function GET(request: NextRequest) {
@@ -39,17 +40,13 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // 找出需要生成封面的 slides（后台异步处理）
+    // 触发没有封面的幻灯片生成封面（后台异步执行）
     const needsCoverIds = items
       .filter((item) => item.needsCover)
       .map((item) => item.id);
 
     if (needsCoverIds.length > 0) {
-      console.log(`[Slides API] Triggering cover generation for ${needsCoverIds.length} slides:`, needsCoverIds);
-      // 异步触发封面生成（不阻塞响应）
-      triggerCoverGeneration(needsCoverIds).catch((err) => {
-        console.error("[Slides API] Failed to trigger cover generation:", err);
-      });
+      triggerCoverGenerationBatch(needsCoverIds);
     }
 
     return NextResponse.json({
@@ -65,28 +62,5 @@ export async function GET(request: NextRequest) {
       { error: "获取幻灯片列表失败" },
       { status: 500 }
     );
-  }
-}
-
-// 异步触发封面生成
-async function triggerCoverGeneration(slideIds: string[]) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3004";
-
-  for (const slideId of slideIds) {
-    try {
-      // 使用 fetch 调用封面生成 API（异步，不等待）
-      fetch(`${baseUrl}/api/slides/generate-cover`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slideId }),
-      }).catch(() => {
-        // 忽略错误，后台静默处理
-      });
-
-      // 避免同时触发太多请求
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    } catch {
-      // 忽略错误
-    }
   }
 }

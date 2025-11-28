@@ -1,30 +1,12 @@
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { triggerCoverGenerationBatch } from "@/lib/cover-generator";
 import GalleryClient from "./GalleryClient";
 
 export const metadata: Metadata = {
   title: "作品画廊 | NanoBanana",
   description: "探索用户创作的精彩幻灯片作品",
 };
-
-// 触发封面生成
-async function triggerCoverGeneration(slideIds: string[]) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3004";
-
-  for (const slideId of slideIds) {
-    try {
-      fetch(`${baseUrl}/api/slides/generate-cover`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slideId }),
-      }).catch(() => {});
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    } catch {
-      // 忽略错误
-    }
-  }
-}
 
 // 服务端获取初始数据
 async function getInitialSlides() {
@@ -53,16 +35,13 @@ async function getInitialSlides() {
       };
     });
 
-    // 触发没有封面的幻灯片生成封面
+    // 触发没有封面的幻灯片生成封面（后台异步执行）
     const needsCoverIds = items
       .filter((item) => item.needsCover)
       .map((item) => item.id);
 
     if (needsCoverIds.length > 0) {
-      console.log(`[Gallery] Triggering cover generation for ${needsCoverIds.length} slides:`, needsCoverIds);
-      triggerCoverGeneration(needsCoverIds).catch((err) => {
-        console.error("[Gallery] Failed to trigger cover generation:", err);
-      });
+      triggerCoverGenerationBatch(needsCoverIds);
     }
 
     return items;
