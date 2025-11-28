@@ -1,9 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowLeft, Images, Calendar, ExternalLink, Loader2 } from "lucide-react";
+
+// Cloudflare Image Resizing URL
+function getCoverUrl(url: string): string {
+  if (url.includes('doubao.luzhipeng.com')) {
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
+      return `https://doubao.luzhipeng.com/cdn-cgi/image/format=auto,width=400,quality=75${path}`;
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
 
 interface SlideItem {
   id: string;
@@ -114,12 +127,10 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                   {/* Cover Image */}
                   <div className="aspect-[4/3] relative bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 overflow-hidden">
                     {slide.cover ? (
-                      <Image
-                        src={slide.cover}
+                      <img
+                        src={getCoverUrl(slide.cover)}
                         alt={slide.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
                       // 没有封面时显示标题作为占位
