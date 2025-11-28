@@ -220,10 +220,17 @@ export class ResearchStateManager {
       return { stop: true, reason: '达到最大探索轮数' };
     }
 
-    // 达到提前停止阈值
+    // 最少执行 3 轮再考虑早停（确保收集足够信息）
+    const MIN_ROUNDS_BEFORE_EARLY_STOP = 3;
+    if (this.state.currentRound < MIN_ROUNDS_BEFORE_EARLY_STOP) {
+      return { stop: false, reason: '' };
+    }
+
+    // 达到提前停止阈值（分数够高 + 结果数量够多）
     const avgScore = (this.state.coverageScore + this.state.qualityScore) / 2;
-    if (avgScore >= this.config.earlyStopThreshold) {
-      return { stop: true, reason: `信息质量达到阈值 (${avgScore.toFixed(1)}%)` };
+    const hasEnoughResults = this.state.rawResults.length >= 30; // 至少 30 条结果
+    if (avgScore >= this.config.earlyStopThreshold && hasEnoughResults) {
+      return { stop: true, reason: `信息质量达到阈值 (${avgScore.toFixed(1)}%, ${this.state.rawResults.length} 条结果)` };
     }
 
     // 连续两轮没有新信息
