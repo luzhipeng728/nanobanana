@@ -97,7 +97,7 @@ import type {
 } from '@/types/super-agent';
 import { CLAUDE_MODEL, CLAUDE_MAX_TOKENS } from '@/lib/claude-config';
 
-// 初始化 Anthropic 客户端
+// 初始化 Anthropic 客户端（启用 structured outputs beta）
 function getAnthropicClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -105,7 +105,11 @@ function getAnthropicClient(): Anthropic {
   }
   return new Anthropic({
     apiKey,
-    baseURL: process.env.ANTHROPIC_BASE_URL || undefined
+    baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+    // 启用 structured outputs beta，确保工具调用返回符合 schema 的 JSON
+    defaultHeaders: {
+      'anthropic-beta': 'structured-outputs-2025-11-13'
+    }
   });
 }
 

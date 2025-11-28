@@ -269,6 +269,7 @@ export const SUPER_AGENT_TOOLS: AgentTool[] = [
   },
 
   // 工具8: 最终输出（支持多提示词）
+  // 注意：这个工具使用特殊的 schema 定义，在 formatToolsForClaude 中单独处理
   {
     name: 'finalize_output',
     description: '当提示词达到质量要求时（评估分数>=85或迭代次数达到上限），输出最终结果。支持输出多个提示词（如PPT多页、教程多步骤等）。这个工具会结束ReAct循环。',
@@ -301,6 +302,50 @@ export const SUPER_AGENT_TOOLS: AgentTool[] = [
   }
 ];
 
+// finalize_output 工具的详细 JSON Schema（用于 structured outputs）
+export const FINALIZE_OUTPUT_SCHEMA = {
+  type: 'object' as const,
+  properties: {
+    prompts: {
+      type: 'array',
+      description: '提示词列表',
+      items: {
+        type: 'object',
+        properties: {
+          scene: {
+            type: 'string',
+            description: '场景名称'
+          },
+          prompt: {
+            type: 'string',
+            description: '提示词内容'
+          },
+          chinese_texts: {
+            type: 'array',
+            items: { type: 'string' },
+            description: '中文文字列表'
+          }
+        },
+        required: ['scene', 'prompt']
+      }
+    },
+    generation_tips: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '生成建议列表'
+    },
+    recommended_model: {
+      type: 'string',
+      description: '推荐使用的生成模型'
+    },
+    matched_skill: {
+      type: 'string',
+      description: '匹配使用的技能名称'
+    }
+  },
+  required: ['prompts']
+};
+
 // 工具格式化选项
 export interface FormatToolsOptions {
   enableDeepResearch?: boolean; // 是否启用深度研究工具
@@ -316,28 +361,40 @@ export function formatToolsForClaude(options: FormatToolsOptions = {}): ClaudeTo
     tools = tools.filter(t => t.name !== 'deep_research');
   }
 
-  return tools.map(tool => ({
-    name: tool.name,
-    description: tool.description,
-    input_schema: {
-      type: 'object' as const,
-      properties: tool.parameters.reduce((acc, param) => {
-        const prop: any = {
-          type: param.type === 'array' ? 'array' : param.type,
-          description: param.description
-        };
-        if (param.enum) {
-          prop.enum = param.enum;
-        }
-        if (param.type === 'array') {
-          prop.items = { type: 'string' };
-        }
-        acc[param.name] = prop;
-        return acc;
-      }, {} as Record<string, any>),
-      required: tool.parameters.filter(p => p.required).map(p => p.name)
+  return tools.map(tool => {
+    // finalize_output 使用详细的 JSON Schema（支持 structured outputs）
+    if (tool.name === 'finalize_output') {
+      return {
+        name: tool.name,
+        description: tool.description,
+        input_schema: FINALIZE_OUTPUT_SCHEMA
+      };
     }
-  }));
+
+    // 其他工具使用通用格式
+    return {
+      name: tool.name,
+      description: tool.description,
+      input_schema: {
+        type: 'object' as const,
+        properties: tool.parameters.reduce((acc, param) => {
+          const prop: any = {
+            type: param.type === 'array' ? 'array' : param.type,
+            description: param.description
+          };
+          if (param.enum) {
+            prop.enum = param.enum;
+          }
+          if (param.type === 'array') {
+            prop.items = { type: 'string' };
+          }
+          acc[param.name] = prop;
+          return acc;
+        }, {} as Record<string, any>),
+        required: tool.parameters.filter(p => p.required).map(p => p.name)
+      }
+    };
+  });
 }
 
 // 获取工具名称列表
