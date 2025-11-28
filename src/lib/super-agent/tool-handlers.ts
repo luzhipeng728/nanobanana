@@ -5,6 +5,7 @@ import { SKILL_LIBRARY, matchSkillByKeywords } from './skills';
 import type { ToolResult, FinalOutput, SuperAgentStreamEvent } from '@/types/super-agent';
 import { runDeepResearch, ResearchProgressEvent } from './deep-research';
 import { fetchAndCompressImage } from '@/lib/image-utils';
+import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from '@/lib/claude-config';
 
 // 初始化 Anthropic 客户端
 function getAnthropicClient(): Anthropic {
@@ -538,8 +539,8 @@ ${focusPoints.map((f: string) => `- ${f}`).join('\n')}
     let fullAnalysis = '';
 
     const stream = anthropic.messages.stream({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
+      model: CLAUDE_LIGHT_MODEL,
+      max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
       messages: [{
         role: 'user',
         content: [

@@ -33,6 +33,8 @@ import ImageModal from "./ImageModal";
 import NodeToolbar from "./NodeToolbar";
 import { CanvasContext } from "@/contexts/CanvasContext";
 import { AudioProvider } from "@/contexts/AudioContext";
+import { TouchContextMenuProvider } from "./TouchContextMenu";
+import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
@@ -97,6 +99,10 @@ export default function InfiniteCanvas() {
 
   // Gallery Image Placement State (从画廊添加图片)
   const [pendingGalleryImage, setPendingGalleryImage] = useState<{ url: string; prompt: string } | null>(null);
+
+  // Touch device state - 触摸设备点击放置节点
+  const isTouchDevice = useIsTouchDevice();
+  const [pendingNodeType, setPendingNodeType] = useState<string | null>(null);
 
   // Drag and drop handlers for adding nodes
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
@@ -422,7 +428,7 @@ export default function InfiniteCanvas() {
     setIsPlacingImage(true);
   }, []);
 
-  // 处理画布点击 - 在放置模式下确定位置并打开文件选择或放置画廊图片
+  // 处理画布点击 - 在放置模式下确定位置并打开文件选择或放置画廊图片或创建节点
   const handleCanvasClick = useCallback((event: React.MouseEvent) => {
     if (!reactFlowInstance) return;
 
@@ -430,6 +436,30 @@ export default function InfiniteCanvas() {
       x: event.clientX,
       y: event.clientY,
     });
+
+    // 如果是触摸设备节点放置模式
+    if (pendingNodeType) {
+      const newNode: Node = {
+        id: `${pendingNodeType}-${Date.now()}`,
+        type: pendingNodeType,
+        position,
+        style: pendingNodeType === 'sprite' ? { width: 360 } : pendingNodeType === 'superAgent' ? { width: 450 } : undefined,
+        data: pendingNodeType === 'imageGen'
+          ? { prompt: '' }
+          : pendingNodeType === 'agent'
+          ? { userRequest: '' }
+          : pendingNodeType === 'musicGen'
+          ? { prompt: '', lyrics: '', numberOfSongs: 2 }
+          : pendingNodeType === 'videoGen'
+          ? { prompt: '', orientation: 'portrait' }
+          : pendingNodeType === 'chat'
+          ? { messages: [], systemPrompt: 'You are a helpful AI assistant that generates image prompts. When user asks for images, wrap your prompt suggestions in ```text\n[prompt text]\n``` blocks.' }
+          : {},
+      };
+      setNodes((nds) => nds.concat(newNode));
+      setPendingNodeType(null);
+      return;
+    }
 
     // 如果是画廊图片放置模式
     if (pendingGalleryImage) {
@@ -454,12 +484,13 @@ export default function InfiniteCanvas() {
       pendingImagePositionRef.current = position;
       fileInputRef.current?.click();
     }
-  }, [isPlacingImage, pendingGalleryImage, reactFlowInstance, setNodes]);
+  }, [isPlacingImage, pendingGalleryImage, pendingNodeType, reactFlowInstance, setNodes]);
 
   // 取消放置模式
   const cancelPlacingImage = useCallback(() => {
     setIsPlacingImage(false);
     setPendingGalleryImage(null);
+    setPendingNodeType(null);
     pendingImagePositionRef.current = null;
   }, []);
 
@@ -954,7 +985,11 @@ export default function InfiniteCanvas() {
       <ModelCapabilityTip />
 
       {/* Node Toolbar */}
-      <NodeToolbar onDragStart={onDragStart} onImageUploadClick={handleToolbarImageUploadClick} />
+      <NodeToolbar
+        onDragStart={onDragStart}
+        onImageUploadClick={handleToolbarImageUploadClick}
+        onNodeTypeSelect={(nodeType) => setPendingNodeType(nodeType)}
+      />
 
       {/* Hidden file input for image upload */}
       <input
@@ -980,17 +1015,27 @@ export default function InfiniteCanvas() {
         </div>
       )}
 
-      {/* Image Placement Mode Overlay */}
-      {(isPlacingImage || pendingGalleryImage) && (
+      {/* Placement Mode Overlay - 图片/画廊图片/节点类型放置 */}
+      {(isPlacingImage || pendingGalleryImage || pendingNodeType) && (
         <div
           className="absolute inset-0 z-20 cursor-crosshair"
           onClick={handleCanvasClick}
         >
           {/* Top hint bar */}
-          <div className={`absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 ${pendingGalleryImage ? 'bg-purple-500/90' : 'bg-cyan-500/90'} backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg`}>
-            <ImageIcon className="w-4 h-4" />
+          <div className={`absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 ${
+            pendingNodeType ? 'bg-blue-500/90' : pendingGalleryImage ? 'bg-purple-500/90' : 'bg-cyan-500/90'
+          } backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg`}>
+            {pendingNodeType ? (
+              <Wand2 className="w-4 h-4" />
+            ) : (
+              <ImageIcon className="w-4 h-4" />
+            )}
             <span className="text-sm font-medium">
-              {pendingGalleryImage ? '点击画布放置画廊图片' : '点击画布选择图片放置位置'}
+              {pendingNodeType
+                ? `点击画布放置 ${pendingNodeType === 'imageGen' ? 'Generator' : pendingNodeType === 'agent' ? 'Agent' : pendingNodeType === 'superAgent' ? 'Prompt Expert' : pendingNodeType === 'musicGen' ? 'Music' : pendingNodeType === 'videoGen' ? 'Video' : pendingNodeType === 'chat' ? 'Chat' : pendingNodeType === 'sprite' ? 'Sprite' : pendingNodeType} 节点`
+                : pendingGalleryImage
+                ? '点击画布放置画廊图片'
+                : '点击画布选择图片放置位置'}
             </span>
             <button
               onClick={(e) => {
@@ -1006,38 +1051,45 @@ export default function InfiniteCanvas() {
         </div>
       )}
 
-      <AudioProvider>
-        <CanvasContext.Provider value={canvasContextValue}>
-          <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onInit={setReactFlowInstance}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          nodeTypes={nodeTypes}
-          fitView
-          minZoom={0.1}
-          maxZoom={4}
-          className="bg-neutral-50 dark:bg-black"
-          // 性能优化配置
-          // 注意：不能开启 onlyRenderVisibleElements，否则节点离开视口时会卸载，导致轮询状态丢失
-          onlyRenderVisibleElements={false}
-          nodesFocusable={false}            // 禁用节点焦点，减少事件监听
-          edgesFocusable={false}            // 禁用边焦点
-          elevateNodesOnSelect={false}      // 选中时不提升 z-index，避免重排
-          nodeDragThreshold={5}             // 拖动阈值，减少误触发
-          // 框选模式配置
-          selectionOnDrag={selectionMode}   // 框选模式下拖动为选择
-          panOnDrag={!selectionMode}        // 普通模式下拖动为平移
-        >
-          <Controls />
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-        </ReactFlow>
-      </CanvasContext.Provider>
-      </AudioProvider>
+      <TouchContextMenuProvider>
+        <AudioProvider>
+          <CanvasContext.Provider value={canvasContextValue}>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onInit={setReactFlowInstance}
+              onDrop={onDrop}
+              onDragOver={onDragOver}
+              nodeTypes={nodeTypes}
+              fitView
+              minZoom={0.1}
+              maxZoom={4}
+              className="bg-neutral-50 dark:bg-black"
+              // 性能优化配置
+              // 注意：不能开启 onlyRenderVisibleElements，否则节点离开视口时会卸载，导致轮询状态丢失
+              onlyRenderVisibleElements={false}
+              nodesFocusable={false}            // 禁用节点焦点，减少事件监听
+              edgesFocusable={false}            // 禁用边焦点
+              elevateNodesOnSelect={false}      // 选中时不提升 z-index，避免重排
+              nodeDragThreshold={5}             // 拖动阈值，减少误触发
+              // 框选模式配置
+              selectionOnDrag={selectionMode}   // 框选模式下拖动为选择
+              panOnDrag={!selectionMode}        // 普通模式下拖动为平移
+              // 触摸设备优化 - 双指始终可缩放
+              zoomOnPinch={true}                // 双指捏合缩放
+              panOnScroll={!isTouchDevice}      // 非触摸设备滚轮平移
+              zoomOnScroll={!isTouchDevice}     // 非触摸设备滚轮缩放
+              preventScrolling={true}           // 阻止页面滚动
+            >
+              <Controls />
+              <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+            </ReactFlow>
+          </CanvasContext.Provider>
+        </AudioProvider>
+      </TouchContextMenuProvider>
 
       {/* Login/Register Modal */}
       {isUserModalOpen && !userId && !isLoading && (

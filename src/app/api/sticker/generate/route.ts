@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { prisma } from "@/lib/prisma";
 import { generateImageAction } from "@/app/actions/generate";
 import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen";
+import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from "@/lib/claude-config";
 
 // 获取当前用户 ID
 async function getCurrentUserId(): Promise<string | null> {
@@ -38,8 +39,8 @@ async function analyzeOriginalImage(
   let analysisText = "";
   
   const stream = anthropic.messages.stream({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 1500,
+    model: CLAUDE_LIGHT_MODEL,
+    max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
     messages: [
       {
         role: "user",
@@ -107,8 +108,8 @@ async function generateAllFramePrompts(
   animationPrompt: string
 ): Promise<string[]> {
   const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 3000,
+    model: CLAUDE_LIGHT_MODEL,
+    max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
     messages: [{
       role: "user",
       content: `Based on this image analysis, I need to create a "${animationPrompt}" sticker animation with 10 frames.

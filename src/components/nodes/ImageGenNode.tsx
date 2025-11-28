@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useState, useCallback, useEffect } from "react";
-import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
+import { memo, useState, useCallback, useEffect, useRef } from "react";
+import { Handle, Position, NodeProps, useReactFlow, useStore, addEdge } from "@xyflow/react";
 import { rewritePrompt } from "@/app/actions/generate";
 import { createImageTask } from "@/app/actions/image-task";
 import { type GeminiImageModel, type ImageGenerationConfig, RESOLUTION_OPTIONS } from "@/types/image-gen";
@@ -9,6 +9,9 @@ import { useCanvas } from "@/contexts/CanvasContext";
 import { Loader2, Wand2, Image as ImageIcon, Sparkles, Maximize, Link2 } from "lucide-react";
 import { NodeTextarea, NodeSelect, NodeLabel, NodeButton, NodeTabSelect } from "@/components/ui/NodeUI";
 import { BaseNode } from "./BaseNode";
+import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
+import { useTouchContextMenu, createNodeMenuOptions } from "@/components/TouchContextMenu";
+import { cn } from "@/lib/utils";
 
 // Define the data structure for the node
 type ImageGenNodeData = {
@@ -19,7 +22,7 @@ type ImageGenNodeData = {
 
 const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { addImageNode, getConnectedImageNodes } = useCanvas();
-  const { getNode } = useReactFlow();
+  const { getNode, setNodes, setEdges } = useReactFlow();
 
   const [prompt, setPrompt] = useState(data.prompt || "");
   const [imageUrl, setImageUrl] = useState(data.imageUrl || "");
@@ -30,6 +33,80 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
   const [isRewriting, setIsRewriting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [connectedImagesCount, setConnectedImagesCount] = useState<number>(0);
+
+  // 触摸设备长按菜单支持
+  const isTouchDevice = useIsTouchDevice();
+  const { showMenu, connectMode, completeConnection, startConnectMode, setOnConnectionComplete } = useTouchContextMenu();
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const isLongPress = useRef(false);
+
+  // 设置连线完成回调
+  useEffect(() => {
+    setOnConnectionComplete((sourceId: string, targetId: string) => {
+      setEdges((eds) => addEdge({
+        id: `edge-${sourceId}-${targetId}-${Date.now()}`,
+        source: sourceId,
+        target: targetId,
+        sourceHandle: null,
+        targetHandle: null,
+      }, eds));
+    });
+  }, [setOnConnectionComplete, setEdges]);
+
+  // 删除当前节点
+  const handleDeleteNode = useCallback(() => {
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+  }, [id, setNodes, setEdges]);
+
+  // 长按处理
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!isTouchDevice) return;
+    if (connectMode.isActive && connectMode.sourceNodeId !== id) {
+      e.preventDefault();
+      e.stopPropagation();
+      completeConnection(id);
+      return;
+    }
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+    isLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true;
+      if (navigator.vibrate) navigator.vibrate(50);
+      const options = createNodeMenuOptions(id, {
+        onDelete: handleDeleteNode,
+        onConnect: () => startConnectMode(id),
+      });
+      showMenu({ x: touch.clientX, y: touch.clientY }, id, options);
+    }, 500);
+  }, [isTouchDevice, connectMode, id, completeConnection, handleDeleteNode, startConnectMode, showMenu]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartPos.current || !longPressTimer.current) return;
+    const touch = e.touches[0];
+    const distance = Math.sqrt(
+      Math.pow(touch.clientX - touchStartPos.current.x, 2) +
+      Math.pow(touch.clientY - touchStartPos.current.y, 2)
+    );
+    if (distance > 10 && longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    if (isLongPress.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    touchStartPos.current = null;
+  }, []);
 
   // 使用 ReactFlow store 监听 edges 变化
   const connectedEdgeCount = useStore((state) =>
@@ -115,6 +192,15 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
   };
 
   return (
+    <div
+      className={cn(
+        "touch-node-wrapper",
+        connectMode.isActive && connectMode.sourceNodeId !== id && "ring-2 ring-blue-400 ring-offset-2 rounded-2xl"
+      )}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
     <BaseNode
       title="Image Generator"
       icon={ImageIcon}
@@ -237,6 +323,7 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       </div>
 
     </BaseNode>
+    </div>
   );
 };
 

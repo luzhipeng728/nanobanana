@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 
 type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'sprite' | 'superAgent';
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, nodeType: NodeType) => void;
   onImageUploadClick?: () => void;
+  onNodeTypeSelect?: (nodeType: NodeType) => void; // 触摸设备点击选择节点类型
 }
 
 // Video 工具单独定义（彩蛋解锁后显示）
@@ -76,8 +78,9 @@ const uploadItem = {
   accentColor: '#06b6d4',
 };
 
-export default function NodeToolbar({ onDragStart, onImageUploadClick }: NodeToolbarProps) {
+export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTypeSelect }: NodeToolbarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const isTouchDevice = useIsTouchDevice();
 
   // 彩蛋：Video 工具解锁状态
   const [videoUnlocked, setVideoUnlocked] = useState(false);
@@ -208,9 +211,13 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick }: NodeToo
             {items.map((item) => (
               <div
                 key={item.type}
-                draggable
-                onDragStart={(event) => onDragStart(event, item.type)}
-                className="group relative cursor-grab active:cursor-grabbing"
+                draggable={!isTouchDevice}
+                onDragStart={(event) => !isTouchDevice && onDragStart(event, item.type)}
+                onClick={() => isTouchDevice && onNodeTypeSelect?.(item.type)}
+                className={cn(
+                  "group relative",
+                  isTouchDevice ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
+                )}
               >
                 {/* 卡片本身也是玻璃，但更通透 */}
                 <div
@@ -262,12 +269,18 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick }: NodeToo
                     </p>
                   </div>
 
-                  {/* 拖拽指示器 */}
+                  {/* 拖拽/点击指示器 */}
                   <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 pr-1 transform translate-x-2 group-hover:translate-x-0">
-                    <div className="flex flex-col gap-[3px]">
-                      <div className="w-1 h-1 rounded-full" style={{ background: item.accentColor }} />
-                      <div className="w-1 h-1 rounded-full" style={{ background: item.accentColor, opacity: 0.5 }} />
-                    </div>
+                    {isTouchDevice ? (
+                      <div className="text-[10px] font-medium" style={{ color: item.accentColor }}>
+                        Tap
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-[3px]">
+                        <div className="w-1 h-1 rounded-full" style={{ background: item.accentColor }} />
+                        <div className="w-1 h-1 rounded-full" style={{ background: item.accentColor, opacity: 0.5 }} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

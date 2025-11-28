@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from "@/lib/claude-config";
 
 export interface VeoAnalyzeEvent {
   type: "status" | "analysis_start" | "analysis_chunk" | "analysis_end" | "prompt_ready" | "error";
@@ -89,8 +90,8 @@ export async function POST(request: NextRequest) {
 
         // 流式分析图片
         const analysisStream = anthropic.messages.stream({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 1024,
+          model: CLAUDE_LIGHT_MODEL,
+          max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
           messages: [
             {
               role: "user",
@@ -195,8 +196,8 @@ Generate a detailed prompt (50-80 words) with cinematic depth.
 Output ONLY the prompt text in English, nothing else.`;
 
       const promptResponse = await anthropic.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 500,
+        model: CLAUDE_LIGHT_MODEL,
+        max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
         messages: [{ role: "user", content: promptSystemMessage }],
       });
 

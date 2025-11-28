@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
 import Anthropic from "@anthropic-ai/sdk";
 import { uploadVideoFromBase64 } from "./storage";
+import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from "@/lib/claude-config";
 
 const prisma = new PrismaClient();
 
@@ -162,8 +163,8 @@ Output ONLY the prompt text, nothing else.`;
   });
 
   const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 500,
+    model: CLAUDE_LIGHT_MODEL,
+    max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
     messages: [{ role: "user", content }],
   });
 

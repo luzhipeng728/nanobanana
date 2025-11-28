@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgentPrompt, AgentStreamEvent } from "@/types/agent";
+import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from "@/lib/claude-config";
 
 // 参考图数据类型
 interface ReferenceImages {
@@ -58,8 +59,8 @@ async function analyzeImagesWithClaudeStream(
   let fullText = "";
   
   const stream = anthropic.messages.stream({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 2048,
+    model: CLAUDE_LIGHT_MODEL,
+    max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
     messages: [
       {
         role: "user",
@@ -337,8 +338,8 @@ ${imageAnalysis}
         console.log(`[Agent] Starting Claude stream for prompt generation`);
 
         const stream = anthropic.messages.stream({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 4096,
+          model: CLAUDE_LIGHT_MODEL,
+          max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
           system: AGENT_SYSTEM_PROMPT,
           messages: [{ role: "user", content: userInput }],
         });

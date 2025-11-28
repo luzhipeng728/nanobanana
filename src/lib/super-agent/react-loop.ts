@@ -16,6 +16,7 @@ import type {
   FinalOutput,
   SuperAgentStreamEvent
 } from '@/types/super-agent';
+import { CLAUDE_MODEL, CLAUDE_MAX_TOKENS } from '@/lib/claude-config';
 
 // 初始化 Anthropic 客户端
 function getAnthropicClient(): Anthropic {
@@ -120,8 +121,8 @@ export async function runReActLoop(
     try {
       // 流式调用 Claude
       const stream = anthropic.messages.stream({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4096,
+        model: CLAUDE_MODEL,
+        max_tokens: CLAUDE_MAX_TOKENS,
         system: systemPrompt,
         tools,
         messages

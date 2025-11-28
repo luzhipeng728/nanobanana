@@ -8,12 +8,13 @@ import {
   SearchResultItem,
   DeepResearchConfig
 } from './types';
+import { DEEP_RESEARCH_MAX_ROUNDS } from '@/lib/claude-config';
 
 /**
  * 默认配置
  */
 export const DEFAULT_CONFIG: DeepResearchConfig = {
-  maxRounds: 4,              // 默认 4 轮，平衡效率和质量
+  maxRounds: DEEP_RESEARCH_MAX_ROUNDS, // 从配置文件读取，默认 10 轮
   minCoverageScore: 70,
   minQualityScore: 75,
   earlyStopThreshold: 85,

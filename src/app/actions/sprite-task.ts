@@ -7,6 +7,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createCanvas, loadImage } from "canvas";
 import { uploadBufferToR2 } from "@/lib/r2";
 import type { GenerationMode, ImageResolution, SpriteConfig } from "@/types/sprite";
+import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from "@/lib/claude-config";
 
 const prisma = new PrismaClient();
 
@@ -217,8 +218,8 @@ async function analyzeSpriteWithClaude(imageBase64: string): Promise<SpriteAnaly
   console.log(`[Sprite Task] Detected media type: ${mediaType}`);
 
   const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
+    model: CLAUDE_LIGHT_MODEL,
+    max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
     messages: [
       {
         role: "user",

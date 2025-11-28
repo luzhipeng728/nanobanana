@@ -1,13 +1,15 @@
 "use client";
 
 import { memo, useEffect, useState, useRef, useCallback } from "react";
-import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from "@xyflow/react";
+import { Handle, Position, NodeProps, NodeResizer, useReactFlow, addEdge } from "@xyflow/react";
 import { Image as ImageIcon, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { BaseNode } from "./BaseNode";
 import { cn } from "@/lib/utils";
 import { createImageTask } from "@/app/actions/image-task";
 import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen";
+import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
+import { useTouchContextMenu, createNodeMenuOptions } from "@/components/TouchContextMenu";
 
 // Define the data structure for the image node
 type ImageNodeData = {
@@ -35,13 +37,109 @@ const MIN_HEIGHT = 100;
 
 const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { openImageModal, addImageNode } = useCanvas();
-  const { updateNodeData, getNode, setNodes } = useReactFlow();
+  const { updateNodeData, getNode, setNodes, setEdges } = useReactFlow();
   // 只有在没有错误、没有图片且 isLoading 为 true 时才显示加载状态
   const isLoading = !data.error && (data.isLoading || (!data.imageUrl && data.taskId));
   const [pollingStatus, setPollingStatus] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasAutoResized = useRef(false); // 避免重复调整尺寸
+
+  // 触摸设备长按菜单支持
+  const isTouchDevice = useIsTouchDevice();
+  const { showMenu, connectMode, completeConnection, startConnectMode, setOnConnectionComplete } = useTouchContextMenu();
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const isLongPress = useRef(false);
+
+  // 设置连线完成回调
+  useEffect(() => {
+    setOnConnectionComplete((sourceId: string, targetId: string) => {
+      // 创建从 source 到 target 的边
+      setEdges((eds) => addEdge({
+        id: `edge-${sourceId}-${targetId}-${Date.now()}`,
+        source: sourceId,
+        target: targetId,
+        sourceHandle: null,
+        targetHandle: null,
+      }, eds));
+    });
+  }, [setOnConnectionComplete, setEdges]);
+
+  // 删除当前节点
+  const handleDeleteNode = useCallback(() => {
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+  }, [id, setNodes, setEdges]);
+
+  // 长按开始
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!isTouchDevice) return;
+
+    // 如果在连线模式，点击即完成连接
+    if (connectMode.isActive && connectMode.sourceNodeId !== id) {
+      e.preventDefault();
+      e.stopPropagation();
+      completeConnection(id);
+      return;
+    }
+
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+    isLongPress.current = false;
+
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true;
+
+      // 震动反馈
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+
+      // 显示上下文菜单
+      const options = createNodeMenuOptions(id, {
+        onDelete: handleDeleteNode,
+        onConnect: () => startConnectMode(id),
+      });
+
+      showMenu({ x: touch.clientX, y: touch.clientY }, id, options);
+    }, 500);
+  }, [isTouchDevice, connectMode, id, completeConnection, handleDeleteNode, startConnectMode, showMenu]);
+
+  // 长按移动 - 取消长按
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartPos.current || !longPressTimer.current) return;
+
+    const touch = e.touches[0];
+    const distance = Math.sqrt(
+      Math.pow(touch.clientX - touchStartPos.current.x, 2) +
+      Math.pow(touch.clientY - touchStartPos.current.y, 2)
+    );
+
+    // 移动超过 10px 取消长按
+    if (distance > 10) {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    }
+  }, []);
+
+  // 长按结束
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+
+    // 如果是长按触发的，阻止后续事件
+    if (isLongPress.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    touchStartPos.current = null;
+  }, []);
 
   // 图片加载完成后根据比例自动调整节点尺寸
   const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -237,7 +335,16 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   };
 
   return (
-    <div className="w-full h-full relative">
+    <div
+      className={cn(
+        "w-full h-full relative",
+        // 连线模式下的视觉反馈
+        connectMode.isActive && connectMode.sourceNodeId !== id && "ring-2 ring-blue-400 ring-offset-2 rounded-2xl cursor-pointer"
+      )}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
         {/* NodeResizer 必须放在节点最外层才能正常工作 */}
         <NodeResizer
           isVisible={selected}

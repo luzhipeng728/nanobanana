@@ -9,6 +9,7 @@ import type {
   SpriteStreamEvent,
   SpriteAnalysisResult,
 } from "@/types/sprite";
+import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from "@/lib/claude-config";
 
 // 获取 Gemini API Key
 function getGeminiApiKey(): string {
@@ -396,8 +397,8 @@ async function analyzeSpriteWithClaudeStream(
   let fullText = "";
 
   const stream = anthropic.messages.stream({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
+    model: CLAUDE_LIGHT_MODEL,
+    max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
     messages: [
       {
         role: "user",

@@ -9,6 +9,7 @@ import {
   ResearchState
 } from './types';
 import { CATEGORY_LABELS, INFO_CATEGORIES } from './state';
+import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from '@/lib/claude-config';
 
 // Anthropic 客户端
 const anthropic = new Anthropic();
@@ -135,8 +136,8 @@ ${resultsText}
 
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        model: CLAUDE_LIGHT_MODEL,
+        max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
         messages: [{ role: 'user', content: prompt }]
       });
 
@@ -353,8 +354,8 @@ ${allInfo.slice(0, 30).join('\n\n')}
 
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1500,
+        model: CLAUDE_LIGHT_MODEL,
+        max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
         messages: [{ role: 'user', content: prompt }]
       });
 
