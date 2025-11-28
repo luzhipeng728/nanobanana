@@ -29,7 +29,8 @@ export class SufficiencyEvaluator {
     minQuality: number = 75
   ) {
     this.topic = topic;
-    this.requiredInfo = requiredInfo;
+    // 防御性处理：确保 requiredInfo 是数组
+    this.requiredInfo = Array.isArray(requiredInfo) ? requiredInfo : [];
     this.minCoverage = minCoverage;
     this.minQuality = minQuality;
   }

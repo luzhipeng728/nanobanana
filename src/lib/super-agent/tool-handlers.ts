@@ -330,12 +330,15 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
   };
 
   try {
+    // 防御性处理：确保 required_info 是数组
+    const safeRequiredInfo = Array.isArray(required_info) ? required_info : [];
+
     // 调用 DeepResearch 子智能体
     const report = await runDeepResearch(
       {
         topic,
         context,
-        requiredInfo: required_info as string[] | undefined,
+        requiredInfo: safeRequiredInfo,
         outputMode: output_mode as 'summary' | 'detailed' | 'adaptive' | undefined,
         maxRounds: max_rounds as number | undefined,
         dateRestrict: date_restrict as string | undefined

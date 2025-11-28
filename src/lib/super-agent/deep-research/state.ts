@@ -67,11 +67,14 @@ export class ResearchStateManager {
   ) {
     this.config = { ...DEFAULT_CONFIG, ...config };
 
+    // 防御性处理：确保 requiredInfo 是数组
+    const safeRequiredInfo = Array.isArray(requiredInfo) ? requiredInfo : [];
+
     // 初始化状态
     this.state = {
       topic,
       originalQuery,
-      requiredInfo,
+      requiredInfo: safeRequiredInfo,
       currentRound: 0,
       maxRounds: this.config.maxRounds,
       startTime: Date.now(),
@@ -81,7 +84,7 @@ export class ResearchStateManager {
       categorizedInfo: new Map(),
       coverageScore: 0,
       qualityScore: 0,
-      missingAspects: [...requiredInfo],
+      missingAspects: [...safeRequiredInfo],
       isComplete: false,
       explorationHistory: []
     };
