@@ -10,8 +10,10 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'zai-glm-4.6';
 
 // GLM 模型配置
-const GLM_MAX_TOKENS = 2048; // GLM 输出限制，JSON 响应足够用
-const GLM_TIMEOUT = 30000;   // 30 秒超时
+// 注意：GLM 4.6 是 reasoning 模型，会先输出思考过程再输出答案
+// 需要足够的 tokens 让它完成思考 + 输出最终答案
+const GLM_MAX_TOKENS = 4096; // 增加到 4K 以容纳思考过程
+const GLM_TIMEOUT = 60000;   // 60 秒超时（reasoning 需要更多时间）
 
 // Anthropic 客户端（回退用）
 const anthropic = new Anthropic();
@@ -54,8 +56,21 @@ export async function callLLM(prompt: string): Promise<LLMResponse> {
         temperature: 0.3, // 低温度，输出更稳定
       });
 
-      const text = response.choices?.[0]?.message?.content;
+      // GLM 4.6 是 reasoning 模型，会同时返回 reasoning（思考）和 content（答案）
+      // 优先使用 content，它是最终答案
+      const message = response.choices?.[0]?.message as any;
+
+      // 优先取 content（最终答案）
+      let text = message?.content;
+
+      // 如果 content 为空但有 reasoning，尝试从 reasoning 中提取
+      if (!text && message?.reasoning) {
+        console.log('[LLM Client] GLM content is empty, trying to extract from reasoning');
+        text = message.reasoning;
+      }
+
       if (text) {
+        console.log(`[LLM Client] GLM response - content: ${!!message?.content}, reasoning: ${!!message?.reasoning}`);
         return {
           text,
           model: OPENAI_MODEL,
