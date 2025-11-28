@@ -156,6 +156,8 @@ function buildInitialMessage(
 // ReAct 循环选项
 export interface ReActLoopOptions {
   enableDeepResearch?: boolean; // 是否启用深度研究
+  conversationId?: string;      // 对话 ID（用于多轮对话）
+  historyMessages?: Anthropic.MessageParam[]; // 历史消息（从对话管理器获取）
 }
 
 // 运行 ReAct 循环（流式版本）
@@ -165,7 +167,7 @@ export async function runReActLoop(
   sendEvent: (event: SuperAgentStreamEvent) => Promise<void>,
   options: ReActLoopOptions = {}
 ): Promise<FinalOutput> {
-  const { enableDeepResearch = false } = options;
+  const { enableDeepResearch = false, historyMessages = [] } = options;
 
   const anthropic = getAnthropicClient();
   const systemPrompt = buildSystemPrompt();
@@ -182,13 +184,21 @@ export async function runReActLoop(
     matchedSkill: null
   };
 
-  // 构建消息历史
+  // 构建消息历史（支持多轮对话）
   const messages: Anthropic.MessageParam[] = [
+    // 先添加历史消息（如果有）
+    ...historyMessages,
+    // 再添加当前用户请求
     {
       role: 'user',
       content: buildInitialMessage(userRequest, referenceImages)
     }
   ];
+
+  // 日志：显示是否有历史消息
+  if (historyMessages.length > 0) {
+    console.log(`[SuperAgent] Continuing conversation with ${historyMessages.length} history messages`);
+  }
 
   await sendEvent({
     type: 'start',

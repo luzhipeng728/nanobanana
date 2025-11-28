@@ -18,6 +18,9 @@ import {
   Eye,
   Palette,
   StopCircle,
+  MessageSquare,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import type {
   SuperAgentStreamEvent,
@@ -89,6 +92,16 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
 
   // Deep research toggle
   const [enableDeepResearch, setEnableDeepResearch] = useState(false);
+
+  // Multi-turn conversation state
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationTokens, setConversationTokens] = useState(0);
+  const [hasCompressedHistory, setHasCompressedHistory] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: number;
+  }>>([]);
 
   // Generation state
   const [generatingCount, setGeneratingCount] = useState(0);
@@ -371,12 +384,34 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         setError(event.error);
         setStreamingThought("");
         break;
+
+      // Handle conversation state updates
+      case "conversation_state":
+        const convEvent = event as any;
+        if (convEvent.conversationId) {
+          setConversationId(convEvent.conversationId);
+        }
+        if (typeof convEvent.totalTokens === 'number') {
+          setConversationTokens(convEvent.totalTokens);
+        }
+        if (typeof convEvent.hasCompressedHistory === 'boolean') {
+          setHasCompressedHistory(convEvent.hasCompressedHistory);
+        }
+        break;
     }
   }, []);
 
   // Start generation
   const handleGenerate = useCallback(async () => {
     if (!userRequest.trim() || isProcessing) return;
+
+    // 保存用户请求到对话历史
+    const userMessage = {
+      role: 'user' as const,
+      content: userRequest,
+      timestamp: Date.now(),
+    };
+    setConversationHistory(prev => [...prev, userMessage]);
 
     setIsProcessing(true);
     setThoughtSteps([]);
@@ -400,6 +435,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
           userRequest,
           referenceImages,
           enableDeepResearch,
+          conversationId: conversationId || undefined,  // 传递对话 ID
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -448,6 +484,16 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         }
       }
 
+      // 保存助手回复到对话历史
+      if (finalPrompts.length > 0) {
+        const assistantMessage = {
+          role: 'assistant' as const,
+          content: `生成了 ${finalPrompts.length} 个场景提示词`,
+          timestamp: Date.now(),
+        };
+        setConversationHistory(prev => [...prev, assistantMessage]);
+      }
+
       // Auto-generate images
       if (autoGenerate && finalPrompts.length > 0) {
         setTimeout(() => {
@@ -465,7 +511,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     } finally {
       setIsProcessing(false);
     }
-  }, [userRequest, connectedImages, useForAnalysis, isProcessing, handleStreamEvent, autoGenerate, generateImagesInBatches, enableDeepResearch]);
+  }, [userRequest, connectedImages, useForAnalysis, isProcessing, handleStreamEvent, autoGenerate, generateImagesInBatches, enableDeepResearch, conversationId]);
 
   // Stop generation
   const handleStop = useCallback(() => {
@@ -486,6 +532,20 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     generateImagesInBatches([prompt]);
   }, [generateImagesInBatches]);
 
+  // Clear conversation and start new
+  const handleNewConversation = useCallback(() => {
+    setConversationId(null);
+    setConversationTokens(0);
+    setHasCompressedHistory(false);
+    setConversationHistory([]);
+    setThoughtSteps([]);
+    setPrompts([]);
+    setError(null);
+    setMatchedSkill(null);
+    setProgress(0);
+    setUserRequest("");
+  }, []);
+
   return (
     <BaseNode
       title="Prompt Expert"
@@ -495,6 +555,16 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
       className="w-[380px]"
       headerActions={
         <div className="flex items-center gap-1.5">
+          {/* 多轮对话状态指示 */}
+          {conversationId && (
+            <span
+              className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+              title={`对话中 · 第 ${Math.ceil(conversationHistory.length / 2)} 轮 · ${(conversationTokens / 1000).toFixed(1)}K tokens${hasCompressedHistory ? ' · 已压缩' : ''}`}
+            >
+              <MessageSquare className="w-3 h-3" />
+              第{Math.ceil(conversationHistory.length / 2)}轮
+            </span>
+          )}
           {connectedImages.length > 0 ? (
             <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">
               <Link2 className="w-3 h-3" />
@@ -696,6 +766,11 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
               <Loader2 className="w-4 h-4 animate-spin" />
               思考中 (迭代 {currentIteration})
             </>
+          ) : conversationId ? (
+            <>
+              <MessageSquare className="w-4 h-4" />
+              继续对话
+            </>
           ) : (
             <>
               <Sparkles className="w-4 h-4" />
@@ -703,12 +778,81 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
             </>
           )}
         </NodeButton>
+        {conversationId && !isProcessing && (
+          <NodeButton
+            onClick={handleNewConversation}
+            className="bg-neutral-500 hover:bg-neutral-400 text-white px-3"
+            title="开始新对话"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </NodeButton>
+        )}
         {isProcessing && (
           <NodeButton onClick={handleStop} className="bg-red-500 hover:bg-red-400 text-white px-3">
             <StopCircle className="w-4 h-4" />
           </NodeButton>
         )}
       </div>
+
+      {/* Conversation history - 对话历史显示 */}
+      {conversationId && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-medium text-blue-700 dark:text-blue-300">
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>多轮对话</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 font-bold">
+                第 {Math.ceil(conversationHistory.length / 2)} 轮
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+                {(conversationTokens / 1000).toFixed(1)}K tokens
+              </span>
+              {hasCompressedHistory && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300">
+                  已压缩
+                </span>
+              )}
+            </div>
+            {/* 清空会话按钮 */}
+            <button
+              onClick={handleNewConversation}
+              disabled={isProcessing}
+              className="text-[10px] flex items-center gap-1 px-2 py-1 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="清空会话，开始新对话"
+            >
+              <Trash2 className="w-3 h-3" />
+              清空
+            </button>
+          </div>
+          {conversationHistory.length > 0 && (
+            <div className="max-h-24 overflow-y-auto space-y-1.5 pr-1">
+              {conversationHistory.slice(-4).map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`text-[11px] px-2 py-1.5 rounded-lg ${
+                    msg.role === 'user'
+                      ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
+                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                  }`}
+                >
+                  <span className="font-medium">{msg.role === 'user' ? '你：' : 'AI：'}</span>
+                  {msg.content.length > 60 ? msg.content.substring(0, 60) + '...' : msg.content}
+                </div>
+              ))}
+              {conversationHistory.length > 4 && (
+                <div className="text-[10px] text-center text-blue-500 dark:text-blue-400">
+                  ... 还有 {conversationHistory.length - 4} 条更早的消息
+                </div>
+              )}
+            </div>
+          )}
+          {conversationHistory.length === 0 && (
+            <div className="text-[11px] text-center text-blue-400 dark:text-blue-500 py-1">
+              对话已建立，输入问题继续交流
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Progress bar - 使用新的动画进度条 */}
       {(isProcessing || progress > 0) && progress < 100 && (

@@ -140,7 +140,9 @@ export type SuperAgentStreamEvent =
   | { type: 'evaluation'; score: number; issues: string[]; passed: boolean }
   | { type: 'optimization'; version: number; changes: string[] }
   | { type: 'complete'; result: FinalOutput }
-  | { type: 'error'; error: string };
+  | { type: 'error'; error: string }
+  // 多轮对话事件
+  | { type: 'conversation_state'; conversationId: string; totalTokens: number; hasCompressedHistory: boolean };
 
 // ========== 节点数据类型 ==========
 

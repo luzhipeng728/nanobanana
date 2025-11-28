@@ -195,3 +195,18 @@ model Slideshow {
 
   @@index([userId])
 }
+
+// SuperAgent 多轮对话
+model SuperAgentConversation {
+  id                String   @id @default(uuid())
+  title             String?                        // 对话标题（自动生成或用户设置）
+  messages          String   @db.LongText          // JSON 数组：对话消息历史
+  compressedHistory String?  @db.LongText          // 压缩后的历史摘要
+  totalTokens       Int      @default(0)           // 当前总 token 数
+  userId            String?                        // 关联用户
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([updatedAt])
+}
