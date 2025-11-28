@@ -10,6 +10,18 @@ interface SlideshowViewerProps {
   createdAt: string;
 }
 
+// 生成 Cloudflare Image Resizing URL
+function getThumbnailUrl(url: string, width: number = 200): string {
+  // 检查是否是 doubao.luzhipeng.com 的图片
+  if (url.includes('doubao.luzhipeng.com')) {
+    // 提取路径部分
+    const urlObj = new URL(url);
+    const path = urlObj.pathname;
+    return `https://doubao.luzhipeng.com/cdn-cgi/image/width=${width},quality=80,format=auto${path}`;
+  }
+  return url;
+}
+
 export default function SlideshowViewer({
   title,
   images,
@@ -407,7 +419,7 @@ export default function SlideshowViewer({
               onClick={() => setCurrentIndex(index)}
             >
               <img
-                src={url}
+                src={getThumbnailUrl(url, 160)}
                 alt={`缩略图 ${index + 1}`}
                 className="w-full h-full object-cover"
                 loading="lazy"
