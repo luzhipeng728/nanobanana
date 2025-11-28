@@ -393,31 +393,30 @@ export default function SlideshowViewer({
 
         {/* 当前大图 - 渐进式加载：先显示模糊小图，再加载清晰大图 */}
         <div
-          className="relative max-w-full max-h-full"
+          className="relative flex items-center justify-center w-full h-full"
           style={{
             transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
             transition: isDragging ? "none" : "transform 0.2s ease-out",
           }}
         >
           {/* 模糊预览图（立即显示） */}
-          <img
-            key={`blur-${currentIndex}`}
-            src={getBlurPreviewUrl(images[currentIndex])}
-            alt=""
-            className={cn(
-              "max-w-full max-h-[calc(100vh-160px)] object-contain transition-opacity duration-500",
-              isImageLoading ? "opacity-100" : "opacity-0"
-            )}
-            style={{ filter: "blur(20px)", transform: "scale(1.1)" }}
-            aria-hidden="true"
-          />
-          {/* 清晰大图（加载完成后显示） */}
+          {isImageLoading && (
+            <img
+              key={`blur-${currentIndex}`}
+              src={getBlurPreviewUrl(images[currentIndex])}
+              alt=""
+              className="absolute max-w-[90vw] max-h-[calc(100vh-160px)] w-auto h-auto object-contain"
+              style={{ filter: "blur(20px)", transform: "scale(1.05)" }}
+              aria-hidden="true"
+            />
+          )}
+          {/* 清晰大图 */}
           <img
             key={`main-${currentIndex}`}
             src={images[currentIndex]}
             alt={`图片 ${currentIndex + 1}`}
             className={cn(
-              "absolute inset-0 max-w-full max-h-[calc(100vh-160px)] object-contain transition-opacity duration-500",
+              "max-w-[90vw] max-h-[calc(100vh-160px)] w-auto h-auto object-contain transition-opacity duration-300",
               isImageLoading ? "opacity-0" : "opacity-100"
             )}
             onLoad={() => setIsImageLoading(false)}
