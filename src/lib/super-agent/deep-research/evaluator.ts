@@ -1,6 +1,5 @@
 // DeepResearch 充足度评估器 - 规则 + LLM 混合判断
 
-import Anthropic from '@anthropic-ai/sdk';
 import {
   SufficiencyEvaluation,
   ResearchState,
@@ -9,9 +8,7 @@ import {
   SearchPlan
 } from './types';
 import { INFO_CATEGORIES, CATEGORY_LABELS } from './state';
-import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from '@/lib/claude-config';
-
-const anthropic = new Anthropic();
+import { callLLMForJSON } from './llm-client';
 
 /**
  * 充足度评估器
@@ -177,37 +174,47 @@ ${infoSummary.length > 0 ? infoSummary.join('\n\n') : '暂无收集到的信息'
 
 只返回 JSON，不要其他内容。`;
 
-    try {
-      const response = await anthropic.messages.create({
-        model: CLAUDE_LIGHT_MODEL,
-        max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
-        messages: [{ role: 'user', content: prompt }]
-      });
-
-      const content = response.content[0];
-      if (content.type === 'text') {
-        const parsed = this.safeParseJSON(content.text);
-        if (parsed) {
-          return {
-            score: parsed.score || 50,
-            reasoning: parsed.reasoning || '',
-            missingCriticalInfo: parsed.missingCriticalInfo || [],
-            suggestedQueries: parsed.suggestedQueries || []
-          };
-        }
-      }
-    } catch (error) {
-      console.error('[Evaluator] LLM evaluation error:', error);
+    // 使用新的 LLM 客户端（优先 GLM，失败回退 Haiku）
+    interface EvalResponse {
+      score?: number;
+      reasoning?: string;
+      missingCriticalInfo?: string[];
+      suggestedQueries?: string[];
     }
 
-    // 降级评估
+    const parsed = await callLLMForJSON<EvalResponse>(prompt);
+    if (parsed) {
+      return {
+        score: parsed.score || 50,
+        reasoning: parsed.reasoning || '',
+        missingCriticalInfo: parsed.missingCriticalInfo || [],
+        suggestedQueries: parsed.suggestedQueries || []
+      };
+    }
+
+    // 降级评估：基于收集到的结果数量给更合理的分数
+    // 防止因 LLM 失败导致分数过低而无法早停
+    const resultsCount = state.rawResults.length;
+    let fallbackScore: number;
+    if (resultsCount >= 50) {
+      fallbackScore = 80; // 50+ 结果，可以认为信息较充足
+    } else if (resultsCount >= 30) {
+      fallbackScore = 70;
+    } else if (resultsCount >= 15) {
+      fallbackScore = 60;
+    } else {
+      fallbackScore = 45;
+    }
+
     return {
-      score: state.rawResults.length >= 10 ? 60 : 40,
-      reasoning: '无法进行 LLM 评估，使用降级策略',
+      score: fallbackScore,
+      reasoning: `LLM 评估失败，基于 ${resultsCount} 条结果的降级评估`,
       missingCriticalInfo: this.requiredInfo.filter(
         info => !infoSummary.some(s => s.toLowerCase().includes(info.toLowerCase()))
       ),
-      suggestedQueries: [`${this.topic} 详细信息`, `${this.topic} 最新进展`]
+      suggestedQueries: resultsCount < 30
+        ? [`${this.topic} 详细信息`, `${this.topic} 最新进展`]
+        : [] // 结果足够时不再建议新查询
     };
   }
 
@@ -437,53 +444,4 @@ ${infoSummary.length > 0 ? infoSummary.join('\n\n') : '暂无收集到的信息'
     }
   }
 
-  /**
-   * 安全解析 JSON，支持多种容错方式
-   */
-  private safeParseJSON(text: string): any {
-    // 1. 尝试直接提取 JSON 对象
-    const jsonMatches = text.match(/\{[\s\S]*\}/g);
-    if (!jsonMatches) return null;
-
-    for (const jsonStr of jsonMatches) {
-      // 尝试直接解析
-      try {
-        return JSON.parse(jsonStr);
-      } catch {
-        // 继续尝试修复
-      }
-
-      // 2. 尝试修复常见问题
-      let fixed = jsonStr
-        // 移除尾部多余的逗号
-        .replace(/,\s*([}\]])/g, '$1')
-        // 修复单引号
-        .replace(/'/g, '"');
-
-      try {
-        return JSON.parse(fixed);
-      } catch {
-        // 继续尝试
-      }
-
-      // 3. 尝试提取关键字段
-      try {
-        const scoreMatch = jsonStr.match(/"score"\s*:\s*(\d+)/);
-        const reasoningMatch = jsonStr.match(/"reasoning"\s*:\s*"([^"]*)"/);
-
-        if (scoreMatch) {
-          return {
-            score: parseInt(scoreMatch[1], 10),
-            reasoning: reasoningMatch ? reasoningMatch[1] : '',
-            missingCriticalInfo: [],
-            suggestedQueries: []
-          };
-        }
-      } catch {
-        // 放弃
-      }
-    }
-
-    return null;
-  }
 }

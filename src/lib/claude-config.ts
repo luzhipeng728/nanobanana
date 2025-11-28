@@ -18,11 +18,12 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250
 // 主模型最大输出 tokens
 export const CLAUDE_MAX_TOKENS = parseInt(process.env.CLAUDE_MAX_TOKENS || '64000', 10);
 
-// 轻量模型 - 用于简单任务如分类、评估等（可以用更便宜的模型）
-export const CLAUDE_LIGHT_MODEL = process.env.CLAUDE_LIGHT_MODEL || 'claude-sonnet-4-5-20250929';
+// 轻量模型 - 用于简单任务如分类、评估等
+// 使用 Haiku 4.5：最快最便宜，适合结构化输出任务
+export const CLAUDE_LIGHT_MODEL = process.env.CLAUDE_LIGHT_MODEL || 'claude-haiku-4-5-20251001';
 
-// 轻量模型最大输出 tokens
-export const CLAUDE_LIGHT_MAX_TOKENS = parseInt(process.env.CLAUDE_LIGHT_MAX_TOKENS || '16000', 10);
+// 轻量模型最大输出 tokens（Haiku 4.5 最大支持 8K）
+export const CLAUDE_LIGHT_MAX_TOKENS = parseInt(process.env.CLAUDE_LIGHT_MAX_TOKENS || '4096', 10);
 
 // DeepResearch 最大轮数
 export const DEEP_RESEARCH_MAX_ROUNDS = parseInt(process.env.DEEP_RESEARCH_MAX_ROUNDS || '10', 10);

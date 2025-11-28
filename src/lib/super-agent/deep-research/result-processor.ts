@@ -1,6 +1,5 @@
 // DeepResearch 结果处理器 - 去重、分类、摘要
 
-import Anthropic from '@anthropic-ai/sdk';
 import {
   SearchResultItem,
   InfoCategory,
@@ -9,10 +8,7 @@ import {
   ResearchState
 } from './types';
 import { CATEGORY_LABELS, INFO_CATEGORIES } from './state';
-import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from '@/lib/claude-config';
-
-// Anthropic 客户端
-const anthropic = new Anthropic();
+import { callLLMForJSON } from './llm-client';
 
 /**
  * 结果处理器
@@ -25,7 +21,7 @@ export class ResultProcessor {
   }
 
   /**
-   * 处理搜索结果：去重 + 分类
+   * 处理搜索结果：去重 + 分类（使用 LLM，较慢）
    */
   async processResults(
     results: SearchResultItem[],
@@ -43,6 +39,29 @@ export class ResultProcessor {
 
     // 2. 使用 LLM 进行智能分类
     const categorized = await this.categorizeWithLLM(uniqueResults);
+
+    return { uniqueResults, categorized };
+  }
+
+  /**
+   * 快速处理搜索结果：去重 + 规则分类（不调用 LLM，更快）
+   */
+  async processResultsFast(
+    results: SearchResultItem[],
+    existingUrls: Set<string>
+  ): Promise<{
+    uniqueResults: SearchResultItem[];
+    categorized: CategorizedInfo[];
+  }> {
+    // 1. 去重
+    const uniqueResults = this.deduplicateResults(results, existingUrls);
+
+    if (uniqueResults.length === 0) {
+      return { uniqueResults: [], categorized: [] };
+    }
+
+    // 2. 使用规则快速分类（不调用 LLM）
+    const categorized = this.fallbackCategorize(uniqueResults);
 
     return { uniqueResults, categorized };
   }
@@ -128,94 +147,38 @@ ${resultsText}
 - relevance 0-1 数值
 - keyInfo 简短摘要`;
 
-    try {
-      const response = await anthropic.messages.create({
-        model: CLAUDE_LIGHT_MODEL,
-        max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
-        messages: [{ role: 'user', content: prompt }]
-      });
+    // 使用新的 LLM 客户端（优先 GLM，失败回退 Haiku）
+    interface ClassificationResponse {
+      classifications?: Array<{
+        index: number;
+        category: string;
+        relevance?: number;
+        keyInfo?: string;
+      }>;
+    }
 
-      const content = response.content[0];
-      if (content.type !== 'text') {
-        return this.fallbackCategorize(results);
-      }
-
-      // 尝试多种方式提取和解析 JSON
-      const parsed = this.safeParseJSON(content.text);
-      if (!parsed) {
-        console.warn('[ResultProcessor] Failed to parse LLM response, using fallback. Response:', content.text.substring(0, 200));
-        return this.fallbackCategorize(results);
-      }
-
-      const categorized: CategorizedInfo[] = [];
-
-      for (const item of parsed.classifications || []) {
-        const result = results[item.index];
-        if (result && INFO_CATEGORIES.includes(item.category)) {
-          categorized.push({
-            category: item.category as InfoCategory,
-            content: item.keyInfo || result.content?.substring(0, 300) || result.snippet || '',
-            source: result.title,
-            url: result.url,
-            relevanceScore: item.relevance || 0.5
-          });
-        }
-      }
-
-      return categorized.length > 0 ? categorized : this.fallbackCategorize(results);
-    } catch (error) {
-      console.error('[ResultProcessor] LLM categorization error:', error);
+    const parsed = await callLLMForJSON<ClassificationResponse>(prompt);
+    if (!parsed) {
+      console.warn('[ResultProcessor] Failed to parse LLM response, using fallback');
       return this.fallbackCategorize(results);
     }
-  }
 
-  /**
-   * 安全解析 JSON，支持多种容错方式
-   */
-  private safeParseJSON(text: string): any {
-    // 1. 尝试直接提取 JSON 对象
-    const jsonMatches = text.match(/\{[\s\S]*\}/g);
-    if (!jsonMatches) return null;
+    const categorized: CategorizedInfo[] = [];
 
-    for (const jsonStr of jsonMatches) {
-      // 尝试直接解析
-      try {
-        return JSON.parse(jsonStr);
-      } catch {
-        // 继续尝试修复
-      }
-
-      // 2. 尝试修复常见问题
-      let fixed = jsonStr
-        // 移除尾部多余的逗号
-        .replace(/,\s*([}\]])/g, '$1')
-        // 修复缺失的引号
-        .replace(/:\s*([^"\d\[\]{},\s][^,}\]]*)/g, ': "$1"')
-        // 修复单引号
-        .replace(/'/g, '"');
-
-      try {
-        return JSON.parse(fixed);
-      } catch {
-        // 继续尝试
-      }
-
-      // 3. 尝试只提取 classifications 数组
-      const arrayMatch = jsonStr.match(/"classifications"\s*:\s*\[([\s\S]*?)\]/);
-      if (arrayMatch) {
-        try {
-          const arrayStr = `[${arrayMatch[1]}]`
-            .replace(/,\s*([}\]])/g, '$1')
-            .replace(/,\s*$/g, '');
-          const arr = JSON.parse(arrayStr);
-          return { classifications: arr };
-        } catch {
-          // 放弃
-        }
+    for (const item of parsed.classifications || []) {
+      const result = results[item.index];
+      if (result && INFO_CATEGORIES.includes(item.category as InfoCategory)) {
+        categorized.push({
+          category: item.category as InfoCategory,
+          content: item.keyInfo || result.content?.substring(0, 300) || result.snippet || '',
+          source: result.title,
+          url: result.url,
+          relevanceScore: item.relevance || 0.5
+        });
       }
     }
 
-    return null;
+    return categorized.length > 0 ? categorized : this.fallbackCategorize(results);
   }
 
   /**
@@ -346,27 +309,19 @@ ${allInfo.slice(0, 30).join('\n\n')}
 
 只返回 JSON，不要其他内容。`;
 
-    try {
-      const response = await anthropic.messages.create({
-        model: CLAUDE_LIGHT_MODEL,
-        max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
-        messages: [{ role: 'user', content: prompt }]
-      });
+    // 使用新的 LLM 客户端（优先 GLM，失败回退 Haiku）
+    interface SummaryResponse {
+      overview?: string;
+      keyFindings?: string[];
+    }
 
-      const content = response.content[0];
-      if (content.type === 'text') {
-        const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          return {
-            overview: parsed.overview || '',
-            keyFindings: parsed.keyFindings || [],
-            categories
-          };
-        }
-      }
-    } catch (error) {
-      console.error('[ResultProcessor] Summary generation error:', error);
+    const parsed = await callLLMForJSON<SummaryResponse>(prompt);
+    if (parsed) {
+      return {
+        overview: parsed.overview || '',
+        keyFindings: parsed.keyFindings || [],
+        categories
+      };
     }
 
     // 降级：简单拼接

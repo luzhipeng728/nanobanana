@@ -217,14 +217,14 @@ export class DeepResearchAgent {
       resultsCount: results.length
     });
 
-    // 3. 处理结果
+    // 3. 处理结果（使用快速规则分类，不再调用 LLM）
     await this.sendEvent({
       type: 'processing',
       action: '分析和分类搜索结果'
     });
 
     const existingUrls = new Set(this.stateManager.getCollectedUrls());
-    const { uniqueResults, categorized } = await this.resultProcessor.processResults(
+    const { uniqueResults, categorized } = await this.resultProcessor.processResultsFast(
       results,
       existingUrls
     );
@@ -233,28 +233,33 @@ export class DeepResearchAgent {
     this.stateManager.addRawResults(uniqueResults);
     this.stateManager.addCategorizedInfoBatch(categorized);
 
-    // 4. 记录探索步骤
-    const newEvaluation = await this.evaluator.evaluate(this.stateManager.getState());
+    // 4. 记录探索步骤（复用之前的 evaluation，不再重复调用 LLM）
+    // 使用规则评估快速计算当前分数
+    const currentCoverage = evaluation.ruleBasedScore + (categorized.length * 5); // 简单估算新增覆盖
+    const estimatedScore = Math.min(currentCoverage, 100);
 
     this.stateManager.recordExplorationStep({
       round,
       queries: searchPlan.queries.map(q => q.query),
       resultsCount: results.length,
       newInfoCount: categorized.length,
-      coverageAfter: newEvaluation.overallScore,
-      qualityAfter: newEvaluation.llmScore,
-      decision: newEvaluation.recommendation,
+      coverageAfter: estimatedScore,
+      qualityAfter: evaluation.llmScore, // 复用之前的 LLM 分数
+      decision: evaluation.recommendation,
       reasoning: searchPlan.reasoning
     });
+
+    // 更新分数（基于简单估算）
+    this.stateManager.updateScores(estimatedScore, evaluation.llmScore);
 
     // 发送评估事件
     await this.sendEvent({
       type: 'evaluation',
       scores: {
-        coverage: newEvaluation.ruleBasedScore,
-        quality: newEvaluation.llmScore
+        coverage: estimatedScore,
+        quality: evaluation.llmScore
       },
-      decision: newEvaluation.recommendation
+      decision: evaluation.recommendation
     });
 
     // 发送轮次完成事件
@@ -265,8 +270,8 @@ export class DeepResearchAgent {
       totalInfoCount: this.stateManager.getStats().categorizedInfoCount
     });
 
-    // 5. 根据评估结果决定下一步
-    if (newEvaluation.recommendation === 'pivot') {
+    // 5. 根据评估结果决定下一步（复用之前的 evaluation）
+    if (evaluation.recommendation === 'pivot') {
       await this.sendEvent({
         type: 'pivot',
         reason: '当前策略效果不佳',

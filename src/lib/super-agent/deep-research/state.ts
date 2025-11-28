@@ -15,9 +15,9 @@ import { DEEP_RESEARCH_MAX_ROUNDS } from '@/lib/claude-config';
  */
 export const DEFAULT_CONFIG: DeepResearchConfig = {
   maxRounds: DEEP_RESEARCH_MAX_ROUNDS, // 从配置文件读取，默认 10 轮
-  minCoverageScore: 70,
-  minQualityScore: 75,
-  earlyStopThreshold: 85,
+  minCoverageScore: 60,   // 降低最低覆盖分数要求
+  minQualityScore: 65,    // 降低最低质量分数要求
+  earlyStopThreshold: 75, // 降低早停阈值，更容易早停
   parallelSearches: true,
   includeRawData: false,
   includeTrace: false,
