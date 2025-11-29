@@ -329,6 +329,15 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         );
         break;
 
+      // 工具输入生成流式事件（防止长内容生成超时）
+      case "tool_input_chunk":
+        const chunkEvent = event as any;
+        const toolDisplayName = TOOL_NAMES[chunkEvent.tool] || chunkEvent.tool;
+        const sizeKB = (chunkEvent.totalSize / 1024).toFixed(1);
+        // 显示生成进度，让用户知道系统在工作
+        setStreamingThought(`📝 ${toolDisplayName}... 已生成 ${sizeKB}KB`);
+        break;
+
       case "observation":
         setThoughtSteps((prev) =>
           prev.map((s) =>

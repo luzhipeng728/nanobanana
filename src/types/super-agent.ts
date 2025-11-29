@@ -127,6 +127,8 @@ export type SuperAgentStreamEvent =
   | { type: 'thought'; iteration: number; content: string }       // 完整思考（向后兼容）
   | { type: 'action'; iteration: number; tool: string; input: Record<string, any> }
   | { type: 'observation'; iteration: number; result: any }
+  // 工具输入生成流式事件（防止长内容生成超时）
+  | { type: 'tool_input_chunk'; iteration: number; tool: string; chunkSize: number; totalSize: number }
   | { type: 'search_start'; query: string }
   | { type: 'search_result'; summary: string }
   // 深度研究事件

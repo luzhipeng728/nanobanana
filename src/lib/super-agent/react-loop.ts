@@ -394,7 +394,28 @@ export async function runReActLoop(
                 chunk
               });
             } else if (event.delta.type === 'input_json_delta') {
-              collector.currentToolInput += event.delta.partial_json;
+              const partialJson = event.delta.partial_json;
+              collector.currentToolInput += partialJson;
+
+              // 获取当前工具名称
+              const currentBlock = collector.contentBlocks[idx];
+              const toolName = currentBlock?.type === 'tool_use' ? currentBlock.name : 'unknown';
+
+              // 每收到一定量数据就发送进度事件，防止长时间无响应导致超时
+              // 特别是 finalize_output 工具可能生成大量提示词内容
+              const totalSize = collector.currentToolInput.length;
+              const chunkSize = partialJson.length;
+
+              // 每 2KB 发送一次进度事件，或者在数据量较大时更频繁
+              if (totalSize % 2048 < chunkSize || totalSize < 100) {
+                await sendEvent({
+                  type: 'tool_input_chunk',
+                  iteration: state.iteration,
+                  tool: toolName,
+                  chunkSize,
+                  totalSize
+                });
+              }
             }
             break;
           }
