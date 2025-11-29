@@ -5,19 +5,29 @@ import {
   InfoCategory,
   CategorizedInfo,
   ResearchReport,
-  ResearchState
+  ResearchState,
+  ProgressEventSender
 } from './types';
 import { CATEGORY_LABELS, INFO_CATEGORIES } from './state';
-import { callLLMForJSON } from './llm-client';
+import { callLLMForJSON, callLLMStream } from './llm-client';
 
 /**
  * 结果处理器
  */
 export class ResultProcessor {
   private topic: string;
+  private sendEvent?: ProgressEventSender;
 
-  constructor(topic: string) {
+  constructor(topic: string, sendEvent?: ProgressEventSender) {
     this.topic = topic;
+    this.sendEvent = sendEvent;
+  }
+
+  /**
+   * 设置事件发送器
+   */
+  setSendEvent(sendEvent: ProgressEventSender) {
+    this.sendEvent = sendEvent;
   }
 
   /**
@@ -35,6 +45,15 @@ export class ResultProcessor {
     // 1. 去重
     const uniqueResults = this.deduplicateResults(results, existingUrls);
     console.log(`[ResultProcessor] After dedup: ${uniqueResults.length} unique results`);
+
+    // 发送去重完成事件
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'dedup_complete',
+        before: results.length,
+        after: uniqueResults.length
+      });
+    }
 
     if (uniqueResults.length === 0) {
       return { uniqueResults: [], categorized: [] };
@@ -112,15 +131,44 @@ export class ResultProcessor {
 
     console.log(`[ResultProcessor] Categorizing ${results.length} results in ${totalBatches} batches`);
 
+    // 发送分类开始事件
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'categorize_start',
+        totalResults: results.length,
+        batchCount: totalBatches
+      });
+    }
+
     for (let i = 0; i < results.length; i += batchSize) {
       const batchNum = Math.floor(i / batchSize) + 1;
       const batch = results.slice(i, i + batchSize);
       console.log(`[ResultProcessor] Processing batch ${batchNum}/${totalBatches}`);
+
+      // 发送批次处理事件
+      if (this.sendEvent) {
+        await this.sendEvent({
+          type: 'categorize_batch',
+          batch: batchNum,
+          total: totalBatches,
+          itemsProcessed: categorized.length
+        });
+      }
+
       const batchCategorized = await this.categorizeBatch(batch);
       categorized.push(...batchCategorized);
     }
 
     console.log(`[ResultProcessor] Categorization complete: ${categorized.length} items`);
+
+    // 发送分类完成事件
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'categorize_complete',
+        totalCategorized: categorized.length
+      });
+    }
+
     return categorized;
   }
 
@@ -240,7 +288,21 @@ ${resultsText}
    * 生成研究报告
    */
   async generateReport(state: ResearchState): Promise<ResearchReport> {
+    // 发送摘要生成开始事件
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'report_summary_start'
+      });
+    }
+
     const summary = await this.generateSummary(state);
+
+    // 发送摘要生成完成事件
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'report_summary_complete'
+      });
+    }
 
     const report: ResearchReport = {
       topic: state.topic,
@@ -279,7 +341,7 @@ ${resultsText}
   }
 
   /**
-   * 使用 LLM 生成摘要
+   * 使用 LLM 生成摘要（支持流式输出）
    */
   private async generateSummary(state: ResearchState): Promise<ResearchReport['summary']> {
     // 收集所有分类信息
@@ -318,12 +380,41 @@ ${allInfo.slice(0, 30).join('\n\n')}
 
 只返回 JSON，不要其他内容。`;
 
-    // 使用新的 LLM 客户端（优先 GLM，失败回退 Haiku）
     interface SummaryResponse {
       overview?: string;
       keyFindings?: string[];
     }
 
+    // 尝试使用流式输出（如果有事件发送器）
+    if (this.sendEvent) {
+      try {
+        const response = await callLLMStream(prompt, async (chunk) => {
+          await this.sendEvent!({
+            type: 'report_summary_chunk',
+            chunk
+          });
+        });
+
+        // 解析 JSON
+        const jsonMatch = response.text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]) as SummaryResponse;
+            return {
+              overview: parsed.overview || '',
+              keyFindings: parsed.keyFindings || [],
+              categories
+            };
+          } catch {
+            // 解析失败，使用降级方案
+          }
+        }
+      } catch (error) {
+        console.warn('[ResultProcessor] Stream summary failed, using non-stream fallback:', error);
+      }
+    }
+
+    // 非流式回退：使用标准 LLM 调用
     const parsed = await callLLMForJSON<SummaryResponse>(prompt);
     if (parsed) {
       return {
@@ -333,7 +424,7 @@ ${allInfo.slice(0, 30).join('\n\n')}
       };
     }
 
-    // 降级：简单拼接
+    // 最终降级：简单拼接
     return {
       overview: `关于"${state.topic}"的研究共收集了 ${state.rawResults.length} 个来源的信息，涵盖 ${Object.values(categories).filter(c => c.length > 0).length} 个方面。`,
       keyFindings: allInfo.slice(0, 5),

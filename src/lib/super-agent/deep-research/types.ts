@@ -192,11 +192,35 @@ export interface DeepResearchConfig {
 export type ResearchProgressEvent =
   | { type: 'start'; topic: string; config: DeepResearchConfig }
   | { type: 'round_start'; round: number; maxRounds: number; queries: string[] }
+  // 搜索相关事件
+  | { type: 'search_start'; query: string; source: string }
+  | { type: 'search_result'; query: string; resultsCount: number; totalTime?: number }
   | { type: 'search_complete'; source: string; resultsCount: number }
+  // 处理相关事件
   | { type: 'processing'; action: string }
+  | { type: 'dedup_complete'; before: number; after: number }
+  | { type: 'categorize_start'; totalResults: number; batchCount: number }
+  | { type: 'categorize_batch'; batch: number; total: number; itemsProcessed: number }
+  | { type: 'categorize_complete'; totalCategorized: number }
+  // 评估相关事件
+  | { type: 'evaluation_start'; round: number }
+  | { type: 'evaluation_rule'; ruleScore: number; categoryCoverage: Record<string, number> }
+  | { type: 'evaluation_llm_start' }
+  | { type: 'evaluation_llm_complete'; llmScore: number; missingInfo: string[]; suggestedQueries: string[] }
   | { type: 'evaluation'; scores: { coverage: number; quality: number }; decision: string }
+  // 搜索计划事件
+  | { type: 'plan_start'; strategy: string }
+  | { type: 'plan_complete'; queriesCount: number; reasoning: string }
+  // 轮次事件
   | { type: 'round_complete'; round: number; newInfoCount: number; totalInfoCount: number }
   | { type: 'pivot'; reason: string; newDirection: string }
+  // 报告生成事件
+  | { type: 'report_start' }
+  | { type: 'report_summary_start' }
+  | { type: 'report_summary_chunk'; chunk: string }  // 摘要流式输出
+  | { type: 'report_summary_complete' }
+  | { type: 'report_complete' }
+  // 完成和错误
   | { type: 'complete'; report: ResearchReport }
   | { type: 'error'; error: string };
 

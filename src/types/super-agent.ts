@@ -134,6 +134,26 @@ export type SuperAgentStreamEvent =
   | { type: 'research_progress'; round: number; maxRounds: number; status: string }
   | { type: 'research_evaluation'; round: number; coverage: number; missing: string[]; sufficient: boolean }
   | { type: 'research_complete'; topic: string; rounds: number; coverage: number }
+  // 深度研究详细事件
+  | { type: 'research_round_start'; round: number; maxRounds: number; queries: string[] }
+  | { type: 'research_search_start'; query: string; source: string }
+  | { type: 'research_search_result'; query: string; resultsCount: number; totalTime?: number }
+  | { type: 'research_dedup'; before: number; after: number }
+  | { type: 'research_categorize_start'; totalResults: number; batchCount: number }
+  | { type: 'research_categorize_batch'; batch: number; total: number; itemsProcessed: number }
+  | { type: 'research_categorize_complete'; totalCategorized: number }
+  | { type: 'research_evaluation_start'; round: number }
+  | { type: 'research_evaluation_rule'; ruleScore: number; categoryCoverage: Record<string, number> }
+  | { type: 'research_evaluation_llm_start' }
+  | { type: 'research_evaluation_llm_complete'; llmScore: number; missingInfo: string[]; suggestedQueries: string[] }
+  | { type: 'research_plan_start'; strategy: string }
+  | { type: 'research_plan_complete'; queriesCount: number; reasoning: string }
+  | { type: 'research_report_start' }
+  | { type: 'research_report_summary_start' }
+  | { type: 'research_summary_chunk'; chunk: string }  // 摘要流式输出
+  | { type: 'research_report_summary_complete' }
+  | { type: 'research_report_complete' }
+  // 图片分析事件
   | { type: 'image_analysis_start' }
   | { type: 'image_analysis_chunk'; chunk: string }
   | { type: 'image_analysis_end'; analysis: string }

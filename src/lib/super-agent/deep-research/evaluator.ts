@@ -5,7 +5,8 @@ import {
   ResearchState,
   InfoCategory,
   SearchQuery,
-  SearchPlan
+  SearchPlan,
+  ProgressEventSender
 } from './types';
 import { INFO_CATEGORIES, CATEGORY_LABELS } from './state';
 import { callLLMForJSON } from './llm-client';
@@ -18,29 +19,72 @@ export class SufficiencyEvaluator {
   private requiredInfo: string[];
   private minCoverage: number;
   private minQuality: number;
+  private sendEvent?: ProgressEventSender;
 
   constructor(
     topic: string,
     requiredInfo: string[] = [],
     minCoverage: number = 70,
-    minQuality: number = 75
+    minQuality: number = 75,
+    sendEvent?: ProgressEventSender
   ) {
     this.topic = topic;
     // 防御性处理：确保 requiredInfo 是数组
     this.requiredInfo = Array.isArray(requiredInfo) ? requiredInfo : [];
     this.minCoverage = minCoverage;
     this.minQuality = minQuality;
+    this.sendEvent = sendEvent;
+  }
+
+  /**
+   * 设置事件发送器
+   */
+  setSendEvent(sendEvent: ProgressEventSender) {
+    this.sendEvent = sendEvent;
   }
 
   /**
    * 综合评估信息充足度
    */
   async evaluate(state: ResearchState): Promise<SufficiencyEvaluation> {
+    // 发送评估开始事件
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'evaluation_start',
+        round: state.currentRound
+      });
+    }
+
     // 1. 规则评估
     const ruleEval = this.ruleBasedEvaluation(state);
 
+    // 发送规则评估结果事件
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'evaluation_rule',
+        ruleScore: ruleEval.score,
+        categoryCoverage: ruleEval.coverageByCategory as Record<string, number>
+      });
+    }
+
     // 2. LLM 评估
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'evaluation_llm_start'
+      });
+    }
+
     const llmEval = await this.llmEvaluation(state);
+
+    // 发送 LLM 评估完成事件
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'evaluation_llm_complete',
+        llmScore: llmEval.score,
+        missingInfo: llmEval.missingCriticalInfo,
+        suggestedQueries: llmEval.suggestedQueries
+      });
+    }
 
     // 3. 综合判断
     const overallScore = this.combineScores(ruleEval.score, llmEval.score);
@@ -295,13 +339,31 @@ ${infoSummary.length > 0 ? infoSummary.join('\n\n') : '暂无收集到的信息'
     // 根据评估结果决定策略
     const strategy = this.determineStrategy(state, evaluation);
 
+    // 发送计划开始事件
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'plan_start',
+        strategy
+      });
+    }
+
     // 生成查询
     const queries = await this.generateQueries(state, evaluation, strategy);
+    const reasoning = this.explainStrategy(strategy, evaluation);
+
+    // 发送计划完成事件
+    if (this.sendEvent) {
+      await this.sendEvent({
+        type: 'plan_complete',
+        queriesCount: queries.length,
+        reasoning
+      });
+    }
 
     return {
       queries,
       strategy,
-      reasoning: this.explainStrategy(strategy, evaluation)
+      reasoning
     };
   }
 

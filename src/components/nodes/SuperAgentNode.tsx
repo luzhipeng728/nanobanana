@@ -369,6 +369,90 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         setStreamingThought(`🔍 ${(event as any).summary}`);
         break;
 
+      // 深度研究详细事件
+      case "research_round_start":
+        const roundStartEvent = event as any;
+        setStreamingThought(`🔬 第 ${roundStartEvent.round}/${roundStartEvent.maxRounds} 轮开始，${roundStartEvent.queries?.length || 0} 个查询`);
+        break;
+
+      case "research_search_start":
+        setStreamingThought(`🔍 搜索: ${(event as any).query}`);
+        break;
+
+      case "research_search_result":
+        const searchResultEvent = event as any;
+        setStreamingThought(`📄 "${searchResultEvent.query?.substring(0, 20)}..." 找到 ${searchResultEvent.resultsCount} 条结果`);
+        break;
+
+      case "research_dedup":
+        const dedupEvent = event as any;
+        setStreamingThought(`🧹 去重: ${dedupEvent.before} → ${dedupEvent.after} 条`);
+        break;
+
+      case "research_categorize_start":
+        setStreamingThought(`🏷️ 分类 ${(event as any).totalResults} 条结果...`);
+        break;
+
+      case "research_categorize_batch":
+        const batchEvent = event as any;
+        setStreamingThought(`🏷️ 分类中 ${batchEvent.batch}/${batchEvent.total}...`);
+        break;
+
+      case "research_categorize_complete":
+        setStreamingThought(`✅ 分类完成: ${(event as any).totalCategorized} 条`);
+        break;
+
+      case "research_evaluation_start":
+        setStreamingThought(`📊 评估第 ${(event as any).round} 轮结果...`);
+        break;
+
+      case "research_evaluation_rule":
+        setStreamingThought(`📏 规则评估: ${(event as any).ruleScore?.toFixed(0)}%`);
+        break;
+
+      case "research_evaluation_llm_start":
+        setStreamingThought(`🤖 AI 评估中...`);
+        break;
+
+      case "research_evaluation_llm_complete":
+        const llmCompleteEvent = event as any;
+        setStreamingThought(`🤖 AI 评估: ${llmCompleteEvent.llmScore?.toFixed(0)}% | 缺失: ${llmCompleteEvent.missingInfo?.length || 0}`);
+        break;
+
+      case "research_plan_start":
+        setStreamingThought(`📋 制定搜索计划: ${(event as any).strategy} 策略`);
+        break;
+
+      case "research_plan_complete":
+        setStreamingThought(`📋 计划完成: ${(event as any).queriesCount} 个查询`);
+        break;
+
+      case "research_report_start":
+        setStreamingThought(`📝 生成研究报告...`);
+        break;
+
+      case "research_report_summary_start":
+        setStreamingThought(`✍️ 生成摘要中...`);
+        break;
+
+      case "research_report_summary_complete":
+        setStreamingThought(`✅ 摘要生成完成`);
+        break;
+
+      case "research_report_complete":
+        setStreamingThought(`📄 报告生成完成`);
+        break;
+
+      // LLM 流式输出
+      case "research_summary_chunk":
+        setStreamingThought((prev) => {
+          const chunk = (event as any).chunk || '';
+          // 只显示最后 100 个字符
+          const newText = prev + chunk;
+          return `✍️ ${newText.slice(-100)}`;
+        });
+        break;
+
       case "complete":
         setProgress(90);
         setStreamingThought("");

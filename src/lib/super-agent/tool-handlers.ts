@@ -262,12 +262,38 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
         break;
 
       case 'round_start':
+        // 发送详细的轮次开始事件
+        await sendEvent({
+          type: 'research_round_start',
+          round: event.round,
+          maxRounds: event.maxRounds,
+          queries: event.queries
+        } as any);
+        // 同时发送兼容的进度事件
         await sendEvent({
           type: 'research_progress',
           round: event.round,
           maxRounds: event.maxRounds,
-          status: `🔬 深度研究第 ${event.round}/${event.maxRounds} 轮：正在搜索 ${event.queries.length} 个查询...`
+          status: `🔬 第 ${event.round}/${event.maxRounds} 轮：搜索 ${event.queries.length} 个查询`
         });
+        break;
+
+      // 搜索相关事件
+      case 'search_start':
+        await sendEvent({
+          type: 'research_search_start',
+          query: (event as any).query,
+          source: (event as any).source
+        } as any);
+        break;
+
+      case 'search_result':
+        await sendEvent({
+          type: 'research_search_result',
+          query: (event as any).query,
+          resultsCount: (event as any).resultsCount,
+          totalTime: (event as any).totalTime
+        } as any);
         break;
 
       case 'search_complete':
@@ -277,6 +303,7 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
         });
         break;
 
+      // 处理相关事件
       case 'processing':
         await sendEvent({
           type: 'research_progress',
@@ -284,6 +311,69 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
           maxRounds: 0,
           status: `⚙️ ${event.action}`
         });
+        break;
+
+      case 'dedup_complete':
+        await sendEvent({
+          type: 'research_dedup',
+          before: (event as any).before,
+          after: (event as any).after
+        } as any);
+        break;
+
+      case 'categorize_start':
+        await sendEvent({
+          type: 'research_categorize_start',
+          totalResults: (event as any).totalResults,
+          batchCount: (event as any).batchCount
+        } as any);
+        break;
+
+      case 'categorize_batch':
+        await sendEvent({
+          type: 'research_categorize_batch',
+          batch: (event as any).batch,
+          total: (event as any).total,
+          itemsProcessed: (event as any).itemsProcessed
+        } as any);
+        break;
+
+      case 'categorize_complete':
+        await sendEvent({
+          type: 'research_categorize_complete',
+          totalCategorized: (event as any).totalCategorized
+        } as any);
+        break;
+
+      // 评估相关事件
+      case 'evaluation_start':
+        await sendEvent({
+          type: 'research_evaluation_start',
+          round: (event as any).round
+        } as any);
+        break;
+
+      case 'evaluation_rule':
+        await sendEvent({
+          type: 'research_evaluation_rule',
+          ruleScore: (event as any).ruleScore,
+          categoryCoverage: (event as any).categoryCoverage
+        } as any);
+        break;
+
+      case 'evaluation_llm_start':
+        await sendEvent({
+          type: 'research_evaluation_llm_start'
+        } as any);
+        break;
+
+      case 'evaluation_llm_complete':
+        await sendEvent({
+          type: 'research_evaluation_llm_complete',
+          llmScore: (event as any).llmScore,
+          missingInfo: (event as any).missingInfo,
+          suggestedQueries: (event as any).suggestedQueries
+        } as any);
         break;
 
       case 'evaluation':
@@ -294,6 +384,22 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
           missing: [],
           sufficient: event.decision === 'stop'
         });
+        break;
+
+      // 搜索计划事件
+      case 'plan_start':
+        await sendEvent({
+          type: 'research_plan_start',
+          strategy: (event as any).strategy
+        } as any);
+        break;
+
+      case 'plan_complete':
+        await sendEvent({
+          type: 'research_plan_complete',
+          queriesCount: (event as any).queriesCount,
+          reasoning: (event as any).reasoning
+        } as any);
         break;
 
       case 'round_complete':
@@ -312,6 +418,38 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
           maxRounds: 0,
           status: `🔄 调整策略：${event.reason} → ${event.newDirection}`
         });
+        break;
+
+      // 报告生成事件
+      case 'report_start':
+        await sendEvent({
+          type: 'research_report_start'
+        } as any);
+        break;
+
+      case 'report_summary_start':
+        await sendEvent({
+          type: 'research_report_summary_start'
+        } as any);
+        break;
+
+      case 'report_summary_chunk':
+        await sendEvent({
+          type: 'research_summary_chunk',
+          chunk: (event as any).chunk
+        } as any);
+        break;
+
+      case 'report_summary_complete':
+        await sendEvent({
+          type: 'research_report_summary_complete'
+        } as any);
+        break;
+
+      case 'report_complete':
+        await sendEvent({
+          type: 'research_report_complete'
+        } as any);
         break;
 
       case 'complete':

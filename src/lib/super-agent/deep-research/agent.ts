@@ -57,13 +57,14 @@ export class DeepResearchAgent {
       this.config
     );
 
-    this.searchManager = new UnifiedSearchManager();
-    this.resultProcessor = new ResultProcessor(input.topic);
+    this.searchManager = new UnifiedSearchManager(sendEvent);
+    this.resultProcessor = new ResultProcessor(input.topic, sendEvent);
     this.evaluator = new SufficiencyEvaluator(
       input.topic,
       input.requiredInfo || [],
       this.config.minCoverageScore,
-      this.config.minQualityScore
+      this.config.minQualityScore,
+      sendEvent
     );
   }
 
@@ -122,10 +123,20 @@ export class DeepResearchAgent {
         await this.executeRound();
       }
 
+      // 发送报告生成开始事件
+      await this.sendEvent({
+        type: 'report_start'
+      });
+
       // 生成最终报告
       const report = await this.resultProcessor.generateReport(
         this.stateManager.getState()
       );
+
+      // 发送报告完成事件
+      await this.sendEvent({
+        type: 'report_complete'
+      });
 
       // 发送完成事件
       await this.sendEvent({

@@ -42,6 +42,11 @@ export interface LLMResponse {
 }
 
 /**
+ * 流式回调类型
+ */
+export type StreamCallback = (chunk: string) => Promise<void>;
+
+/**
  * 调用 LLM 获取文本响应
  * 优先使用 GLM（快速便宜），失败时回退到 Haiku
  */
@@ -130,6 +135,69 @@ export async function callLLMForJSON<T>(prompt: string): Promise<T | null> {
     return null;
   } catch (error) {
     console.error('[LLM Client] callLLMForJSON error:', error);
+    return null;
+  }
+}
+
+/**
+ * 流式调用 LLM
+ * 使用 Anthropic 的流式 API（GLM 不支持标准流式）
+ */
+export async function callLLMStream(
+  prompt: string,
+  onChunk: StreamCallback
+): Promise<LLMResponse> {
+  try {
+    // 使用 Anthropic 流式 API
+    const stream = anthropic.messages.stream({
+      model: CLAUDE_LIGHT_MODEL,
+      max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    let fullText = '';
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        const chunk = event.delta.text;
+        fullText += chunk;
+        await onChunk(chunk);
+      }
+    }
+
+    return {
+      text: fullText,
+      model: CLAUDE_LIGHT_MODEL,
+      usedFallback: false,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`[LLM Client] Stream error: ${errorMessage}`);
+    throw new Error(`LLM stream failed: ${errorMessage}`);
+  }
+}
+
+/**
+ * 流式调用 LLM 并解析 JSON
+ * 先流式返回原始内容，最后解析 JSON
+ */
+export async function callLLMStreamForJSON<T>(
+  prompt: string,
+  onChunk: StreamCallback
+): Promise<T | null> {
+  try {
+    const response = await callLLMStream(prompt, onChunk);
+    const parsed = safeParseJSON(response.text);
+
+    if (parsed) {
+      console.log(`[LLM Client] Stream JSON parsed successfully`);
+      return parsed as T;
+    }
+
+    console.warn(`[LLM Client] Failed to parse JSON from stream`);
+    return null;
+  } catch (error) {
+    console.error('[LLM Client] callLLMStreamForJSON error:', error);
     return null;
   }
 }

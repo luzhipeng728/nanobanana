@@ -402,25 +402,25 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
     ]
   },
 
-  // ========== 技能7: 新闻资讯手绘报 ==========
+  // ========== 技能7: 新闻可爱彩色手绘报 ==========
   'news-infographic': {
     metadata: {
       id: 'news-infographic',
-      name: '新闻资讯手绘报',
-      description: '生成手绘报纸风格的新闻资讯图，复古素描美学，适合展示多条新闻摘要',
+      name: '新闻可爱手绘报',
+      description: '生成彩色可爱手绘风格的新闻资讯图，色彩丰富风趣活泼，适合展示多条新闻摘要',
       keywords: ['新闻', '资讯', '热点', '头条', '早报', '晚报', '日报', '快讯', '速报', '要闻', '大事件', '今日新闻', '热点新闻', '新闻速递', '新闻摘要'],
       category: 'news',
       difficulty: 'hard',
       requiredInputs: ['新闻标题', '新闻内容列表'],
       optionalInputs: ['日期', '主题']
     },
-    basePrompt: `A hand-drawn newspaper-style infographic illustration with vintage sketch aesthetics. Title at top center with Chinese text "{{MAIN_TITLE}}" in bold hand-lettered style, subtitle "{{DATE_SUBTITLE}}" below it.
+    basePrompt: `A colorful cute hand-drawn newspaper-style infographic illustration with playful kawaii aesthetics. Title at top center with Chinese text "{{MAIN_TITLE}}" in bold colorful bubbly hand-lettered style with rainbow gradient colors, subtitle "{{DATE_SUBTITLE}}" below in smaller cute font.
 
-Layout divided into {{SECTION_COUNT}} main sections with hand-drawn borders and decorative elements:
+Layout divided into {{SECTION_COUNT}} main sections arranged like colorful sticky notes on a bulletin board, with cute decorative doodles, stars, hearts, and sparkles:
 
 {{SECTIONS_CONTENT}}
 
-Hand-drawn sketch style with ink pen lines, cross-hatching shading, newspaper layout aesthetic, black ink on cream textured paper, journalistic illustration style with authentic handwritten Chinese characters, vintage news poster feel, detailed sketchy drawings, 8K resolution. All Chinese text must be exactly as specified with no other text.`,
+Cute kawaii illustration style with colorful marker and crayon texture, vibrant pastel colors (pink, mint green, lavender, peach, sky blue, lemon yellow), playful cartoon-style icons, rounded corners, soft shadows, whimsical hand-drawn elements like tiny stars ✨, hearts ♥, clouds ☁, sun rays, happy emoticon faces, adorable mascot characters representing each news topic. Colorful sticky note style sections with washi tape and pin decorations. Warm cheerful color palette, fun doodle borders, cute emoji-style illustrations for each news item. Light cream paper texture background with colorful watercolor splashes and confetti. All Chinese text must be exactly as specified with no other text. Professional cute infographic design, 8K resolution.`,
     variables: [
       {
         name: 'MAIN_TITLE',
@@ -451,43 +451,55 @@ Hand-drawn sketch style with ink pen lines, cross-hatching shading, newspaper la
         description: '各新闻板块内容',
         type: 'list',
         required: true,
-        examples: ['Section 1 (Top, largest area): Sketch of official documents and diplomatic symbols. Chinese title "国防白皮书重磅发布" in large hand-written letters. Below, detailed Chinese text in smaller handwriting style: "国务院新闻办27日发布《新时代的中国军控》白皮书..."']
+        examples: ['Section 1 (Top left, pink sticky note): Cute cartoon document icon with sparkles and ribbon. Chinese title "国防白皮书发布" in bold pink letters with stars. Brief Chinese text in cute style.']
       }
     ],
     examples: [
       {
         userRequest: '帮我生成今日国内新闻的手绘报',
-        filledPrompt: `A hand-drawn newspaper-style infographic illustration with vintage sketch aesthetics. Title at top center with Chinese text "今日国内大事件速报" in bold hand-lettered style, subtitle "2025年11月29日 星期六" below it.
+        filledPrompt: `A colorful cute hand-drawn newspaper-style infographic illustration with playful kawaii aesthetics. Title at top center with Chinese text "今日国内大事件速报" in bold colorful bubbly hand-lettered style with rainbow gradient colors, subtitle "2025年11月29日 星期六" below in smaller cute font.
 
-Layout divided into 3 main sections with hand-drawn borders and decorative elements:
+Layout divided into 6 main sections arranged like colorful sticky notes on a bulletin board, with cute decorative doodles, stars, hearts, and sparkles:
 
-Section 1 (Top, largest area): Sketch of official documents and diplomatic symbols. Chinese title "国防白皮书重磅发布" in large hand-written letters. Below, detailed Chinese text in smaller handwriting style: "国务院新闻办27日发布《新时代的中国军控、裁军与防扩散》白皮书，这是党的十八大以来首部军控白皮书。"
+Section 1 (Top left, pink sticky note with washi tape): Cute cartoon document icon with sparkles and ribbon bow. Chinese title "国防白皮书发布" in bold pink and magenta gradient letters with tiny stars around. Brief Chinese text in cute rounded handwriting: "军控白皮书重磅发布" with adorable book character doodle.
 
-Section 2 (Bottom left): Hand-drawn weather map with wind swirls, snowflakes, and storm symbols. Chinese title "极端天气来袭" in bold letters. Detailed Chinese text below: "中央气象台发布全国性预警：北方地区出现大风降温天气，东北多地启动暴雪蓝色预警。"
+Section 2 (Top middle, sky blue sticky note): Adorable snowflake character wearing a scarf and mittens, looking playfully cold. Chinese title "天气预警" in blue gradient letters with snowflake decorations. Chinese text: "北方降温东北暴雪" with cute cloud and wind swirl doodles.
 
-Section 3 (Bottom right): Sketch of Hong Kong skyline and charity symbols. Chinese title "香港全港卖旗日" in hand-lettered style. Chinese text: "香港特区政府宣布今日为'全港卖旗日'，展现香港社会的爱心与团结精神。"
+Section 3 (Top right, mint green sticky note): Kawaii Hong Kong skyline with happy building faces and floating hearts. Chinese title "爱心满港" in green gradient letters. Chinese text: "全港卖旗日传递温暖" with heart symbols and charity ribbon doodles.
 
-Hand-drawn sketch style with ink pen lines, cross-hatching shading, newspaper layout aesthetic, black ink on cream textured paper, journalistic illustration style with authentic handwritten Chinese characters, vintage news poster feel, detailed sketchy drawings, 8K resolution. All Chinese text must be exactly as specified with no other text.`,
-        chineseTexts: ['今日国内大事件速报', '2025年11月29日 星期六', '国防白皮书重磅发布', '极端天气来袭', '香港全港卖旗日']
+Section 4 (Bottom left, peach colored sticky note): Cute friendly robot character waving with sparkle eyes. Chinese title "AI新突破" in orange-peach gradient letters with lightning bolt doodles. Chinese text: "人工智能重大进展" with gear and chip icon doodles.
+
+Section 5 (Bottom middle, lavender sticky note): Adorable panda mascot hugging a globe with happy face. Chinese title "国际合作" in purple gradient letters with world map doodles. Chinese text: "多国友好协议签署" with handshake and flag doodles.
+
+Section 6 (Bottom right, lemon yellow sticky note): Dancing happy coin characters with party hats. Chinese title "经济向好" in golden gradient letters with upward trend arrows and sparkles. Chinese text: "经济指标创新高" with cute chart and growth doodles.
+
+Cute kawaii illustration style with colorful marker and crayon texture, vibrant pastel colors, playful cartoon-style icons, rounded corners, soft shadows, whimsical hand-drawn elements like tiny stars, hearts, happy faces. Colorful sticky note style with washi tape decorations. Warm cheerful palette, fun doodle borders. Light cream paper texture with colorful watercolor splashes and confetti. All Chinese text must be exactly as specified with no other text. 8K resolution.`,
+        chineseTexts: ['今日国内大事件速报', '2025年11月29日 星期六', '国防白皮书发布', '军控白皮书重磅发布', '天气预警', '北方降温东北暴雪', '爱心满港', '全港卖旗日传递温暖', 'AI新突破', '人工智能重大进展', '国际合作', '多国友好协议签署', '经济向好', '经济指标创新高']
       }
     ],
     qualityChecklist: [
-      '标题是否清晰醒目',
-      '新闻板块是否布局合理',
-      '手绘风格是否一致',
+      '标题是否色彩丰富可爱有渐变',
+      '新闻板块是否像彩色便签纸',
+      '手绘风格是否可爱活泼有卡通感',
       '中文文字是否正确显示',
-      '各板块是否有独特的插图元素'
+      '各板块是否有可爱的卡通图标装饰',
+      '整体色调是否温暖明亮有少女感'
     ],
     commonIssues: [
       {
-        issue: '新闻内容过于拥挤',
-        solution: '减少每个板块的文字量，保持6条左右',
-        promptFix: 'with generous spacing between sections and concise text'
+        issue: '颜色不够鲜艳可爱',
+        solution: '强调粉彩色系和渐变效果',
+        promptFix: 'with more vibrant pastel colors like pink, mint, lavender, peach, rainbow gradients, and cute sparkle effects'
       },
       {
-        issue: '手绘风格不够明显',
-        solution: '强调素描线条和交叉阴影',
-        promptFix: 'with prominent ink pen lines, visible cross-hatching, and sketch texture'
+        issue: '手绘风格太严肃不够可爱',
+        solution: '增加可爱卡通元素和表情符号装饰',
+        promptFix: 'with more kawaii elements, happy cartoon faces, stars, hearts, sparkles, and playful character mascots'
+      },
+      {
+        issue: '新闻内容过于拥挤',
+        solution: '减少每个板块的文字量，增加可爱装饰',
+        promptFix: 'with generous spacing, cute sticker decorations, washi tape, and concise cheerful text'
       }
     ]
   },

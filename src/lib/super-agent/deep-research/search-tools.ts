@@ -1,6 +1,6 @@
 // DeepResearch 搜索工具封装 - Google Custom Search
 
-import { SearchResultItem, SearchQuery } from './types';
+import { SearchResultItem, SearchQuery, ProgressEventSender } from './types';
 
 // API 配置
 const GOOGLE_API_KEY = process.env.GOOGLE_SEARCH_API_KEY;
@@ -223,9 +223,11 @@ export class GoogleSearchClient {
  */
 export class UnifiedSearchManager {
   private googleClient: GoogleSearchClient;
+  private sendEvent?: ProgressEventSender;
 
-  constructor() {
+  constructor(sendEvent?: ProgressEventSender) {
     this.googleClient = new GoogleSearchClient();
+    this.sendEvent = sendEvent;
   }
 
   /**
@@ -257,8 +259,18 @@ export class UnifiedSearchManager {
     }
 
     // 执行所有查询
-    for (const q of queries) {
+    for (let i = 0; i < queries.length; i++) {
+      const q = queries[i];
       stats.googleQueries++;
+
+      // 发送搜索开始事件
+      if (this.sendEvent) {
+        await this.sendEvent({
+          type: 'search_start',
+          query: q.query,
+          source: 'google'
+        });
+      }
 
       // 优先使用查询自带的日期限制，其次根据目标信息推断
       const dateRestrict = q.dateRestrict ||
@@ -269,10 +281,21 @@ export class UnifiedSearchManager {
         console.log(`[Google] Using date restriction: ${dateRestrict} for query: "${q.query}"`);
       }
 
+      const queryStartTime = Date.now();
       const results = await this.googleClient.search(q.query, {
         num: 10,
         dateRestrict
       });
+
+      // 发送搜索结果事件
+      if (this.sendEvent) {
+        await this.sendEvent({
+          type: 'search_result',
+          query: q.query,
+          resultsCount: results.length,
+          totalTime: Date.now() - queryStartTime
+        });
+      }
 
       for (const r of results) {
         stats.googleResults++;
@@ -280,7 +303,7 @@ export class UnifiedSearchManager {
       }
 
       // 添加延迟避免限流
-      if (queries.indexOf(q) < queries.length - 1) {
+      if (i < queries.length - 1) {
         await this.delay(300);
       }
     }
