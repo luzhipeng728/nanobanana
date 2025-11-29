@@ -402,33 +402,51 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
     ]
   },
 
-  // ========== 技能7: 新闻可爱彩色手绘报 ==========
+  // ========== 技能7: 新闻商业杂志 ==========
   'news-infographic': {
     metadata: {
       id: 'news-infographic',
-      name: '新闻可爱手绘报',
-      description: '生成彩色可爱手绘风格的新闻资讯图，色彩丰富风趣活泼，适合展示多条新闻摘要',
+      name: '新闻商业杂志',
+      description: '生成高端商业杂志风格的新闻资讯图，采用专业排版设计，展示6-8条新闻，适合正式场合分享',
       keywords: ['新闻', '资讯', '热点', '头条', '早报', '晚报', '日报', '快讯', '速报', '要闻', '大事件', '今日新闻', '热点新闻', '新闻速递', '新闻摘要'],
       category: 'news',
       difficulty: 'hard',
       requiredInputs: ['新闻标题', '新闻内容列表'],
       optionalInputs: ['日期', '主题']
     },
-    basePrompt: `A colorful cute hand-drawn newspaper-style infographic illustration with playful kawaii aesthetics. Title at top center with Chinese text "{{MAIN_TITLE}}" in bold colorful bubbly hand-lettered style with rainbow gradient colors, subtitle "{{DATE_SUBTITLE}}" below in smaller cute font.
+    basePrompt: `A premium editorial magazine cover design for news digest, sophisticated and modern. Dark navy or charcoal gradient background with subtle geometric patterns.
 
-Layout divided into {{SECTION_COUNT}} main sections arranged like colorful sticky notes on a bulletin board, with cute decorative doodles, stars, hearts, and sparkles:
+MASTHEAD (top):
+Elegant Chinese title "{{MAIN_TITLE}}" in refined serif or modern sans-serif typography, with metallic gold or silver accent line beneath. Date "{{DATE_SUBTITLE}}" in small caps, minimalist style.
 
-{{SECTIONS_CONTENT}}
+LAYOUT - {{NEWS_COUNT}} news items in dynamic editorial grid:
 
-Cute kawaii illustration style with colorful marker and crayon texture, vibrant pastel colors (pink, mint green, lavender, peach, sky blue, lemon yellow), playful cartoon-style icons, rounded corners, soft shadows, whimsical hand-drawn elements like tiny stars ✨, hearts ♥, clouds ☁, sun rays, happy emoticon faces, adorable mascot characters representing each news topic. Colorful sticky note style sections with washi tape and pin decorations. Warm cheerful color palette, fun doodle borders, cute emoji-style illustrations for each news item. Light cream paper texture background with colorful watercolor splashes and confetti. All Chinese text must be exactly as specified with no other text. Professional cute infographic design, 8K resolution.`,
+{{HERO_NEWS}}
+
+{{SECONDARY_NEWS}}
+
+{{TICKER_NEWS}}
+
+DESIGN ELEMENTS:
+- Thin gold or copper accent lines as dividers
+- Subtle gradient overlays on images
+- Elegant drop shadows and depth layers
+- Minimalist icons in line-art style (not cartoon)
+- Professional photo-realistic imagery or abstract geometric shapes
+- Typography hierarchy with serif headlines and sans-serif body
+
+VISUAL STYLE:
+High-end editorial magazine aesthetic inspired by Bloomberg Businessweek, The Economist, Monocle. Rich color palette: deep navy, charcoal black, pure white, metallic gold accents, with one or two accent colors (burgundy red, forest green, or royal blue) for category coding. Premium paper texture with subtle grain. Clean Swiss-style typography grid. Sophisticated use of negative space. Professional business photography style imagery. Luxurious yet restrained - no cartoon elements, no playful decorations.
+
+All Chinese text must be exactly as specified with no other text. Ultra high quality editorial design, 8K resolution.`,
     variables: [
       {
         name: 'MAIN_TITLE',
         description: '主标题',
         type: 'text',
         required: true,
-        defaultValue: '今日大事件速报',
-        examples: ['今日国内大事件速报', '科技热点速递', '财经要闻速报']
+        defaultValue: '今日要闻',
+        examples: ['今日要闻', '财经周刊', '环球视野']
       },
       {
         name: 'DATE_SUBTITLE',
@@ -436,70 +454,116 @@ Cute kawaii illustration style with colorful marker and crayon texture, vibrant 
         type: 'text',
         required: false,
         defaultValue: '',
-        examples: ['2025年11月29日 星期六', '本周热点汇总']
+        examples: ['2025年11月29日 星期六', 'VOL.128 | 2025.11']
       },
       {
-        name: 'SECTION_COUNT',
-        description: '新闻板块数量',
+        name: 'NEWS_COUNT',
+        description: '新闻数量',
         type: 'text',
         required: true,
-        defaultValue: '6',
-        examples: ['6', '4', '8']
+        defaultValue: '7',
+        examples: ['6', '7', '8']
       },
       {
-        name: 'SECTIONS_CONTENT',
-        description: '各新闻板块内容',
+        name: 'HERO_NEWS',
+        description: '头条大新闻（占据40%版面，杂志封面故事风格）',
+        type: 'text',
+        required: true,
+        examples: ['HERO SECTION (40% of layout, left or top): Full-bleed dramatic photograph or abstract geometric art representing the topic. Large bold Chinese headline "重大政策发布" in elegant serif font with gold underline accent. Subheadline "国务院发布重要经济指导文件" in lighter weight. Category tag "政策" in small burgundy label.']
+      },
+      {
+        name: 'SECONDARY_NEWS',
+        description: '次要新闻（3条，采用卡片式布局）',
         type: 'list',
         required: true,
-        examples: ['Section 1 (Top left, pink sticky note): Cute cartoon document icon with sparkles and ribbon. Chinese title "国防白皮书发布" in bold pink letters with stars. Brief Chinese text in cute style.']
+        examples: ['THREE FEATURE CARDS in row: Card 1 - Abstract tech visualization background, headline "科技突破" with subtext "AI芯片研发进展", blue category accent. Card 2 - Global map silhouette imagery, headline "国际动态" with subtext "多边贸易谈判", green category accent. Card 3 - Financial chart abstract, headline "市场观察" with subtext "A股创新高", gold category accent.']
+      },
+      {
+        name: 'TICKER_NEWS',
+        description: '快讯条（3-4条简短新闻，底部横向排列）',
+        type: 'list',
+        required: true,
+        examples: ['BOTTOM TICKER BAR with thin gold top border: Horizontal row of brief headlines separated by vertical lines or dots: "天气 | 北方迎降温" • "体育 | 国足晋级" • "文化 | 新片上映" • "民生 | 医保新政". Each with subtle category icon in line-art style.']
       }
     ],
     examples: [
       {
-        userRequest: '帮我生成今日国内新闻的手绘报',
-        filledPrompt: `A colorful cute hand-drawn newspaper-style infographic illustration with playful kawaii aesthetics. Title at top center with Chinese text "今日国内大事件速报" in bold colorful bubbly hand-lettered style with rainbow gradient colors, subtitle "2025年11月29日 星期六" below in smaller cute font.
+        userRequest: '帮我生成今日国内新闻的商业杂志风格图',
+        filledPrompt: `A premium editorial magazine cover design for news digest, sophisticated and modern. Dark navy gradient background transitioning to charcoal, with subtle hexagonal geometric pattern overlay at 5% opacity.
 
-Layout divided into 6 main sections arranged like colorful sticky notes on a bulletin board, with cute decorative doodles, stars, hearts, and sparkles:
+MASTHEAD (top):
+Elegant Chinese title "今日要闻" in refined modern serif typography (similar to Playfair Display style), pure white color with subtle shadow. Thin metallic gold horizontal line beneath spanning 60% width. Date "2025年11月29日 · 星期六" in refined small caps sans-serif, spaced tracking, positioned right-aligned.
 
-Section 1 (Top left, pink sticky note with washi tape): Cute cartoon document icon with sparkles and ribbon bow. Chinese title "国防白皮书发布" in bold pink and magenta gradient letters with tiny stars around. Brief Chinese text in cute rounded handwriting: "军控白皮书重磅发布" with adorable book character doodle.
+LAYOUT - 7 news items in dynamic editorial grid:
 
-Section 2 (Top middle, sky blue sticky note): Adorable snowflake character wearing a scarf and mittens, looking playfully cold. Chinese title "天气预警" in blue gradient letters with snowflake decorations. Chinese text: "北方降温东北暴雪" with cute cloud and wind swirl doodles.
+HERO SECTION (occupying left 45% of main area, full height):
+Abstract geometric visualization with deep blue and gold tones suggesting policy/government theme - overlapping translucent shapes, data flow lines. Large Chinese headline "国防白皮书发布" in bold elegant serif, white text with subtle gold gradient on key characters. Subheadline below: "阐述新时代国防政策与军事战略" in lighter weight sans-serif. Small category label "政策" in burgundy red pill-shaped badge with white text. Thin gold accent line on left edge of this section.
 
-Section 3 (Top right, mint green sticky note): Kawaii Hong Kong skyline with happy building faces and floating hearts. Chinese title "爱心满港" in green gradient letters. Chinese text: "全港卖旗日传递温暖" with heart symbols and charity ribbon doodles.
+THREE FEATURE CARDS (right side, stacked vertically, each ~18% height):
 
-Section 4 (Bottom left, peach colored sticky note): Cute friendly robot character waving with sparkle eyes. Chinese title "AI新突破" in orange-peach gradient letters with lightning bolt doodles. Chinese text: "人工智能重大进展" with gear and chip icon doodles.
+Card 1: Dark card with subtle tech circuit pattern background in midnight blue. Minimal line-art AI chip icon in gold. Chinese headline "AI新突破" in medium weight white serif. Brief text "国产大模型性能再创新高" in small grey sans-serif. Category dot in electric blue.
 
-Section 5 (Bottom middle, lavender sticky note): Adorable panda mascot hugging a globe with happy face. Chinese title "国际合作" in purple gradient letters with world map doodles. Chinese text: "多国友好协议签署" with handshake and flag doodles.
+Card 2: Card with abstract globe wireframe visualization, deep forest green tones. Minimal line-art handshake icon. Headline "国际合作" in white. Text "中欧签署新能源合作协议" in grey. Category dot in emerald green.
 
-Section 6 (Bottom right, lemon yellow sticky note): Dancing happy coin characters with party hats. Chinese title "经济向好" in golden gradient letters with upward trend arrows and sparkles. Chinese text: "经济指标创新高" with cute chart and growth doodles.
+Card 3: Card with abstract upward trending chart visualization, warm amber/gold tones. Minimal line-art chart icon. Headline "经济向好" in white. Text "三季度GDP增速超预期" in grey. Category dot in gold.
 
-Cute kawaii illustration style with colorful marker and crayon texture, vibrant pastel colors, playful cartoon-style icons, rounded corners, soft shadows, whimsical hand-drawn elements like tiny stars, hearts, happy faces. Colorful sticky note style with washi tape decorations. Warm cheerful palette, fun doodle borders. Light cream paper texture with colorful watercolor splashes and confetti. All Chinese text must be exactly as specified with no other text. 8K resolution.`,
-        chineseTexts: ['今日国内大事件速报', '2025年11月29日 星期六', '国防白皮书发布', '军控白皮书重磅发布', '天气预警', '北方降温东北暴雪', '爱心满港', '全港卖旗日传递温暖', 'AI新突破', '人工智能重大进展', '国际合作', '多国友好协议签署', '经济向好', '经济指标创新高']
+BOTTOM TICKER BAR (spanning full width, 12% height):
+Separated from main content by thin gold horizontal line. Dark charcoal background. Four news items in horizontal row with refined typography:
+
+"气象" followed by thin vertical gold line, then "北方大范围降温 东北迎暴雪" in white
+Subtle dot separator ·
+"体育" + line + "亚冠联赛 中国球队晋级八强"
+Dot ·
+"民生" + line + "医保目录新增89种药品"
+Dot ·
+"文化" + line + "国产电影票房破50亿"
+
+Each category word in slightly smaller size with gold color, content in white regular weight.
+
+DESIGN ELEMENTS:
+- Thin gold accent lines as section dividers
+- Subtle depth with layered cards having soft shadows
+- Refined line-art icons (not cartoon, purely geometric minimal style)
+- Abstract data visualization graphics instead of photos
+- Clear typography hierarchy: serif for headlines, sans-serif for body
+
+VISUAL STYLE:
+High-end editorial aesthetic inspired by Bloomberg, The Economist. Color palette: deep navy (#1a1f3c), charcoal (#2d2d2d), pure white, metallic gold (#d4af37), with burgundy (#722f37), forest green (#2d5a3d), and royal blue (#2c4a7c) as category accents. Premium matte paper texture. Swiss-style grid system. Sophisticated negative space. Zero cartoon elements - purely professional business publication aesthetic.
+
+All Chinese text must be exactly as specified with no other text. Ultra high quality editorial design, 8K resolution.`,
+        chineseTexts: ['今日要闻', '2025年11月29日 · 星期六', '国防白皮书发布', '阐述新时代国防政策与军事战略', '政策', 'AI新突破', '国产大模型性能再创新高', '国际合作', '中欧签署新能源合作协议', '经济向好', '三季度GDP增速超预期', '气象', '北方大范围降温 东北迎暴雪', '体育', '亚冠联赛 中国球队晋级八强', '民生', '医保目录新增89种药品', '文化', '国产电影票房破50亿']
       }
     ],
     qualityChecklist: [
-      '标题是否色彩丰富可爱有渐变',
-      '新闻板块是否像彩色便签纸',
-      '手绘风格是否可爱活泼有卡通感',
+      '整体是否有高端杂志质感',
+      '排版是否专业有层次',
+      '配色是否沉稳大气（深色系+金色点缀）',
+      '头条是否足够醒目突出',
+      '字体是否优雅专业',
+      '是否避免了卡通和幼稚元素',
       '中文文字是否正确显示',
-      '各板块是否有可爱的卡通图标装饰',
-      '整体色调是否温暖明亮有少女感'
+      '快讯条是否简洁有序'
     ],
     commonIssues: [
       {
-        issue: '颜色不够鲜艳可爱',
-        solution: '强调粉彩色系和渐变效果',
-        promptFix: 'with more vibrant pastel colors like pink, mint, lavender, peach, rainbow gradients, and cute sparkle effects'
+        issue: '设计不够高端商务',
+        solution: '强调深色背景、金色点缀、专业排版',
+        promptFix: 'with darker navy/charcoal background, metallic gold accents, refined serif typography, and premium editorial magazine aesthetic like Bloomberg or The Economist'
       },
       {
-        issue: '手绘风格太严肃不够可爱',
-        solution: '增加可爱卡通元素和表情符号装饰',
-        promptFix: 'with more kawaii elements, happy cartoon faces, stars, hearts, sparkles, and playful character mascots'
+        issue: '出现卡通元素',
+        solution: '使用抽象几何图形代替',
+        promptFix: 'with abstract geometric visualizations, minimal line-art icons, and professional imagery instead of any cartoon or playful elements'
       },
       {
-        issue: '新闻内容过于拥挤',
-        solution: '减少每个板块的文字量，增加可爱装饰',
-        promptFix: 'with generous spacing, cute sticker decorations, washi tape, and concise cheerful text'
+        issue: '布局太拥挤',
+        solution: '增加留白和呼吸感',
+        promptFix: 'with more sophisticated use of negative space, generous margins, and Swiss-style typography grid'
+      },
+      {
+        issue: '层次不分明',
+        solution: '用大小、颜色、位置区分重要性',
+        promptFix: 'with clear visual hierarchy: hero story dominant with 40% space, feature cards medium, ticker bar compact at bottom'
       }
     ]
   },
