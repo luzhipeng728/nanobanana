@@ -35,6 +35,35 @@ const MIN_WIDTH = 150;
 const MIN_HEIGHT = 100;
 // 不限制最大尺寸，让用户自由调整
 
+// Cloudflare Image Resizing - 生成缩略图 URL（先加载小图，再加载大图）
+function getThumbnailUrl(url: string, width: number = 400): string {
+  if (url.includes('doubao.luzhipeng.com')) {
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
+      return `https://doubao.luzhipeng.com/cdn-cgi/image/format=auto,width=${width},quality=75${path}`;
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
+
+// 获取完整图片 URL（高质量）
+function getFullImageUrl(url: string): string {
+  if (url.includes('doubao.luzhipeng.com')) {
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
+      // 使用较高质量，但限制最大宽度避免过大
+      return `https://doubao.luzhipeng.com/cdn-cgi/image/format=auto,width=1200,quality=85${path}`;
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
+
 const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { openImageModal, addImageNode, slideshowMode, slideshowSelections, toggleSlideshowSelection } = useCanvas();
   const { updateNodeData, getNode, setNodes, setEdges } = useReactFlow();
@@ -44,6 +73,10 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasAutoResized = useRef(false); // 避免重复调整尺寸
+
+  // 渐进式图片加载状态
+  const [imageLoaded, setImageLoaded] = useState(false); // 完整图片是否加载完成
+  const [thumbnailLoaded, setThumbnailLoaded] = useState(false); // 缩略图是否加载完成
 
   // 触摸设备长按菜单支持
   const isTouchDevice = useIsTouchDevice();
@@ -188,9 +221,11 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     }
   }, [id, setNodes, data.userResized]);
 
-  // 当图片 URL 变化时重置自动调整标记
+  // 当图片 URL 变化时重置状态
   useEffect(() => {
     hasAutoResized.current = false;
+    setImageLoaded(false);
+    setThumbnailLoaded(false);
   }, [data.imageUrl]);
 
   // 重新生成图片 - 创建新节点
@@ -424,13 +459,40 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
               </div>
             ) : (
               <>
-                <img
-                  src={data.imageUrl}
-                  alt="Generated"
-                  className="w-full h-full object-contain bg-neutral-50 dark:bg-neutral-900"
-                  loading="lazy"
-                  onLoad={handleImageLoad}
-                />
+                {/* 渐进式图片加载：先显示缩略图，再加载完整图 */}
+                <div className="relative w-full h-full">
+                  {/* 缩略图层（小尺寸，快速加载） */}
+                  <img
+                    src={getThumbnailUrl(data.imageUrl, 200)}
+                    alt="Thumbnail"
+                    className={cn(
+                      "absolute inset-0 w-full h-full object-contain bg-neutral-50 dark:bg-neutral-900 transition-opacity duration-300",
+                      imageLoaded ? "opacity-0" : "opacity-100"
+                    )}
+                    loading="eager"
+                    onLoad={() => setThumbnailLoaded(true)}
+                  />
+                  {/* 完整图层（高质量，延迟加载） */}
+                  <img
+                    src={getFullImageUrl(data.imageUrl)}
+                    alt="Generated"
+                    className={cn(
+                      "absolute inset-0 w-full h-full object-contain bg-neutral-50 dark:bg-neutral-900 transition-opacity duration-500",
+                      imageLoaded ? "opacity-100" : "opacity-0"
+                    )}
+                    loading="lazy"
+                    onLoad={(e) => {
+                      setImageLoaded(true);
+                      handleImageLoad(e);
+                    }}
+                  />
+                  {/* 加载指示器（缩略图还没加载完时显示） */}
+                  {!thumbnailLoaded && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-900">
+                      <Loader2 className="w-6 h-6 text-neutral-400 animate-spin" />
+                    </div>
+                  )}
+                </div>
 
                 {/* 悬停遮罩和放大按钮 */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">

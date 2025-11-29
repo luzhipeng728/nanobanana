@@ -1059,10 +1059,16 @@ export default function InfiniteCanvas() {
           href="/gallery"
           target="_blank"
           rel="noopener noreferrer"
-          className="p-2 rounded-full hover:bg-purple-500/20 transition-colors text-purple-600 dark:text-purple-400"
-          title="作品画廊"
+          className="relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-purple-500/30 text-white group"
+          title="查看作品画廊"
         >
-          <GalleryVerticalEnd className="w-5 h-5" />
+          <GalleryVerticalEnd className="w-4 h-4" />
+          <span className="text-xs font-medium">画廊</span>
+          {/* 脉冲动画提示 */}
+          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-pink-500"></span>
+          </span>
         </a>
         <button
           onClick={clearLocalCache}

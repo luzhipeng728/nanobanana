@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, ChevronRight, Calendar, Images, Loader2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight, Calendar, Images, Loader2, ZoomIn, ZoomOut, RotateCcw, ArrowLeft, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SlideshowViewerProps {
@@ -46,6 +47,7 @@ export default function SlideshowViewer({
   images,
   createdAt,
 }: SlideshowViewerProps) {
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
@@ -287,6 +289,14 @@ export default function SlideshowViewer({
       <header className="flex-shrink-0 bg-black/80 backdrop-blur-sm border-b border-white/10 px-4 py-3 z-10">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {/* 返回画廊按钮 */}
+            <button
+              onClick={() => router.push('/gallery')}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors group"
+              title="返回画廊"
+            >
+              <ArrowLeft className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+            </button>
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
               <Images className="w-4 h-4 text-white" />
             </div>
