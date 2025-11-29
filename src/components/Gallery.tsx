@@ -19,6 +19,20 @@ import {
   Plus,
 } from "lucide-react";
 
+// Cloudflare Image Resizing - 缩略图 URL
+function getThumbnailUrl(url: string): string {
+  if (url.includes('doubao.luzhipeng.com')) {
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
+      return `https://doubao.luzhipeng.com/cdn-cgi/image/format=auto,width=400,quality=75${path}`;
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
+
 interface GalleryImage {
   id: string;
   prompt: string;
@@ -254,7 +268,7 @@ export default function Gallery({ isOpen, onClose, onImageClick }: GalleryProps)
                   onClick={() => setSelectedImage(image)}
                 >
                   <img
-                    src={image.imageUrl}
+                    src={getThumbnailUrl(image.imageUrl)}
                     alt={image.prompt}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
