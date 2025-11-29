@@ -3,6 +3,72 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 /**
+ * 转义 JSON 字符串中的特殊字符
+ * 处理未正确转义的换行符、制表符、引号等
+ */
+function escapeJsonString(str: string): string {
+  // 在 JSON 字符串值内部，需要转义的字符
+  return str
+    .replace(/\\/g, '\\\\')  // 反斜杠必须先处理
+    .replace(/\n/g, '\\n')   // 换行符
+    .replace(/\r/g, '\\r')   // 回车符
+    .replace(/\t/g, '\\t')   // 制表符
+    .replace(/\f/g, '\\f')   // 换页符
+    .replace(/"/g, '\\"');   // 双引号
+}
+
+/**
+ * 修复 JSON 字符串值中的未转义字符
+ * 这个函数会找到所有的字符串值并正确转义它们
+ */
+function fixJsonStringValues(jsonText: string): string {
+  // 使用状态机来处理 JSON 字符串
+  let result = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < jsonText.length; i++) {
+    const char = jsonText[i];
+
+    if (escaped) {
+      // 上一个字符是反斜杠，这个字符是转义序列的一部分
+      result += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escaped = true;
+      result += char;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      result += char;
+      continue;
+    }
+
+    if (inString) {
+      // 在字符串内部，转义特殊字符
+      if (char === '\n') {
+        result += '\\n';
+      } else if (char === '\r') {
+        result += '\\r';
+      } else if (char === '\t') {
+        result += '\\t';
+      } else {
+        result += char;
+      }
+    } else {
+      result += char;
+    }
+  }
+
+  return result;
+}
+
+/**
  * 安全解析 JSON，支持多种容错方式
  * 处理 Claude 返回的可能不完整或格式有问题的 JSON
  */
@@ -18,6 +84,14 @@ function safeParseJSON(text: string): Record<string, any> | null {
     // 继续尝试修复
   }
 
+  // 1.5. 尝试修复未转义的字符串值后再解析
+  try {
+    const fixedText = fixJsonStringValues(text);
+    return JSON.parse(fixedText);
+  } catch {
+    // 继续尝试其他方法
+  }
+
   // 2. 尝试提取 JSON 对象
   const jsonMatches = text.match(/\{[\s\S]*\}/g);
   if (jsonMatches) {
@@ -26,6 +100,14 @@ function safeParseJSON(text: string): Record<string, any> | null {
         return JSON.parse(jsonStr);
       } catch {
         // 继续尝试修复
+      }
+
+      // 2.5. 尝试修复字符串值中的未转义字符
+      try {
+        const fixedStr = fixJsonStringValues(jsonStr);
+        return JSON.parse(fixedStr);
+      } catch {
+        // 继续尝试
       }
 
       // 3. 尝试修复常见问题
@@ -39,6 +121,14 @@ function safeParseJSON(text: string): Record<string, any> | null {
 
       try {
         return JSON.parse(fixed);
+      } catch {
+        // 继续尝试
+      }
+
+      // 3.5. 修复后再处理字符串值
+      try {
+        const doubleFixed = fixJsonStringValues(fixed);
+        return JSON.parse(doubleFixed);
       } catch {
         // 继续尝试
       }
@@ -65,14 +155,32 @@ function safeParseJSON(text: string): Record<string, any> | null {
         return JSON.parse(arrayStr);
       } catch {
         // 尝试修复
-        let fixed = arrayStr
-          .replace(/,\s*\]/g, ']')
-          .replace(/'/g, '"');
-        try {
-          return JSON.parse(fixed);
-        } catch {
-          // 继续
-        }
+      }
+
+      // 修复字符串值
+      try {
+        const fixedStr = fixJsonStringValues(arrayStr);
+        return JSON.parse(fixedStr);
+      } catch {
+        // 继续
+      }
+
+      // 其他修复
+      let fixed = arrayStr
+        .replace(/,\s*\]/g, ']')
+        .replace(/'/g, '"');
+      try {
+        return JSON.parse(fixed);
+      } catch {
+        // 继续
+      }
+
+      // 修复后再处理字符串值
+      try {
+        const doubleFixed = fixJsonStringValues(fixed);
+        return JSON.parse(doubleFixed);
+      } catch {
+        // 继续
       }
     }
   }
