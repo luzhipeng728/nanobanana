@@ -8,7 +8,8 @@ export type SkillCategory =
   | 'storytelling'       // 故事场景
   | 'data-visualization' // 数据可视化
   | 'architecture'       // 架构图
-  | 'lifestyle';         // 生活场景
+  | 'lifestyle'          // 生活场景
+  | 'news';              // 新闻资讯
 
 export interface SkillMetadata {
   id: string;                    // 技能唯一标识
