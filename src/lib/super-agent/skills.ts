@@ -402,7 +402,97 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
     ]
   },
 
-  // ========== 技能7: 家庭记账 ==========
+  // ========== 技能7: 新闻资讯手绘报 ==========
+  'news-infographic': {
+    metadata: {
+      id: 'news-infographic',
+      name: '新闻资讯手绘报',
+      description: '生成手绘报纸风格的新闻资讯图，复古素描美学，适合展示多条新闻摘要',
+      keywords: ['新闻', '资讯', '热点', '头条', '早报', '晚报', '日报', '快讯', '速报', '要闻', '大事件', '今日新闻', '热点新闻', '新闻速递', '新闻摘要'],
+      category: 'news',
+      difficulty: 'hard',
+      requiredInputs: ['新闻标题', '新闻内容列表'],
+      optionalInputs: ['日期', '主题']
+    },
+    basePrompt: `A hand-drawn newspaper-style infographic illustration with vintage sketch aesthetics. Title at top center with Chinese text "{{MAIN_TITLE}}" in bold hand-lettered style, subtitle "{{DATE_SUBTITLE}}" below it.
+
+Layout divided into {{SECTION_COUNT}} main sections with hand-drawn borders and decorative elements:
+
+{{SECTIONS_CONTENT}}
+
+Hand-drawn sketch style with ink pen lines, cross-hatching shading, newspaper layout aesthetic, black ink on cream textured paper, journalistic illustration style with authentic handwritten Chinese characters, vintage news poster feel, detailed sketchy drawings, 8K resolution. All Chinese text must be exactly as specified with no other text.`,
+    variables: [
+      {
+        name: 'MAIN_TITLE',
+        description: '主标题',
+        type: 'text',
+        required: true,
+        defaultValue: '今日大事件速报',
+        examples: ['今日国内大事件速报', '科技热点速递', '财经要闻速报']
+      },
+      {
+        name: 'DATE_SUBTITLE',
+        description: '日期副标题',
+        type: 'text',
+        required: false,
+        defaultValue: '',
+        examples: ['2025年11月29日 星期六', '本周热点汇总']
+      },
+      {
+        name: 'SECTION_COUNT',
+        description: '新闻板块数量',
+        type: 'text',
+        required: true,
+        defaultValue: '6',
+        examples: ['6', '4', '8']
+      },
+      {
+        name: 'SECTIONS_CONTENT',
+        description: '各新闻板块内容',
+        type: 'list',
+        required: true,
+        examples: ['Section 1 (Top, largest area): Sketch of official documents and diplomatic symbols. Chinese title "国防白皮书重磅发布" in large hand-written letters. Below, detailed Chinese text in smaller handwriting style: "国务院新闻办27日发布《新时代的中国军控》白皮书..."']
+      }
+    ],
+    examples: [
+      {
+        userRequest: '帮我生成今日国内新闻的手绘报',
+        filledPrompt: `A hand-drawn newspaper-style infographic illustration with vintage sketch aesthetics. Title at top center with Chinese text "今日国内大事件速报" in bold hand-lettered style, subtitle "2025年11月29日 星期六" below it.
+
+Layout divided into 3 main sections with hand-drawn borders and decorative elements:
+
+Section 1 (Top, largest area): Sketch of official documents and diplomatic symbols. Chinese title "国防白皮书重磅发布" in large hand-written letters. Below, detailed Chinese text in smaller handwriting style: "国务院新闻办27日发布《新时代的中国军控、裁军与防扩散》白皮书，这是党的十八大以来首部军控白皮书。"
+
+Section 2 (Bottom left): Hand-drawn weather map with wind swirls, snowflakes, and storm symbols. Chinese title "极端天气来袭" in bold letters. Detailed Chinese text below: "中央气象台发布全国性预警：北方地区出现大风降温天气，东北多地启动暴雪蓝色预警。"
+
+Section 3 (Bottom right): Sketch of Hong Kong skyline and charity symbols. Chinese title "香港全港卖旗日" in hand-lettered style. Chinese text: "香港特区政府宣布今日为'全港卖旗日'，展现香港社会的爱心与团结精神。"
+
+Hand-drawn sketch style with ink pen lines, cross-hatching shading, newspaper layout aesthetic, black ink on cream textured paper, journalistic illustration style with authentic handwritten Chinese characters, vintage news poster feel, detailed sketchy drawings, 8K resolution. All Chinese text must be exactly as specified with no other text.`,
+        chineseTexts: ['今日国内大事件速报', '2025年11月29日 星期六', '国防白皮书重磅发布', '极端天气来袭', '香港全港卖旗日']
+      }
+    ],
+    qualityChecklist: [
+      '标题是否清晰醒目',
+      '新闻板块是否布局合理',
+      '手绘风格是否一致',
+      '中文文字是否正确显示',
+      '各板块是否有独特的插图元素'
+    ],
+    commonIssues: [
+      {
+        issue: '新闻内容过于拥挤',
+        solution: '减少每个板块的文字量，保持6条左右',
+        promptFix: 'with generous spacing between sections and concise text'
+      },
+      {
+        issue: '手绘风格不够明显',
+        solution: '强调素描线条和交叉阴影',
+        promptFix: 'with prominent ink pen lines, visible cross-hatching, and sketch texture'
+      }
+    ]
+  },
+
+  // ========== 技能8: 家庭记账 ==========
   'budget-visualization': {
     metadata: {
       id: 'budget-visualization',
