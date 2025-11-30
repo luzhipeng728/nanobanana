@@ -17,7 +17,6 @@ import {
   Maximize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ImageModal from "@/components/ImageModal";
 
 // 工具图标映射
 const TOOL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -97,6 +96,7 @@ export interface ToolCardProps {
   elapsed?: number;
   statusText?: string;
   streamingContent?: string;
+  onImageClick?: (imageUrl: string, prompt?: string) => void;
 }
 
 const ToolCard = memo(function ToolCard({
@@ -109,9 +109,9 @@ const ToolCard = memo(function ToolCard({
   elapsed,
   statusText,
   streamingContent,
+  onImageClick,
 }: ToolCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const Icon = TOOL_ICONS[name] || Code;
   const displayName = TOOL_NAMES[name] || name;
@@ -284,13 +284,13 @@ const ToolCard = memo(function ToolCard({
                       className="w-full max-h-40 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setIsImageModalOpen(true);
+                        onImageClick?.(output.imageUrl as string, input.prompt as string | undefined);
                       }}
                     />
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setIsImageModalOpen(true);
+                        onImageClick?.(output.imageUrl as string, input.prompt as string | undefined);
                       }}
                       className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
                       title="放大查看"
@@ -350,16 +350,6 @@ const ToolCard = memo(function ToolCard({
             ✓ {getOutputSummary()}
           </p>
         </div>
-      )}
-
-      {/* 图片放大模态框 */}
-      {output?.imageUrl && (
-        <ImageModal
-          isOpen={isImageModalOpen}
-          imageUrl={output.imageUrl as string}
-          prompt={input.prompt as string | undefined}
-          onClose={() => setIsImageModalOpen(false)}
-        />
       )}
     </div>
   );

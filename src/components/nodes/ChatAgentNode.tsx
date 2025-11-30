@@ -18,13 +18,22 @@ import {
 import { Streamdown } from "streamdown";
 import { NodeTextarea, NodeInput, NodeScrollArea } from "@/components/ui/NodeUI";
 import ToolCard, { ToolCardProps, ToolStatus } from "@/components/ui/ToolCard";
-import ImageModal from "@/components/ImageModal";
 import { cn } from "@/lib/utils";
 import type { ServerMessage, ToolResult } from "@/lib/chat-agent/types";
+import { useCanvas } from "@/contexts/CanvasContext";
 
-// Helper function to replace unsupported language tags
+// Helper function to normalize markdown content
 const normalizeMarkdown = (content: string) => {
-  return content.replace(/```prompt\b/g, "```text");
+  let normalized = content;
+  // Replace unsupported language tags
+  normalized = normalized.replace(/```prompt\b/g, "```text");
+  // Remove excessive blank lines (more than 2 consecutive newlines)
+  normalized = normalized.replace(/\n{3,}/g, "\n\n");
+  // Trim leading/trailing whitespace from each line while preserving structure
+  normalized = normalized.split("\n").map(line => line.trimEnd()).join("\n");
+  // Remove [Image #X] placeholders as we show images separately
+  normalized = normalized.replace(/\[Image #\d+\](?::\s*)?/g, "");
+  return normalized.trim();
 };
 
 // 附件类型
@@ -73,12 +82,9 @@ const ChatAgentNode = ({
   const [showSettings, setShowSettings] = useState(false);
   const [contextTokens, setContextTokens] = useState(0);
   const [maxTokens] = useState(100000);
-  // 图片放大弹窗状态
-  const [imageModal, setImageModal] = useState<{ isOpen: boolean; url: string; prompt?: string }>({
-    isOpen: false,
-    url: "",
-    prompt: undefined,
-  });
+
+  // 获取全局 ImageModal
+  const { openImageModal } = useCanvas();
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -451,11 +457,6 @@ const ChatAgentNode = ({
       }));
   };
 
-  // 打开图片弹窗
-  const openImageModal = (url: string, prompt?: string) => {
-    setImageModal({ isOpen: true, url, prompt });
-  };
-
   // Token 使用率
   const tokenUsagePercent = Math.min((contextTokens / maxTokens) * 100, 100);
 
@@ -641,7 +642,7 @@ const ChatAgentNode = ({
                   {msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0 && (
                     <div className="space-y-2 w-full mb-2">
                       {msg.toolCalls.map((tool) => (
-                        <ToolCard key={tool.toolId} {...tool} />
+                        <ToolCard key={tool.toolId} {...tool} onImageClick={openImageModal} />
                       ))}
                     </div>
                   )}
@@ -712,7 +713,7 @@ const ChatAgentNode = ({
               {currentToolCalls.size > 0 && (
                 <div className="space-y-2 w-full mb-2">
                   {Array.from(currentToolCalls.values()).map((tool) => (
-                    <ToolCard key={tool.toolId} {...tool} />
+                    <ToolCard key={tool.toolId} {...tool} onImageClick={openImageModal} />
                   ))}
                 </div>
               )}
@@ -841,14 +842,6 @@ const ChatAgentNode = ({
         position={Position.Bottom}
         isConnectable={isConnectable}
         className="w-2 h-2 !bg-indigo-500 !border-0"
-      />
-
-      {/* 图片放大弹窗 */}
-      <ImageModal
-        isOpen={imageModal.isOpen}
-        imageUrl={imageModal.url}
-        prompt={imageModal.prompt}
-        onClose={() => setImageModal({ isOpen: false, url: "", prompt: undefined })}
       />
     </div>
   );
