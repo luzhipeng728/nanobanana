@@ -14,8 +14,10 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Maximize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ImageModal from "@/components/ImageModal";
 
 // 工具图标映射
 const TOOL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -109,6 +111,7 @@ const ToolCard = memo(function ToolCard({
   streamingContent,
 }: ToolCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const Icon = TOOL_ICONS[name] || Code;
   const displayName = TOOL_NAMES[name] || name;
@@ -274,12 +277,26 @@ const ToolCard = memo(function ToolCard({
               <div className="mt-1">
                 {/* 图片预览 */}
                 {output.imageUrl && (
-                  <div className="mb-2">
+                  <div className="mb-2 relative group">
                     <img
                       src={output.imageUrl as string}
                       alt="Generated"
-                      className="w-full max-h-40 object-contain rounded"
+                      className="w-full max-h-40 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsImageModalOpen(true);
+                      }}
                     />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsImageModalOpen(true);
+                      }}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                      title="放大查看"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
                 {/* 搜索结果 */}
@@ -333,6 +350,16 @@ const ToolCard = memo(function ToolCard({
             ✓ {getOutputSummary()}
           </p>
         </div>
+      )}
+
+      {/* 图片放大模态框 */}
+      {output?.imageUrl && (
+        <ImageModal
+          isOpen={isImageModalOpen}
+          imageUrl={output.imageUrl as string}
+          prompt={input.prompt as string | undefined}
+          onClose={() => setIsImageModalOpen(false)}
+        />
       )}
     </div>
   );

@@ -18,6 +18,7 @@ import {
 import { Streamdown } from "streamdown";
 import { NodeTextarea, NodeInput, NodeScrollArea } from "@/components/ui/NodeUI";
 import ToolCard, { ToolCardProps, ToolStatus } from "@/components/ui/ToolCard";
+import ImageModal from "@/components/ImageModal";
 import { cn } from "@/lib/utils";
 import type { ServerMessage, ToolResult } from "@/lib/chat-agent/types";
 
@@ -72,6 +73,12 @@ const ChatAgentNode = ({
   const [showSettings, setShowSettings] = useState(false);
   const [contextTokens, setContextTokens] = useState(0);
   const [maxTokens] = useState(100000);
+  // 图片放大弹窗状态
+  const [imageModal, setImageModal] = useState<{ isOpen: boolean; url: string; prompt?: string }>({
+    isOpen: false,
+    url: "",
+    prompt: undefined,
+  });
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -429,6 +436,26 @@ const ChatAgentNode = ({
     });
   };
 
+  // 从工具调用中提取生成的图片
+  const extractGeneratedImages = (toolCalls?: ToolCardProps[]) => {
+    if (!toolCalls) return [];
+    return toolCalls
+      .filter(
+        (tool) =>
+          (tool.name === "generate_image" || tool.name === "edit_image") &&
+          tool.output?.imageUrl
+      )
+      .map((tool) => ({
+        url: tool.output!.imageUrl as string,
+        prompt: tool.input?.prompt as string | undefined,
+      }));
+  };
+
+  // 打开图片弹窗
+  const openImageModal = (url: string, prompt?: string) => {
+    setImageModal({ isOpen: true, url, prompt });
+  };
+
   // Token 使用率
   const tokenUsagePercent = Math.min((contextTokens / maxTokens) * 100, 100);
 
@@ -578,19 +605,34 @@ const ChatAgentNode = ({
                   {msg.role === "user" && msg.attachments && msg.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
                       {msg.attachments.map((att) => (
-                        <div
-                          key={att.id}
-                          className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg flex items-center gap-1"
-                        >
-                          {att.type === "image" ? (
-                            <ImageIcon className="w-3 h-3 text-green-500" />
-                          ) : (
+                        att.type === "image" && att.preview ? (
+                          // 图片附件：显示缩略图
+                          <div
+                            key={att.id}
+                            className="relative group rounded-lg overflow-hidden shadow-sm"
+                          >
+                            <img
+                              src={att.preview}
+                              alt={att.filename}
+                              className="w-20 h-20 object-cover rounded-lg"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                            <span className="absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-black/50 text-[8px] text-white truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                              {att.filename}
+                            </span>
+                          </div>
+                        ) : (
+                          // 文档附件：显示文件名
+                          <div
+                            key={att.id}
+                            className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg flex items-center gap-1"
+                          >
                             <FileText className="w-3 h-3 text-blue-500" />
-                          )}
-                          <span className="text-[10px] text-neutral-600 dark:text-neutral-400">
-                            {att.filename}
-                          </span>
-                        </div>
+                            <span className="text-[10px] text-neutral-600 dark:text-neutral-400">
+                              {att.filename}
+                            </span>
+                          </div>
+                        )
                       ))}
                     </div>
                   )}
@@ -623,6 +665,34 @@ const ChatAgentNode = ({
                       </div>
                     )}
                   </div>
+
+                  {/* 生成的图片展示 */}
+                  {msg.role === "assistant" && (() => {
+                    const images = extractGeneratedImages(msg.toolCalls);
+                    if (images.length === 0) return null;
+                    return (
+                      <div className="flex flex-wrap gap-2 mt-2 w-full">
+                        {images.map((img, idx) => (
+                          <div
+                            key={idx}
+                            className="relative group cursor-pointer rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                            onClick={() => openImageModal(img.url, img.prompt)}
+                          >
+                            <img
+                              src={img.url}
+                              alt={`Generated ${idx + 1}`}
+                              className="w-32 h-32 object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                              <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-2 py-1 rounded">
+                                点击放大
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   {/* 时间戳 */}
                   <span className="text-[9px] text-neutral-400 dark:text-neutral-600 mt-1 px-2">
@@ -771,6 +841,14 @@ const ChatAgentNode = ({
         position={Position.Bottom}
         isConnectable={isConnectable}
         className="w-2 h-2 !bg-indigo-500 !border-0"
+      />
+
+      {/* 图片放大弹窗 */}
+      <ImageModal
+        isOpen={imageModal.isOpen}
+        imageUrl={imageModal.url}
+        prompt={imageModal.prompt}
+        onClose={() => setImageModal({ isOpen: false, url: "", prompt: undefined })}
       />
     </div>
   );

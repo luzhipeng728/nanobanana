@@ -553,53 +553,121 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
       const decoder = new TextDecoder();
       let buffer = ""; // 添加缓冲区处理分片数据
+      let pendingDataLine = ""; // 处理被截断的 data: 行
+
+      // 处理解析后的事件
+      const handleEvent = (event: AgentStreamEvent) => {
+        if (event.type === "status") {
+          if (event.status) setStatus(event.status);
+          if (event.step) setCurrentStep(event.step);
+          if (event.progress !== undefined) setProgress(event.progress);
+        } else if (event.type === "progress") {
+          if (event.progress !== undefined) setProgress(event.progress);
+        } else if (event.type === "claude_analysis_start") {
+          setIsAnalyzing(true);
+          setClaudeAnalysis("");
+        } else if (event.type === "claude_analysis_chunk") {
+          if (event.chunk) {
+            setClaudeAnalysis(prev => prev + event.chunk);
+            if (analysisRef.current) {
+              analysisRef.current.scrollTop = analysisRef.current.scrollHeight;
+            }
+          }
+        } else if (event.type === "claude_analysis_end") {
+          setIsAnalyzing(false);
+        } else if (event.type === "prompts") {
+          if (event.prompts) {
+            console.log(`[AgentNode] Received ${event.prompts.length} prompts, starting image generation...`);
+            setPrompts(event.prompts);
+            setTimeout(() => {
+              generateImagesInBatches(event.prompts!);
+            }, 500);
+          }
+        } else if (event.type === "error") {
+          setError(event.error || "未知错误");
+          setStatus("error");
+        } else if (event.type === "complete") {
+          if (event.status) setStatus(event.status);
+          if (event.progress !== undefined) setProgress(event.progress);
+        }
+      };
+
+      // 尝试解析 JSON，处理可能被截断的情况
+      const tryParseJSON = (jsonStr: string): { success: boolean; data?: AgentStreamEvent; needMore: boolean } => {
+        const trimmed = jsonStr.trim();
+        if (!trimmed) return { success: false, needMore: false };
+
+        // 检查 JSON 是否可能完整（以 { 开始且以 } 结束）
+        if (!trimmed.startsWith("{")) {
+          return { success: false, needMore: false };
+        }
+
+        // 简单的括号匹配检查
+        let braceCount = 0;
+        let inString = false;
+        let escapeNext = false;
+
+        for (const char of trimmed) {
+          if (escapeNext) {
+            escapeNext = false;
+            continue;
+          }
+          if (char === "\\") {
+            escapeNext = true;
+            continue;
+          }
+          if (char === '"') {
+            inString = !inString;
+            continue;
+          }
+          if (!inString) {
+            if (char === "{") braceCount++;
+            if (char === "}") braceCount--;
+          }
+        }
+
+        // 括号不匹配，说明 JSON 不完整
+        if (braceCount !== 0) {
+          return { success: false, needMore: true };
+        }
+
+        try {
+          const data = JSON.parse(trimmed);
+          return { success: true, data, needMore: false };
+        } catch {
+          // 括号匹配但解析失败，可能是其他语法错误
+          return { success: false, needMore: false };
+        }
+      };
 
       // 处理单条 SSE 消息的函数
       const processSSEMessage = (message: string) => {
         const lines = message.split("\n");
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const eventData = line.slice(6);
-            try {
-              const event: AgentStreamEvent = JSON.parse(eventData);
+          if (line.startsWith("data: ") || pendingDataLine) {
+            let eventData: string;
 
-              if (event.type === "status") {
-                if (event.status) setStatus(event.status);
-                if (event.step) setCurrentStep(event.step);
-                if (event.progress !== undefined) setProgress(event.progress);
-              } else if (event.type === "progress") {
-                if (event.progress !== undefined) setProgress(event.progress);
-              } else if (event.type === "claude_analysis_start") {
-                setIsAnalyzing(true);
-                setClaudeAnalysis("");
-              } else if (event.type === "claude_analysis_chunk") {
-                if (event.chunk) {
-                  setClaudeAnalysis(prev => prev + event.chunk);
-                  // 自动滚动到底部
-                  if (analysisRef.current) {
-                    analysisRef.current.scrollTop = analysisRef.current.scrollHeight;
-                  }
-                }
-              } else if (event.type === "claude_analysis_end") {
-                setIsAnalyzing(false);
-              } else if (event.type === "prompts") {
-                if (event.prompts) {
-                  console.log(`[AgentNode] Received ${event.prompts.length} prompts, starting image generation...`);
-                  setPrompts(event.prompts);
-                  // 开始并发生成图片
-                  setTimeout(() => {
-                    generateImagesInBatches(event.prompts!);
-                  }, 500);
-                }
-              } else if (event.type === "error") {
-                setError(event.error || "未知错误");
-                setStatus("error");
-              } else if (event.type === "complete") {
-                if (event.status) setStatus(event.status);
-                if (event.progress !== undefined) setProgress(event.progress);
+            if (pendingDataLine) {
+              // 有未完成的 data 行，拼接
+              eventData = pendingDataLine + (line.startsWith("data: ") ? line.slice(6) : line);
+            } else {
+              eventData = line.slice(6);
+            }
+
+            const result = tryParseJSON(eventData);
+
+            if (result.success && result.data) {
+              pendingDataLine = "";
+              handleEvent(result.data);
+            } else if (result.needMore) {
+              // JSON 不完整，保存等待更多数据
+              pendingDataLine = eventData;
+            } else {
+              // 解析失败且不需要更多数据，记录错误
+              if (eventData.trim()) {
+                console.warn("[AgentNode] Invalid JSON, discarding:", eventData.substring(0, 100));
               }
-            } catch (e) {
-              console.error("Failed to parse event:", e, "Data:", eventData.substring(0, 200));
+              pendingDataLine = "";
             }
           }
         }
@@ -628,6 +696,15 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           if (buffer.trim()) {
             console.log("[AgentNode] Processing remaining buffer on stream end:", buffer.substring(0, 100));
             processSSEMessage(buffer);
+          }
+          // 处理可能存在的未完成 JSON
+          if (pendingDataLine.trim()) {
+            console.warn("[AgentNode] Stream ended with incomplete JSON:", pendingDataLine.substring(0, 100));
+            // 最后尝试解析一次
+            const result = tryParseJSON(pendingDataLine);
+            if (result.success && result.data) {
+              handleEvent(result.data);
+            }
           }
           break;
         }
