@@ -150,6 +150,8 @@ ${enableDeepResearch ? `9. **deep_research**: 🔬 **深度研究智能体**（�
 即使是"简单"的公司介绍，deep_research 也能提供更丰富的背景资料。
 
 **调用示例：**
+
+示例1 - 公司介绍：
 \\\`\\\`\\\`json
 {
   "topic": "北京易诚互动公司介绍、业务范围、发展历程、主要产品",
@@ -158,11 +160,30 @@ ${enableDeepResearch ? `9. **deep_research**: 🔬 **深度研究智能体**（�
 }
 \\\`\\\`\\\`
 
+示例2 - 今日新闻（⚠️ 必须在 topic 里明确日期！）：
+\\\`\\\`\\\`json
+{
+  "topic": "今日AI大事件速报，只要${currentDate}的，不要其它日期的新闻",
+  "reasoning_effort": "${reasoningEffort}",
+  "context": "用于生成新闻速报图"
+}
+\\\`\\\`\\\`
+
+**⚠️ 新闻类请求必须在 topic 里明确日期限制！**
+- ❌ 错误：\`"topic": "今日AI新闻"\`（太模糊，会返回整月汇总）
+- ✅ 正确：\`"topic": "今日AI新闻，只要${currentDate}的，不要其它"\`
+
 **输出内容：**
-- content: 完整研究报告
+- content: 完整研究报告（注意：可能是整体汇总，需要你筛选）
 - citations: 引用来源列表（URL）
-- search_results: 搜索结果摘要
-- research_summary: 便于你使用的综合摘要` : ''}
+- search_results: 搜索结果摘要（⚠️ 包含具体来源和日期，用于筛选当日内容）
+- research_summary: 便于你使用的综合摘要
+
+**⚠️ 处理"今日新闻"类请求时的关键步骤：**
+1. **仔细阅读 search_results**：每条结果有 title、url、snippet，可以判断日期
+2. **筛选当日内容**：只使用今天（或最近1-2天）的新闻
+3. **不要直接复制 content**：content 可能是整月汇总，你需要从中提取当日信息
+4. **优先使用带日期的来源**：如 "11月30日消息"、"Nov 30" 等` : ''}
 
 ## ReAct 自主探索
 
