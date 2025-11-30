@@ -176,10 +176,8 @@ export async function runReactLoop(
         content: contentBlocks,
       });
 
-      // 执行工具调用
-      const toolResults: { tool_use_id: string; content: string }[] = [];
-
-      for (const toolUse of toolUseBlocks) {
+      // 并行执行工具调用
+      const toolPromises = toolUseBlocks.map(async (toolUse) => {
         const tool = toolInstances.get(toolUse.name);
         if (!tool) {
           // 工具不存在
@@ -189,11 +187,10 @@ export async function runReactLoop(
             output: { success: false, error: `未知工具: ${toolUse.name}` },
             duration: 0,
           });
-          toolResults.push({
+          return {
             tool_use_id: toolUse.id,
             content: JSON.stringify({ error: `未知工具: ${toolUse.name}` }),
-          });
-          continue;
+          };
         }
 
         const startTime = Date.now();
@@ -241,10 +238,10 @@ export async function runReactLoop(
             duration,
           });
 
-          toolResults.push({
+          return {
             tool_use_id: toolUse.id,
             content: JSON.stringify(result),
-          });
+          };
         } catch (error) {
           const duration = Date.now() - startTime;
           const errorMessage = error instanceof Error ? error.message : '未知错误';
@@ -256,14 +253,17 @@ export async function runReactLoop(
             duration,
           });
 
-          toolResults.push({
+          return {
             tool_use_id: toolUse.id,
             content: JSON.stringify({ error: errorMessage }),
-          });
+          };
         } finally {
           clearInterval(progressInterval);
         }
-      }
+      });
+
+      // 等待所有工具执行完成
+      const toolResults = await Promise.all(toolPromises);
 
       // 将工具结果添加到消息历史
       messages.push({
