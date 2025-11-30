@@ -25,6 +25,7 @@ import MusicNode from "./nodes/MusicNode";
 import VideoGenNode from "./nodes/VideoGenNode";
 import VideoNode from "./nodes/VideoNode";
 import ChatNode from "./nodes/ChatNode";
+import ChatAgentNode from "./nodes/ChatAgentNode";
 import StickerGenNode from "./nodes/StickerGenNode";
 import StickerNode from "./nodes/StickerNode";
 import SpriteNode from "./nodes/SpriteNode";
@@ -53,6 +54,7 @@ const nodeTypes = {
   videoGen: VideoGenNode as any,
   video: VideoNode as any,
   chat: ChatNode as any,
+  chatAgent: ChatAgentNode as any,
   stickerGen: StickerGenNode as any,
   sticker: StickerNode as any,
   sprite: SpriteNode as any,
