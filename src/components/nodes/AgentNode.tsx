@@ -552,56 +552,65 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       }
 
       const decoder = new TextDecoder();
+      let buffer = ""; // 添加缓冲区处理分片数据
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const text = decoder.decode(value);
-        const lines = text.split("\n");
+        buffer += decoder.decode(value, { stream: true });
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const eventData = line.slice(6);
-            try {
-              const event: AgentStreamEvent = JSON.parse(eventData);
+        // 按完整的 SSE 消息分割（以 \n\n 结尾）
+        const messages = buffer.split("\n\n");
+        // 最后一个可能是不完整的，保留到下一次
+        buffer = messages.pop() || "";
 
-              if (event.type === "status") {
-                if (event.status) setStatus(event.status);
-                if (event.step) setCurrentStep(event.step);
-                if (event.progress !== undefined) setProgress(event.progress);
-              } else if (event.type === "progress") {
-                if (event.progress !== undefined) setProgress(event.progress);
-              } else if (event.type === "claude_analysis_start") {
-                setIsAnalyzing(true);
-                setClaudeAnalysis("");
-              } else if (event.type === "claude_analysis_chunk") {
-                if (event.chunk) {
-                  setClaudeAnalysis(prev => prev + event.chunk);
-                  // 自动滚动到底部
-                  if (analysisRef.current) {
-                    analysisRef.current.scrollTop = analysisRef.current.scrollHeight;
+        for (const message of messages) {
+          const lines = message.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const eventData = line.slice(6);
+              try {
+                const event: AgentStreamEvent = JSON.parse(eventData);
+
+                if (event.type === "status") {
+                  if (event.status) setStatus(event.status);
+                  if (event.step) setCurrentStep(event.step);
+                  if (event.progress !== undefined) setProgress(event.progress);
+                } else if (event.type === "progress") {
+                  if (event.progress !== undefined) setProgress(event.progress);
+                } else if (event.type === "claude_analysis_start") {
+                  setIsAnalyzing(true);
+                  setClaudeAnalysis("");
+                } else if (event.type === "claude_analysis_chunk") {
+                  if (event.chunk) {
+                    setClaudeAnalysis(prev => prev + event.chunk);
+                    // 自动滚动到底部
+                    if (analysisRef.current) {
+                      analysisRef.current.scrollTop = analysisRef.current.scrollHeight;
+                    }
                   }
+                } else if (event.type === "claude_analysis_end") {
+                  setIsAnalyzing(false);
+                } else if (event.type === "prompts") {
+                  if (event.prompts) {
+                    console.log(`[AgentNode] Received ${event.prompts.length} prompts, starting image generation...`);
+                    setPrompts(event.prompts);
+                    // 开始并发生成图片
+                    setTimeout(() => {
+                      generateImagesInBatches(event.prompts!);
+                    }, 500);
+                  }
+                } else if (event.type === "error") {
+                  setError(event.error || "未知错误");
+                  setStatus("error");
+                } else if (event.type === "complete") {
+                  if (event.status) setStatus(event.status);
+                  if (event.progress !== undefined) setProgress(event.progress);
                 }
-              } else if (event.type === "claude_analysis_end") {
-                setIsAnalyzing(false);
-              } else if (event.type === "prompts") {
-                if (event.prompts) {
-                  setPrompts(event.prompts);
-                  // 开始并发生成图片
-                  setTimeout(() => {
-                    generateImagesInBatches(event.prompts!);
-                  }, 500);
-                }
-              } else if (event.type === "error") {
-                setError(event.error || "未知错误");
-                setStatus("error");
-              } else if (event.type === "complete") {
-                if (event.status) setStatus(event.status);
-                if (event.progress !== undefined) setProgress(event.progress);
+              } catch (e) {
+                console.error("Failed to parse event:", e, "Data:", eventData.substring(0, 200));
               }
-            } catch (e) {
-              console.error("Failed to parse event:", e);
             }
           }
         }
