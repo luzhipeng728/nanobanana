@@ -3,7 +3,17 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { SKILL_LIBRARY, matchSkillByKeywords } from './skills';
 import type { ToolResult, FinalOutput, SuperAgentStreamEvent } from '@/types/super-agent';
-import { runDeepResearch, ResearchProgressEvent } from './deep-research';
+// 旧版 DeepResearch（基于 Google + Tavily + LLM 评估）
+import { runDeepResearch, ResearchProgressEvent as LegacyResearchProgressEvent } from './deep-research';
+// 新版 HyprLab DeepResearch（基于 Perplexity sonar-deep-research）
+import {
+  callHyprLabDeepResearch,
+  parseHyprLabResponse,
+  formatResearchForImagePrompt,
+  type ReasoningEffort,
+  type ResearchProgressEvent as HyprLabProgressEvent,
+  REASONING_EFFORT_TIME
+} from './hyprlab-research';
 import { fetchAndCompressImage } from '@/lib/image-utils';
 import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS, DEEP_RESEARCH_MAX_ROUNDS } from '@/lib/claude-config';
 
@@ -241,223 +251,50 @@ export const handleWebSearch: ToolHandler = async (params, sendEvent) => {
   }
 };
 
-// 工具4.5: 深度研究智能体（独立子智能体）
+// 工具4.5: 深度研究智能体（使用 HyprLab sonar-deep-research）
 export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
-  const { topic, required_info, context, output_mode, max_rounds, date_restrict } = params;
+  const { topic, reasoning_effort, context } = params;
 
-  console.log(`[DeepResearch] Starting deep research on: ${topic}`);
-  if (date_restrict) {
-    console.log(`[DeepResearch] Date restriction: ${date_restrict}`);
-  }
+  // 验证并设置研究强度
+  const effort: ReasoningEffort = ['low', 'medium', 'high'].includes(reasoning_effort)
+    ? reasoning_effort as ReasoningEffort
+    : 'low';
 
-  // 创建事件转发器，将子智能体事件转换为主智能体事件格式
-  const forwardEvent = async (event: ResearchProgressEvent): Promise<void> => {
+  const estimatedTime = REASONING_EFFORT_TIME[effort];
+  console.log(`[DeepResearch] Starting HyprLab research on: "${topic}" with effort: ${effort} (estimated ${estimatedTime.min}-${estimatedTime.max} min)`);
+
+  // 创建进度事件处理器
+  const onProgress = async (event: HyprLabProgressEvent): Promise<void> => {
     switch (event.type) {
       case 'start':
         await sendEvent({
           type: 'research_start',
-          topic: event.topic,
-          requiredInfo: params.required_info || []
+          topic,
+          requiredInfo: []
         });
-        break;
-
-      case 'round_start':
-        // 发送详细的轮次开始事件
-        await sendEvent({
-          type: 'research_round_start',
-          round: event.round,
-          maxRounds: event.maxRounds,
-          queries: event.queries
-        } as any);
-        // 同时发送兼容的进度事件
-        await sendEvent({
-          type: 'research_progress',
-          round: event.round,
-          maxRounds: event.maxRounds,
-          status: `🔬 第 ${event.round}/${event.maxRounds} 轮：搜索 ${event.queries.length} 个查询`
-        });
-        break;
-
-      // 搜索相关事件
-      case 'search_start':
-        await sendEvent({
-          type: 'research_search_start',
-          query: (event as any).query,
-          source: (event as any).source
-        } as any);
-        break;
-
-      case 'search_result':
-        await sendEvent({
-          type: 'research_search_result',
-          query: (event as any).query,
-          resultsCount: (event as any).resultsCount,
-          totalTime: (event as any).totalTime
-        } as any);
-        break;
-
-      case 'search_complete':
-        await sendEvent({
-          type: 'search_result',
-          summary: `${event.source} 搜索完成，获得 ${event.resultsCount} 条结果`
-        });
-        break;
-
-      // 处理相关事件
-      case 'processing':
         await sendEvent({
           type: 'research_progress',
           round: 0,
-          maxRounds: 0,
-          status: `⚙️ ${event.action}`
+          maxRounds: 1,
+          status: event.message
         });
         break;
 
-      case 'dedup_complete':
-        await sendEvent({
-          type: 'research_dedup',
-          before: (event as any).before,
-          after: (event as any).after
-        } as any);
-        break;
-
-      case 'categorize_start':
-        await sendEvent({
-          type: 'research_categorize_start',
-          totalResults: (event as any).totalResults,
-          batchCount: (event as any).batchCount
-        } as any);
-        break;
-
-      case 'categorize_batch':
-        await sendEvent({
-          type: 'research_categorize_batch',
-          batch: (event as any).batch,
-          total: (event as any).total,
-          itemsProcessed: (event as any).itemsProcessed
-        } as any);
-        break;
-
-      case 'categorize_complete':
-        await sendEvent({
-          type: 'research_categorize_complete',
-          totalCategorized: (event as any).totalCategorized
-        } as any);
-        break;
-
-      // 评估相关事件
-      case 'evaluation_start':
-        await sendEvent({
-          type: 'research_evaluation_start',
-          round: (event as any).round
-        } as any);
-        break;
-
-      case 'evaluation_rule':
-        await sendEvent({
-          type: 'research_evaluation_rule',
-          ruleScore: (event as any).ruleScore,
-          categoryCoverage: (event as any).categoryCoverage
-        } as any);
-        break;
-
-      case 'evaluation_llm_start':
-        await sendEvent({
-          type: 'research_evaluation_llm_start'
-        } as any);
-        break;
-
-      case 'evaluation_llm_complete':
-        await sendEvent({
-          type: 'research_evaluation_llm_complete',
-          llmScore: (event as any).llmScore,
-          missingInfo: (event as any).missingInfo,
-          suggestedQueries: (event as any).suggestedQueries
-        } as any);
-        break;
-
-      case 'evaluation':
-        await sendEvent({
-          type: 'research_evaluation',
-          round: 0,
-          coverage: event.scores.coverage,
-          missing: [],
-          sufficient: event.decision === 'stop'
-        });
-        break;
-
-      // 搜索计划事件
-      case 'plan_start':
-        await sendEvent({
-          type: 'research_plan_start',
-          strategy: (event as any).strategy
-        } as any);
-        break;
-
-      case 'plan_complete':
-        await sendEvent({
-          type: 'research_plan_complete',
-          queriesCount: (event as any).queriesCount,
-          reasoning: (event as any).reasoning
-        } as any);
-        break;
-
-      case 'round_complete':
-        await sendEvent({
-          type: 'research_progress',
-          round: event.round,
-          maxRounds: 10,
-          status: `✅ 第 ${event.round} 轮完成：新增 ${event.newInfoCount} 条信息，累计 ${event.totalInfoCount} 条`
-        });
-        break;
-
-      case 'pivot':
+      case 'progress':
         await sendEvent({
           type: 'research_progress',
           round: 0,
-          maxRounds: 0,
-          status: `🔄 调整策略：${event.reason} → ${event.newDirection}`
+          maxRounds: 1,
+          status: event.message
         });
-        break;
-
-      // 报告生成事件
-      case 'report_start':
-        await sendEvent({
-          type: 'research_report_start'
-        } as any);
-        break;
-
-      case 'report_summary_start':
-        await sendEvent({
-          type: 'research_report_summary_start'
-        } as any);
-        break;
-
-      case 'report_summary_chunk':
-        await sendEvent({
-          type: 'research_summary_chunk',
-          chunk: (event as any).chunk
-        } as any);
-        break;
-
-      case 'report_summary_complete':
-        await sendEvent({
-          type: 'research_report_summary_complete'
-        } as any);
-        break;
-
-      case 'report_complete':
-        await sendEvent({
-          type: 'research_report_complete'
-        } as any);
         break;
 
       case 'complete':
         await sendEvent({
           type: 'research_complete',
           topic,
-          rounds: event.report.totalRounds,
-          coverage: event.report.quality.coverageScore
+          rounds: 1,
+          coverage: 100
         });
         break;
 
@@ -468,55 +305,55 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
   };
 
   try {
-    // 防御性处理：确保 required_info 是数组
-    const safeRequiredInfo = Array.isArray(required_info) ? required_info : [];
+    // 构建系统提示词
+    const systemPrompt = context
+      ? `You are a helpful research assistant. Context: ${context}. Provide comprehensive, well-structured research reports in the same language as the user query.`
+      : 'You are a helpful research assistant. Provide comprehensive, well-structured research reports in the same language as the user query.';
 
-    // 调用 DeepResearch 子智能体
-    const report = await runDeepResearch(
-      {
-        topic,
-        context,
-        requiredInfo: safeRequiredInfo,
-        outputMode: output_mode as 'summary' | 'detailed' | 'adaptive' | undefined,
-        maxRounds: max_rounds as number | undefined,
-        dateRestrict: date_restrict as string | undefined
-      },
-      forwardEvent,
-      {
-        maxRounds: max_rounds || DEEP_RESEARCH_MAX_ROUNDS,  // 使用环境变量配置，默认 10 轮
-        includeRawData: output_mode === 'detailed',
-        includeTrace: output_mode === 'detailed',
-        outputMode: output_mode || 'adaptive'
-      }
+    // 调用 HyprLab API
+    const response = await callHyprLabDeepResearch(
+      topic,
+      effort,
+      onProgress,
+      systemPrompt
     );
+
+    // 解析响应
+    const parsed = parseHyprLabResponse(response);
+
+    // 格式化为图片生成可用的上下文
+    const researchSummary = formatResearchForImagePrompt(parsed);
 
     // 构建返回结果
     return {
       success: true,
       data: {
-        topic: report.topic,
-        total_rounds: report.totalRounds,
-        total_time_ms: report.totalTime,
-        sources_count: report.sourcesCount,
+        topic,
+        reasoning_effort: effort,
+        total_time_ms: (Date.now() - response.created * 1000),
+        sources_count: parsed.citations.length,
 
-        // 摘要信息
-        overview: report.summary.overview,
-        key_findings: report.summary.keyFindings,
+        // 主要内容
+        content: parsed.content,
 
-        // 分类信息
-        categorized_info: report.summary.categories,
+        // 引用来源
+        citations: parsed.citations,
 
-        // 质量指标
-        coverage_score: report.quality.coverageScore,
-        quality_score: report.quality.qualityScore,
-        confidence: report.quality.confidence,
-        limitations: report.quality.limitations,
+        // 搜索结果摘要
+        search_results: parsed.searchResults.slice(0, 10).map(r => ({
+          title: r.title,
+          url: r.url,
+          snippet: r.snippet
+        })),
 
-        // 原始数据（如果请求）
-        sources: report.rawData?.sources,
+        // 使用统计
+        usage: {
+          search_queries: parsed.meta.searchQueriesCount,
+          total_cost: parsed.meta.totalCost
+        },
 
         // 便于 AI 使用的综合摘要
-        research_summary: formatResearchSummary(report)
+        research_summary: researchSummary
       },
       shouldContinue: true
     };
@@ -530,62 +367,188 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
   }
 };
 
-// 格式化研究摘要，便于 AI 使用
-function formatResearchSummary(report: any): string {
+// ============================================================================
+// 旧版深度研究智能体（保留备用）
+// 基于 Google Custom Search + Tavily + LLM 评估的多轮探索
+// ============================================================================
+export const handleDeepResearchLegacy: ToolHandler = async (params, sendEvent) => {
+  const { topic, required_info, context, output_mode, max_rounds, date_restrict } = params;
+
+  console.log(`[DeepResearch Legacy] Starting on: ${topic}`);
+  if (date_restrict) {
+    console.log(`[DeepResearch Legacy] Date restriction: ${date_restrict}`);
+  }
+
+  // 创建事件转发器
+  const forwardEvent = async (event: LegacyResearchProgressEvent): Promise<void> => {
+    switch (event.type) {
+      case 'start':
+        await sendEvent({
+          type: 'research_start',
+          topic: event.topic,
+          requiredInfo: params.required_info || []
+        });
+        break;
+
+      case 'round_start':
+        await sendEvent({
+          type: 'research_progress',
+          round: event.round,
+          maxRounds: event.maxRounds,
+          status: `🔬 第 ${event.round}/${event.maxRounds} 轮：搜索 ${event.queries.length} 个查询`
+        });
+        break;
+
+      case 'search_complete':
+        await sendEvent({
+          type: 'search_result',
+          summary: `${event.source} 搜索完成，获得 ${event.resultsCount} 条结果`
+        });
+        break;
+
+      case 'processing':
+        await sendEvent({
+          type: 'research_progress',
+          round: 0,
+          maxRounds: 0,
+          status: `⚙️ ${event.action}`
+        });
+        break;
+
+      case 'evaluation':
+        await sendEvent({
+          type: 'research_evaluation',
+          round: 0,
+          coverage: event.scores.coverage,
+          missing: [],
+          sufficient: event.decision === 'stop'
+        });
+        break;
+
+      case 'round_complete':
+        await sendEvent({
+          type: 'research_progress',
+          round: event.round,
+          maxRounds: 10,
+          status: `✅ 第 ${event.round} 轮完成：新增 ${event.newInfoCount} 条信息`
+        });
+        break;
+
+      case 'pivot':
+        await sendEvent({
+          type: 'research_progress',
+          round: 0,
+          maxRounds: 0,
+          status: `🔄 调整策略：${event.reason} → ${event.newDirection}`
+        });
+        break;
+
+      case 'report_summary_chunk':
+        await sendEvent({
+          type: 'research_summary_chunk',
+          chunk: (event as any).chunk
+        } as any);
+        break;
+
+      case 'complete':
+        await sendEvent({
+          type: 'research_complete',
+          topic,
+          rounds: event.report.totalRounds,
+          coverage: event.report.quality.coverageScore
+        });
+        break;
+
+      case 'error':
+        console.error('[DeepResearch Legacy] Error:', event.error);
+        break;
+    }
+  };
+
+  try {
+    const safeRequiredInfo = Array.isArray(required_info) ? required_info : [];
+
+    const report = await runDeepResearch(
+      {
+        topic,
+        context,
+        requiredInfo: safeRequiredInfo,
+        outputMode: output_mode as 'summary' | 'detailed' | 'adaptive' | undefined,
+        maxRounds: max_rounds as number | undefined,
+        dateRestrict: date_restrict as string | undefined
+      },
+      forwardEvent,
+      {
+        maxRounds: max_rounds || DEEP_RESEARCH_MAX_ROUNDS,
+        includeRawData: output_mode === 'detailed',
+        includeTrace: output_mode === 'detailed',
+        outputMode: output_mode || 'adaptive'
+      }
+    );
+
+    return {
+      success: true,
+      data: {
+        topic: report.topic,
+        total_rounds: report.totalRounds,
+        total_time_ms: report.totalTime,
+        sources_count: report.sourcesCount,
+        overview: report.summary.overview,
+        key_findings: report.summary.keyFindings,
+        categorized_info: report.summary.categories,
+        coverage_score: report.quality.coverageScore,
+        quality_score: report.quality.qualityScore,
+        confidence: report.quality.confidence,
+        limitations: report.quality.limitations,
+        sources: report.rawData?.sources,
+        research_summary: formatLegacyResearchSummary(report)
+      },
+      shouldContinue: true
+    };
+  } catch (error) {
+    console.error('[DeepResearch Legacy] Error:', error);
+    return {
+      success: false,
+      error: `深度研究失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      shouldContinue: true
+    };
+  }
+};
+
+// 格式化旧版研究摘要
+function formatLegacyResearchSummary(report: any): string {
   const parts: string[] = [];
 
-  // 概述
   if (report.summary.overview) {
     parts.push(`【概述】\n${report.summary.overview}`);
   }
 
-  // 关键发现
   if (report.summary.keyFindings?.length > 0) {
     parts.push(`【关键发现】\n${report.summary.keyFindings.map((f: string, i: number) => `${i + 1}. ${f}`).join('\n')}`);
   }
 
-  // 分类信息
   const categories = report.summary.categories || {};
   for (const [category, items] of Object.entries(categories)) {
     if (Array.isArray(items) && items.length > 0) {
-      const categoryName = getCategoryLabel(category);
-      parts.push(`【${categoryName}】\n${(items as string[]).slice(0, 3).join('\n')}`);
+      const labels: Record<string, string> = {
+        background: '背景信息', key_facts: '关键事实', latest_updates: '最新动态',
+        opinions: '观点/争议', statistics: '数据/统计', examples: '案例/示例',
+        references: '参考资料', other: '其他信息'
+      };
+      parts.push(`【${labels[category] || category}】\n${(items as string[]).slice(0, 3).join('\n')}`);
     }
   }
 
-  // 来源
   if (report.rawData?.sources?.length > 0) {
-    const sourcesText = report.rawData.sources
-      .slice(0, 5)
-      .map((s: any) => `- ${s.title}: ${s.url}`)
-      .join('\n');
+    const sourcesText = report.rawData.sources.slice(0, 5).map((s: any) => `- ${s.title}: ${s.url}`).join('\n');
     parts.push(`【参考来源】\n${sourcesText}`);
   }
 
-  // 质量说明
   parts.push(`【研究质量】覆盖率: ${report.quality.coverageScore.toFixed(1)}%, 置信度: ${(report.quality.confidence * 100).toFixed(1)}%`);
-
-  if (report.quality.limitations?.length > 0) {
-    parts.push(`【注意事项】\n${report.quality.limitations.join('\n')}`);
-  }
 
   return parts.join('\n\n');
 }
-
-// 获取分类中文标签
-function getCategoryLabel(category: string): string {
-  const labels: Record<string, string> = {
-    background: '背景信息',
-    key_facts: '关键事实',
-    latest_updates: '最新动态',
-    opinions: '观点/争议',
-    statistics: '数据/统计',
-    examples: '案例/示例',
-    references: '参考资料',
-    other: '其他信息'
-  };
-  return labels[category] || category;
-}
+// ============================================================================
 
 // 备用搜索结果（当 API 不可用时）
 async function getFallbackSearchResults(
@@ -1038,7 +1001,8 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   load_skill: handleLoadSkill,
   generate_prompt: handleGeneratePrompt,
   web_search: handleWebSearch,
-  deep_research: handleDeepResearch,  // 新的深度研究智能体
+  deep_research: handleDeepResearch,         // 新版: HyprLab sonar-deep-research
+  deep_research_legacy: handleDeepResearchLegacy,  // 旧版: Google + Tavily + LLM 评估
   analyze_image: handleAnalyzeImage,
   optimize_prompt: handleOptimizePrompt,
   evaluate_prompt: handleEvaluatePrompt,

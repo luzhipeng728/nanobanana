@@ -113,66 +113,48 @@ export const SUPER_AGENT_TOOLS: AgentTool[] = [
     ]
   },
 
-  // 工具4.5: 深度研究智能体（多轮自主探索）
+  // 工具4.5: 深度研究智能体（使用 HyprLab sonar-deep-research）
   {
     name: 'deep_research',
-    description: `🔬 深度研究智能体 - 一个独立的子智能体，能够自主探索、收集和整理信息。
+    description: `🔬 深度研究智能体 - 使用 Perplexity sonar-deep-research 模型进行深度互联网研究。
 
 **核心能力：**
-- 自主决策：智能判断信息是否充足，自动决定继续搜索还是停止
-- Google 搜索：使用 Google Custom Search 获取高质量结果
-- 智能分类：自动将信息分为背景、关键事实、最新动态、观点、统计、案例等类别
-- 质量评估：规则+LLM 混合评估，确保信息真正有用
+- 深度搜索：自动执行数十次搜索查询，全面收集信息
+- 智能推理：根据 reasoning_effort 级别进行不同深度的分析
+- 实时数据：获取最新的互联网信息
+- 结构化输出：返回详细报告和引用来源
+
+**研究强度 (reasoning_effort)：**
+- low: 快速研究，约 1-3 分钟（适合简单问题）
+- medium: 标准研究，约 3-7 分钟（适合一般话题）
+- high: 深度研究，约 7-15 分钟（适合复杂话题）
 
 **适用场景：**
-- 需要实时信息：天气、新闻、股票、活动（⚠️ 需要设置 date_restrict 参数！）
-- 需要全面了解：旅游攻略、产品对比、技术调研
-- 需要多角度：争议话题、不同观点、专业分析
+- 新闻资讯：今日AI大事件、科技动态、行业新闻
+- 深度分析：技术趋势、市场调研、竞品分析
+- 综合研究：多角度观点、专业领域探索
 
 **输出格式：**
-返回结构化研究报告，包含概述、关键发现、分类信息和来源列表。
-
-**⚠️ 重要：时效性查询必须设置 date_restrict！**
-- 查询"今日新闻"时 → date_restrict: "d1"
-- 查询"本周热点"时 → date_restrict: "d7"
-- 查询"最近一个月"时 → date_restrict: "m1"
-否则可能返回过时的历史内容！`,
+返回完整研究报告 + 引用来源列表 + 搜索结果摘要。
+报告内容可直接用于生成信息图表的提示词。`,
     parameters: [
       {
         name: 'topic',
         type: 'string',
-        description: '研究主题，如 "苏州下周天气预报"、"2024年AI发展趋势"、"特斯拉Model 3评测"',
+        description: '研究主题，如 "今日AI大事件速报"、"2025年AI发展趋势"、"特斯拉最新动态"',
         required: true
       },
       {
-        name: 'required_info',
-        type: 'array',
-        description: '需要收集的具体信息类型，如 ["每日天气", "温度", "穿衣建议"] 或 ["技术规格", "用户评价", "价格对比"]。智能体会确保这些信息都被收集到。',
-        required: false
+        name: 'reasoning_effort',
+        type: 'string',
+        description: '研究强度：low(1-3分钟快速)、medium(3-7分钟标准)、high(7-15分钟深度)。默认 low。',
+        required: false,
+        enum: ['low', 'medium', 'high']
       },
       {
         name: 'context',
         type: 'string',
-        description: '补充背景信息，帮助智能体更好理解需求，如 "用户计划下周出差"、"需要用于购买决策"',
-        required: false
-      },
-      {
-        name: 'date_restrict',
-        type: 'string',
-        description: '⚠️ 时效性限制（重要！）。格式：d[N]=N天内, w[N]=N周内, m[N]=N月内, y[N]=N年内。例如：d1=今天, d3=3天内, w1=一周内, m1=一个月内。对于"今日新闻"、"本周热点"等时效性查询必须设置此参数！',
-        required: false
-      },
-      {
-        name: 'output_mode',
-        type: 'string',
-        description: '输出模式：summary(精炼摘要)、detailed(详细报告含原始数据)、adaptive(根据信息量自适应)',
-        required: false,
-        enum: ['summary', 'detailed', 'adaptive']
-      },
-      {
-        name: 'max_rounds',
-        type: 'number',
-        description: '最大探索轮数，默认10轮。每轮会执行多个搜索查询。',
+        description: '补充背景信息，帮助更好理解需求，如 "用于生成新闻资讯图"、"需要用于购买决策"',
         required: false
       }
     ]
