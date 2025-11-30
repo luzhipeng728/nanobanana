@@ -657,7 +657,7 @@ const ChatAgentNode = ({
                     )}
                   >
                     {msg.role === "assistant" ? (
-                      <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none break-words whitespace-pre-wrap">
+                      <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none break-words [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_pre]:my-2">
                         <Streamdown>{normalizeMarkdown(msg.content)}</Streamdown>
                       </div>
                     ) : (
@@ -672,21 +672,21 @@ const ChatAgentNode = ({
                     const images = extractGeneratedImages(msg.toolCalls);
                     if (images.length === 0) return null;
                     return (
-                      <div className="flex flex-wrap gap-2 mt-2 w-full">
+                      <div className="flex flex-wrap gap-3 mt-3 w-full">
                         {images.map((img, idx) => (
                           <div
                             key={idx}
-                            className="relative group cursor-pointer rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                            className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
                             onClick={() => openImageModal(img.url, img.prompt)}
                           >
                             <img
                               src={img.url}
                               alt={`Generated ${idx + 1}`}
-                              className="w-32 h-32 object-cover"
+                              className="w-full max-w-[200px] h-auto aspect-square object-cover"
                             />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                              <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-2 py-1 rounded">
-                                点击放大
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3">
+                              <span className="text-white text-xs font-medium bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                                点击查看大图
                               </span>
                             </div>
                           </div>
@@ -721,7 +721,7 @@ const ChatAgentNode = ({
               {/* 流式文本 */}
               {streamingContent && (
                 <div className="rounded-2xl rounded-tl-sm px-4 py-3 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border-2 border-neutral-100 dark:border-neutral-800 overflow-hidden w-full shadow-sm">
-                  <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none break-words whitespace-pre-wrap">
+                  <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none break-words [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_pre]:my-2">
                     <Streamdown>{normalizeMarkdown(streamingContent)}</Streamdown>
                   </div>
                 </div>
