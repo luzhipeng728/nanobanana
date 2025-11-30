@@ -353,9 +353,11 @@ const ChatAgentNode = ({
   // 处理文件选择
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    console.log("[ChatAgentNode] File select triggered, files:", files?.length);
+    if (!files || files.length === 0) return;
 
     for (const file of Array.from(files)) {
+      console.log("[ChatAgentNode] Processing file:", file.name, file.type);
       const isImage = file.type.startsWith("image/");
 
       if (isImage) {
@@ -364,13 +366,16 @@ const ChatAgentNode = ({
         formData.append("file", file);
 
         try {
+          console.log("[ChatAgentNode] Uploading image to /api/upload...");
           const res = await fetch("/api/upload", {
             method: "POST",
             body: formData,
           });
           const data = await res.json();
+          console.log("[ChatAgentNode] Upload response:", data);
 
           if (data.url) {
+            console.log("[ChatAgentNode] Image uploaded successfully:", data.url);
             setAttachments((prev) => [
               ...prev,
               {
@@ -381,9 +386,11 @@ const ChatAgentNode = ({
                 preview: data.url,
               },
             ]);
+          } else {
+            console.error("[ChatAgentNode] Upload failed - no URL in response");
           }
         } catch (error) {
-          console.error("Upload error:", error);
+          console.error("[ChatAgentNode] Upload error:", error);
         }
       } else {
         // 文档：读取内容
@@ -702,10 +709,17 @@ const ChatAgentNode = ({
           multiple
           accept="image/*,.pdf,.doc,.docx,.txt,.md"
           onChange={handleFileSelect}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           className="hidden"
         />
         <button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
           disabled={isStreaming}
           className="p-3 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 disabled:opacity-30 transition-all"
           title="上传文件"
