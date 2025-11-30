@@ -538,15 +538,24 @@ ${imageAnalysis}
         return;
       }
 
+      console.log(`[Agent API] About to send progress 80 event`);
       await sendEvent({
         type: "progress",
         progress: 80,
       });
+      console.log(`[Agent API] Progress 80 sent`);
 
-      await sendEvent({
-        type: "prompts",
-        prompts,
-      });
+      console.log(`[Agent API] Sending prompts event with ${prompts.length} prompts, total size: ${JSON.stringify(prompts).length} chars`);
+      try {
+        await sendEvent({
+          type: "prompts",
+          prompts,
+        });
+        console.log(`[Agent API] Prompts event sent successfully`);
+      } catch (promptsError) {
+        console.error(`[Agent API] Error sending prompts event:`, promptsError);
+        throw promptsError;
+      }
 
       await sendEvent({
         type: "status",

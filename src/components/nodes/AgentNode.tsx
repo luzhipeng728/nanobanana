@@ -554,11 +554,63 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       const decoder = new TextDecoder();
       let buffer = ""; // 添加缓冲区处理分片数据
 
+      // 处理单条 SSE 消息的函数
+      const processSSEMessage = (message: string) => {
+        const lines = message.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const eventData = line.slice(6);
+            try {
+              const event: AgentStreamEvent = JSON.parse(eventData);
+
+              if (event.type === "status") {
+                if (event.status) setStatus(event.status);
+                if (event.step) setCurrentStep(event.step);
+                if (event.progress !== undefined) setProgress(event.progress);
+              } else if (event.type === "progress") {
+                if (event.progress !== undefined) setProgress(event.progress);
+              } else if (event.type === "claude_analysis_start") {
+                setIsAnalyzing(true);
+                setClaudeAnalysis("");
+              } else if (event.type === "claude_analysis_chunk") {
+                if (event.chunk) {
+                  setClaudeAnalysis(prev => prev + event.chunk);
+                  // 自动滚动到底部
+                  if (analysisRef.current) {
+                    analysisRef.current.scrollTop = analysisRef.current.scrollHeight;
+                  }
+                }
+              } else if (event.type === "claude_analysis_end") {
+                setIsAnalyzing(false);
+              } else if (event.type === "prompts") {
+                if (event.prompts) {
+                  console.log(`[AgentNode] Received ${event.prompts.length} prompts, starting image generation...`);
+                  setPrompts(event.prompts);
+                  // 开始并发生成图片
+                  setTimeout(() => {
+                    generateImagesInBatches(event.prompts!);
+                  }, 500);
+                }
+              } else if (event.type === "error") {
+                setError(event.error || "未知错误");
+                setStatus("error");
+              } else if (event.type === "complete") {
+                if (event.status) setStatus(event.status);
+                if (event.progress !== undefined) setProgress(event.progress);
+              }
+            } catch (e) {
+              console.error("Failed to parse event:", e, "Data:", eventData.substring(0, 200));
+            }
+          }
+        }
+      };
+
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+        }
 
         // 按完整的 SSE 消息分割（以 \n\n 结尾）
         const messages = buffer.split("\n\n");
@@ -566,53 +618,18 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         buffer = messages.pop() || "";
 
         for (const message of messages) {
-          const lines = message.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const eventData = line.slice(6);
-              try {
-                const event: AgentStreamEvent = JSON.parse(eventData);
-
-                if (event.type === "status") {
-                  if (event.status) setStatus(event.status);
-                  if (event.step) setCurrentStep(event.step);
-                  if (event.progress !== undefined) setProgress(event.progress);
-                } else if (event.type === "progress") {
-                  if (event.progress !== undefined) setProgress(event.progress);
-                } else if (event.type === "claude_analysis_start") {
-                  setIsAnalyzing(true);
-                  setClaudeAnalysis("");
-                } else if (event.type === "claude_analysis_chunk") {
-                  if (event.chunk) {
-                    setClaudeAnalysis(prev => prev + event.chunk);
-                    // 自动滚动到底部
-                    if (analysisRef.current) {
-                      analysisRef.current.scrollTop = analysisRef.current.scrollHeight;
-                    }
-                  }
-                } else if (event.type === "claude_analysis_end") {
-                  setIsAnalyzing(false);
-                } else if (event.type === "prompts") {
-                  if (event.prompts) {
-                    console.log(`[AgentNode] Received ${event.prompts.length} prompts, starting image generation...`);
-                    setPrompts(event.prompts);
-                    // 开始并发生成图片
-                    setTimeout(() => {
-                      generateImagesInBatches(event.prompts!);
-                    }, 500);
-                  }
-                } else if (event.type === "error") {
-                  setError(event.error || "未知错误");
-                  setStatus("error");
-                } else if (event.type === "complete") {
-                  if (event.status) setStatus(event.status);
-                  if (event.progress !== undefined) setProgress(event.progress);
-                }
-              } catch (e) {
-                console.error("Failed to parse event:", e, "Data:", eventData.substring(0, 200));
-              }
-            }
+          if (message.trim()) {
+            processSSEMessage(message);
           }
+        }
+
+        if (done) {
+          // 流结束时，处理 buffer 中剩余的数据
+          if (buffer.trim()) {
+            console.log("[AgentNode] Processing remaining buffer on stream end:", buffer.substring(0, 100));
+            processSSEMessage(buffer);
+          }
+          break;
         }
       }
     } catch (err) {
