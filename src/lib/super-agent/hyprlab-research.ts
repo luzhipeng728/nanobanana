@@ -108,46 +108,67 @@ export async function callHyprLabDeepResearch(
     });
   }
 
-  // 启动进度报告定时器（每5秒）
-  let progressInterval: NodeJS.Timeout | null = null;
+  // 构建请求体
+  const requestBody = {
+    model: 'sonar-deep-research',
+    messages: [
+      ...(systemPrompt ? [{
+        role: 'system',
+        content: systemPrompt
+      }] : [{
+        role: 'system',
+        content: 'You are a helpful research assistant. Provide comprehensive, well-structured research reports in the same language as the user query.'
+      }]),
+      {
+        role: 'user',
+        content: topic
+      }
+    ],
+    reasoning_effort: reasoningEffort
+  };
 
-  if (onProgress) {
-    progressInterval = setInterval(async () => {
+  console.log(`[HyprLab] Starting deep research: "${topic}" with effort: ${reasoningEffort}`);
+
+  // 标记是否完成（用于停止心跳）
+  let isCompleted = false;
+
+  // 心跳函数 - 在单独的异步任务中运行，保持 SSE 连接活跃
+  // 注意：不要 await 这个 Promise，让它在后台运行
+  const runHeartbeat = async () => {
+    while (!isCompleted) {
+      // 等待 5 秒
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // 再次检查是否已完成（避免最后一次多余的进度事件）
+      if (isCompleted) break;
+
       const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
       const elapsedMinutes = (elapsedSeconds / 60).toFixed(1);
 
-      await onProgress({
-        type: 'progress',
-        elapsedSeconds,
-        estimatedMinutes: estimatedTime,
-        message: `⏳ 正在深度研究中... 已用时 ${elapsedMinutes} 分钟 (预计 ${estimatedTime.min}-${estimatedTime.max} 分钟)`
-      });
-    }, 5000);
-  }
+      console.log(`[HyprLab] Heartbeat: ${elapsedSeconds}s elapsed`);
+
+      if (onProgress) {
+        try {
+          await onProgress({
+            type: 'progress',
+            elapsedSeconds,
+            estimatedMinutes: estimatedTime,
+            message: `⏳ 正在深度研究中... 已用时 ${elapsedMinutes} 分钟 (预计 ${estimatedTime.min}-${estimatedTime.max} 分钟)`
+          });
+        } catch (e) {
+          // 如果进度回调失败（如连接已断开），继续运行但记录错误
+          console.warn('[HyprLab] Heartbeat progress callback failed:', e);
+        }
+      }
+    }
+    console.log('[HyprLab] Heartbeat stopped');
+  };
+
+  // 启动心跳（不等待）
+  const heartbeatPromise = runHeartbeat();
 
   try {
-    // 构建请求体
-    const requestBody = {
-      model: 'sonar-deep-research',
-      messages: [
-        ...(systemPrompt ? [{
-          role: 'system',
-          content: systemPrompt
-        }] : [{
-          role: 'system',
-          content: 'You are a helpful research assistant. Provide comprehensive, well-structured research reports in the same language as the user query.'
-        }]),
-        {
-          role: 'user',
-          content: topic
-        }
-      ],
-      reasoning_effort: reasoningEffort
-    };
-
-    console.log(`[HyprLab] Starting deep research: "${topic}" with effort: ${reasoningEffort}`);
-
-    // 调用 API
+    // 调用 API（这是阻塞操作，可能需要几分钟）
     const response = await fetch('https://api.hyprlab.io/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -163,6 +184,9 @@ export async function callHyprLabDeepResearch(
     }
 
     const data: HyprLabResponse = await response.json();
+
+    // 标记完成，停止心跳
+    isCompleted = true;
 
     const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
     console.log(`[HyprLab] Research complete in ${elapsedSeconds}s, citations: ${data.citations?.length || 0}`);
@@ -180,6 +204,9 @@ export async function callHyprLabDeepResearch(
 
     return data;
   } catch (error) {
+    // 标记完成，停止心跳
+    isCompleted = true;
+
     const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
     const errorMessage = error instanceof Error ? error.message : '未知错误';
 
@@ -197,11 +224,6 @@ export async function callHyprLabDeepResearch(
     }
 
     throw error;
-  } finally {
-    // 清除定时器
-    if (progressInterval) {
-      clearInterval(progressInterval);
-    }
   }
 }
 

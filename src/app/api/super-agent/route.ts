@@ -46,10 +46,11 @@ export async function POST(request: NextRequest) {
 
     try {
       const body = await request.json();
-      const { userRequest, referenceImages, enableDeepResearch, conversationId } = body as {
+      const { userRequest, referenceImages, enableDeepResearch, reasoningEffort, conversationId } = body as {
         userRequest: string;
         referenceImages?: string[];
         enableDeepResearch?: boolean;
+        reasoningEffort?: 'low' | 'medium' | 'high';  // 深度研究强度
         conversationId?: string;  // 支持多轮对话
       };
 
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
       console.log('[SuperAgent API] User request:', userRequest.substring(0, 100));
       console.log('[SuperAgent API] Reference images:', referenceImages?.length || 0);
       console.log('[SuperAgent API] Deep research enabled:', enableDeepResearch);
+      console.log('[SuperAgent API] Reasoning effort:', reasoningEffort || 'low');
       console.log('[SuperAgent API] Conversation ID:', conversationId || 'new');
 
       // 初始化对话管理器
@@ -102,6 +104,7 @@ export async function POST(request: NextRequest) {
         sendEvent,
         {
           enableDeepResearch,
+          reasoningEffort: reasoningEffort || 'low',  // 传递研究强度
           conversationId: conversationManager.getId(),
           historyMessages
         }

@@ -90,8 +90,9 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
   const [aspectRatio, setAspectRatio] = useState<string>("16:9");
   const [autoGenerate, setAutoGenerate] = useState(true);
 
-  // Deep research toggle
+  // Deep research settings
   const [enableDeepResearch, setEnableDeepResearch] = useState(false);
+  const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('low');
 
   // Multi-turn conversation state
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -528,6 +529,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
           userRequest,
           referenceImages,
           enableDeepResearch,
+          reasoningEffort: enableDeepResearch ? reasoningEffort : undefined,  // 深度研究强度
           conversationId: conversationId || undefined,  // 传递对话 ID
         }),
         signal: abortControllerRef.current.signal,
@@ -604,7 +606,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     } finally {
       setIsProcessing(false);
     }
-  }, [userRequest, connectedImages, useForAnalysis, isProcessing, handleStreamEvent, autoGenerate, generateImagesInBatches, enableDeepResearch, conversationId]);
+  }, [userRequest, connectedImages, useForAnalysis, isProcessing, handleStreamEvent, autoGenerate, generateImagesInBatches, enableDeepResearch, reasoningEffort, conversationId]);
 
   // Stop generation
   const handleStop = useCallback(() => {
@@ -829,22 +831,52 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
             生成提示词后自动生成图片
           </span>
         </label>
-        <label className="flex items-center gap-2 cursor-pointer group">
-          <input
-            type="checkbox"
-            checked={enableDeepResearch}
-            onChange={(e) => setEnableDeepResearch(e.target.checked)}
-            disabled={isProcessing}
-            className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-          />
-          <span className="text-[11px] text-neutral-700 dark:text-neutral-300 flex items-center gap-1">
-            <Search className="w-3 h-3 text-purple-500" />
-            启用深度研究
-            <span className="text-[9px] px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-              较慢
+        <div className="flex flex-col gap-1.5">
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={enableDeepResearch}
+              onChange={(e) => setEnableDeepResearch(e.target.checked)}
+              disabled={isProcessing}
+              className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-[11px] text-neutral-700 dark:text-neutral-300 flex items-center gap-1">
+              <Search className="w-3 h-3 text-purple-500" />
+              启用深度研究
             </span>
-          </span>
-        </label>
+          </label>
+          {enableDeepResearch && (
+            <div className="ml-6 flex items-center gap-1.5">
+              <span className="text-[10px] text-neutral-500 dark:text-neutral-400">强度:</span>
+              {[
+                { value: 'low', label: '快速', time: '1-3分钟', color: 'green' },
+                { value: 'medium', label: '标准', time: '3-7分钟', color: 'amber' },
+                { value: 'high', label: '深度', time: '7-15分钟', color: 'red' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setReasoningEffort(option.value as 'low' | 'medium' | 'high')}
+                  disabled={isProcessing}
+                  className={`px-2 py-0.5 rounded text-[10px] transition-all ${
+                    reasoningEffort === option.value
+                      ? option.color === 'green'
+                        ? 'bg-green-500 text-white'
+                        : option.color === 'amber'
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-red-500 text-white'
+                      : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
+                  }`}
+                  title={option.time}
+                >
+                  {option.label}
+                </button>
+              ))}
+              <span className="text-[9px] text-neutral-400 dark:text-neutral-500 ml-1">
+                ~{reasoningEffort === 'low' ? '1-3' : reasoningEffort === 'medium' ? '3-7' : '7-15'}分钟
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Generate button */}

@@ -264,6 +264,7 @@ function buildInitialMessage(
 // ReAct 循环选项
 export interface ReActLoopOptions {
   enableDeepResearch?: boolean; // 是否启用深度研究
+  reasoningEffort?: 'low' | 'medium' | 'high'; // 深度研究强度
   conversationId?: string;      // 对话 ID（用于多轮对话）
   historyMessages?: Anthropic.MessageParam[]; // 历史消息（从对话管理器获取）
 }
@@ -275,10 +276,10 @@ export async function runReActLoop(
   sendEvent: (event: SuperAgentStreamEvent) => Promise<void>,
   options: ReActLoopOptions = {}
 ): Promise<FinalOutput> {
-  const { enableDeepResearch = false, historyMessages = [] } = options;
+  const { enableDeepResearch = false, reasoningEffort = 'low', historyMessages = [] } = options;
 
   const anthropic = getAnthropicClient();
-  const systemPrompt = buildSystemPrompt({ enableDeepResearch });  // 传递参数控制 system prompt 中的工具说明
+  const systemPrompt = buildSystemPrompt({ enableDeepResearch, reasoningEffort });  // 传递参数控制 system prompt 中的工具说明
   const tools = formatToolsForClaude({ enableDeepResearch });
 
   // 初始化状态

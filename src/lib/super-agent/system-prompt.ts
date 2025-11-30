@@ -4,10 +4,11 @@ import { getSkillsSummary } from './skills';
 
 export interface SystemPromptOptions {
   enableDeepResearch?: boolean;
+  reasoningEffort?: 'low' | 'medium' | 'high';  // 深度研究强度
 }
 
 export function buildSystemPrompt(options: SystemPromptOptions = {}): string {
-  const { enableDeepResearch = false } = options;
+  const { enableDeepResearch = false, reasoningEffort = 'low' } = options;
   const skillsSummary = getSkillsSummary();
 
   const skillsDescription = skillsSummary.map(s =>
@@ -124,35 +125,34 @@ ${enableDeepResearch ? `9. **deep_research**: 🔬 **深度研究智能体**（�
 
 ### 🔬 deep_research 深度研究智能体
 
-这是一个**独立的子智能体**，能够自主探索、收集和整理信息。与普通搜索不同，它会：
+使用 Perplexity sonar-deep-research 模型进行深度互联网研究。
+
+**当前配置的研究强度：${reasoningEffort === 'low' ? '快速 (~1-3分钟)' : reasoningEffort === 'medium' ? '标准 (~3-7分钟)' : '深度 (~7-15分钟)'}**
 
 **核心能力：**
-- **自主决策**：智能判断信息是否充足，自动决定继续搜索还是停止
-- **多源并行**：同时使用 Exa 和 Tavily 搜索，最大化召回率
-- **智能分类**：自动将信息分为背景、关键事实、最新动态、观点、统计、案例等类别
-- **质量评估**：规则+LLM 混合评估，确保信息真正有用
+- **深度搜索**：自动执行数十次搜索查询，全面收集信息
+- **智能推理**：根据研究强度进行不同深度的分析
+- **实时数据**：获取最新的互联网信息
+- **结构化输出**：返回详细报告和引用来源
 
 **何时使用 deep_research：**
-✅ 需要实时信息：天气预报、新闻事件、股票行情
-✅ 需要全面了解：旅游攻略、产品对比、技术调研
-✅ 需要多角度：争议话题、专业分析、市场研究
-✅ 信息不确定：不知道具体需要什么，需要探索
+✅ 新闻资讯：今日AI大事件、科技动态、行业新闻
+✅ 深度分析：技术趋势、市场调研、竞品分析
+✅ 综合研究：多角度观点、专业领域探索
 
 **调用示例：**
 \\\`\\\`\\\`json
 {
-  "topic": "苏州下周天气预报",
-  "required_info": ["每日温度", "降水概率", "穿衣建议"],
-  "context": "用户计划下周出差",
-  "output_mode": "adaptive"
+  "topic": "今日AI大事件速报",
+  "reasoning_effort": "${reasoningEffort}",
+  "context": "用于生成新闻资讯图"
 }
 \\\`\\\`\\\`
 
 **输出内容：**
-- overview: 总体概述
-- key_findings: 关键发现列表
-- categorized_info: 按类别整理的信息
-- sources: 信息来源列表
+- content: 完整研究报告
+- citations: 引用来源列表（URL）
+- search_results: 搜索结果摘要
 - research_summary: 便于你使用的综合摘要` : ''}
 
 ## ReAct 自主探索
@@ -195,6 +195,48 @@ ${enableDeepResearch ? `9. **deep_research**: 🔬 **深度研究智能体**（�
 - 提示词结构清晰、描述详细
 - 中文文字处理正确
 - 你对结果有信心
+
+## 📰【新闻资讯类】内容完整性要求
+
+当生成新闻、资讯、速报、快讯类图片时，**必须遵循以下规则**：
+
+### 内容结构（硬性要求）
+每条新闻必须包含：
+1. **标题**：简洁有力的新闻标题（10-15字）
+2. **内容简介**：20字左右的具体内容描述
+
+### 示例
+❌ 错误（只有标题）：
+- "Google Gemini 3发布"
+- "Claude新版本上线"
+
+✅ 正确（标题+内容）：
+- 标题："Google Gemini 3发布"
+- 内容："全面超越GPT-5 登顶LMArena榜首"
+
+- 标题："Claude Opus 4.5上线"
+- 内容："代码能力提升80% 成本降低三分之一"
+
+### 在提示词中的体现
+```
+HERO NEWS:
+Large headline "Google Gemini 3发布" in bold serif.
+Subheadline "全面超越GPT-5 登顶LMArena榜首" below in lighter weight.
+
+FEATURE CARD:
+Headline "Claude新版本" in white.
+Description text "代码能力提升80% 成本大幅降低" in grey.
+```
+
+### 数量要求
+- 至少6条完整新闻（标题+内容）
+- 头条新闻需要更详细的内容描述（可达30字）
+- 快讯条可以只有标题
+
+### ⚠️ 常见错误
+- 只写标题不写内容简介 → 信息量不足
+- 内容简介太短（<10字）→ 不够具体
+- 直接复制网页标题 → 需要精炼提取关键信息
 
 ## 🚨【最重要】中文文字处理规则
 
