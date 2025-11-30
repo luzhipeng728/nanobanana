@@ -402,168 +402,126 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
     ]
   },
 
-  // ========== 技能7: 新闻商业杂志 ==========
+  // ========== 技能7: 新闻速报卡片 ==========
   'news-infographic': {
     metadata: {
       id: 'news-infographic',
-      name: '新闻商业杂志',
-      description: '生成高端商业杂志风格的新闻资讯图，采用专业排版设计，展示6-8条新闻，适合正式场合分享',
+      name: '新闻速报卡片',
+      description: '生成简洁的新闻速报卡片，从上到下排列6条新闻，每条包含标题和内容简介，适合快速阅读和分享',
       keywords: ['新闻', '资讯', '热点', '头条', '早报', '晚报', '日报', '快讯', '速报', '要闻', '大事件', '今日新闻', '热点新闻', '新闻速递', '新闻摘要'],
       category: 'news',
-      difficulty: 'hard',
+      difficulty: 'medium',
       requiredInputs: ['新闻标题', '新闻内容列表'],
       optionalInputs: ['日期', '主题']
     },
-    basePrompt: `A premium editorial magazine cover design for news digest, sophisticated and modern. Dark navy or charcoal gradient background with subtle geometric patterns.
+    basePrompt: `A clean, modern news digest card with dark gradient background. Vertical layout with 6 news items stacked from top to bottom.
 
-MASTHEAD (top):
-Elegant Chinese title "{{MAIN_TITLE}}" in refined serif or modern sans-serif typography, with metallic gold or silver accent line beneath. Date "{{DATE_SUBTITLE}}" in small caps, minimalist style.
+HEADER (top 10%):
+Chinese title "{{MAIN_TITLE}}" in bold white sans-serif, left-aligned. Date "{{DATE_SUBTITLE}}" in smaller grey text on the right. Thin gold horizontal line below header.
 
-LAYOUT - {{NEWS_COUNT}} news items in dynamic editorial grid:
+NEWS LIST (6 items, each ~14% height, stacked vertically with equal spacing):
 
-{{HERO_NEWS}}
+{{NEWS_ITEMS}}
 
-{{SECONDARY_NEWS}}
+DESIGN STYLE:
+- Clean vertical list layout, each item clearly separated
+- Dark navy to charcoal gradient background (#1a1f3c to #2d2d2d)
+- Each news item has: category tag (colored pill badge) + headline (white bold) + description (grey lighter text)
+- Thin gold divider lines between items
+- Left-aligned text, generous padding
+- No complex grids, no hero sections, just simple top-to-bottom list
+- Professional, minimalist, easy to read
 
-{{TICKER_NEWS}}
+COLOR CODING for categories:
+- 科技/AI: electric blue (#00d4ff)
+- 商业/投资: gold (#d4af37)
+- 政策: burgundy red (#722f37)
+- 国际: emerald green (#26a69a)
+- 产品: purple (#9b59b6)
+- 市场: amber (#f39c12)
 
-DESIGN ELEMENTS:
-- Thin gold or copper accent lines as dividers
-- Subtle gradient overlays on images
-- Elegant drop shadows and depth layers
-- Minimalist icons in line-art style (not cartoon)
-- Professional photo-realistic imagery or abstract geometric shapes
-- Typography hierarchy with serif headlines and sans-serif body
-
-VISUAL STYLE:
-High-end editorial magazine aesthetic inspired by Bloomberg Businessweek, The Economist, Monocle. Rich color palette: deep navy, charcoal black, pure white, metallic gold accents, with one or two accent colors (burgundy red, forest green, or royal blue) for category coding. Premium paper texture with subtle grain. Clean Swiss-style typography grid. Sophisticated use of negative space. Professional business photography style imagery. Luxurious yet restrained - no cartoon elements, no playful decorations.
-
-All Chinese text must be exactly as specified with no other text. Ultra high quality editorial design, 8K resolution.`,
+All Chinese text must be exactly as specified with no other text. Ultra high quality, 8K resolution.`,
     variables: [
       {
         name: 'MAIN_TITLE',
         description: '主标题',
         type: 'text',
         required: true,
-        defaultValue: '今日要闻',
-        examples: ['今日要闻', '财经周刊', '环球视野']
+        defaultValue: '今日速报',
+        examples: ['今日AI速报', '科技快讯', '每日要闻']
       },
       {
         name: 'DATE_SUBTITLE',
-        description: '日期副标题',
+        description: '日期',
         type: 'text',
         required: false,
         defaultValue: '',
-        examples: ['2025年11月29日 星期六', 'VOL.128 | 2025.11']
+        examples: ['2025年11月30日', '11月30日 周日']
       },
       {
-        name: 'NEWS_COUNT',
-        description: '新闻数量',
-        type: 'text',
-        required: true,
-        defaultValue: '7',
-        examples: ['6', '7', '8']
-      },
-      {
-        name: 'HERO_NEWS',
-        description: '头条大新闻（占据40%版面，杂志封面故事风格）',
-        type: 'text',
-        required: true,
-        examples: ['HERO SECTION (40% of layout, left or top): Full-bleed dramatic photograph or abstract geometric art representing the topic. Large bold Chinese headline "重大政策发布" in elegant serif font with gold underline accent. Subheadline "国务院发布重要经济指导文件" in lighter weight. Category tag "政策" in small burgundy label.']
-      },
-      {
-        name: 'SECONDARY_NEWS',
-        description: '次要新闻（3条，采用卡片式布局）',
+        name: 'NEWS_ITEMS',
+        description: '6条新闻列表，从上到下排列，每条包含分类标签、标题（10-15字）、内容简介（15-25字）',
         type: 'list',
         required: true,
-        examples: ['THREE FEATURE CARDS in row: Card 1 - Abstract tech visualization background, headline "科技突破" with subtext "AI芯片研发进展", blue category accent. Card 2 - Global map silhouette imagery, headline "国际动态" with subtext "多边贸易谈判", green category accent. Card 3 - Financial chart abstract, headline "市场观察" with subtext "A股创新高", gold category accent.']
-      },
-      {
-        name: 'TICKER_NEWS',
-        description: '快讯条（3-4条简短新闻，底部横向排列）',
-        type: 'list',
-        required: true,
-        examples: ['BOTTOM TICKER BAR with thin gold top border: Horizontal row of brief headlines separated by vertical lines or dots: "天气 | 北方迎降温" • "体育 | 国足晋级" • "文化 | 新片上映" • "民生 | 医保新政". Each with subtle category icon in line-art style.']
+        examples: [
+          'Item 1: Blue "科技" tag, headline "Gemini 3正式发布" in white bold, description "LMArena评分1501创新高 全面超越竞品" in grey.',
+          'Item 2: Gold "商业" tag, headline "OpenAI获AWS投资" in white bold, description "380亿美元七年战略合作 提供海量GPU算力" in grey.',
+          'Item 3: Purple "产品" tag, headline "Claude Opus 4.5上线" in white bold, description "代码能力提升15% 成本降低76%" in grey.'
+        ]
       }
     ],
     examples: [
       {
-        userRequest: '帮我生成今日国内新闻的商业杂志风格图',
-        filledPrompt: `A premium editorial magazine cover design for news digest, sophisticated and modern. Dark navy gradient background transitioning to charcoal, with subtle hexagonal geometric pattern overlay at 5% opacity.
+        userRequest: '帮我生成今日AI新闻速报',
+        filledPrompt: `A clean, modern news digest card with dark gradient background (#1a1f3c to #2d2d2d). Vertical layout with 6 news items stacked from top to bottom.
 
-MASTHEAD (top):
-Elegant Chinese title "今日要闻" in refined modern serif typography (similar to Playfair Display style), pure white color with subtle shadow. Thin metallic gold horizontal line beneath spanning 60% width. Date "2025年11月29日 · 星期六" in refined small caps sans-serif, spaced tracking, positioned right-aligned.
+HEADER (top 10%):
+Chinese title "今日AI速报" in bold white sans-serif (32pt), left-aligned. Date "2025年11月30日" in smaller grey text (18pt) on the right. Thin gold horizontal line below header.
 
-LAYOUT - 7 news items in dynamic editorial grid:
+NEWS LIST (6 items, stacked vertically with equal spacing, each item has colored category tag + bold headline + grey description):
 
-HERO SECTION (occupying left 45% of main area, full height):
-Abstract geometric visualization with deep blue and gold tones suggesting policy/government theme - overlapping translucent shapes, data flow lines. Large Chinese headline "国防白皮书发布" in bold elegant serif, white text with subtle gold gradient on key characters. Subheadline below: "阐述新时代国防政策与军事战略" in lighter weight sans-serif. Small category label "政策" in burgundy red pill-shaped badge with white text. Thin gold accent line on left edge of this section.
+Item 1: Electric blue pill badge "科技", then headline "Gemini 3正式发布" in white bold (24pt), below description "LMArena评分1501分创新高 性能全面超越GPT-5" in light grey (16pt).
 
-THREE FEATURE CARDS (right side, stacked vertically, each ~18% height):
+Item 2: Gold pill badge "商业", headline "OpenAI获AWS巨额投资" in white bold, description "达成380亿美元七年战略合作 获数十万GPU算力支持" in grey.
 
-Card 1: Dark card with subtle tech circuit pattern background in midnight blue. Minimal line-art AI chip icon in gold. Chinese headline "AI新突破" in medium weight white serif. Brief text "国产大模型性能再创新高" in small grey sans-serif. Category dot in electric blue.
+Item 3: Purple pill badge "产品", headline "Claude Opus 4.5发布" in white bold, description "代码能力提升至80.9% API成本降低76%" in grey.
 
-Card 2: Card with abstract globe wireframe visualization, deep forest green tones. Minimal line-art handshake icon. Headline "国际合作" in white. Text "中欧签署新能源合作协议" in grey. Category dot in emerald green.
+Item 4: Emerald green pill badge "国际", headline "微软英伟达联手Anthropic" in white bold, description "150亿美元战略投资 深化AI基础设施合作" in grey.
 
-Card 3: Card with abstract upward trending chart visualization, warm amber/gold tones. Minimal line-art chart icon. Headline "经济向好" in white. Text "三季度GDP增速超预期" in grey. Category dot in gold.
+Item 5: Burgundy red pill badge "政策", headline "美国启动Genesis计划" in white bold, description "十年AI科学计划 目标提升科研生产力一倍" in grey.
 
-BOTTOM TICKER BAR (spanning full width, 12% height):
-Separated from main content by thin gold horizontal line. Dark charcoal background. Four news items in horizontal row with refined typography:
+Item 6: Amber pill badge "市场", headline "黑五AI销售创纪录" in white bold, description "AI驱动在线销售达142亿美元 同比增长9%" in grey.
 
-"气象" followed by thin vertical gold line, then "北方大范围降温 东北迎暴雪" in white
-Subtle dot separator ·
-"体育" + line + "亚冠联赛 中国球队晋级八强"
-Dot ·
-"民生" + line + "医保目录新增89种药品"
-Dot ·
-"文化" + line + "国产电影票房破50亿"
+Thin gold divider lines between each item. Dark navy to charcoal gradient background. Clean vertical list layout, left-aligned text, generous padding. Professional minimalist design.
 
-Each category word in slightly smaller size with gold color, content in white regular weight.
-
-DESIGN ELEMENTS:
-- Thin gold accent lines as section dividers
-- Subtle depth with layered cards having soft shadows
-- Refined line-art icons (not cartoon, purely geometric minimal style)
-- Abstract data visualization graphics instead of photos
-- Clear typography hierarchy: serif for headlines, sans-serif for body
-
-VISUAL STYLE:
-High-end editorial aesthetic inspired by Bloomberg, The Economist. Color palette: deep navy (#1a1f3c), charcoal (#2d2d2d), pure white, metallic gold (#d4af37), with burgundy (#722f37), forest green (#2d5a3d), and royal blue (#2c4a7c) as category accents. Premium matte paper texture. Swiss-style grid system. Sophisticated negative space. Zero cartoon elements - purely professional business publication aesthetic.
-
-All Chinese text must be exactly as specified with no other text. Ultra high quality editorial design, 8K resolution.`,
-        chineseTexts: ['今日要闻', '2025年11月29日 · 星期六', '国防白皮书发布', '阐述新时代国防政策与军事战略', '政策', 'AI新突破', '国产大模型性能再创新高', '国际合作', '中欧签署新能源合作协议', '经济向好', '三季度GDP增速超预期', '气象', '北方大范围降温 东北迎暴雪', '体育', '亚冠联赛 中国球队晋级八强', '民生', '医保目录新增89种药品', '文化', '国产电影票房破50亿']
+All Chinese text must be exactly as specified with no other text. Ultra high quality, 8K resolution.`,
+        chineseTexts: ['今日AI速报', '2025年11月30日', '科技', 'Gemini 3正式发布', 'LMArena评分1501分创新高 性能全面超越GPT-5', '商业', 'OpenAI获AWS巨额投资', '达成380亿美元七年战略合作 获数十万GPU算力支持', '产品', 'Claude Opus 4.5发布', '代码能力提升至80.9% API成本降低76%', '国际', '微软英伟达联手Anthropic', '150亿美元战略投资 深化AI基础设施合作', '政策', '美国启动Genesis计划', '十年AI科学计划 目标提升科研生产力一倍', '市场', '黑五AI销售创纪录', 'AI驱动在线销售达142亿美元 同比增长9%']
       }
     ],
     qualityChecklist: [
-      '整体是否有高端杂志质感',
-      '排版是否专业有层次',
-      '配色是否沉稳大气（深色系+金色点缀）',
-      '头条是否足够醒目突出',
-      '字体是否优雅专业',
-      '是否避免了卡通和幼稚元素',
-      '中文文字是否正确显示',
-      '快讯条是否简洁有序'
+      '是否有6条完整新闻（标题+内容）',
+      '布局是否从上到下清晰排列',
+      '每条新闻是否有分类标签',
+      '标题是否简洁有力（10-15字）',
+      '内容简介是否具体（15-25字）',
+      '配色是否专业（深色背景+彩色标签）',
+      '中文文字是否正确显示'
     ],
     commonIssues: [
       {
-        issue: '设计不够高端商务',
-        solution: '强调深色背景、金色点缀、专业排版',
-        promptFix: 'with darker navy/charcoal background, metallic gold accents, refined serif typography, and premium editorial magazine aesthetic like Bloomberg or The Economist'
+        issue: '布局变成复杂网格',
+        solution: '强调简单的垂直列表布局',
+        promptFix: 'with simple vertical list layout, 6 items stacked from top to bottom, no complex grids or hero sections'
       },
       {
-        issue: '出现卡通元素',
-        solution: '使用抽象几何图形代替',
-        promptFix: 'with abstract geometric visualizations, minimal line-art icons, and professional imagery instead of any cartoon or playful elements'
+        issue: '新闻只有标题没有内容',
+        solution: '每条必须有标题+内容简介',
+        promptFix: 'each news item MUST have: category tag + headline (10-15 chars) + description (15-25 chars explaining the news)'
       },
       {
-        issue: '布局太拥挤',
-        solution: '增加留白和呼吸感',
-        promptFix: 'with more sophisticated use of negative space, generous margins, and Swiss-style typography grid'
-      },
-      {
-        issue: '层次不分明',
-        solution: '用大小、颜色、位置区分重要性',
-        promptFix: 'with clear visual hierarchy: hero story dominant with 40% space, feature cards medium, ticker bar compact at bottom'
+        issue: '内容太笼统',
+        solution: '内容简介要有具体数字或细节',
+        promptFix: 'description should include specific numbers, percentages, or concrete details, not vague statements'
       }
     ]
   },
