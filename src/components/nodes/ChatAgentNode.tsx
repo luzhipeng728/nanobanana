@@ -413,10 +413,10 @@ const ChatAgentNode = ({
   return (
     <div
       className={cn(
-        "nowheel bg-white dark:bg-neutral-950 border-2 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[550px] h-[700px] overflow-hidden flex flex-col transition-all duration-300",
+        "nowheel bg-white dark:bg-neutral-950 border-2 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full h-full overflow-hidden flex flex-col transition-all duration-300",
         selected
-          ? "ring-4 ring-offset-0 ring-indigo-400/40 border-indigo-200 dark:border-indigo-800 shadow-[0_8px_20px_-6px_rgba(99,102,241,0.15)] scale-[1.02]"
-          : "border-neutral-200 dark:border-neutral-800 hover:shadow-lg hover:scale-[1.01]"
+          ? "ring-4 ring-offset-0 ring-indigo-400/40 border-indigo-200 dark:border-indigo-800 shadow-[0_8px_20px_-6px_rgba(99,102,241,0.15)]"
+          : "border-neutral-200 dark:border-neutral-800 hover:shadow-lg"
       )}
     >
       <NodeResizer

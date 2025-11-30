@@ -453,7 +453,13 @@ export default function InfiniteCanvas() {
         id: `${pendingNodeType}-${Date.now()}`,
         type: pendingNodeType,
         position,
-        style: pendingNodeType === 'sprite' ? { width: 360 } : pendingNodeType === 'superAgent' ? { width: 450 } : undefined,
+        style: pendingNodeType === 'sprite'
+          ? { width: 360 }
+          : pendingNodeType === 'superAgent'
+          ? { width: 450 }
+          : pendingNodeType === 'chatAgent'
+          ? { width: 550, height: 700 }
+          : undefined,
         data: pendingNodeType === 'imageGen'
           ? { prompt: '' }
           : pendingNodeType === 'agent'
@@ -464,6 +470,8 @@ export default function InfiniteCanvas() {
           ? { prompt: '', orientation: 'portrait' }
           : pendingNodeType === 'chat'
           ? { messages: [], systemPrompt: 'You are a helpful AI assistant that generates image prompts. When user asks for images, wrap your prompt suggestions in ```text\n[prompt text]\n``` blocks.' }
+          : pendingNodeType === 'chatAgent'
+          ? {}
           : {},
       };
       setNodes((nds) => nds.concat(newNode));
@@ -535,7 +543,13 @@ export default function InfiniteCanvas() {
         id: `${type}-${Date.now()}`,
         type,
         position,
-        style: type === 'sprite' ? { width: 360 } : type === 'superAgent' ? { width: 450 } : undefined,
+        style: type === 'sprite'
+          ? { width: 360 }
+          : type === 'superAgent'
+          ? { width: 450 }
+          : type === 'chatAgent'
+          ? { width: 550, height: 700 }
+          : undefined,
         data: type === 'imageGen'
           ? { prompt: '' }
           : type === 'agent'
@@ -549,6 +563,8 @@ export default function InfiniteCanvas() {
           : type === 'sprite'
           ? {}
           : type === 'superAgent'
+          ? {}
+          : type === 'chatAgent'
           ? {}
           : {},
       };
