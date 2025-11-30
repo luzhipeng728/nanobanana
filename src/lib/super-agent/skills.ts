@@ -402,53 +402,52 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
     ]
   },
 
-  // ========== 技能7: 新闻速报卡片 ==========
+  // ========== 技能7: 科技新闻速报 ==========
   'news-infographic': {
     metadata: {
       id: 'news-infographic',
-      name: '新闻速报卡片',
-      description: '生成简洁的新闻速报卡片，从上到下排列6条新闻，每条包含标题和内容简介，适合快速阅读和分享',
-      keywords: ['新闻', '资讯', '热点', '头条', '早报', '晚报', '日报', '快讯', '速报', '要闻', '大事件', '今日新闻', '热点新闻', '新闻速递', '新闻摘要'],
+      name: '科技新闻速报',
+      description: '生成高端科技感的新闻速报图，采用深色渐变背景、霓虹光效、数据可视化元素，展示6条新闻，适合科技/AI领域分享',
+      keywords: ['新闻', '资讯', '热点', '头条', '早报', '晚报', '日报', '快讯', '速报', '要闻', '大事件', '今日新闻', '热点新闻', '新闻速递', '新闻摘要', 'AI新闻', '科技新闻'],
       category: 'news',
-      difficulty: 'medium',
+      difficulty: 'hard',
       requiredInputs: ['新闻标题', '新闻内容列表'],
       optionalInputs: ['日期', '主题']
     },
-    basePrompt: `A clean, modern news digest card with dark gradient background. Vertical layout with 6 news items stacked from top to bottom.
+    basePrompt: `A futuristic tech news dashboard with cyberpunk-inspired design. Dark background with holographic elements and data visualization aesthetics.
 
-HEADER (top 10%):
-Chinese title "{{MAIN_TITLE}}" in bold white sans-serif, left-aligned. Date "{{DATE_SUBTITLE}}" in smaller grey text on the right. Thin gold horizontal line below header.
+BACKGROUND:
+Deep space black (#0a0a0f) with subtle animated-style circuit board patterns, floating holographic particles, and soft blue/purple gradient glows. Matrix-style falling data streams at 5% opacity on edges.
 
-NEWS LIST (6 items, each ~14% height, stacked vertically with equal spacing):
+HEADER SECTION (top 12%):
+Left side: Bold Chinese title "{{MAIN_TITLE}}" in large white text with cyan (#00f0ff) glow effect, futuristic sans-serif font.
+Right side: Date "{{DATE_SUBTITLE}}" displayed in a holographic badge style with thin cyan border and slight glow.
+Below: A horizontal scanning line effect in cyan, pulsing from left to right.
 
-{{NEWS_ITEMS}}
+MAIN CONTENT - 6 NEWS CARDS in 2x3 grid layout:
 
-DESIGN STYLE:
-- Clean vertical list layout, each item clearly separated
-- Dark navy to charcoal gradient background (#1a1f3c to #2d2d2d)
-- Each news item has: category tag (colored pill badge) + headline (white bold) + description (grey lighter text)
-- Thin gold divider lines between items
-- Left-aligned text, generous padding
-- No complex grids, no hero sections, just simple top-to-bottom list
-- Professional, minimalist, easy to read
+{{NEWS_CARDS}}
 
-COLOR CODING for categories:
-- 科技/AI: electric blue (#00d4ff)
-- 商业/投资: gold (#d4af37)
-- 政策: burgundy red (#722f37)
-- 国际: emerald green (#26a69a)
-- 产品: purple (#9b59b6)
-- 市场: amber (#f39c12)
+DESIGN ELEMENTS:
+- Each card has glassmorphism effect (frosted glass, semi-transparent)
+- Cards have thin glowing borders (cyan #00f0ff or purple #a855f7)
+- Subtle holographic shimmer overlay on cards
+- Small animated-style data visualization icons for each category
+- Floating geometric shapes (hexagons, triangles) as decorative elements
+- Depth layers with soft shadows and light blooms
 
-All Chinese text must be exactly as specified with no other text. Ultra high quality, 8K resolution.`,
+VISUAL STYLE:
+Cyberpunk meets Bloomberg terminal aesthetic. Color palette: deep black (#0a0a0f), cyan glow (#00f0ff), purple accent (#a855f7), electric blue (#3b82f6), emerald (#10b981), amber (#f59e0b), rose (#f43f5e). Holographic effects, glass morphism, neon accents. Professional yet futuristic - suitable for tech/AI news. Premium quality with attention to typography and spacing.
+
+All Chinese text must be exactly as specified with no other text. Ultra high quality, 8K resolution, cinematic lighting.`,
     variables: [
       {
         name: 'MAIN_TITLE',
         description: '主标题',
         type: 'text',
         required: true,
-        defaultValue: '今日速报',
-        examples: ['今日AI速报', '科技快讯', '每日要闻']
+        defaultValue: '今日AI速报',
+        examples: ['今日AI速报', '科技快讯', 'AI Daily']
       },
       {
         name: 'DATE_SUBTITLE',
@@ -456,72 +455,88 @@ All Chinese text must be exactly as specified with no other text. Ultra high qua
         type: 'text',
         required: false,
         defaultValue: '',
-        examples: ['2025年11月30日', '11月30日 周日']
+        examples: ['2025.11.30', '11月30日 周日']
       },
       {
-        name: 'NEWS_ITEMS',
-        description: '6条新闻列表，从上到下排列，每条包含分类标签、标题（10-15字）、内容简介（15-25字）',
+        name: 'NEWS_CARDS',
+        description: '6张新闻卡片，2x3网格布局，每张包含：图标、分类、标题、内容、数据指标',
         type: 'list',
         required: true,
         examples: [
-          'Item 1: Blue "科技" tag, headline "Gemini 3正式发布" in white bold, description "LMArena评分1501创新高 全面超越竞品" in grey.',
-          'Item 2: Gold "商业" tag, headline "OpenAI获AWS投资" in white bold, description "380亿美元七年战略合作 提供海量GPU算力" in grey.',
-          'Item 3: Purple "产品" tag, headline "Claude Opus 4.5上线" in white bold, description "代码能力提升15% 成本降低76%" in grey.'
+          'Card 1 (top-left, HERO size spans 2 columns): Glassmorphism card with cyan border glow. AI brain hologram icon. Category badge "突发" in rose red. Large headline "OpenAI办公室紧急封锁" in white bold. Subtext "收到反AI极端分子暴力威胁 旧金山总部全面戒备" in grey. Bottom stats bar: "🔥 热度 98" "📍 旧金山".',
+          'Card 2: Purple border glow. Rocket icon. Badge "产品" in purple. Headline "Gemini 3登顶榜首" in white. Subtext "LMArena评分1501创历史新高" in grey. Stats: "📊 +15%" "🏆 #1".'
         ]
       }
     ],
     examples: [
       {
         userRequest: '帮我生成今日AI新闻速报',
-        filledPrompt: `A clean, modern news digest card with dark gradient background (#1a1f3c to #2d2d2d). Vertical layout with 6 news items stacked from top to bottom.
+        filledPrompt: `A futuristic tech news dashboard with cyberpunk-inspired design. Dark background with holographic elements and data visualization aesthetics.
 
-HEADER (top 10%):
-Chinese title "今日AI速报" in bold white sans-serif (32pt), left-aligned. Date "2025年11月30日" in smaller grey text (18pt) on the right. Thin gold horizontal line below header.
+BACKGROUND:
+Deep space black (#0a0a0f) to dark navy (#0f172a) gradient. Subtle circuit board pattern overlay at 3% opacity. Floating holographic particles in cyan and purple. Soft blue light bloom from top-left corner. Matrix-style vertical data streams on far edges at 5% opacity.
 
-NEWS LIST (6 items, stacked vertically with equal spacing, each item has colored category tag + bold headline + grey description):
+HEADER SECTION (top 12%):
+Left: Bold Chinese title "今日AI速报" in large white text (48pt) with cyan (#00f0ff) outer glow effect, modern geometric sans-serif font style.
+Right: "2025.11.30" in a holographic pill badge - semi-transparent background with thin cyan border and soft glow, white text.
+Below header: Horizontal cyan scanning line effect (2px) with gradient fade on edges, suggesting real-time data feed.
 
-Item 1: Electric blue pill badge "科技", then headline "Gemini 3正式发布" in white bold (24pt), below description "LMArena评分1501分创新高 性能全面超越GPT-5" in light grey (16pt).
+MAIN CONTENT - 6 NEWS CARDS in 2x3 asymmetric grid:
 
-Item 2: Gold pill badge "商业", headline "OpenAI获AWS巨额投资" in white bold, description "达成380亿美元七年战略合作 获数十万GPU算力支持" in grey.
+ROW 1:
+CARD 1 (HERO - spans left 60% width, taller): Large glassmorphism card with frosted glass effect and rose red (#f43f5e) glowing border. Top-left: Warning triangle hologram icon in red. Category badge "突发" in rose red pill with white text. Large headline "OpenAI办公室紧急封锁" in bold white (28pt). Below: "收到反AI极端分子暴力威胁" in light grey (16pt), next line "旧金山总部全面戒备 员工居家办公" in grey. Bottom of card: mini stats bar with "🔥 热度 98%" and "📍 旧金山" in small cyan text.
 
-Item 3: Purple pill badge "产品", headline "Claude Opus 4.5发布" in white bold, description "代码能力提升至80.9% API成本降低76%" in grey.
+CARD 2 (right 40%): Glassmorphism card with purple (#a855f7) border glow. Rocket launch hologram icon. Badge "产品" in purple. Headline "Gemini 3登顶AI榜首" in white bold (22pt). Subtext "LMArena评分1501创历史新高 全面超越GPT-5" in grey (14pt). Stats: "📊 评分1501" "🏆 排名#1".
 
-Item 4: Emerald green pill badge "国际", headline "微软英伟达联手Anthropic" in white bold, description "150亿美元战略投资 深化AI基础设施合作" in grey.
+ROW 2:
+CARD 3: Glassmorphism with cyan (#00f0ff) border. Dollar sign hologram icon. Badge "投资" in amber (#f59e0b). Headline "外资抢筹中国AI资产" in white bold. Subtext "瑞银看涨恒科技7100点 一级市场LP重返聚焦AI" in grey. Stats: "💰 目标7100" "📈 +12%".
 
-Item 5: Burgundy red pill badge "政策", headline "美国启动Genesis计划" in white bold, description "十年AI科学计划 目标提升科研生产力一倍" in grey.
+CARD 4: Glassmorphism with emerald (#10b981) border. Handshake hologram icon. Badge "商业" in emerald. Headline "Anthropic获150亿投资" in white bold. Subtext "微软英伟达战略合作 估值达350亿美元" in grey. Stats: "💵 $150亿" "🎯 估值$350亿".
 
-Item 6: Amber pill badge "市场", headline "黑五AI销售创纪录" in white bold, description "AI驱动在线销售达142亿美元 同比增长9%" in grey.
+ROW 3:
+CARD 5: Glassmorphism with electric blue (#3b82f6) border. Chip/processor hologram icon. Badge "科技" in blue. Headline "OpenAI推出GPT-5.1" in white bold. Subtext "对话能力大幅提升 支持更个性化定制" in grey. Stats: "🚀 新版本" "⚡ 性能+40%".
 
-Thin gold divider lines between each item. Dark navy to charcoal gradient background. Clean vertical list layout, left-aligned text, generous padding. Professional minimalist design.
+CARD 6: Glassmorphism with rose (#f43f5e) border. Scale/balance hologram icon. Badge "安全" in rose. Headline "AI诉讼案件激增" in white bold. Subtext "7起ChatGPT情感操纵诉讼 涉及自杀教唆指控" in grey. Stats: "⚖️ 7起诉讼" "⚠️ 高风险".
 
-All Chinese text must be exactly as specified with no other text. Ultra high quality, 8K resolution.`,
-        chineseTexts: ['今日AI速报', '2025年11月30日', '科技', 'Gemini 3正式发布', 'LMArena评分1501分创新高 性能全面超越GPT-5', '商业', 'OpenAI获AWS巨额投资', '达成380亿美元七年战略合作 获数十万GPU算力支持', '产品', 'Claude Opus 4.5发布', '代码能力提升至80.9% API成本降低76%', '国际', '微软英伟达联手Anthropic', '150亿美元战略投资 深化AI基础设施合作', '政策', '美国启动Genesis计划', '十年AI科学计划 目标提升科研生产力一倍', '市场', '黑五AI销售创纪录', 'AI驱动在线销售达142亿美元 同比增长9%']
+DECORATIVE ELEMENTS:
+- Floating translucent hexagons in corners
+- Small data visualization charts as card backgrounds (line graphs, bar charts at 5% opacity)
+- Holographic lens flare from top
+- Subtle particle dust floating throughout
+
+All Chinese text must be exactly as specified with no other text. Ultra high quality, 8K resolution, cinematic lighting, depth of field effect on background elements.`,
+        chineseTexts: ['今日AI速报', '2025.11.30', '突发', 'OpenAI办公室紧急封锁', '收到反AI极端分子暴力威胁', '旧金山总部全面戒备 员工居家办公', '产品', 'Gemini 3登顶AI榜首', 'LMArena评分1501创历史新高 全面超越GPT-5', '投资', '外资抢筹中国AI资产', '瑞银看涨恒科技7100点 一级市场LP重返聚焦AI', '商业', 'Anthropic获150亿投资', '微软英伟达战略合作 估值达350亿美元', '科技', 'OpenAI推出GPT-5.1', '对话能力大幅提升 支持更个性化定制', '安全', 'AI诉讼案件激增', '7起ChatGPT情感操纵诉讼 涉及自杀教唆指控']
       }
     ],
     qualityChecklist: [
-      '是否有6条完整新闻（标题+内容）',
-      '布局是否从上到下清晰排列',
-      '每条新闻是否有分类标签',
-      '标题是否简洁有力（10-15字）',
-      '内容简介是否具体（15-25字）',
-      '配色是否专业（深色背景+彩色标签）',
-      '中文文字是否正确显示'
+      '是否有6条完整新闻（标题+详细内容+数据指标）',
+      '是否采用2x3网格布局，头条新闻更大更突出',
+      '是否有科技感元素（霓虹光效、玻璃态、全息图标）',
+      '每条新闻是否有分类标签和数据指标',
+      '背景是否有深色渐变和科技纹理',
+      '配色是否协调（深色背景+霓虹点缀）',
+      '中文文字是否正确显示且清晰易读'
     ],
     commonIssues: [
       {
-        issue: '布局变成复杂网格',
-        solution: '强调简单的垂直列表布局',
-        promptFix: 'with simple vertical list layout, 6 items stacked from top to bottom, no complex grids or hero sections'
+        issue: '科技感不够强',
+        solution: '增加霓虹光效、全息元素、数据可视化',
+        promptFix: 'with stronger cyberpunk elements: neon glow borders (#00f0ff cyan, #a855f7 purple), holographic icons, matrix-style data streams, glassmorphism cards with frosted glass effect'
       },
       {
-        issue: '新闻只有标题没有内容',
-        solution: '每条必须有标题+内容简介',
-        promptFix: 'each news item MUST have: category tag + headline (10-15 chars) + description (15-25 chars explaining the news)'
+        issue: '布局太单调',
+        solution: '使用2x3不对称网格，头条更大',
+        promptFix: 'with asymmetric 2x3 grid layout where the HERO card (breaking news) spans 60% width and is taller, creating visual hierarchy'
       },
       {
-        issue: '内容太笼统',
-        solution: '内容简介要有具体数字或细节',
-        promptFix: 'description should include specific numbers, percentages, or concrete details, not vague statements'
+        issue: '信息不够丰富',
+        solution: '每条新闻添加数据指标和统计',
+        promptFix: 'each card MUST have: category badge, headline, 2-line description, and bottom stats bar with relevant metrics (percentages, rankings, amounts)'
+      },
+      {
+        issue: '缺少视觉层次',
+        solution: '用颜色和大小区分重要性',
+        promptFix: 'with clear visual hierarchy: breaking news in rose/red accent, product news in purple, investment in amber, business in emerald, tech in blue, safety in rose'
       }
     ]
   },
