@@ -130,7 +130,9 @@ const ToolCard = memo(function ToolCard({
     }
     if (name === "generate_image" && input.prompt) {
       const prompt = input.prompt as string;
-      return `生成: "${prompt.slice(0, 50)}${prompt.length > 50 ? "..." : ""}"`;
+      const resolution = input.resolution as string || "2k";
+      const ratio = input.aspectRatio as string || "auto";
+      return `生成 ${resolution}/${ratio}: "${prompt.slice(0, 30)}${prompt.length > 30 ? "..." : ""}"`;
     }
     if (name === "edit_image" && input.editPrompt) {
       return `编辑: "${input.editPrompt}"`;

@@ -22,6 +22,7 @@ interface ImageGenRequest {
   model?: string;
   referenceImages?: string[];
   aspectRatio?: string;
+  resolution?: '1k' | '2k' | '4k';
 }
 
 interface ImageGenResponse {
@@ -82,16 +83,18 @@ async function pollTaskStatus(
  */
 export const generateImageTool: ChatAgentTool = {
   name: 'generate_image',
-  description: `根据文字描述生成图片。
+  description: `根据文字描述生成图片（使用 Gemini 3 Pro 模型）。
 
 功能：
 - 支持各种风格：写实、动漫、艺术等
 - 支持参考图：可以基于上传的图片生成相似风格
-- 支持多种比例：1:1、16:9、9:16 等
+- 支持多种比例：auto（自动）、1:1、16:9、9:16、4:3、3:4、3:2、2:3
+- 支持多种分辨率：1k(1024px)、2k(2048px)、4k(4096px)
 
 使用提示：
 - 提供详细的图片描述会获得更好的效果
-- 如果用户上传了参考图，可以通过 referenceImageUrl 参数传递`,
+- 如果用户上传了参考图，可以通过 referenceImageUrl 参数传递
+- 分辨率默认为 2k，需要高清图片时可选择 4k`,
 
   schema: generateImageSchema,
 
@@ -104,12 +107,14 @@ export const generateImageTool: ChatAgentTool = {
       prompt,
       style,
       referenceImageUrl,
-      aspectRatio = '1:1',
+      aspectRatio = 'auto',
+      resolution = '2k',
     } = input as {
       prompt: string;
       style?: string;
       referenceImageUrl?: string;
-      aspectRatio?: string;
+      aspectRatio?: 'auto' | '1:1' | '16:9' | '9:16' | '4:3' | '3:4' | '3:2' | '2:3';
+      resolution?: '1k' | '2k' | '4k';
     };
 
     callbacks.onProgress('准备生成图片...');
@@ -142,7 +147,8 @@ export const generateImageTool: ChatAgentTool = {
           prompt: enhancedPrompt,
           model: 'nano-banana-pro', // Gemini 3 pro 模型
           referenceImages: refImage ? [refImage] : [],
-          aspectRatio,
+          aspectRatio: aspectRatio === 'auto' ? undefined : aspectRatio,
+          resolution,
         } as ImageGenRequest),
         signal: context.abortSignal,
       });

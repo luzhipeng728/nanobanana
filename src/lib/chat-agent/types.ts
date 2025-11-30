@@ -43,6 +43,7 @@ export interface ChatSettings {
 export type ServerMessage =
   | ServerContentChunk
   | ServerToolStart
+  | ServerToolInput
   | ServerToolProgress
   | ServerToolEnd
   | ServerToolChunk
@@ -59,6 +60,12 @@ export interface ServerToolStart {
   type: 'tool_start';
   toolId: string;
   name: string;
+  input: Record<string, unknown>;
+}
+
+export interface ServerToolInput {
+  type: 'tool_input';
+  toolId: string;
   input: Record<string, unknown>;
 }
 

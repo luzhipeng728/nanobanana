@@ -125,22 +125,26 @@ export async function runReactLoop(
           case 'content_block_stop':
             if (currentToolUse) {
               // 工具调用块结束，解析输入
+              let parsedInput = {};
               try {
-                const input = JSON.parse(currentToolUse.inputJson || '{}');
-                contentBlocks.push({
-                  type: 'tool_use',
-                  id: currentToolUse.id,
-                  name: currentToolUse.name,
-                  input,
-                });
+                parsedInput = JSON.parse(currentToolUse.inputJson || '{}');
               } catch {
-                contentBlocks.push({
-                  type: 'tool_use',
-                  id: currentToolUse.id,
-                  name: currentToolUse.name,
-                  input: {},
-                });
+                // 保持空对象
               }
+
+              // 发送工具输入更新事件
+              ws.send({
+                type: 'tool_input',
+                toolId: currentToolUse.id,
+                input: parsedInput,
+              });
+
+              contentBlocks.push({
+                type: 'tool_use',
+                id: currentToolUse.id,
+                name: currentToolUse.name,
+                input: parsedInput,
+              });
               currentToolUse = null;
             }
             break;

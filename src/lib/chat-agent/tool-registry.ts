@@ -131,8 +131,10 @@ export const generateImageSchema = z.object({
     .describe('图片风格'),
   referenceImageUrl: z.string().optional()
     .describe('参考图片URL，可从对话上下文中的已上传图片获取'),
-  aspectRatio: z.enum(['1:1', '16:9', '9:16', '4:3', '3:4']).optional()
-    .describe('图片比例'),
+  aspectRatio: z.enum(['auto', '1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3']).optional()
+    .describe('图片比例，auto 表示自动选择'),
+  resolution: z.enum(['1k', '2k', '4k']).optional()
+    .describe('图片分辨率：1k(1024px)、2k(2048px)、4k(4096px)'),
 });
 
 // 编辑图片

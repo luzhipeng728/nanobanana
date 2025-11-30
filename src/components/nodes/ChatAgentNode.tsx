@@ -113,11 +113,26 @@ const ChatAgentNode = ({
           newMap.set(event.toolId, {
             toolId: event.toolId,
             name: event.name,
-            input: event.input,
+            input: event.input || {},
             status: "running" as ToolStatus,
           });
           currentToolCallsRef.current = newMap;
           setCurrentToolCalls(newMap);
+        }
+        break;
+
+      case "tool_input":
+        {
+          const newMap = new Map(currentToolCallsRef.current);
+          const existing = newMap.get(event.toolId);
+          if (existing) {
+            newMap.set(event.toolId, {
+              ...existing,
+              input: event.input,
+            });
+            currentToolCallsRef.current = newMap;
+            setCurrentToolCalls(newMap);
+          }
         }
         break;
 
@@ -573,6 +588,15 @@ const ChatAgentNode = ({
                     </div>
                   )}
 
+                  {/* 工具调用卡片（显示在文字上方，与流式显示保持一致） */}
+                  {msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0 && (
+                    <div className="space-y-2 w-full mb-2">
+                      {msg.toolCalls.map((tool) => (
+                        <ToolCard key={tool.toolId} {...tool} />
+                      ))}
+                    </div>
+                  )}
+
                   {/* 消息气泡 */}
                   <div
                     className={cn(
@@ -592,15 +616,6 @@ const ChatAgentNode = ({
                       </div>
                     )}
                   </div>
-
-                  {/* 工具调用卡片 */}
-                  {msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0 && (
-                    <div className="mt-2 space-y-2 w-full">
-                      {msg.toolCalls.map((tool) => (
-                        <ToolCard key={tool.toolId} {...tool} />
-                      ))}
-                    </div>
-                  )}
 
                   {/* 时间戳 */}
                   <span className="text-[9px] text-neutral-400 dark:text-neutral-600 mt-1 px-2">
