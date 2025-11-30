@@ -211,3 +211,14 @@ model SuperAgentConversation {
   @@index([userId])
   @@index([updatedAt])
 }
+
+// 页面访问统计
+model PageView {
+  id        String   @id @default(uuid())
+  page      String   @unique                // 页面路径，如 "/gallery", "/", "/slides/xxx"
+  count     Int      @default(0)            // 累计访问次数
+  createdAt DateTime @default(now())        // 首次访问时间
+  updatedAt DateTime @updatedAt             // 最后访问时间
+
+  @@index([page])
+}

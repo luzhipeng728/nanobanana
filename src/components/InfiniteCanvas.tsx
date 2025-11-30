@@ -42,6 +42,7 @@ import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile
 import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
 import ModelCapabilityTip from "./ModelCapabilityTip";
+import PageViewCounter from "./PageViewCounter";
 
 const nodeTypes = {
   imageGen: ImageGenNode as any,
@@ -1402,6 +1403,11 @@ export default function InfiniteCanvas() {
         onClose={() => setIsGalleryOpen(false)}
         onImageClick={handleGalleryImageClick}
       />
+
+      {/* 右下角访问计数 */}
+      <div className="fixed bottom-4 right-4 bg-white/80 dark:bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-neutral-200/50 dark:border-white/10 z-50">
+        <PageViewCounter page="/" label="次访问" />
+      </div>
     </div>
   );
 }

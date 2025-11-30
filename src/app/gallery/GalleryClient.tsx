@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Images, Calendar, ExternalLink, Loader2 } from "lucide-react";
+import PageViewCounter from "@/components/PageViewCounter";
 
 // Cloudflare Image Resizing URL
 function getCoverUrl(url: string): string {
@@ -195,6 +196,11 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
           </>
         )}
       </main>
+
+      {/* 右下角访问计数 */}
+      <div className="fixed bottom-4 right-4 bg-white/80 dark:bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-neutral-200/50 dark:border-white/10">
+        <PageViewCounter page="/gallery" label="次访问" />
+      </div>
     </div>
   );
 }
