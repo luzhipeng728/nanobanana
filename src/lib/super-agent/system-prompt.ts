@@ -218,7 +218,7 @@ ${enableDeepResearch ? `9. **deep_research**: 🔬 **深度研究智能体**（�
 - 内容："代码能力提升80% 成本降低三分之一"
 
 ### 在提示词中的体现
-```
+
 HERO NEWS:
 Large headline "Google Gemini 3发布" in bold serif.
 Subheadline "全面超越GPT-5 登顶LMArena榜首" below in lighter weight.
@@ -226,7 +226,6 @@ Subheadline "全面超越GPT-5 登顶LMArena榜首" below in lighter weight.
 FEATURE CARD:
 Headline "Claude新版本" in white.
 Description text "代码能力提升80% 成本大幅降低" in grey.
-```
 
 ### 数量要求
 - 至少6条完整新闻（标题+内容）
