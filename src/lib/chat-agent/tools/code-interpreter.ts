@@ -84,41 +84,45 @@ print(json.dumps(analysis, indent=2, default=str))
 };
 
 /**
- * 安全执行代码（通过 API）
+ * 安全执行代码（通过 API 或模拟）
+ * 注意：目前没有实际的代码执行服务，返回代码说明
  */
 async function executeCodeSafely(
   code: string,
   imageUrl: string | undefined,
+  operation: string | undefined,
   callbacks: ToolCallbacks,
-  abortSignal: AbortSignal
+  _abortSignal: AbortSignal
 ): Promise<{ output: string; resultImageUrl?: string }> {
-  // 调用代码执行 API
-  const response = await fetch('/api/code-interpreter', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      code,
-      inputImageUrl: imageUrl,
-    }),
-    signal: abortSignal,
-  });
+  // 模拟代码执行 - 返回代码说明和建议
+  callbacks.onProgress('分析代码...');
 
-  if (!response.ok) {
-    // 如果没有专门的代码执行服务，返回模拟结果
-    if (response.status === 404) {
-      return {
-        output: `[代码执行服务未配置]\n\n代码内容：\n${code}\n\n提示：需要配置安全的代码执行环境（如 Docker sandbox）来运行此代码。`,
-      };
-    }
-    throw new Error(`代码执行失败: ${response.status}`);
+  // 根据操作类型生成说明
+  let explanation = '';
+
+  if (operation) {
+    const operationDescriptions: Record<string, string> = {
+      resize: '调整图片尺寸',
+      crop: '裁剪图片',
+      filter: '应用滤镜效果',
+      convert: '转换图片格式',
+      analyze: '分析图片属性',
+      custom: '执行自定义代码',
+    };
+    explanation = `操作类型: ${operationDescriptions[operation] || operation}\n\n`;
   }
 
-  const result = await response.json();
+  explanation += `代码内容:\n\`\`\`python\n${code}\n\`\`\`\n\n`;
+
+  if (imageUrl) {
+    explanation += `输入图片: ${imageUrl}\n\n`;
+  }
+
+  explanation += `⚠️ 注意: 代码执行服务目前未配置。\n`;
+  explanation += `如需实际执行代码，请配置安全的代码执行环境（如 Docker sandbox 或云函数）。`;
+
   return {
-    output: result.output || '',
-    resultImageUrl: result.resultImageUrl,
+    output: explanation,
   };
 }
 
@@ -222,6 +226,7 @@ export const codeInterpreterTool: ChatAgentTool = {
       const { output, resultImageUrl } = await executeCodeSafely(
         codeToExecute,
         inputImage,
+        operation,
         callbacks,
         context.abortSignal
       );

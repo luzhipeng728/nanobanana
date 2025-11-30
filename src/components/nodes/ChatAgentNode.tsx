@@ -77,6 +77,8 @@ const ChatAgentNode = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamingContentRef = useRef<string>("");
+  const currentToolCallsRef = useRef<Map<string, ToolCardProps>>(new Map());
 
   // 自动滚动
   useEffect(() => {
@@ -101,25 +103,27 @@ const ChatAgentNode = ({
   const handleSSEEvent = useCallback((event: ServerMessage) => {
     switch (event.type) {
       case "content_chunk":
-        setStreamingContent((prev) => prev + event.content);
+        streamingContentRef.current += event.content;
+        setStreamingContent(streamingContentRef.current);
         break;
 
       case "tool_start":
-        setCurrentToolCalls((prev) => {
-          const newMap = new Map(prev);
+        {
+          const newMap = new Map(currentToolCallsRef.current);
           newMap.set(event.toolId, {
             toolId: event.toolId,
             name: event.name,
             input: event.input,
             status: "running" as ToolStatus,
           });
-          return newMap;
-        });
+          currentToolCallsRef.current = newMap;
+          setCurrentToolCalls(newMap);
+        }
         break;
 
       case "tool_progress":
-        setCurrentToolCalls((prev) => {
-          const newMap = new Map(prev);
+        {
+          const newMap = new Map(currentToolCallsRef.current);
           const existing = newMap.get(event.toolId);
           if (existing) {
             newMap.set(event.toolId, {
@@ -127,28 +131,30 @@ const ChatAgentNode = ({
               elapsed: event.elapsed,
               statusText: event.status,
             });
+            currentToolCallsRef.current = newMap;
+            setCurrentToolCalls(newMap);
           }
-          return newMap;
-        });
+        }
         break;
 
       case "tool_chunk":
-        setCurrentToolCalls((prev) => {
-          const newMap = new Map(prev);
+        {
+          const newMap = new Map(currentToolCallsRef.current);
           const existing = newMap.get(event.toolId);
           if (existing) {
             newMap.set(event.toolId, {
               ...existing,
               streamingContent: (existing.streamingContent || "") + event.chunk,
             });
+            currentToolCallsRef.current = newMap;
+            setCurrentToolCalls(newMap);
           }
-          return newMap;
-        });
+        }
         break;
 
       case "tool_end":
-        setCurrentToolCalls((prev) => {
-          const newMap = new Map(prev);
+        {
+          const newMap = new Map(currentToolCallsRef.current);
           const existing = newMap.get(event.toolId);
           if (existing) {
             const output = event.output as ToolResult;
@@ -159,9 +165,10 @@ const ChatAgentNode = ({
               duration: event.duration,
               streamingContent: undefined,
             });
+            currentToolCallsRef.current = newMap;
+            setCurrentToolCalls(newMap);
           }
-          return newMap;
-        });
+        }
         break;
 
       case "context_update":
@@ -193,6 +200,9 @@ const ChatAgentNode = ({
     setIsStreaming(true);
     setStreamingContent("");
     setCurrentToolCalls(new Map());
+    // 重置 refs
+    streamingContentRef.current = "";
+    currentToolCallsRef.current = new Map();
 
     abortControllerRef.current = new AbortController();
 
@@ -261,18 +271,26 @@ const ChatAgentNode = ({
         }
       }
 
-      // 创建助手消息
-      const assistantMessage: Message = {
-        id: `msg-${Date.now()}`,
-        role: "assistant",
-        content: streamingContent,
-        toolCalls: Array.from(currentToolCalls.values()),
-        timestamp: new Date().toISOString(),
-      };
+      // 创建助手消息（使用 ref 获取最终值）
+      const finalContent = streamingContentRef.current;
+      const finalToolCalls = Array.from(currentToolCallsRef.current.values());
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      // 只有有内容或工具调用时才添加消息
+      if (finalContent || finalToolCalls.length > 0) {
+        const assistantMessage: Message = {
+          id: `msg-${Date.now()}`,
+          role: "assistant",
+          content: finalContent,
+          toolCalls: finalToolCalls,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
+
       setStreamingContent("");
       setCurrentToolCalls(new Map());
+      streamingContentRef.current = "";
+      currentToolCallsRef.current = new Map();
     } catch (error: unknown) {
       if (error instanceof Error && error.name !== "AbortError") {
         console.error("Chat error:", error);
@@ -402,7 +420,7 @@ const ChatAgentNode = ({
       )}
     >
       <NodeResizer
-        isVisible={selected}
+        isVisible={true}
         minWidth={450}
         minHeight={550}
         lineClassName="!border-indigo-400"

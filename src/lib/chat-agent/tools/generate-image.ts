@@ -3,10 +3,19 @@
 import type { ChatAgentTool, ToolContext, ToolCallbacks, ToolResult } from '../types';
 import { generateImageSchema } from '../tool-registry';
 
-// 图片生成 API 配置（复用现有的生图接口）
-const IMAGE_GEN_API_URL = process.env.NEXT_PUBLIC_APP_URL
-  ? `${process.env.NEXT_PUBLIC_APP_URL}/api/generate-image`
-  : '/api/generate-image';
+// 获取基础 URL（服务端需要绝对 URL）
+function getBaseUrl(): string {
+  // 服务端：使用环境变量或默认本地地址
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3004';
+  }
+  // 客户端：使用当前 origin
+  return window.location.origin;
+}
+
+// 图片生成 API 配置
+const getImageGenApiUrl = () => `${getBaseUrl()}/api/generate-image`;
+const getImageTaskApiUrl = (taskId: string) => `${getBaseUrl()}/api/image-task?taskId=${taskId}`;
 
 interface ImageGenRequest {
   prompt: string;
@@ -39,7 +48,7 @@ async function pollTaskStatus(
       throw new Error('用户中断');
     }
 
-    const response = await fetch(`/api/image-task?taskId=${taskId}`, {
+    const response = await fetch(getImageTaskApiUrl(taskId), {
       signal: abortSignal,
     });
 
@@ -124,14 +133,14 @@ export const generateImageTool: ChatAgentTool = {
       callbacks.onProgress('调用图片生成 API...');
 
       // 创建生图任务
-      const createResponse = await fetch(IMAGE_GEN_API_URL, {
+      const createResponse = await fetch(getImageGenApiUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           prompt: enhancedPrompt,
-          model: 'nano-banana', // 默认模型
+          model: 'nano-banana-pro', // Gemini 3 pro 模型
           referenceImages: refImage ? [refImage] : [],
           aspectRatio,
         } as ImageGenRequest),
