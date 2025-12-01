@@ -164,7 +164,11 @@ const WebsitePreviewNode = ({
         const response = await fetch(`/api/website-gen/files?projectId=${nodeData.projectId}`);
         if (response.ok && isMounted) {
           const result = await response.json();
+          console.log("[WebsitePreview] Fetched files:", Object.keys(result.files || {}));
           if (result.files && Object.keys(result.files).length > 0) {
+            // 检查 /App.jsx 的内容是否是默认模板
+            const appContent = result.files["/App.jsx"] || result.files["App.jsx"];
+            console.log("[WebsitePreview] App.jsx content preview:", appContent?.substring(0, 100));
             setFiles(result.files);
           }
           if (result.imagePlaceholders) {
@@ -248,7 +252,9 @@ const WebsitePreviewNode = ({
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash; // Convert to 32bit integer
     }
-    return `sandpack-${hash}`;
+    const key = `sandpack-${hash}`;
+    console.log("[WebsitePreview] Sandpack key changed:", key, "Files:", Object.keys(sandpackFiles));
+    return key;
   }, [sandpackFiles]);
 
   return (
@@ -379,6 +385,7 @@ const WebsitePreviewNode = ({
         template="react"
         files={sandpackFiles}
         customSetup={{
+          entry: "/index.js",
           dependencies: {
             "framer-motion": "^10.0.0",
           },
@@ -387,6 +394,7 @@ const WebsitePreviewNode = ({
           externalResources: [
             "https://cdn.tailwindcss.com",
           ],
+          activeFile: "/App.jsx",
         }}
         theme="auto"
       >

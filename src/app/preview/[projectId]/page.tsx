@@ -114,6 +114,7 @@ export default function PreviewPage() {
           template="react"
           files={files}
           customSetup={{
+            entry: "/index.js",
             dependencies: {
               "framer-motion": "^10.0.0",
             },
@@ -122,6 +123,7 @@ export default function PreviewPage() {
             externalResources: [
               "https://cdn.tailwindcss.com",
             ],
+            activeFile: "/App.jsx",
           }}
           theme="auto"
         >

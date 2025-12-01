@@ -116,7 +116,8 @@ export async function POST(request: NextRequest) {
             continueLoop = false;
 
             const apiKey = getNextApiKey();
-            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+            // 使用最新 Gemini 3 Pro Preview 模型 + 流式 API
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:streamGenerateContent?alt=sse";
 
             const requestBody = {
               contents: messages,
@@ -143,60 +144,122 @@ export async function POST(request: NextRequest) {
               break;
             }
 
-            const data = await response.json();
-            const candidate = data.candidates?.[0];
-
-            if (!candidate?.content?.parts) {
-              sendEvent({ type: "error", message: "No response from AI" });
+            // 处理流式响应
+            const reader = response.body?.getReader();
+            if (!reader) {
+              sendEvent({ type: "error", message: "No reader available" });
               break;
             }
 
-            // Process response parts
-            for (const part of candidate.content.parts) {
-              // Text content
-              if (part.text) {
-                sendEvent({ type: "content_chunk", content: part.text });
-              }
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let accumulatedText = "";
+            let functionCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
 
-              // Function calls
-              if (part.functionCall) {
-                const { name, args } = part.functionCall;
-                const toolId = `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-                sendEvent({ type: "tool_start", toolId, name, args: args || {} });
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
 
-                try {
-                  const result = await executeToolCall(projectId, name, args || {}, sendEvent, toolId);
-                  sendEvent({ type: "tool_end", toolId, result: { success: true, data: result } });
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  const jsonStr = line.slice(6).trim();
+                  if (!jsonStr || jsonStr === "[DONE]") continue;
 
-                  // Add function response to messages for next turn
-                  messages.push({
-                    role: "model",
-                    parts: [{ functionCall: { name, args: args || {} } }],
-                  });
-                  messages.push({
-                    role: "user",
-                    parts: [{ functionResponse: { name, response: { result } } }],
-                  });
+                  try {
+                    const data = JSON.parse(jsonStr);
+                    const candidate = data.candidates?.[0];
 
-                  // Continue the loop for multi-turn tool use
-                  continueLoop = true;
-                } catch (error) {
-                  const errorMessage = error instanceof Error ? error.message : String(error);
-                  sendEvent({ type: "tool_end", toolId, result: { success: false, error: errorMessage } });
-
-                  // Still add the error response
-                  messages.push({
-                    role: "model",
-                    parts: [{ functionCall: { name, args: args || {} } }],
-                  });
-                  messages.push({
-                    role: "user",
-                    parts: [{ functionResponse: { name, response: { error: errorMessage } } }],
-                  });
-
-                  continueLoop = true;
+                    if (candidate?.content?.parts) {
+                      for (const part of candidate.content.parts) {
+                        // 流式文本内容
+                        if (part.text) {
+                          accumulatedText += part.text;
+                          sendEvent({ type: "content_chunk", content: part.text });
+                        }
+                        // 函数调用（通常在流结束时）
+                        if (part.functionCall) {
+                          functionCalls.push({
+                            name: part.functionCall.name,
+                            args: part.functionCall.args || {},
+                          });
+                        }
+                      }
+                    }
+                  } catch {
+                    // 忽略解析错误
+                  }
                 }
+              }
+            }
+
+            // 处理剩余的 buffer
+            if (buffer.startsWith("data: ")) {
+              const jsonStr = buffer.slice(6).trim();
+              if (jsonStr && jsonStr !== "[DONE]") {
+                try {
+                  const data = JSON.parse(jsonStr);
+                  const candidate = data.candidates?.[0];
+                  if (candidate?.content?.parts) {
+                    for (const part of candidate.content.parts) {
+                      if (part.text) {
+                        accumulatedText += part.text;
+                        sendEvent({ type: "content_chunk", content: part.text });
+                      }
+                      if (part.functionCall) {
+                        functionCalls.push({
+                          name: part.functionCall.name,
+                          args: part.functionCall.args || {},
+                        });
+                      }
+                    }
+                  }
+                } catch {
+                  // 忽略解析错误
+                }
+              }
+            }
+
+            // 处理函数调用
+            for (const fc of functionCalls) {
+              const toolId = `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+              sendEvent({ type: "tool_start", toolId, name: fc.name, args: fc.args });
+
+              try {
+                const result = await executeToolCall(projectId, fc.name, fc.args, sendEvent, toolId);
+                sendEvent({ type: "tool_end", toolId, result: { success: true, data: result } });
+
+                // Add function response to messages for next turn
+                messages.push({
+                  role: "model",
+                  parts: [{ functionCall: { name: fc.name, args: fc.args } }],
+                });
+                messages.push({
+                  role: "user",
+                  parts: [{ functionResponse: { name: fc.name, response: { result } } }],
+                });
+
+                // Continue the loop for multi-turn tool use
+                continueLoop = true;
+              } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                sendEvent({ type: "tool_end", toolId, result: { success: false, error: errorMessage } });
+
+                // Still add the error response
+                messages.push({
+                  role: "model",
+                  parts: [{ functionCall: { name: fc.name, args: fc.args } }],
+                });
+                messages.push({
+                  role: "user",
+                  parts: [{ functionResponse: { name: fc.name, response: { error: errorMessage } } }],
+                });
+
+                continueLoop = true;
               }
             }
           }
