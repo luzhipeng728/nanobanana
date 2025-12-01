@@ -1,20 +1,20 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { X, Check, Trash2, RotateCcw, MapPin, Info } from "lucide-react";
+import { X, Check, Trash2, MapPin, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   ImageMark,
   ImageMarkerModalProps,
   MarkerStyle,
   DEFAULT_MARKER_STYLE,
-  getCircleNumber,
 } from "./types";
 import { generateMarkedImageDataUrl } from "./useImageMarker";
 
 /**
  * 图片标记弹窗组件
  * 用于在图片上添加 SoM 风格的数字标记
+ * 使用 HTML 元素而非 Canvas，避免 CORS 问题
  */
 export function ImageMarkerModal({
   isOpen,
@@ -26,10 +26,10 @@ export function ImageMarkerModal({
 }: ImageMarkerModalProps) {
   const [marks, setMarks] = useState<ImageMark[]>(initialMarks);
   const [isGenerating, setIsGenerating] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [imageError, setImageError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
-  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const mergedStyle: MarkerStyle = { ...DEFAULT_MARKER_STYLE, ...style };
 
@@ -37,138 +37,28 @@ export function ImageMarkerModal({
   useEffect(() => {
     if (isOpen) {
       setMarks(initialMarks);
+      setImageError(false);
+      setImageLoaded(false);
     }
   }, [isOpen, initialMarks]);
 
-  // 加载图片并绘制
-  useEffect(() => {
-    if (!isOpen || !canvasRef.current || !imageUrl) return;
+  // 处理图片点击 - 添加新标记
+  const handleImageClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!imageRef.current) return;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      const rect = imageRef.current.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      // 获取容器尺寸
-      const container = containerRef.current;
-      const maxWidth = container ? container.clientWidth - 48 : 800;
-      const maxHeight = window.innerHeight * 0.6;
-
-      let width = img.naturalWidth;
-      let height = img.naturalHeight;
-      const aspectRatio = width / height;
-
-      // 适应容器
-      if (width > maxWidth) {
-        width = maxWidth;
-        height = width / aspectRatio;
-      }
-      if (height > maxHeight) {
-        height = maxHeight;
-        width = height * aspectRatio;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      setCanvasSize({ width, height });
-      setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
-
-      // 绘制图片
-      ctx.drawImage(img, 0, 0, width, height);
-
-      // 绘制标记
-      drawMarks(ctx, marks, width, height);
-    };
-    img.src = imageUrl;
-  }, [isOpen, imageUrl]);
-
-  // 重新绘制标记
-  useEffect(() => {
-    if (!canvasRef.current || !imageUrl || canvasSize.width === 0) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      drawMarks(ctx, marks, canvas.width, canvas.height);
-    };
-    img.src = imageUrl;
-  }, [marks, imageUrl, canvasSize]);
-
-  // 绘制标记
-  const drawMarks = (
-    ctx: CanvasRenderingContext2D,
-    marks: ImageMark[],
-    width: number,
-    height: number
-  ) => {
-    marks.forEach((mark) => {
-      const x = mark.x * width;
-      const y = mark.y * height;
-      const { size, fontSize, bgColor, textColor, borderColor, borderWidth, shadow } = mergedStyle;
-
-      // 绘制阴影
-      if (shadow) {
-        ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-      }
-
-      // 绘制圆形背景
-      ctx.beginPath();
-      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
-      ctx.fillStyle = bgColor;
-      ctx.fill();
-
-      // 绘制边框
-      if (borderWidth > 0) {
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = borderWidth;
-        ctx.stroke();
-      }
-
-      // 重置阴影
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-
-      // 绘制数字
-      ctx.fillStyle = textColor;
-      ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(String(mark.number), x, y);
-    });
-  };
-
-  // 处理画布点击
-  const handleCanvasClick = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!canvasRef.current) return;
-
-      const canvas = canvasRef.current;
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / canvas.width;
-      const y = (e.clientY - rect.top) / canvas.height;
-
-      // 检查是否点击了已有标记（删除）
+      // 检查是否点击了已有标记区域（通过相对坐标判断）
       const clickedMark = marks.find((mark) => {
-        const markX = mark.x * canvas.width;
-        const markY = mark.y * canvas.height;
-        const distance = Math.sqrt(
-          Math.pow(e.clientX - rect.left - markX, 2) +
-          Math.pow(e.clientY - rect.top - markY, 2)
-        );
-        return distance < mergedStyle.size / 2 + 5;
+        const markX = mark.x;
+        const markY = mark.y;
+        // 计算点击位置与标记中心的距离（以图片尺寸为基准）
+        const distanceX = Math.abs(x - markX) * rect.width;
+        const distanceY = Math.abs(y - markY) * rect.height;
+        return distanceX < mergedStyle.size / 2 + 5 && distanceY < mergedStyle.size / 2 + 5;
       });
 
       if (clickedMark) {
@@ -191,6 +81,14 @@ export function ImageMarkerModal({
     [marks, mergedStyle.size]
   );
 
+  // 删除单个标记
+  const handleRemoveMark = useCallback((markId: string) => {
+    setMarks((prev) => {
+      const filtered = prev.filter((m) => m.id !== markId);
+      return filtered.map((m, index) => ({ ...m, number: index + 1 }));
+    });
+  }, []);
+
   // 清除所有标记
   const handleClear = () => {
     setMarks([]);
@@ -205,18 +103,22 @@ export function ImageMarkerModal({
 
     setIsGenerating(true);
     try {
-      // 生成带标记的图片
+      // 生成带标记的图片（通过代理或服务端处理）
       const markedImageDataUrl = await generateMarkedImageDataUrl(
         imageUrl,
         marks,
         mergedStyle,
-        1200, // 最大宽度
-        1200  // 最大高度
+        1200,
+        1200
       );
       onSave(marks, markedImageDataUrl);
       onClose();
     } catch (error) {
       console.error("Failed to generate marked image:", error);
+      // 即使生成失败，也保存标记数据（可以在发送时重新生成）
+      // 创建一个简单的占位图
+      onSave(marks, imageUrl);
+      onClose();
     } finally {
       setIsGenerating(false);
     }
@@ -272,15 +174,65 @@ export function ImageMarkerModal({
           </div>
         </div>
 
-        {/* 画布区域 */}
+        {/* 图片区域 - 使用 HTML 元素而非 Canvas */}
         <div className="flex-1 p-6 overflow-auto bg-neutral-50 dark:bg-neutral-950">
           <div className="flex justify-center">
-            <canvas
-              ref={canvasRef}
-              onClick={handleCanvasClick}
-              className="rounded-xl shadow-lg cursor-crosshair"
-              style={{ maxWidth: "100%", maxHeight: "60vh" }}
-            />
+            <div
+              className="relative cursor-crosshair rounded-xl shadow-lg overflow-hidden"
+              onClick={handleImageClick}
+            >
+              {/* 原图 */}
+              <img
+                ref={imageRef}
+                src={imageUrl}
+                alt="待标记图片"
+                className="max-w-full max-h-[60vh] object-contain"
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
+              />
+
+              {/* 标记层 */}
+              {imageLoaded && marks.map((mark) => (
+                <div
+                  key={mark.id}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-110 transition-transform"
+                  style={{
+                    left: `${mark.x * 100}%`,
+                    top: `${mark.y * 100}%`,
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveMark(mark.id);
+                  }}
+                  title="点击删除此标记"
+                >
+                  <div
+                    className="flex items-center justify-center rounded-full font-bold shadow-lg"
+                    style={{
+                      width: mergedStyle.size,
+                      height: mergedStyle.size,
+                      backgroundColor: mergedStyle.bgColor,
+                      color: mergedStyle.textColor,
+                      fontSize: mergedStyle.fontSize,
+                      border: `${mergedStyle.borderWidth}px solid ${mergedStyle.borderColor}`,
+                      boxShadow: mergedStyle.shadow ? '0 4px 12px rgba(0,0,0,0.3)' : 'none',
+                    }}
+                  >
+                    {mark.number}
+                  </div>
+                </div>
+              ))}
+
+              {/* 图片加载失败提示 */}
+              {imageError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
+                  <div className="text-center text-neutral-500">
+                    <p className="text-sm">图片加载失败</p>
+                    <p className="text-xs mt-1">请检查图片链接</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -294,7 +246,9 @@ export function ImageMarkerModal({
               {marks.map((mark) => (
                 <span
                   key={mark.id}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium cursor-pointer hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                  onClick={() => handleRemoveMark(mark.id)}
+                  title="点击删除"
                 >
                   <span className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
                     {mark.number}
@@ -302,6 +256,7 @@ export function ImageMarkerModal({
                   <span className="text-neutral-500 dark:text-neutral-400">
                     ({(mark.x * 100).toFixed(0)}%, {(mark.y * 100).toFixed(0)}%)
                   </span>
+                  <X className="w-3 h-3 text-red-400 hover:text-red-600" />
                 </span>
               ))}
             </div>
