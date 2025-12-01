@@ -3,7 +3,7 @@
  * SoM (Set-of-Mark) 风格的数字标记系统
  */
 
-// 单个标记点
+// 单个定位点标记
 export interface ImageMark {
   id: string;
   number: number;        // 标记编号 (1, 2, 3...)
@@ -12,9 +12,21 @@ export interface ImageMark {
   description?: string;  // 可选描述
 }
 
+// 单个箭头标记（视角/方向标记）
+export interface ArrowMark {
+  id: string;
+  number: number;        // 标记编号 (1, 2, 3...)
+  startX: number;        // 起点 X 相对坐标 (0-1)
+  startY: number;        // 起点 Y 相对坐标 (0-1)
+  endX: number;          // 终点 X 相对坐标 (0-1)
+  endY: number;          // 终点 Y 相对坐标 (0-1)
+  description?: string;  // 可选描述
+}
+
 // 标记数据（存储在节点中）
 export interface ImageMarkerData {
   marks: ImageMark[];
+  arrows?: ArrowMark[];   // 箭头标记
   markedImageUrl?: string;  // 带标记的图片 URL (base64 or blob url)
   originalImageUrl: string; // 原图 URL
   updatedAt: number;        // 更新时间戳
@@ -56,14 +68,38 @@ export function getCircleNumber(num: number): string {
   return `(${num})`;
 }
 
+// 箭头样式配置
+export interface ArrowStyle {
+  strokeWidth: number;    // 箭头线条宽度
+  strokeColor: string;    // 箭头颜色
+  headSize: number;       // 箭头头部大小
+  numberSize: number;     // 数字标记尺寸
+  numberFontSize: number; // 数字字体大小
+  numberBgColor: string;  // 数字背景色
+  numberTextColor: string;// 数字文字色
+}
+
+// 默认箭头样式
+export const DEFAULT_ARROW_STYLE: ArrowStyle = {
+  strokeWidth: 4,
+  strokeColor: '#3B82F6',   // 蓝色
+  headSize: 16,
+  numberSize: 28,
+  numberFontSize: 14,
+  numberBgColor: '#3B82F6', // 蓝色背景
+  numberTextColor: '#FFFFFF',
+};
+
 // 标记模态框 Props
 export interface ImageMarkerModalProps {
   isOpen: boolean;
   onClose: () => void;
   imageUrl: string;
   initialMarks?: ImageMark[];
-  onSave: (marks: ImageMark[], markedImageDataUrl: string) => void;
+  initialArrows?: ArrowMark[];
+  onSave: (marks: ImageMark[], arrows: ArrowMark[], markedImageDataUrl: string) => void;
   style?: Partial<MarkerStyle>;
+  arrowStyle?: Partial<ArrowStyle>;
 }
 
 // Canvas Props

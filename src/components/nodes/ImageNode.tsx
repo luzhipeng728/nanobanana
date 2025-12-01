@@ -10,7 +10,7 @@ import { createImageTask } from "@/app/actions/image-task";
 import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { useTouchContextMenu, createNodeMenuOptions } from "@/components/TouchContextMenu";
-import { ImageMarkerModal, ImageMark, ImageMarkerData } from "@/components/ImageMarker";
+import { ImageMarkerModal, ImageMark, ArrowMark, ImageMarkerData } from "@/components/ImageMarker";
 
 // Define the data structure for the image node
 type ImageNodeData = {
@@ -279,11 +279,11 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   }, [data.prompt, data.generationConfig, id, getNode, addImageNode]);
 
   // 保存 SoM 标记数据
-  const handleSaveMarkers = useCallback((marks: ImageMark[], markedImageDataUrl: string) => {
+  const handleSaveMarkers = useCallback((marks: ImageMark[], arrows: ArrowMark[], markedImageDataUrl: string) => {
     if (!data.imageUrl) return;
 
     // 如果标记为空，清除 markerData，恢复原图
-    if (marks.length === 0) {
+    if (marks.length === 0 && arrows.length === 0) {
       updateNodeData(id, { markerData: undefined });
       console.log(`[ImageNode ${id}] Cleared markers, restored original image`);
       return;
@@ -291,13 +291,14 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
     const markerData: ImageMarkerData = {
       marks,
+      arrows,
       markedImageUrl: markedImageDataUrl,
       originalImageUrl: data.imageUrl,
       updatedAt: Date.now(),
     };
 
     updateNodeData(id, { markerData });
-    console.log(`[ImageNode ${id}] Saved ${marks.length} markers`);
+    console.log(`[ImageNode ${id}] Saved ${marks.length} marks, ${arrows.length} arrows`);
   }, [id, data.imageUrl, updateNodeData]);
 
   // 轮询任务状态
@@ -516,10 +517,10 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                     }}
                   />
                   {/* 标记指示器角标 */}
-                  {data.markerData?.marks?.length > 0 && (
-                    <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/90 text-white text-[10px] font-bold shadow-lg z-10">
+                  {((data.markerData?.marks?.length || 0) + (data.markerData?.arrows?.length || 0)) > 0 && (
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-red-500 to-blue-500 text-white text-[10px] font-bold shadow-lg z-10">
                       <MapPin className="w-3 h-3" />
-                      {data.markerData.marks.length} 个标记
+                      {(data.markerData?.marks?.length || 0) + (data.markerData?.arrows?.length || 0)} 个标记
                     </div>
                   )}
                   {/* 加载指示器（缩略图还没加载完时显示） */}
@@ -655,6 +656,7 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
             onClose={() => setIsMarkerModalOpen(false)}
             imageUrl={data.imageUrl}
             initialMarks={data.markerData?.marks || []}
+            initialArrows={data.markerData?.arrows || []}
             onSave={handleSaveMarkers}
           />
         )}

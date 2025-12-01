@@ -147,9 +147,10 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       // If a node has SoM markers, include both original and marked images
       const connectedNodes = getConnectedImageNodes(id);
       const referenceImages: string[] = [];
+      let hasMarkers = false; // 是否有带标记的图片
 
       connectedNodes.forEach(node => {
-        const nodeData = node.data as { imageUrl?: string; markerData?: { markedImageUrl?: string; marks?: unknown[] } };
+        const nodeData = node.data as { imageUrl?: string; markerData?: { markedImageUrl?: string; marks?: unknown[]; arrows?: unknown[] } };
         const imageUrl = nodeData.imageUrl;
         const markerData = nodeData.markerData;
 
@@ -158,14 +159,24 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           referenceImages.push(imageUrl);
 
           // If there are SoM markers, also include the marked image
-          if (markerData?.markedImageUrl && markerData.marks?.length) {
+          const marksCount = markerData?.marks?.length || 0;
+          const arrowsCount = markerData?.arrows?.length || 0;
+          if (markerData?.markedImageUrl && (marksCount > 0 || arrowsCount > 0)) {
             referenceImages.push(markerData.markedImageUrl);
-            console.log(`[ImageGenNode] Including marked image with ${markerData.marks.length} markers`);
+            hasMarkers = true;
+            console.log(`[ImageGenNode] Including marked image with ${marksCount} marks, ${arrowsCount} arrows`);
           }
         }
       });
 
       console.log(`Using ${referenceImages.length} reference images from connected nodes (including marked images)`);
+
+      // 如果有带标记的图片，在 prompt 后面加上提示，让模型不要在生成的图片中出现标记
+      let finalPrompt = prompt;
+      if (hasMarkers) {
+        finalPrompt = `${prompt}\n\n[Important: The reference image contains numbered markers (circles with numbers) and/or directional arrows for reference only. Do NOT include any markers, numbers, circles, or arrows in the generated image. Generate a clean image without any annotations.]`;
+        console.log(`[ImageGenNode] Added marker exclusion instruction to prompt`);
+      }
 
       const config: ImageGenerationConfig = {};
 
@@ -181,7 +192,7 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       }
 
       // Create image generation task
-      const { taskId } = await createImageTask(prompt, selectedModel, config, referenceImages);
+      const { taskId } = await createImageTask(finalPrompt, selectedModel, config, referenceImages);
       console.log(`Created image task: ${taskId}`);
 
       // Immediately create an Image node with the task ID
