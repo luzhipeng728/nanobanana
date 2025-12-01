@@ -153,16 +153,18 @@ const WebsitePreviewNode = ({
   // Polling for project updates
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Poll for file updates
+  // Fetch files immediately and poll for updates
   useEffect(() => {
     if (!nodeData.projectId) return;
 
-    const pollFiles = async () => {
+    let isMounted = true;
+
+    const fetchFiles = async () => {
       try {
         const response = await fetch(`/api/website-gen/files?projectId=${nodeData.projectId}`);
-        if (response.ok) {
+        if (response.ok && isMounted) {
           const result = await response.json();
-          if (result.files) {
+          if (result.files && Object.keys(result.files).length > 0) {
             setFiles(result.files);
           }
           if (result.imagePlaceholders) {
@@ -170,15 +172,18 @@ const WebsitePreviewNode = ({
           }
         }
       } catch (error) {
-        console.error("[WebsitePreview] Failed to poll files:", error);
+        console.error("[WebsitePreview] Failed to fetch files:", error);
       }
     };
 
-    // Poll every 3 seconds
-    pollFiles();
-    pollRef.current = setInterval(pollFiles, 3000);
+    // Fetch immediately on mount
+    fetchFiles();
+
+    // Then poll every 2 seconds for updates
+    pollRef.current = setInterval(fetchFiles, 2000);
 
     return () => {
+      isMounted = false;
       if (pollRef.current) {
         clearInterval(pollRef.current);
       }

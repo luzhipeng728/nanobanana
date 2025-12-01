@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Wrench,
   CheckCircle,
+  FlaskConical,
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { NodeInput, NodeScrollArea } from "@/components/ui/NodeUI";
@@ -36,6 +37,7 @@ const TOOL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   generate_image: ImageIcon,
   preview_ready: Eye,
   web_search: Search,
+  deep_research: FlaskConical,
 };
 
 // Tool status colors
@@ -49,9 +51,17 @@ const TOOL_STATUS_COLORS: Record<string, string> = {
 // Helper function to normalize markdown
 const normalizeMarkdown = (content: string) => {
   let normalized = content;
+  // Replace unsupported language tags
   normalized = normalized.replace(/```prompt\b/g, "```text");
+  // Remove excessive blank lines (3+ newlines -> 2)
   normalized = normalized.replace(/\n{3,}/g, "\n\n");
+  // Remove leading blank lines in list items
+  normalized = normalized.replace(/(-|\d+\.)\s*\n\n+/g, "$1 ");
+  // Reduce multiple blank lines between paragraphs
+  normalized = normalized.replace(/\n\n\n+/g, "\n\n");
+  // Trim trailing whitespace from each line
   normalized = normalized.split("\n").map(line => line.trimEnd()).join("\n");
+  // Remove leading/trailing whitespace
   return normalized.trim();
 };
 

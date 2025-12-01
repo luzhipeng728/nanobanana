@@ -30,6 +30,11 @@ import {
   getProjectFiles,
 } from "@/lib/website-gen/project-store";
 import { createImageTask } from "@/app/actions/image-task";
+import {
+  callHyprLabDeepResearch,
+  parseHyprLabResponse,
+  type ReasoningEffort,
+} from "@/lib/super-agent/hyprlab-research";
 
 // Gemini API Keys rotation
 const GEMINI_API_KEYS: string[] = [];
@@ -313,6 +318,25 @@ async function executeToolCall(
       }
     }
 
+    case "deep_research": {
+      const { topic, reasoning_effort = "low" } = args;
+      try {
+        const result = await performDeepResearch(topic, reasoning_effort as "low" | "medium" | "high");
+        return {
+          success: true,
+          topic,
+          researchReport: result.content,
+          citations: result.citations,
+          message: `深度研究完成，获得 ${result.citations.length} 个引用来源`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "深度研究失败",
+        };
+      }
+    }
+
     default:
       return { success: false, error: `Unknown tool: ${toolName}` };
   }
@@ -437,4 +461,24 @@ async function performWebSearch(query: string): Promise<Array<{ title: string; u
       snippet: "请访问搜索引擎获取更多信息",
     },
   ];
+}
+
+/**
+ * Perform deep research using HyprLab
+ */
+async function performDeepResearch(
+  topic: string,
+  reasoningEffort: ReasoningEffort
+): Promise<{ content: string; citations: string[] }> {
+  console.log(`[WebsiteGen] Starting deep research: "${topic}" with effort: ${reasoningEffort}`);
+
+  const response = await callHyprLabDeepResearch(topic, reasoningEffort);
+  const parsed = parseHyprLabResponse(response);
+
+  console.log(`[WebsiteGen] Deep research completed, citations: ${parsed.citations.length}`);
+
+  return {
+    content: parsed.content,
+    citations: parsed.citations,
+  };
 }

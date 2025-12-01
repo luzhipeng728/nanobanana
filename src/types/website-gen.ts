@@ -238,6 +238,25 @@ export const WEBSITE_GEN_TOOLS = [
       },
       required: ["query"]
     }
+  },
+  {
+    name: "deep_research",
+    description: "深度研究工具 - 对复杂话题进行深入的互联网研究。适用于需要综合多个来源信息的场景，如技术调研、竞品分析、设计趋势等。研究强度：low(1-3分钟)、medium(3-7分钟)、high(7-15分钟)。",
+    parameters: {
+      type: "object",
+      properties: {
+        topic: {
+          type: "string",
+          description: "研究主题，详细描述你想要研究的内容"
+        },
+        reasoning_effort: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+          description: "研究强度：low(快速)、medium(标准)、high(深度)"
+        }
+      },
+      required: ["topic"]
+    }
   }
 ] as const;
 
