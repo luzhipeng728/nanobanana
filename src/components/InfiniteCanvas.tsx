@@ -30,6 +30,8 @@ import StickerGenNode from "./nodes/StickerGenNode";
 import StickerNode from "./nodes/StickerNode";
 import SpriteNode from "./nodes/SpriteNode";
 import SuperAgentNode from "./nodes/SuperAgentNode";
+import WebsiteGenNode from "./nodes/WebsiteGenNode";
+import WebsitePreviewNode from "./nodes/WebsitePreviewNode";
 import ImageModal from "./ImageModal";
 import NodeToolbar from "./NodeToolbar";
 import { CanvasContext } from "@/contexts/CanvasContext";
@@ -59,6 +61,8 @@ const nodeTypes = {
   sticker: StickerNode as any,
   sprite: SpriteNode as any,
   superAgent: SuperAgentNode as any,
+  websiteGen: WebsiteGenNode as any,
+  websitePreview: WebsitePreviewNode as any,
 };
 
 const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
@@ -459,6 +463,8 @@ export default function InfiniteCanvas() {
           ? { width: 450 }
           : pendingNodeType === 'chatAgent'
           ? { width: 550, height: 700 }
+          : pendingNodeType === 'websiteGen'
+          ? { width: 450, height: 600 }
           : undefined,
         data: pendingNodeType === 'imageGen'
           ? { prompt: '' }
@@ -471,6 +477,8 @@ export default function InfiniteCanvas() {
           : pendingNodeType === 'chat'
           ? { messages: [], systemPrompt: 'You are a helpful AI assistant that generates image prompts. When user asks for images, wrap your prompt suggestions in ```text\n[prompt text]\n``` blocks.' }
           : pendingNodeType === 'chatAgent'
+          ? {}
+          : pendingNodeType === 'websiteGen'
           ? {}
           : {},
       };
@@ -549,6 +557,8 @@ export default function InfiniteCanvas() {
           ? { width: 450 }
           : type === 'chatAgent'
           ? { width: 550, height: 700 }
+          : type === 'websiteGen'
+          ? { width: 450, height: 600 }
           : undefined,
         data: type === 'imageGen'
           ? { prompt: '' }
@@ -565,6 +575,8 @@ export default function InfiniteCanvas() {
           : type === 'superAgent'
           ? {}
           : type === 'chatAgent'
+          ? {}
+          : type === 'websiteGen'
           ? {}
           : {},
       };
@@ -1276,7 +1288,7 @@ export default function InfiniteCanvas() {
             )}
             <span className="text-sm font-medium">
               {pendingNodeType
-                ? `点击画布放置 ${pendingNodeType === 'imageGen' ? 'Generator' : pendingNodeType === 'agent' ? 'Agent' : pendingNodeType === 'superAgent' ? 'Prompt Expert' : pendingNodeType === 'musicGen' ? 'Music' : pendingNodeType === 'videoGen' ? 'Video' : pendingNodeType === 'chat' ? 'Chat' : pendingNodeType === 'sprite' ? 'Sprite' : pendingNodeType} 节点`
+                ? `点击画布放置 ${pendingNodeType === 'imageGen' ? 'Generator' : pendingNodeType === 'agent' ? 'Agent' : pendingNodeType === 'superAgent' ? 'Prompt Expert' : pendingNodeType === 'musicGen' ? 'Music' : pendingNodeType === 'videoGen' ? 'Video' : pendingNodeType === 'chat' ? 'Chat' : pendingNodeType === 'sprite' ? 'Sprite' : pendingNodeType === 'websiteGen' ? 'Website' : pendingNodeType} 节点`
                 : pendingGalleryImage
                 ? '点击画布放置画廊图片'
                 : '点击画布选择图片放置位置'}

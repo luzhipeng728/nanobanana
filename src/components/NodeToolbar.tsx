@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles, Bot } from "lucide-react";
+import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles, Bot, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 
-type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'chatAgent' | 'sprite' | 'superAgent';
+type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'chatAgent' | 'sprite' | 'superAgent' | 'websiteGen';
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, nodeType: NodeType) => void;
@@ -72,6 +72,13 @@ const baseItems = [
     description: '智能体对话',
     icon: Bot,
     accentColor: '#6366f1',
+  },
+  {
+    type: 'websiteGen' as NodeType,
+    title: 'Website',
+    description: 'AI 网站生成',
+    icon: Globe,
+    accentColor: '#10b981',
   },
 ];
 
