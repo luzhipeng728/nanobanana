@@ -80,6 +80,22 @@ function drawMarks(
 }
 
 /**
+ * 获取原始图片 URL（去掉 Cloudflare Image Resizing 前缀）
+ */
+function getOriginalImageUrl(url: string): string {
+  // 如果是 Cloudflare CDN 转换过的 URL，提取原始路径
+  // 例如: https://doubao.luzhipeng.com/cdn-cgi/image/format=auto,width=1200/uploads/xxx.png
+  // 转换为: https://doubao.luzhipeng.com/uploads/xxx.png
+  const cdnPattern = /\/cdn-cgi\/image\/[^/]+(\/.+)$/;
+  const match = url.match(cdnPattern);
+  if (match) {
+    const origin = new URL(url).origin;
+    return origin + match[1];
+  }
+  return url;
+}
+
+/**
  * 服务端生成带标记的图片并上传到 R2
  */
 export async function POST(request: NextRequest) {
@@ -102,10 +118,20 @@ export async function POST(request: NextRequest) {
 
     const mergedStyle = { ...DEFAULT_STYLE, ...style };
 
-    console.log(`[image-marker] Processing image with ${marks.length} marks`);
+    // 获取原始图片 URL（避免 Cloudflare 返回 WebP 格式）
+    const originalUrl = getOriginalImageUrl(imageUrl);
+    console.log(`[image-marker] Processing image: ${originalUrl} with ${marks.length} marks`);
 
-    // 加载原图
-    const image = await loadImage(imageUrl);
+    // 先下载图片为 Buffer，再加载（避免 URL 直接加载的兼容性问题）
+    const response = await fetch(originalUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const imageBuffer = Buffer.from(arrayBuffer);
+
+    // 从 Buffer 加载图片
+    const image = await loadImage(imageBuffer);
 
     // 计算尺寸（保持比例）
     let width = image.width;
