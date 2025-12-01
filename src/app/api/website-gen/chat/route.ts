@@ -29,7 +29,7 @@ import {
   replaceImagePlaceholder,
   getProjectFiles,
 } from "@/lib/website-gen/project-store";
-import { createImageTask } from "@/app/actions/image-task";
+import { createImageTask, getImageTaskStatus } from "@/app/actions/image-task";
 import {
   callHyprLabDeepResearch,
   parseHyprLabResponse,
@@ -388,33 +388,30 @@ async function generateImageAsync(
       attempts++;
 
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/image-task/${taskId}`
-        );
+        // 直接调用 getImageTaskStatus 而不是通过 HTTP，避免 ECONNREFUSED 错误
+        const taskStatus = await getImageTaskStatus(taskId);
 
-        if (response.ok) {
-          const data = await response.json();
-
-          if (data.status === "completed" && data.imageUrl) {
+        if (taskStatus) {
+          if (taskStatus.status === "completed" && taskStatus.imageUrl) {
             // Replace placeholder in all files
-            await replaceImagePlaceholder(projectId, placeholder.id, data.imageUrl);
+            await replaceImagePlaceholder(projectId, placeholder.id, taskStatus.imageUrl);
             sendEvent({
               type: "image_completed",
               placeholderId: placeholder.id,
-              imageUrl: data.imageUrl,
+              imageUrl: taskStatus.imageUrl,
             });
             return;
           }
 
-          if (data.status === "failed") {
+          if (taskStatus.status === "failed") {
             await updateImagePlaceholder(projectId, placeholder.id, {
               status: "failed",
-              error: data.error || "图片生成失败",
+              error: taskStatus.error || "图片生成失败",
             });
             sendEvent({
               type: "image_failed",
               placeholderId: placeholder.id,
-              error: data.error || "图片生成失败",
+              error: taskStatus.error || "图片生成失败",
             });
             return;
           }

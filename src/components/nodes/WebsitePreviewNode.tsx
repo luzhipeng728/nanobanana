@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useEffect, useCallback, useRef } from "react";
+import { memo, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Handle, Position, NodeProps, NodeResizer } from "@xyflow/react";
 import {
   SandpackProvider,
@@ -227,15 +227,29 @@ const WebsitePreviewNode = ({
   }, []);
 
   // Prepare files for Sandpack (transform paths)
-  const sandpackFiles = Object.entries(files).reduce(
-    (acc, [path, content]) => {
-      // Ensure path starts with /
-      const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-      acc[normalizedPath] = content;
-      return acc;
-    },
-    {} as Record<string, string>
-  );
+  const sandpackFiles = useMemo(() => {
+    return Object.entries(files).reduce(
+      (acc, [path, content]) => {
+        // Ensure path starts with /
+        const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+        acc[normalizedPath] = content;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+  }, [files]);
+
+  // 计算文件内容的简单哈希，用于强制 SandpackProvider 重新渲染
+  const sandpackKey = useMemo(() => {
+    const content = JSON.stringify(sandpackFiles);
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+      const char = content.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return `sandpack-${hash}`;
+  }, [sandpackFiles]);
 
   return (
     <div
@@ -361,6 +375,7 @@ const WebsitePreviewNode = ({
 
       {/* Preview content */}
       <SandpackProvider
+        key={sandpackKey}
         template="react"
         files={sandpackFiles}
         customSetup={{
