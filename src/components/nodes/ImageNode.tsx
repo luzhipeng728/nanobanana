@@ -481,10 +481,11 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
             ) : (
               <>
                 {/* 渐进式图片加载：先显示缩略图，再加载完整图 */}
+                {/* 如果有标记图，显示标记图；否则显示原图 */}
                 <div className="relative w-full h-full">
                   {/* 缩略图层（小尺寸，快速加载） */}
                   <img
-                    src={getThumbnailUrl(data.imageUrl, 200)}
+                    src={getThumbnailUrl(data.markerData?.markedImageUrl || data.imageUrl, 200)}
                     alt="Thumbnail"
                     className={cn(
                       "absolute inset-0 w-full h-full object-contain bg-neutral-50 dark:bg-neutral-900 transition-opacity duration-300",
@@ -495,7 +496,7 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   />
                   {/* 完整图层（高质量，延迟加载） */}
                   <img
-                    src={getFullImageUrl(data.imageUrl)}
+                    src={getFullImageUrl(data.markerData?.markedImageUrl || data.imageUrl)}
                     alt="Generated"
                     className={cn(
                       "absolute inset-0 w-full h-full object-contain bg-neutral-50 dark:bg-neutral-900 transition-opacity duration-500",
@@ -507,6 +508,13 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                       handleImageLoad(e);
                     }}
                   />
+                  {/* 标记指示器角标 */}
+                  {data.markerData?.marks?.length > 0 && (
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/90 text-white text-[10px] font-bold shadow-lg z-10">
+                      <MapPin className="w-3 h-3" />
+                      {data.markerData.marks.length} 个标记
+                    </div>
+                  )}
                   {/* 加载指示器（缩略图还没加载完时显示） */}
                   {!thumbnailLoaded && (
                     <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-900">
