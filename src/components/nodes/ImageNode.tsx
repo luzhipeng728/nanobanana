@@ -282,6 +282,13 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const handleSaveMarkers = useCallback((marks: ImageMark[], markedImageDataUrl: string) => {
     if (!data.imageUrl) return;
 
+    // 如果标记为空，清除 markerData，恢复原图
+    if (marks.length === 0) {
+      updateNodeData(id, { markerData: undefined });
+      console.log(`[ImageNode ${id}] Cleared markers, restored original image`);
+      return;
+    }
+
     const markerData: ImageMarkerData = {
       marks,
       markedImageUrl: markedImageDataUrl,

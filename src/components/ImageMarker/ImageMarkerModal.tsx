@@ -95,7 +95,9 @@ export function ImageMarkerModal({
 
   // 确认并保存
   const handleConfirm = async () => {
+    // 如果没有标记，清除 markerData 并恢复原图
     if (marks.length === 0) {
+      onSave([], ""); // 传入空数组和空字符串，让 ImageNode 清除 markerData
       onClose();
       return;
     }
