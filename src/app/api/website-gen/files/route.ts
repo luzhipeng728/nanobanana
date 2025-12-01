@@ -17,7 +17,20 @@ export async function GET(request: NextRequest) {
     const project = await getProject(projectId);
 
     if (!project) {
+      console.log(`[website-gen/files] Project ${projectId} not found`);
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // 详细日志
+    const fileKeys = Object.keys(project.files);
+    console.log(`[website-gen/files] Project ${projectId} files:`, fileKeys);
+
+    // 检查 App.jsx 是否是默认模板
+    const appJsx = project.files["/App.jsx"];
+    if (appJsx) {
+      const isDefaultTemplate = appJsx.includes("欢迎使用网站生成器");
+      console.log(`[website-gen/files] /App.jsx isDefaultTemplate: ${isDefaultTemplate}`);
+      console.log(`[website-gen/files] /App.jsx preview:`, appJsx.substring(0, 150));
     }
 
     return NextResponse.json({

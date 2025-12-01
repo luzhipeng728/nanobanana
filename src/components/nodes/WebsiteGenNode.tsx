@@ -622,12 +622,22 @@ const WebsiteGenNode = ({
           </div>
         )}
 
-        {/* Loading indicator */}
+        {/* Loading indicator - Gemini 3 Pro Preview 是推理模型，会先思考再回复 */}
         {isStreaming && !streamingContent && currentToolCalls.size === 0 && (
           <div className="flex justify-start mt-4">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-sm">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
-              <span className="text-xs font-medium text-neutral-500">分析需求...</span>
+            <div className="flex flex-col gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-100 dark:border-emerald-800 shadow-sm max-w-[280px]">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                  <div className="absolute inset-0 animate-ping">
+                    <Loader2 className="w-4 h-4 text-emerald-300 opacity-50" />
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">AI 正在深度思考...</span>
+              </div>
+              <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 leading-relaxed">
+                Gemini 3 Pro 正在分析需求并规划网站结构，这可能需要 30-60 秒
+              </p>
             </div>
           </div>
         )}

@@ -11,6 +11,12 @@ interface GeminiPart {
   text?: string;
   functionCall?: { name: string; args: Record<string, unknown> };
   functionResponse?: { name: string; response: unknown };
+  thought?: boolean;  // For thinking parts
+}
+
+interface GeminiContent {
+  role: string;
+  parts: GeminiPart[];
 }
 
 interface GeminiMessage {
@@ -157,7 +163,13 @@ export async function POST(request: NextRequest) {
             const decoder = new TextDecoder();
             let buffer = "";
             let accumulatedText = "";
-            let functionCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+            // Store full function call info including the original content for thought_signature
+            let functionCalls: Array<{
+              name: string;
+              args: Record<string, unknown>;
+              originalContent?: GeminiContent; // Preserve full content with thought_signature
+            }> = [];
+            let lastModelContent: GeminiContent | null = null; // Track the last model content
             let chunkCount = 0;
 
             while (true) {
@@ -189,7 +201,16 @@ export async function POST(request: NextRequest) {
                     const candidate = data.candidates?.[0];
 
                     if (candidate?.content?.parts) {
+                      // Save the full content for thought_signature preservation
+                      if (candidate.content) {
+                        lastModelContent = candidate.content;
+                      }
+
                       for (const part of candidate.content.parts) {
+                        // 跳过 thought 部分（内部思考过程），只处理实际输出
+                        if (part.thought) {
+                          continue;
+                        }
                         // 流式文本内容
                         if (part.text) {
                           accumulatedText += part.text;
@@ -201,6 +222,7 @@ export async function POST(request: NextRequest) {
                           functionCalls.push({
                             name: part.functionCall.name,
                             args: part.functionCall.args || {},
+                            originalContent: candidate.content, // Preserve full content with thoughtSignature
                           });
                         }
                       }
@@ -220,7 +242,16 @@ export async function POST(request: NextRequest) {
                   const data = JSON.parse(jsonStr);
                   const candidate = data.candidates?.[0];
                   if (candidate?.content?.parts) {
+                    // Save the full content for thought_signature preservation
+                    if (candidate.content) {
+                      lastModelContent = candidate.content;
+                    }
+
                     for (const part of candidate.content.parts) {
+                      // 跳过 thought 部分
+                      if (part.thought) {
+                        continue;
+                      }
                       if (part.text) {
                         accumulatedText += part.text;
                         sendEvent({ type: "content_chunk", content: part.text });
@@ -229,6 +260,7 @@ export async function POST(request: NextRequest) {
                         functionCalls.push({
                           name: part.functionCall.name,
                           args: part.functionCall.args || {},
+                          originalContent: candidate.content, // Preserve full content with thoughtSignature
                         });
                       }
                     }
@@ -249,11 +281,21 @@ export async function POST(request: NextRequest) {
                 const result = await executeToolCall(projectId, fc.name, fc.args, sendEvent, toolId);
                 sendEvent({ type: "tool_end", toolId, result: { success: true, data: result } });
 
-                // Add function response to messages for next turn
-                messages.push({
-                  role: "model",
-                  parts: [{ functionCall: { name: fc.name, args: fc.args } }],
-                });
+                // IMPORTANT: Use the original content with thoughtSignature for Gemini 3 Pro
+                // This preserves the thought_signature which is REQUIRED for multi-turn function calling
+                if (fc.originalContent) {
+                  console.log(`[WebsiteGen] Using original content with thoughtSignature for function ${fc.name}`);
+                  messages.push(fc.originalContent as GeminiMessage);
+                } else {
+                  // Fallback: construct the message (may fail with Gemini 3 Pro)
+                  console.warn(`[WebsiteGen] No original content found, constructing fallback for ${fc.name}`);
+                  messages.push({
+                    role: "model",
+                    parts: [{ functionCall: { name: fc.name, args: fc.args } }],
+                  });
+                }
+
+                // Add function response
                 messages.push({
                   role: "user",
                   parts: [{ functionResponse: { name: fc.name, response: { result } } }],
@@ -265,11 +307,16 @@ export async function POST(request: NextRequest) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
                 sendEvent({ type: "tool_end", toolId, result: { success: false, error: errorMessage } });
 
-                // Still add the error response
-                messages.push({
-                  role: "model",
-                  parts: [{ functionCall: { name: fc.name, args: fc.args } }],
-                });
+                // IMPORTANT: Use the original content with thoughtSignature
+                if (fc.originalContent) {
+                  messages.push(fc.originalContent as GeminiMessage);
+                } else {
+                  messages.push({
+                    role: "model",
+                    parts: [{ functionCall: { name: fc.name, args: fc.args } }],
+                  });
+                }
+
                 messages.push({
                   role: "user",
                   parts: [{ functionResponse: { name: fc.name, response: { error: errorMessage } } }],

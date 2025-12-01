@@ -32,8 +32,12 @@ const projectCache = new Map<string, WebsiteProject>();
 export async function getProject(projectId: string): Promise<WebsiteProject | null> {
   // 先检查内存缓存
   if (projectCache.has(projectId)) {
-    return projectCache.get(projectId)!;
+    const cached = projectCache.get(projectId)!;
+    console.log(`[ProjectStore] Found project ${projectId} in memory cache, files:`, Object.keys(cached.files));
+    return cached;
   }
+
+  console.log(`[ProjectStore] Project ${projectId} not in memory cache, loading from R2...`);
 
   // 尝试从 R2 加载
   try {
@@ -46,12 +50,13 @@ export async function getProject(projectId: string): Promise<WebsiteProject | nu
     const body = await response.Body?.transformToString();
     if (body) {
       const project = JSON.parse(body) as WebsiteProject;
+      console.log(`[ProjectStore] Loaded project ${projectId} from R2, files:`, Object.keys(project.files));
       projectCache.set(projectId, project);
       return project;
     }
   } catch (error) {
     // R2 中没有，返回 null
-    console.log(`[ProjectStore] Project ${projectId} not found in R2`);
+    console.log(`[ProjectStore] Project ${projectId} not found in R2, error:`, error);
   }
 
   return null;
@@ -101,10 +106,17 @@ export async function writeFile(projectId: string, path: string, content: string
   // 规范化路径
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
+  console.log(`[ProjectStore] Writing file: ${normalizedPath} for project ${projectId}`);
+  console.log(`[ProjectStore] Content preview (first 100 chars): ${content.substring(0, 100)}`);
+
   project.files[normalizedPath] = content;
   project.metadata.updatedAt = new Date().toISOString();
 
   projectCache.set(projectId, project);
+
+  // 打印当前项目所有文件
+  console.log(`[ProjectStore] Project ${projectId} now has files:`, Object.keys(project.files));
+
   await saveProjectToR2(project);
 }
 
