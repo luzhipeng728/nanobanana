@@ -168,9 +168,11 @@ export async function POST(request: NextRequest) {
               name: string;
               args: Record<string, unknown>;
               originalContent?: GeminiContent; // Preserve full content with thought_signature
+              toolId: string; // Pre-generated toolId for immediate frontend display
             }> = [];
             let lastModelContent: GeminiContent | null = null; // Track the last model content
             let chunkCount = 0;
+            let functionCallIndex = 0; // For generating unique toolIds
 
             while (true) {
               const { done, value } = await reader.read();
@@ -216,13 +218,24 @@ export async function POST(request: NextRequest) {
                           accumulatedText += part.text;
                           sendEvent({ type: "content_chunk", content: part.text });
                         }
-                        // 函数调用（通常在流结束时）
+                        // 函数调用 - 立即发送 tool_start 事件让前端实时显示
                         if (part.functionCall) {
-                          console.log(`[WebsiteGen] Got function call: ${part.functionCall.name}`);
+                          const toolId = `tool-${Date.now()}-${functionCallIndex++}`;
+                          console.log(`[WebsiteGen] Got function call: ${part.functionCall.name} (toolId: ${toolId})`);
+
+                          // 立即发送 tool_start 事件，让前端看到工具正在被调用
+                          sendEvent({
+                            type: "tool_start",
+                            toolId,
+                            name: part.functionCall.name,
+                            args: part.functionCall.args || {},
+                          });
+
                           functionCalls.push({
                             name: part.functionCall.name,
                             args: part.functionCall.args || {},
                             originalContent: candidate.content, // Preserve full content with thoughtSignature
+                            toolId, // Save toolId for later use
                           });
                         }
                       }
@@ -257,10 +270,20 @@ export async function POST(request: NextRequest) {
                         sendEvent({ type: "content_chunk", content: part.text });
                       }
                       if (part.functionCall) {
+                        const toolId = `tool-${Date.now()}-${functionCallIndex++}`;
+                        // 立即发送 tool_start 事件
+                        sendEvent({
+                          type: "tool_start",
+                          toolId,
+                          name: part.functionCall.name,
+                          args: part.functionCall.args || {},
+                        });
+
                         functionCalls.push({
                           name: part.functionCall.name,
                           args: part.functionCall.args || {},
                           originalContent: candidate.content, // Preserve full content with thoughtSignature
+                          toolId,
                         });
                       }
                     }
@@ -271,11 +294,10 @@ export async function POST(request: NextRequest) {
               }
             }
 
-            // 处理函数调用
+            // 处理函数调用 - tool_start 已经在流式阶段发送，这里只执行并发送 tool_end
             for (const fc of functionCalls) {
-              const toolId = `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-              sendEvent({ type: "tool_start", toolId, name: fc.name, args: fc.args });
+              const toolId = fc.toolId; // 使用流式阶段保存的 toolId
+              console.log(`[WebsiteGen] Executing tool: ${fc.name} (toolId: ${toolId})`);
 
               try {
                 const result = await executeToolCall(projectId, fc.name, fc.args, sendEvent, toolId);
