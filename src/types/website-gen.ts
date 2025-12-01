@@ -63,6 +63,8 @@ export interface ToolCall {
   args: Record<string, unknown>;
   status: 'pending' | 'running' | 'completed' | 'error';
   result?: ToolResult;
+  statusText?: string;  // Progress message
+  elapsed?: number;     // Elapsed seconds
 }
 
 /**
@@ -80,6 +82,7 @@ export interface ToolResult {
 export type WebsiteGenSSEEvent =
   | { type: 'content_chunk'; content: string }
   | { type: 'tool_start'; toolId: string; name: string; args: Record<string, unknown> }
+  | { type: 'tool_progress'; toolId: string; message: string; elapsed?: number }
   | { type: 'tool_end'; toolId: string; result: ToolResult }
   | { type: 'preview_ready'; projectId: string }
   | { type: 'image_placeholder'; placeholder: ImagePlaceholder }

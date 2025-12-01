@@ -70,21 +70,40 @@ const ToolCallCard = ({ tool }: { tool: ToolCall }) => {
   const Icon = TOOL_ICONS[tool.name] || FileCode;
   const statusColor = TOOL_STATUS_COLORS[tool.status] || TOOL_STATUS_COLORS.pending;
 
+  // Format elapsed time
+  const formatElapsed = (seconds?: number) => {
+    if (!seconds) return "";
+    if (seconds < 60) return `${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+  };
+
   return (
     <div className={cn(
-      "flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all",
+      "flex flex-col gap-1 px-3 py-2 rounded-lg text-xs transition-all",
       statusColor
     )}>
-      <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-      <span className="font-medium">{tool.name}</span>
-      {tool.status === "running" && (
-        <Loader2 className="w-3 h-3 animate-spin ml-auto" />
-      )}
-      {tool.status === "completed" && (
-        <CheckCircle className="w-3 h-3 ml-auto" />
-      )}
-      {tool.status === "error" && (
-        <AlertCircle className="w-3 h-3 ml-auto" />
+      <div className="flex items-center gap-2">
+        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+        <span className="font-medium">{tool.name}</span>
+        {tool.elapsed !== undefined && tool.status === "running" && (
+          <span className="text-[10px] opacity-70">{formatElapsed(tool.elapsed)}</span>
+        )}
+        {tool.status === "running" && (
+          <Loader2 className="w-3 h-3 animate-spin ml-auto" />
+        )}
+        {tool.status === "completed" && (
+          <CheckCircle className="w-3 h-3 ml-auto" />
+        )}
+        {tool.status === "error" && (
+          <AlertCircle className="w-3 h-3 ml-auto" />
+        )}
+      </div>
+      {tool.statusText && tool.status === "running" && (
+        <div className="text-[10px] opacity-80 truncate pl-5">
+          {tool.statusText}
+        </div>
       )}
     </div>
   );
@@ -146,6 +165,21 @@ const WebsiteGenNode = ({
         });
         currentToolCallsRef.current = newMap;
         setCurrentToolCalls(newMap);
+        break;
+      }
+
+      case "tool_progress": {
+        const newMap = new Map(currentToolCallsRef.current);
+        const existing = newMap.get(event.toolId);
+        if (existing) {
+          newMap.set(event.toolId, {
+            ...existing,
+            statusText: event.message,
+            elapsed: event.elapsed,
+          });
+          currentToolCallsRef.current = newMap;
+          setCurrentToolCalls(newMap);
+        }
         break;
       }
 

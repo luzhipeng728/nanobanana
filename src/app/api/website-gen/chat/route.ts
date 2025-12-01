@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
                 sendEvent({ type: "tool_start", toolId, name, args: args || {} });
 
                 try {
-                  const result = await executeToolCall(projectId, name, args || {}, sendEvent);
+                  const result = await executeToolCall(projectId, name, args || {}, sendEvent, toolId);
                   sendEvent({ type: "tool_end", toolId, result: { success: true, data: result } });
 
                   // Add function response to messages for next turn
@@ -237,7 +237,8 @@ async function executeToolCall(
   projectId: string,
   toolName: string,
   args: Record<string, any>,
-  sendEvent: (event: WebsiteGenSSEEvent) => void
+  sendEvent: (event: WebsiteGenSSEEvent) => void,
+  toolId: string
 ): Promise<any> {
   console.log(`[WebsiteGen] Executing tool: ${toolName}`, args);
 
@@ -321,7 +322,16 @@ async function executeToolCall(
     case "deep_research": {
       const { topic, reasoning_effort = "low" } = args;
       try {
-        const result = await performDeepResearch(topic, reasoning_effort as "low" | "medium" | "high");
+        // Create progress callback to send heartbeat events
+        const onProgress = (message: string, elapsed?: number) => {
+          sendEvent({ type: "tool_progress", toolId, message, elapsed });
+        };
+
+        const result = await performDeepResearch(
+          topic,
+          reasoning_effort as "low" | "medium" | "high",
+          onProgress
+        );
         return {
           success: true,
           topic,
@@ -468,11 +478,19 @@ async function performWebSearch(query: string): Promise<Array<{ title: string; u
  */
 async function performDeepResearch(
   topic: string,
-  reasoningEffort: ReasoningEffort
+  reasoningEffort: ReasoningEffort,
+  onProgress?: (message: string, elapsed?: number) => void
 ): Promise<{ content: string; citations: string[] }> {
   console.log(`[WebsiteGen] Starting deep research: "${topic}" with effort: ${reasoningEffort}`);
 
-  const response = await callHyprLabDeepResearch(topic, reasoningEffort);
+  // Create progress callback for HyprLab
+  const hyprLabProgress = onProgress
+    ? async (event: { type: string; elapsedSeconds: number; message: string }) => {
+        onProgress(event.message, event.elapsedSeconds);
+      }
+    : undefined;
+
+  const response = await callHyprLabDeepResearch(topic, reasoningEffort, hyprLabProgress);
   const parsed = parseHyprLabResponse(response);
 
   console.log(`[WebsiteGen] Deep research completed, citations: ${parsed.citations.length}`);
