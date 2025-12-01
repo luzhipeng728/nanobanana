@@ -332,13 +332,18 @@ export const WEBSITE_GEN_SYSTEM_PROMPT = `你是一个专业的网站生成器 A
 <img src="{{placeholder:hero-bg}}" alt="Hero背景" className="w-full h-64 object-cover" />
 \`\`\`
 
-## 工作流程
+## 工作流程（必须严格遵循）
 1. 理解用户需求
 2. 如需搜索参考信息，使用 web_search 工具
 3. 设计网站结构和组件
 4. 使用 write_file 创建组件文件
 5. 需要图片时使用 generate_image 工具
-6. 完成后调用 preview_ready 通知系统
+6. **【重要】完成所有文件创建后，必须调用 preview_ready 工具！** 这一步不能省略，否则用户看不到预览。
+
+## 关键提醒
+- 每次生成网站后，**必须调用 preview_ready 工具**
+- preview_ready 是最后一步，用于通知系统显示预览
+- 不调用 preview_ready = 用户无法看到预览结果
 
 ## 设计建议
 - 使用 Tailwind 的渐变、阴影、圆角等美化界面

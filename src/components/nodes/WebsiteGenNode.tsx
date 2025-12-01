@@ -133,6 +133,9 @@ const WebsiteGenNode = ({
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamingContentRef = useRef<string>("");
   const currentToolCallsRef = useRef<Map<string, ToolCall>>(new Map());
+  const previewCreatedRef = useRef<boolean>(false);
+  const hasWriteFileRef = useRef<boolean>(false);
+  const projectIdRef = useRef<string>(projectId);
 
   // Auto scroll
   useEffect(() => {
@@ -145,6 +148,11 @@ const WebsiteGenNode = ({
       const newProjectId = `website-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       setProjectId(newProjectId);
     }
+  }, [projectId]);
+
+  // Keep projectIdRef in sync
+  useEffect(() => {
+    projectIdRef.current = projectId;
   }, [projectId]);
 
   // Handle SSE events
@@ -165,6 +173,10 @@ const WebsiteGenNode = ({
         });
         currentToolCallsRef.current = newMap;
         setCurrentToolCalls(newMap);
+        // 跟踪是否有 write_file 调用
+        if (event.name === "write_file") {
+          hasWriteFileRef.current = true;
+        }
         break;
       }
 
@@ -200,6 +212,7 @@ const WebsiteGenNode = ({
 
       case "preview_ready":
         // 创建预览节点
+        previewCreatedRef.current = true;
         createPreviewNode(event.projectId);
         break;
 
@@ -309,6 +322,9 @@ const WebsiteGenNode = ({
     setError(null);
     streamingContentRef.current = "";
     currentToolCallsRef.current = new Map();
+    // 重置预览跟踪状态
+    previewCreatedRef.current = false;
+    hasWriteFileRef.current = false;
 
     abortControllerRef.current = new AbortController();
 
@@ -378,6 +394,12 @@ const WebsiteGenNode = ({
       setCurrentToolCalls(new Map());
       streamingContentRef.current = "";
       currentToolCallsRef.current = new Map();
+
+      // 如果有文件写入但没有收到 preview_ready 事件，自动创建预览节点
+      if (hasWriteFileRef.current && !previewCreatedRef.current) {
+        console.log("[WebsiteGen] Auto-creating preview node (AI did not call preview_ready)");
+        createPreviewNode(projectIdRef.current);
+      }
     } catch (error: unknown) {
       if (error instanceof Error && error.name !== "AbortError") {
         console.error("Chat error:", error);
