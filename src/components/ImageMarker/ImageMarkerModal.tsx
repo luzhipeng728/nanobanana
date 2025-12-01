@@ -9,7 +9,6 @@ import {
   MarkerStyle,
   DEFAULT_MARKER_STYLE,
 } from "./types";
-import { generateMarkedImageDataUrl } from "./useImageMarker";
 
 /**
  * 图片标记弹窗组件
@@ -103,20 +102,35 @@ export function ImageMarkerModal({
 
     setIsGenerating(true);
     try {
-      // 生成带标记的图片（通过代理或服务端处理）
-      const markedImageDataUrl = await generateMarkedImageDataUrl(
-        imageUrl,
-        marks,
-        mergedStyle,
-        1200,
-        1200
-      );
-      onSave(marks, markedImageDataUrl);
-      onClose();
+      // 调用服务端 API 生成带标记的图片并上传到 R2
+      const response = await fetch('/api/image-marker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl,
+          marks,
+          style: mergedStyle,
+          maxWidth: 1200,
+          maxHeight: 1200,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.url) {
+        console.log(`[ImageMarkerModal] Marked image uploaded: ${result.url}`);
+        onSave(marks, result.url);
+        onClose();
+      } else {
+        throw new Error(result.error || 'Failed to generate marked image');
+      }
     } catch (error) {
       console.error("Failed to generate marked image:", error);
-      // 即使生成失败，也保存标记数据（可以在发送时重新生成）
-      // 创建一个简单的占位图
+      // 如果失败，仍然保存标记数据，使用原图
       onSave(marks, imageUrl);
       onClose();
     } finally {
