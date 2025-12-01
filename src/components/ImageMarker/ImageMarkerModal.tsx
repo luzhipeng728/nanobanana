@@ -38,135 +38,81 @@ export function ImageMarkerModal({
   const imageRef = useRef<HTMLImageElement>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // 箭头拖拽状态
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-  const [dragEnd, setDragEnd] = useState<{ x: number; y: number } | null>(null);
+  // 箭头点击状态（点击两次画箭头：第一次=起点，第二次=终点）
+  const [arrowStart, setArrowStart] = useState<{ x: number; y: number } | null>(null);
 
   const mergedStyle: MarkerStyle = { ...DEFAULT_MARKER_STYLE, ...style };
   const mergedArrowStyle: ArrowStyle = { ...DEFAULT_ARROW_STYLE, ...arrowStyle };
 
-  // 重置标记
+  // 重置标记 - 只在弹窗打开时重置
+  const prevIsOpen = useRef(isOpen);
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpen.current) {
+      // 只在从关闭变为打开时重置
       setMarks(initialMarks);
       setArrows(initialArrows);
       setImageError(false);
       setImageLoaded(false);
       setMode("point");
-      setIsDragging(false);
-      setDragStart(null);
-      setDragEnd(null);
+      setArrowStart(null);
     }
+    prevIsOpen.current = isOpen;
   }, [isOpen, initialMarks, initialArrows]);
 
-  // 获取相对坐标
-  const getRelativeCoords = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageRef.current) return null;
-    const rect = imageRef.current.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left) / rect.width,
-      y: (e.clientY - rect.top) / rect.height,
-    };
-  }, []);
-
-  // 处理鼠标按下
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const coords = getRelativeCoords(e);
-      if (!coords) return;
-
-      if (mode === "arrow") {
-        setIsDragging(true);
-        setDragStart(coords);
-        setDragEnd(coords);
-      }
-    },
-    [mode, getRelativeCoords]
-  );
-
-  // 处理鼠标移动
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isDragging || mode !== "arrow") return;
-      const coords = getRelativeCoords(e);
-      if (coords) {
-        setDragEnd(coords);
-      }
-    },
-    [isDragging, mode, getRelativeCoords]
-  );
-
-  // 处理鼠标释放
-  const handleMouseUp = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isDragging || mode !== "arrow" || !dragStart) {
-        setIsDragging(false);
-        return;
-      }
-
-      const coords = getRelativeCoords(e);
-      if (coords) {
-        // 计算箭头长度，太短的不添加
-        const dx = coords.x - dragStart.x;
-        const dy = coords.y - dragStart.y;
-        const length = Math.sqrt(dx * dx + dy * dy);
-
-        if (length > 0.03) { // 至少 3% 的图片尺寸
-          const newArrow: ArrowMark = {
-            id: `arrow-${Date.now()}-${arrows.length + 1}`,
-            number: arrows.length + 1,
-            startX: dragStart.x,
-            startY: dragStart.y,
-            endX: coords.x,
-            endY: coords.y,
-          };
-          setArrows([...arrows, newArrow]);
-        }
-      }
-
-      setIsDragging(false);
-      setDragStart(null);
-      setDragEnd(null);
-    },
-    [isDragging, mode, dragStart, arrows, getRelativeCoords]
-  );
-
-  // 处理图片点击 - 添加定位点标记
+  // 处理图片点击
   const handleImageClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (mode !== "point") return;
       if (!imageRef.current) return;
 
       const rect = imageRef.current.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = (e.clientY - rect.top) / rect.height;
 
-      // 检查是否点击了已有标记区域
-      const clickedMark = marks.find((mark) => {
-        const distanceX = Math.abs(x - mark.x) * rect.width;
-        const distanceY = Math.abs(y - mark.y) * rect.height;
-        return distanceX < mergedStyle.size / 2 + 5 && distanceY < mergedStyle.size / 2 + 5;
-      });
+      if (mode === "point") {
+        // 定位点模式：点击添加/删除标记
+        const clickedMark = marks.find((mark) => {
+          const distanceX = Math.abs(x - mark.x) * rect.width;
+          const distanceY = Math.abs(y - mark.y) * rect.height;
+          return distanceX < mergedStyle.size / 2 + 5 && distanceY < mergedStyle.size / 2 + 5;
+        });
 
-      if (clickedMark) {
-        // 点击已有标记，删除它
-        const newMarks = marks
-          .filter((m) => m.id !== clickedMark.id)
-          .map((m, index) => ({ ...m, number: index + 1 }));
-        setMarks(newMarks);
+        if (clickedMark) {
+          // 点击已有标记，删除它
+          const newMarks = marks
+            .filter((m) => m.id !== clickedMark.id)
+            .map((m, index) => ({ ...m, number: index + 1 }));
+          setMarks(newMarks);
+        } else {
+          // 添加新标记
+          const newMark: ImageMark = {
+            id: `mark-${Date.now()}-${marks.length + 1}`,
+            number: marks.length + 1,
+            x,
+            y,
+          };
+          setMarks([...marks, newMark]);
+        }
       } else {
-        // 添加新标记
-        const newMark: ImageMark = {
-          id: `mark-${Date.now()}-${marks.length + 1}`,
-          number: marks.length + 1,
-          x,
-          y,
-        };
-        setMarks([...marks, newMark]);
+        // 箭头模式：第一次点击=起点，第二次点击=终点
+        if (!arrowStart) {
+          // 设置起点
+          setArrowStart({ x, y });
+        } else {
+          // 设置终点，创建箭头
+          const newArrow: ArrowMark = {
+            id: `arrow-${Date.now()}-${arrows.length + 1}`,
+            number: arrows.length + 1,
+            startX: arrowStart.x,
+            startY: arrowStart.y,
+            endX: x,
+            endY: y,
+          };
+          setArrows([...arrows, newArrow]);
+          setArrowStart(null); // 重置起点
+        }
       }
     },
-    [marks, mergedStyle.size, mode]
+    [mode, marks, arrows, arrowStart, mergedStyle.size]
   );
 
   // 删除定位点标记
@@ -325,7 +271,10 @@ export function ImageMarkerModal({
               ) : (
                 <>
                   <p className="font-medium">方向箭头模式：</p>
-                  <p>按住鼠标拖拽绘制方向箭头，表示视角或移动方向</p>
+                  <p>点击两次绘制箭头：第一次点击 = 起点，第二次点击 = 终点</p>
+                  {arrowStart && (
+                    <p className="mt-1 text-green-600 dark:text-green-400 font-medium">✓ 已选择起点，请点击终点位置</p>
+                  )}
                   <p className="mt-1 text-blue-600 dark:text-blue-400">例如：「按 ➀ 方向移动镜头」「让人物朝 ➁ 方向看」</p>
                 </>
               )}
@@ -338,20 +287,9 @@ export function ImageMarkerModal({
           <div className="flex justify-center">
             <div
               className={cn(
-                "relative rounded-xl shadow-lg inline-block select-none",
-                mode === "point" ? "cursor-crosshair" : "cursor-cell"
+                "relative rounded-xl shadow-lg inline-block select-none cursor-crosshair"
               )}
               onClick={handleImageClick}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={() => {
-                if (isDragging) {
-                  setIsDragging(false);
-                  setDragStart(null);
-                  setDragEnd(null);
-                }
-              }}
             >
               {/* 原图 */}
               <img
@@ -407,15 +345,20 @@ export function ImageMarkerModal({
                 />
               ))}
 
-              {/* 正在绘制的箭头预览 */}
-              {isDragging && dragStart && dragEnd && (
-                <ArrowPreview
-                  startX={dragStart.x}
-                  startY={dragStart.y}
-                  endX={dragEnd.x}
-                  endY={dragEnd.y}
-                  style={mergedArrowStyle}
-                />
+              {/* 箭头起点预览（等待点击终点） */}
+              {arrowStart && (
+                <div
+                  className="absolute z-20 pointer-events-none"
+                  style={{
+                    left: `${arrowStart.x * 100}%`,
+                    top: `${arrowStart.y * 100}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                >
+                  <div className="w-6 h-6 rounded-full bg-green-500 border-2 border-white shadow-lg flex items-center justify-center animate-pulse">
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  </div>
+                </div>
               )}
 
               {/* 图片加载失败提示 */}
@@ -613,58 +556,6 @@ function ArrowOverlay({
         </div>
       </div>
     </>
-  );
-}
-
-/**
- * 箭头预览组件（拖拽时显示）
- */
-function ArrowPreview({
-  startX,
-  startY,
-  endX,
-  endY,
-  style,
-}: {
-  startX: number;
-  startY: number;
-  endX: number;
-  endY: number;
-  style: ArrowStyle;
-}) {
-  return (
-    <svg
-      className="absolute inset-0 w-full h-full pointer-events-none z-30"
-      style={{ overflow: 'visible' }}
-    >
-      <defs>
-        <marker
-          id="arrowhead-preview"
-          markerWidth="10"
-          markerHeight="7"
-          refX="9"
-          refY="3.5"
-          orient="auto"
-        >
-          <polygon
-            points="0 0, 10 3.5, 0 7"
-            fill={style.strokeColor}
-            opacity={0.7}
-          />
-        </marker>
-      </defs>
-      <line
-        x1={`${startX * 100}%`}
-        y1={`${startY * 100}%`}
-        x2={`${endX * 100}%`}
-        y2={`${endY * 100}%`}
-        stroke={style.strokeColor}
-        strokeWidth={style.strokeWidth}
-        strokeDasharray="8,4"
-        opacity={0.7}
-        markerEnd="url(#arrowhead-preview)"
-      />
-    </svg>
   );
 }
 
