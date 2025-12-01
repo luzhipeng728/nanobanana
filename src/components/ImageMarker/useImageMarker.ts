@@ -134,6 +134,32 @@ export function drawMarksOnCanvas(
 }
 
 /**
+ * 通过服务端代理获取图片（绕过 CORS）
+ */
+async function fetchImageAsBase64(imageUrl: string): Promise<string> {
+  // 先尝试通过 API 代理获取图片
+  try {
+    const response = await fetch('/api/image-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: imageUrl }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.base64) {
+        return data.base64;
+      }
+    }
+  } catch (e) {
+    console.log('[ImageMarker] Proxy fetch failed, trying direct fetch');
+  }
+
+  // 如果代理失败，返回原 URL（让 Canvas 尝试直接加载）
+  return imageUrl;
+}
+
+/**
  * 加载图片到 Canvas
  */
 export function loadImageToCanvas(
@@ -143,7 +169,10 @@ export function loadImageToCanvas(
 ): Promise<{ canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // 如果是 base64，不需要设置 crossOrigin
+    if (!imageUrl.startsWith('data:')) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => {
       let width = img.naturalWidth;
       let height = img.naturalHeight;
@@ -176,6 +205,7 @@ export function loadImageToCanvas(
 
 /**
  * 生成带标记的图片 DataURL
+ * 优先使用服务端代理绕过 CORS
  */
 export async function generateMarkedImageDataUrl(
   imageUrl: string,
@@ -184,7 +214,16 @@ export async function generateMarkedImageDataUrl(
   maxWidth?: number,
   maxHeight?: number
 ): Promise<string> {
-  const { canvas, ctx, width, height } = await loadImageToCanvas(imageUrl, maxWidth, maxHeight);
-  drawMarksOnCanvas(ctx, marks, width, height, style);
-  return canvas.toDataURL('image/png');
+  // 尝试通过代理获取图片的 base64
+  const imageSource = await fetchImageAsBase64(imageUrl);
+
+  try {
+    const { canvas, ctx, width, height } = await loadImageToCanvas(imageSource, maxWidth, maxHeight);
+    drawMarksOnCanvas(ctx, marks, width, height, style);
+    return canvas.toDataURL('image/png');
+  } catch (error) {
+    console.error('[ImageMarker] Failed to generate marked image:', error);
+    // 如果 Canvas 方式失败，返回原图 URL
+    throw error;
+  }
 }
