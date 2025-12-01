@@ -9,6 +9,7 @@ interface ReferenceImages {
   urls: string[];
   useForClaude: boolean;
   useForImageGen: boolean;
+  hasMarkers?: boolean;  // 是否包含标记图（前端使用，API 不处理）
 }
 
 // 使用 Claude 分析图片（流式版本）
