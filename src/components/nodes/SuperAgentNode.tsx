@@ -79,8 +79,13 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
-  // Reference images
+  // Reference images with marker data
   const [connectedImages, setConnectedImages] = useState<string[]>([]);
+  const [connectedImagesWithMarkers, setConnectedImagesWithMarkers] = useState<{
+    imageUrl: string;
+    markedImageUrl?: string;
+    marksCount: number;
+  }[]>([]);
   const [useForAnalysis, setUseForAnalysis] = useState(true);
   const [useForImageGen, setUseForImageGen] = useState(true);
 
@@ -117,13 +122,31 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     state.edges.filter((e) => e.target === id).length
   );
 
-  // Get connected images
+  // Get connected images with marker data
   useEffect(() => {
     const connectedNodes = getConnectedImageNodes(id);
+
+    // Extract image URLs for display
     const imageUrls = connectedNodes
       .map(node => node.data.imageUrl)
       .filter((url): url is string => typeof url === 'string' && url.length > 0);
     setConnectedImages(imageUrls);
+
+    // Extract images with marker data for generation
+    const imagesWithMarkers = connectedNodes
+      .filter(node => {
+        const nodeData = node.data as { imageUrl?: string };
+        return typeof nodeData.imageUrl === 'string' && nodeData.imageUrl.length > 0;
+      })
+      .map(node => {
+        const nodeData = node.data as { imageUrl: string; markerData?: { markedImageUrl?: string; marks?: unknown[] } };
+        return {
+          imageUrl: nodeData.imageUrl,
+          markedImageUrl: nodeData.markerData?.markedImageUrl,
+          marksCount: nodeData.markerData?.marks?.length || 0,
+        };
+      });
+    setConnectedImagesWithMarkers(imagesWithMarkers);
   }, [id, getConnectedImageNodes, connectedEdgeCount]);
 
   // Auto-scroll to latest step
@@ -190,7 +213,18 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
             prev.map((p) => (p.id === prompt.id ? { ...p, status: "generating" as const } : p))
           );
 
-          const referenceImagesForGen = useForImageGen ? connectedImages : [];
+          // Build reference images array (include marked images if available)
+          const referenceImagesForGen: string[] = [];
+          if (useForImageGen) {
+            connectedImagesWithMarkers.forEach(img => {
+              referenceImagesForGen.push(img.imageUrl);
+              // Include marked image if it has markers
+              if (img.markedImageUrl && img.marksCount > 0) {
+                referenceImagesForGen.push(img.markedImageUrl);
+                console.log(`[SuperAgentNode] Including marked image with ${img.marksCount} markers`);
+              }
+            });
+          }
           const config: any = {};
           if (referenceImagesForGen.length === 0) {
             config.aspectRatio = aspectRatio;
@@ -264,7 +298,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
 
     await Promise.allSettled(promises);
     setProgress(100);
-  }, [id, getReactFlowNode, getReactFlowNodes, addImageNode, connectedImages, useForImageGen, selectedModel, aspectRatio, imageSize]);
+  }, [id, getReactFlowNode, getReactFlowNodes, addImageNode, connectedImagesWithMarkers, useForImageGen, selectedModel, aspectRatio, imageSize]);
 
   // Handle stream event
   const handleStreamEvent = useCallback((event: SuperAgentStreamEvent) => {
@@ -518,9 +552,18 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     abortControllerRef.current = new AbortController();
 
     try {
-      const referenceImages = useForAnalysis && connectedImages.length > 0
-        ? connectedImages
-        : [];
+      // Build reference images for analysis (include marked images if available)
+      const referenceImages: string[] = [];
+      if (useForAnalysis && connectedImagesWithMarkers.length > 0) {
+        connectedImagesWithMarkers.forEach(img => {
+          referenceImages.push(img.imageUrl);
+          // Include marked image if it has markers
+          if (img.markedImageUrl && img.marksCount > 0) {
+            referenceImages.push(img.markedImageUrl);
+            console.log(`[SuperAgentNode] Including marked image for analysis with ${img.marksCount} markers`);
+          }
+        });
+      }
 
       const response = await fetch("/api/super-agent", {
         method: "POST",
@@ -606,7 +649,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     } finally {
       setIsProcessing(false);
     }
-  }, [userRequest, connectedImages, useForAnalysis, isProcessing, handleStreamEvent, autoGenerate, generateImagesInBatches, enableDeepResearch, reasoningEffort, conversationId]);
+  }, [userRequest, connectedImagesWithMarkers, useForAnalysis, isProcessing, handleStreamEvent, autoGenerate, generateImagesInBatches, enableDeepResearch, reasoningEffort, conversationId]);
 
   // Stop generation
   const handleStop = useCallback(() => {

@@ -1,11 +1,12 @@
 "use client";
 
 import { memo, useState, useRef, useEffect } from "react";
-import { Handle, Position, NodeProps, NodeResizer } from "@xyflow/react";
-import { MessageSquare, Send, Loader2, StopCircle } from "lucide-react";
+import { Handle, Position, NodeProps, NodeResizer, useStore } from "@xyflow/react";
+import { MessageSquare, Send, Loader2, StopCircle, Link2, Image as ImageIcon } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { NodeTextarea, NodeInput, NodeScrollArea } from "@/components/ui/NodeUI";
 import { cn } from "@/lib/utils";
+import { useCanvas } from "@/contexts/CanvasContext";
 
 // Helper function to replace unsupported language tags
 const normalizeMarkdown = (content: string) => {
@@ -25,6 +26,7 @@ type ChatNodeData = {
 };
 
 const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
+  const { getConnectedImageNodes } = useCanvas();
   const [messages, setMessages] = useState<Message[]>(data.messages || []);
   const [input, setInput] = useState("");
   const [systemPrompt, setSystemPrompt] = useState(data.systemPrompt || "You are a helpful AI assistant that generates image prompts. When user asks for images, wrap your prompt suggestions in ```text\n[prompt text]\n``` blocks.");
@@ -33,6 +35,46 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const [showSystemPrompt, setShowSystemPrompt] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Reference images with marker data
+  const [connectedImages, setConnectedImages] = useState<string[]>([]);
+  const [connectedImagesWithMarkers, setConnectedImagesWithMarkers] = useState<{
+    imageUrl: string;
+    markedImageUrl?: string;
+    marksCount: number;
+  }[]>([]);
+
+  // Monitor edge changes
+  const connectedEdgeCount = useStore((state) =>
+    state.edges.filter((e) => e.target === id).length
+  );
+
+  // Get connected images with marker data
+  useEffect(() => {
+    const connectedNodes = getConnectedImageNodes(id);
+
+    // Extract image URLs for display
+    const imageUrls = connectedNodes
+      .map(node => node.data.imageUrl)
+      .filter((url): url is string => typeof url === 'string' && url.length > 0);
+    setConnectedImages(imageUrls);
+
+    // Extract images with marker data for API
+    const imagesWithMarkers = connectedNodes
+      .filter(node => {
+        const nodeData = node.data as { imageUrl?: string };
+        return typeof nodeData.imageUrl === 'string' && nodeData.imageUrl.length > 0;
+      })
+      .map(node => {
+        const nodeData = node.data as { imageUrl: string; markerData?: { markedImageUrl?: string; marks?: unknown[] } };
+        return {
+          imageUrl: nodeData.imageUrl,
+          markedImageUrl: nodeData.markerData?.markedImageUrl,
+          marksCount: nodeData.markerData?.marks?.length || 0,
+        };
+      });
+    setConnectedImagesWithMarkers(imagesWithMarkers);
+  }, [id, getConnectedImageNodes, connectedEdgeCount]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,12 +96,24 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     abortControllerRef.current = new AbortController();
 
     try {
+      // Build reference images array (include marked images if available)
+      const referenceImages: string[] = [];
+      connectedImagesWithMarkers.forEach(img => {
+        referenceImages.push(img.imageUrl);
+        // Include marked image if it has markers
+        if (img.markedImageUrl && img.marksCount > 0) {
+          referenceImages.push(img.markedImageUrl);
+          console.log(`[ChatNode] Including marked image with ${img.marksCount} markers`);
+        }
+      });
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [...messages, userMessage],
           systemPrompt,
+          referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -158,7 +212,15 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           </div>
           <div>
             <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-100 tracking-tight">AI Assistant</h3>
-            <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium">Always online</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium">Always online</p>
+              {connectedImages.length > 0 && (
+                <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">
+                  <Link2 className="w-3 h-3" />
+                  {connectedImages.length} 张参考图
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -189,6 +251,31 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
             onChange={(e) => setSystemPrompt(e.target.value)}
             placeholder="Enter system prompt..."
           />
+        </div>
+      )}
+
+      {/* Reference images preview */}
+      {connectedImages.length > 0 && (
+        <div className="px-4 py-2 border-b border-purple-100 dark:border-purple-900/20 bg-purple-50/30 dark:bg-purple-900/10 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-3.5 h-3.5 text-purple-500" />
+            <span className="text-[10px] font-medium text-purple-700 dark:text-purple-300">参考图片</span>
+          </div>
+          <div className="flex gap-1 mt-1.5 overflow-x-auto pb-1">
+            {connectedImages.slice(0, 4).map((url, idx) => (
+              <img
+                key={idx}
+                src={url}
+                alt={`参考图 ${idx + 1}`}
+                className="w-10 h-10 rounded-lg object-cover border border-purple-200 dark:border-purple-700 flex-shrink-0"
+              />
+            ))}
+            {connectedImages.length > 4 && (
+              <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-800 flex items-center justify-center text-[10px] font-bold text-purple-600 dark:text-purple-300 flex-shrink-0">
+                +{connectedImages.length - 4}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

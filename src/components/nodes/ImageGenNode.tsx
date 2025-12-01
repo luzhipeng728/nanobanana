@@ -144,10 +144,28 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     setIsGenerating(true);
     try {
       // Get reference images from connected nodes
+      // If a node has SoM markers, include both original and marked images
       const connectedNodes = getConnectedImageNodes(id);
-      const referenceImages = connectedNodes.map(node => node.data.imageUrl).filter((url): url is string => typeof url === 'string' && url.length > 0);
+      const referenceImages: string[] = [];
 
-      console.log(`Using ${referenceImages.length} reference images from connected nodes`);
+      connectedNodes.forEach(node => {
+        const nodeData = node.data as { imageUrl?: string; markerData?: { markedImageUrl?: string; marks?: unknown[] } };
+        const imageUrl = nodeData.imageUrl;
+        const markerData = nodeData.markerData;
+
+        if (typeof imageUrl === 'string' && imageUrl.length > 0) {
+          // Always include the original image
+          referenceImages.push(imageUrl);
+
+          // If there are SoM markers, also include the marked image
+          if (markerData?.markedImageUrl && markerData.marks?.length) {
+            referenceImages.push(markerData.markedImageUrl);
+            console.log(`[ImageGenNode] Including marked image with ${markerData.marks.length} markers`);
+          }
+        }
+      });
+
+      console.log(`Using ${referenceImages.length} reference images from connected nodes (including marked images)`);
 
       const config: ImageGenerationConfig = {};
 

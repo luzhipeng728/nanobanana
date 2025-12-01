@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useState, useRef, useCallback } from "react";
 import { Handle, Position, NodeProps, NodeResizer, useReactFlow, addEdge } from "@xyflow/react";
-import { Image as ImageIcon, ExternalLink, Loader2, RefreshCw, Check } from "lucide-react";
+import { Image as ImageIcon, ExternalLink, Loader2, RefreshCw, Check, MapPin } from "lucide-react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { BaseNode } from "./BaseNode";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ import { createImageTask } from "@/app/actions/image-task";
 import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { useTouchContextMenu, createNodeMenuOptions } from "@/components/TouchContextMenu";
+import { ImageMarkerModal, ImageMark, ImageMarkerData } from "@/components/ImageMarker";
 
 // Define the data structure for the image node
 type ImageNodeData = {
@@ -27,6 +28,8 @@ type ImageNodeData = {
     config: ImageGenerationConfig;
     referenceImages?: string[];
   };
+  // SoM 标记数据
+  markerData?: ImageMarkerData;
 };
 
 // 基础宽度和尺寸限制
@@ -77,6 +80,9 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   // 渐进式图片加载状态
   const [imageLoaded, setImageLoaded] = useState(false); // 完整图片是否加载完成
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false); // 缩略图是否加载完成
+
+  // SoM 标记弹窗状态
+  const [isMarkerModalOpen, setIsMarkerModalOpen] = useState(false);
 
   // 触摸设备长按菜单支持
   const isTouchDevice = useIsTouchDevice();
@@ -271,6 +277,21 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       setIsRegenerating(false);
     }
   }, [data.prompt, data.generationConfig, id, getNode, addImageNode]);
+
+  // 保存 SoM 标记数据
+  const handleSaveMarkers = useCallback((marks: ImageMark[], markedImageDataUrl: string) => {
+    if (!data.imageUrl) return;
+
+    const markerData: ImageMarkerData = {
+      marks,
+      markedImageUrl: markedImageDataUrl,
+      originalImageUrl: data.imageUrl,
+      updatedAt: Date.now(),
+    };
+
+    updateNodeData(id, { markerData });
+    console.log(`[ImageNode ${id}] Saved ${marks.length} markers`);
+  }, [id, data.imageUrl, updateNodeData]);
 
   // 轮询任务状态
   useEffect(() => {
@@ -508,24 +529,50 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   </button>
                 </div>
 
-                {/* 重新生成按钮 - 右上角 */}
-                {data.generationConfig && !slideshowMode && (
-                  <button
-                    onClick={handleRegenerate}
-                    disabled={isRegenerating}
-                    className={cn(
-                      "absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 z-10",
-                      "bg-white/90 hover:bg-white shadow-lg",
-                      "opacity-0 group-hover:opacity-100",
-                      isRegenerating && "cursor-not-allowed"
+                {/* 右上角按钮组 */}
+                {!slideshowMode && (
+                  <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* 添加标记按钮 */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMarkerModalOpen(true);
+                      }}
+                      className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
+                        "bg-white/90 hover:bg-white shadow-lg",
+                        data.markerData?.marks?.length ? "ring-2 ring-red-500" : ""
+                      )}
+                      title={data.markerData?.marks?.length ? `已有 ${data.markerData.marks.length} 个标记` : "添加标记"}
+                    >
+                      <MapPin className="w-4 h-4 text-red-500" />
+                      {/* 标记数量角标 */}
+                      {data.markerData?.marks?.length ? (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {data.markerData.marks.length}
+                        </span>
+                      ) : null}
+                    </button>
+
+                    {/* 重新生成按钮 */}
+                    {data.generationConfig && (
+                      <button
+                        onClick={handleRegenerate}
+                        disabled={isRegenerating}
+                        className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
+                          "bg-white/90 hover:bg-white shadow-lg",
+                          isRegenerating && "cursor-not-allowed"
+                        )}
+                        title="重新生成"
+                      >
+                        <RefreshCw className={cn(
+                          "w-4 h-4 text-blue-600",
+                          isRegenerating && "animate-spin"
+                        )} />
+                      </button>
                     )}
-                    title="重新生成"
-                  >
-                    <RefreshCw className={cn(
-                      "w-4 h-4 text-blue-600",
-                      isRegenerating && "animate-spin"
-                    )} />
-                  </button>
+                  </div>
                 )}
 
                 {/* 幻灯片选择按钮 - 左上角 */}
@@ -585,6 +632,17 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           title="拖拽连接到生成器作为参考图"
         />
         </BaseNode>
+
+        {/* SoM 标记弹窗 */}
+        {data.imageUrl && (
+          <ImageMarkerModal
+            isOpen={isMarkerModalOpen}
+            onClose={() => setIsMarkerModalOpen(false)}
+            imageUrl={data.imageUrl}
+            initialMarks={data.markerData?.marks || []}
+            onSave={handleSaveMarkers}
+          />
+        )}
       </div>
   );
 };
