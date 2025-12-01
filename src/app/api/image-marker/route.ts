@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCanvas, loadImage, CanvasRenderingContext2D } from "canvas";
+import sharp from "sharp";
 import { uploadBufferToR2 } from "@/lib/r2";
 
 interface ImageMark {
@@ -30,53 +30,52 @@ const DEFAULT_STYLE: MarkerStyle = {
 };
 
 /**
- * 在 Canvas 上绘制标记
+ * 生成单个标记的 SVG
  */
-function drawMarks(
-  ctx: CanvasRenderingContext2D,
+function generateMarkerSvg(
+  mark: ImageMark,
+  width: number,
+  height: number,
+  style: MarkerStyle
+): string {
+  const x = Math.round(mark.x * width);
+  const y = Math.round(mark.y * height);
+  const r = style.size / 2;
+
+  // 阴影滤镜
+  const shadowFilter = style.shadow
+    ? `<filter id="shadow-${mark.id}" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.4)"/>
+       </filter>`
+    : "";
+
+  const filterAttr = style.shadow ? `filter="url(#shadow-${mark.id})"` : "";
+
+  return `
+    ${shadowFilter}
+    <circle cx="${x}" cy="${y}" r="${r}" fill="${style.bgColor}" stroke="${style.borderColor}" stroke-width="${style.borderWidth}" ${filterAttr}/>
+    <text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" fill="${style.textColor}" font-size="${style.fontSize}" font-weight="bold" font-family="Arial, sans-serif">${mark.number}</text>
+  `;
+}
+
+/**
+ * 生成包含所有标记的 SVG overlay
+ */
+function generateMarkersSvg(
   marks: ImageMark[],
   width: number,
   height: number,
   style: MarkerStyle
-) {
-  marks.forEach((mark) => {
-    const x = mark.x * width;
-    const y = mark.y * height;
+): Buffer {
+  const markersContent = marks
+    .map((mark) => generateMarkerSvg(mark, width, height, style))
+    .join("\n");
 
-    // 绘制阴影
-    if (style.shadow) {
-      ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
-    }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+    ${markersContent}
+  </svg>`;
 
-    // 绘制圆形背景
-    ctx.beginPath();
-    ctx.arc(x, y, style.size / 2, 0, Math.PI * 2);
-    ctx.fillStyle = style.bgColor;
-    ctx.fill();
-
-    // 绘制边框
-    if (style.borderWidth > 0) {
-      ctx.strokeStyle = style.borderColor;
-      ctx.lineWidth = style.borderWidth;
-      ctx.stroke();
-    }
-
-    // 重置阴影
-    ctx.shadowColor = "transparent";
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-
-    // 绘制数字
-    ctx.fillStyle = style.textColor;
-    ctx.font = `bold ${style.fontSize}px Arial, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(String(mark.number), x, y);
-  });
+  return Buffer.from(svg);
 }
 
 /**
@@ -84,8 +83,6 @@ function drawMarks(
  */
 function getOriginalImageUrl(url: string): string {
   // 如果是 Cloudflare CDN 转换过的 URL，提取原始路径
-  // 例如: https://doubao.luzhipeng.com/cdn-cgi/image/format=auto,width=1200/uploads/xxx.png
-  // 转换为: https://doubao.luzhipeng.com/uploads/xxx.png
   const cdnPattern = /\/cdn-cgi\/image\/[^/]+(\/.+)$/;
   const match = url.match(cdnPattern);
   if (match) {
@@ -118,11 +115,11 @@ export async function POST(request: NextRequest) {
 
     const mergedStyle = { ...DEFAULT_STYLE, ...style };
 
-    // 获取原始图片 URL（避免 Cloudflare 返回 WebP 格式）
+    // 获取原始图片 URL
     const originalUrl = getOriginalImageUrl(imageUrl);
     console.log(`[image-marker] Processing image: ${originalUrl} with ${marks.length} marks`);
 
-    // 先下载图片为 Buffer，再加载（避免 URL 直接加载的兼容性问题）
+    // 下载图片
     const response = await fetch(originalUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch image: ${response.status}`);
@@ -130,37 +127,41 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await response.arrayBuffer();
     const imageBuffer = Buffer.from(arrayBuffer);
 
-    // 从 Buffer 加载图片
-    const image = await loadImage(imageBuffer);
+    // 使用 sharp 获取图片信息
+    const metadata = await sharp(imageBuffer).metadata();
+    let width = metadata.width || 800;
+    let height = metadata.height || 600;
 
-    // 计算尺寸（保持比例）
-    let width = image.width;
-    let height = image.height;
+    console.log(`[image-marker] Original size: ${width}x${height}`);
 
+    // 计算缩放后的尺寸
     if (width > maxWidth) {
-      height = (height * maxWidth) / width;
+      height = Math.round((height * maxWidth) / width);
       width = maxWidth;
     }
     if (height > maxHeight) {
-      width = (width * maxHeight) / height;
+      width = Math.round((width * maxHeight) / height);
       height = maxHeight;
     }
 
-    // 创建 Canvas
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext("2d");
+    // 生成标记 SVG overlay
+    const markersSvg = generateMarkersSvg(marks, width, height, mergedStyle);
 
-    // 绘制原图
-    ctx.drawImage(image, 0, 0, width, height);
-
-    // 绘制标记
-    drawMarks(ctx, marks, width, height, mergedStyle);
-
-    // 导出为 PNG Buffer
-    const buffer = canvas.toBuffer("image/png");
+    // 使用 sharp 合成图片：调整尺寸 + 叠加 SVG 标记
+    const resultBuffer = await sharp(imageBuffer)
+      .resize(width, height, { fit: "inside" })
+      .composite([
+        {
+          input: markersSvg,
+          top: 0,
+          left: 0,
+        },
+      ])
+      .png()
+      .toBuffer();
 
     // 上传到 R2
-    const url = await uploadBufferToR2(buffer, "image/png", "markers");
+    const url = await uploadBufferToR2(resultBuffer, "image/png", "markers");
 
     console.log(`[image-marker] Uploaded marked image: ${url}`);
 
