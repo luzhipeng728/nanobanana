@@ -239,13 +239,35 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
             throw new Error(`场景 "${prompt.scene}" 的提示词为空`);
           }
 
-          console.log(`[SuperAgentNode] Generating image ${index + 1}: scene="${prompt.scene}", prompt="${prompt.prompt.substring(0, 80)}..."`);
+          // 检查是否有带标记的图片
+          const hasMarkers = connectedImagesWithMarkers.some(img => img.marksCount > 0);
+
+          // 如果有标记，在 prompt 前面添加标记排除指令
+          let finalPrompt = prompt.prompt;
+          if (hasMarkers && useForImageGen) {
+            const markerExclusionInstruction = `[CRITICAL INSTRUCTION - MUST FOLLOW]
+The reference image contains RED CIRCLES with WHITE NUMBERS (①②③...) as position markers for reference only.
+These markers are NOT part of the actual image content.
+YOU MUST NOT include any of the following in the generated image:
+- Red circles or dots
+- Numbers or digits (1, 2, 3, ①, ②, ③, etc.)
+- Any circular markers or annotations
+- Any text overlays or labels
+Generate a CLEAN image as if the markers do not exist.
+[END OF CRITICAL INSTRUCTION]
+
+`;
+            finalPrompt = markerExclusionInstruction + prompt.prompt;
+            console.log(`[SuperAgentNode] Added marker exclusion instruction to prompt`);
+          }
+
+          console.log(`[SuperAgentNode] Generating image ${index + 1}: scene="${prompt.scene}", prompt="${finalPrompt.substring(0, 80)}..."`);
 
           const response = await fetch("/api/generate-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              prompt: prompt.prompt,
+              prompt: finalPrompt,
               model: selectedModel,
               config,
               referenceImages: referenceImagesForGen,

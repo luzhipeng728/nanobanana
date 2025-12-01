@@ -49,6 +49,8 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
   // 参考图相关状态
   const [connectedImages, setConnectedImages] = useState<string[]>([]);
+  const [connectedMarkedImages, setConnectedMarkedImages] = useState<string[]>([]); // 带标记的图片
+  const [hasMarkers, setHasMarkers] = useState(false); // 是否有标记
   const [useForClaude, setUseForClaude] = useState(true); // 给 Claude 理解图片
   const [useForImageGen, setUseForImageGen] = useState(true); // 给生图模型作为参考
 
@@ -300,13 +302,38 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     state.edges.filter((e) => e.target === id).length
   );
 
-  // 监听连接的图片节点
+  // 监听连接的图片节点 - 同时获取原图和标记图
   useEffect(() => {
     const connectedNodes = getConnectedImageNodes(id);
-    const imageUrls = connectedNodes
-      .map(node => node.data.imageUrl)
-      .filter((url): url is string => typeof url === 'string' && url.length > 0);
+    const imageUrls: string[] = [];
+    const markedUrls: string[] = [];
+    let foundMarkers = false;
+
+    connectedNodes.forEach(node => {
+      const nodeData = node.data as {
+        imageUrl?: string;
+        markerData?: { markedImageUrl?: string; marks?: unknown[]; arrows?: unknown[] }
+      };
+      const imageUrl = nodeData.imageUrl;
+      const markerData = nodeData.markerData;
+
+      if (typeof imageUrl === 'string' && imageUrl.length > 0) {
+        imageUrls.push(imageUrl);
+
+        // 如果有 SoM 标记，获取标记图
+        const marksCount = markerData?.marks?.length || 0;
+        const arrowsCount = markerData?.arrows?.length || 0;
+        if (markerData?.markedImageUrl && (marksCount > 0 || arrowsCount > 0)) {
+          markedUrls.push(markerData.markedImageUrl);
+          foundMarkers = true;
+          console.log(`[AgentNode] Found marked image with ${marksCount} marks, ${arrowsCount} arrows`);
+        }
+      }
+    });
+
     setConnectedImages(imageUrls);
+    setConnectedMarkedImages(markedUrls);
+    setHasMarkers(foundMarkers);
   }, [id, getConnectedImageNodes, connectedEdgeCount]); // 添加 connectedEdgeCount 作为触发器
 
   const statusIcons = {
@@ -415,8 +442,35 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
           const startTimeStr = new Date().toLocaleTimeString() + '.' + Date.now() % 1000;
           console.log(`🚀 [START ${startTimeStr}] Task ${index + 1}/${totalCount}: ${prompt.scene}`);
 
-          // 如果启用了"给生图模型"，添加参考图
-          const referenceImagesForGen = useForImageGen ? connectedImages : [];
+          // 如果启用了"给生图模型"，添加参考图（原图 + 标记图）
+          let referenceImagesForGen: string[] = [];
+          if (useForImageGen) {
+            referenceImagesForGen = [...connectedImages];
+            // 如果有标记图，也添加进去
+            if (hasMarkers && connectedMarkedImages.length > 0) {
+              referenceImagesForGen = [...referenceImagesForGen, ...connectedMarkedImages];
+              console.log(`[AgentNode] Including ${connectedMarkedImages.length} marked images as reference`);
+            }
+          }
+
+          // 如果有标记，在 prompt 前面添加标记排除指令
+          let finalPrompt = prompt.prompt;
+          if (hasMarkers && useForImageGen) {
+            const markerExclusionInstruction = `[CRITICAL INSTRUCTION - MUST FOLLOW]
+The reference image contains RED CIRCLES with WHITE NUMBERS (①②③...) as position markers for reference only.
+These markers are NOT part of the actual image content.
+YOU MUST NOT include any of the following in the generated image:
+- Red circles or dots
+- Numbers or digits (1, 2, 3, ①, ②, ③, etc.)
+- Any circular markers or annotations
+- Any text overlays or labels
+Generate a CLEAN image as if the markers do not exist.
+[END OF CRITICAL INSTRUCTION]
+
+`;
+            finalPrompt = markerExclusionInstruction + prompt.prompt;
+            console.log(`[AgentNode] Added marker exclusion instruction to prompt`);
+          }
 
           // 构建配置
           const config: any = {};
@@ -431,7 +485,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              prompt: prompt.prompt,
+              prompt: finalPrompt,
               model: selectedModel,
               config,
               referenceImages: referenceImagesForGen,
@@ -523,11 +577,19 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     abortControllerRef.current = new AbortController();
 
     try {
-      // 准备参考图数据
+      // 准备参考图数据 - 如果有标记图，同时传原图和标记图给 Claude 分析
+      let imageUrlsForClaude = connectedImages;
+      if (hasMarkers && connectedMarkedImages.length > 0) {
+        // 原图 + 标记图一起传给 Claude
+        imageUrlsForClaude = [...connectedImages, ...connectedMarkedImages];
+        console.log(`[AgentNode] Sending ${connectedImages.length} original + ${connectedMarkedImages.length} marked images to Claude`);
+      }
+
       const referenceImages = connectedImages.length > 0 ? {
-        urls: connectedImages,
+        urls: imageUrlsForClaude,
         useForClaude,    // 给 Claude 理解
         useForImageGen,  // 给生图模型
+        hasMarkers,      // 是否有标记
       } : undefined;
 
       const response = await fetch("/api/agent/generate-prompts", {
@@ -720,7 +782,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     } finally {
       setIsRunning(false);
     }
-  }, [userRequest, selectedModel, imageSize, aspectRatio, isRunning, id, getReactFlowNode, addImageNode, updateImageNode, connectedImages, useForClaude, useForImageGen]);
+  }, [userRequest, selectedModel, imageSize, aspectRatio, isRunning, id, getReactFlowNode, addImageNode, updateImageNode, connectedImages, connectedMarkedImages, hasMarkers, useForClaude, useForImageGen]);
 
   const onStop = () => {
     if (abortControllerRef.current) {

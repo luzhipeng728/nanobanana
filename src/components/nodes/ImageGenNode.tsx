@@ -171,11 +171,24 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
 
       console.log(`Using ${referenceImages.length} reference images from connected nodes (including marked images)`);
 
-      // 如果有带标记的图片，在 prompt 后面加上提示，让模型不要在生成的图片中出现标记
+      // 如果有带标记的图片，在 prompt 前面加上提示，让模型不要在生成的图片中出现标记
+      // 放在前面是因为有些模型对开头的指令更敏感
       let finalPrompt = prompt;
       if (hasMarkers) {
-        finalPrompt = `${prompt}\n\n[Important: The reference image contains numbered markers (circles with numbers) and/or directional arrows for reference only. Do NOT include any markers, numbers, circles, or arrows in the generated image. Generate a clean image without any annotations.]`;
-        console.log(`[ImageGenNode] Added marker exclusion instruction to prompt`);
+        const markerExclusionInstruction = `[CRITICAL INSTRUCTION - MUST FOLLOW]
+The reference image contains RED CIRCLES with WHITE NUMBERS (①②③...) as position markers for reference only.
+These markers are NOT part of the actual image content.
+YOU MUST NOT include any of the following in the generated image:
+- Red circles or dots
+- Numbers or digits (1, 2, 3, ①, ②, ③, etc.)
+- Any circular markers or annotations
+- Any text overlays or labels
+Generate a CLEAN image as if the markers do not exist.
+[END OF CRITICAL INSTRUCTION]
+
+`;
+        finalPrompt = markerExclusionInstruction + prompt;
+        console.log(`[ImageGenNode] Added marker exclusion instruction to prompt (at beginning)`);
       }
 
       const config: ImageGenerationConfig = {};

@@ -59,6 +59,43 @@ export function ImageMarkerModal({
     prevIsOpen.current = isOpen;
   }, [isOpen, initialMarks, initialArrows]);
 
+  // 获取下一个编号（marks 和 arrows 共用一套编号）
+  const getNextNumber = useCallback(() => {
+    const markNumbers = marks.map(m => m.number);
+    const arrowNumbers = arrows.map(a => a.number);
+    const allNumbers = [...markNumbers, ...arrowNumbers];
+    return allNumbers.length > 0 ? Math.max(...allNumbers) + 1 : 1;
+  }, [marks, arrows]);
+
+  // 重新编号所有标记（删除后调用）
+  const renumberAll = useCallback((newMarks: ImageMark[], newArrows: ArrowMark[]) => {
+    // 按添加顺序（id中的时间戳）排序所有标记
+    const allItems = [
+      ...newMarks.map(m => ({ type: 'mark' as const, id: m.id, item: m })),
+      ...newArrows.map(a => ({ type: 'arrow' as const, id: a.id, item: a })),
+    ].sort((a, b) => {
+      // 从 id 中提取时间戳进行排序
+      const timeA = parseInt(a.id.split('-')[1] || '0');
+      const timeB = parseInt(b.id.split('-')[1] || '0');
+      return timeA - timeB;
+    });
+
+    // 重新编号
+    let number = 1;
+    const renumberedMarks: ImageMark[] = [];
+    const renumberedArrows: ArrowMark[] = [];
+
+    allItems.forEach(item => {
+      if (item.type === 'mark') {
+        renumberedMarks.push({ ...(item.item as ImageMark), number: number++ });
+      } else {
+        renumberedArrows.push({ ...(item.item as ArrowMark), number: number++ });
+      }
+    });
+
+    return { renumberedMarks, renumberedArrows };
+  }, []);
+
   // 处理图片点击
   const handleImageClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -77,16 +114,16 @@ export function ImageMarkerModal({
         });
 
         if (clickedMark) {
-          // 点击已有标记，删除它
-          const newMarks = marks
-            .filter((m) => m.id !== clickedMark.id)
-            .map((m, index) => ({ ...m, number: index + 1 }));
-          setMarks(newMarks);
+          // 点击已有标记，删除它并重新编号
+          const newMarks = marks.filter((m) => m.id !== clickedMark.id);
+          const { renumberedMarks, renumberedArrows } = renumberAll(newMarks, arrows);
+          setMarks(renumberedMarks);
+          setArrows(renumberedArrows);
         } else {
           // 添加新标记
           const newMark: ImageMark = {
             id: `mark-${Date.now()}-${marks.length + 1}`,
-            number: marks.length + 1,
+            number: getNextNumber(),
             x,
             y,
           };
@@ -101,7 +138,7 @@ export function ImageMarkerModal({
           // 设置终点，创建箭头
           const newArrow: ArrowMark = {
             id: `arrow-${Date.now()}-${arrows.length + 1}`,
-            number: arrows.length + 1,
+            number: getNextNumber(),
             startX: arrowStart.x,
             startY: arrowStart.y,
             endX: x,
@@ -112,7 +149,7 @@ export function ImageMarkerModal({
         }
       }
     },
-    [mode, marks, arrows, arrowStart, mergedStyle.size]
+    [mode, marks, arrows, arrowStart, mergedStyle.size, getNextNumber, renumberAll]
   );
 
   // 删除定位点标记
@@ -226,58 +263,14 @@ export function ImageMarkerModal({
           </button>
         </div>
 
-        {/* 模式切换 */}
-        <div className="px-6 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mr-2">标记模式：</span>
-            <button
-              onClick={() => setMode("point")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                mode === "point"
-                  ? "bg-red-500 text-white shadow-md"
-                  : "bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-              )}
-            >
-              <MapPin className="w-3.5 h-3.5" />
-              定位点
-            </button>
-            <button
-              onClick={() => setMode("arrow")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                mode === "arrow"
-                  ? "bg-blue-500 text-white shadow-md"
-                  : "bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-              )}
-            >
-              <MoveRight className="w-3.5 h-3.5" />
-              方向箭头
-            </button>
-          </div>
-        </div>
-
         {/* 提示信息 */}
         <div className="px-6 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-900/30">
           <div className="flex items-start gap-2 text-xs text-blue-700 dark:text-blue-300">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <div>
-              {mode === "point" ? (
-                <>
-                  <p className="font-medium">定位点模式：</p>
-                  <p>点击图片添加数字标记（①②③...），点击已有标记可删除</p>
-                  <p className="mt-1 text-blue-600 dark:text-blue-400">例如：「把 ① 换成猫」「移除 ② 和 ③」</p>
-                </>
-              ) : (
-                <>
-                  <p className="font-medium">方向箭头模式：</p>
-                  <p>点击两次绘制箭头：第一次点击 = 起点，第二次点击 = 终点</p>
-                  {arrowStart && (
-                    <p className="mt-1 text-green-600 dark:text-green-400 font-medium">✓ 已选择起点，请点击终点位置</p>
-                  )}
-                  <p className="mt-1 text-blue-600 dark:text-blue-400">例如：「按 ➀ 方向移动镜头」「让人物朝 ➁ 方向看」</p>
-                </>
-              )}
+              <p className="font-medium">使用方法：</p>
+              <p>在图片上点击添加数字标记（①②③...），然后在提示词中引用这些标记来描述需要修改的区域。</p>
+              <p className="mt-1 text-blue-600 dark:text-blue-400">例如：「把 ① 换成猫」「移除 ② 和 ③」</p>
             </div>
           </div>
         </div>
@@ -335,32 +328,6 @@ export function ImageMarkerModal({
                 </div>
               ))}
 
-              {/* 箭头标记层 */}
-              {arrows.map((arrow) => (
-                <ArrowOverlay
-                  key={arrow.id}
-                  arrow={arrow}
-                  style={mergedArrowStyle}
-                  onRemove={() => handleRemoveArrow(arrow.id)}
-                />
-              ))}
-
-              {/* 箭头起点预览（等待点击终点） */}
-              {arrowStart && (
-                <div
-                  className="absolute z-20 pointer-events-none"
-                  style={{
-                    left: `${arrowStart.x * 100}%`,
-                    top: `${arrowStart.y * 100}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                >
-                  <div className="w-6 h-6 rounded-full bg-green-500 border-2 border-white shadow-lg flex items-center justify-center animate-pulse">
-                    <div className="w-2 h-2 rounded-full bg-white" />
-                  </div>
-                </div>
-              )}
-
               {/* 图片加载失败提示 */}
               {imageError && (
                 <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 z-20">
@@ -375,52 +342,25 @@ export function ImageMarkerModal({
         </div>
 
         {/* 标记列表 */}
-        {(marks.length > 0 || arrows.length > 0) && (
+        {marks.length > 0 && (
           <div className="px-6 py-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
             <div className="flex items-center gap-2 flex-wrap">
-              {/* 定位点 */}
-              {marks.length > 0 && (
-                <>
-                  <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                    定位点 ({marks.length})：
+              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                已添加 {marks.length} 个标记：
+              </span>
+              {marks.map((mark) => (
+                <span
+                  key={mark.id}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium cursor-pointer hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                  onClick={() => handleRemoveMark(mark.id)}
+                  title="点击删除"
+                >
+                  <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
+                    {mark.number}
                   </span>
-                  {marks.map((mark) => (
-                    <span
-                      key={mark.id}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-medium cursor-pointer hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                      onClick={() => handleRemoveMark(mark.id)}
-                      title="点击删除"
-                    >
-                      <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
-                        {mark.number}
-                      </span>
-                      <X className="w-3 h-3 text-red-400 hover:text-red-600" />
-                    </span>
-                  ))}
-                </>
-              )}
-              {/* 箭头 */}
-              {arrows.length > 0 && (
-                <>
-                  <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 ml-2">
-                    箭头 ({arrows.length})：
-                  </span>
-                  {arrows.map((arrow) => (
-                    <span
-                      key={arrow.id}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                      onClick={() => handleRemoveArrow(arrow.id)}
-                      title="点击删除"
-                    >
-                      <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center font-bold">
-                        {arrow.number}
-                      </span>
-                      <MoveRight className="w-3 h-3" />
-                      <X className="w-3 h-3 text-blue-400 hover:text-blue-600" />
-                    </span>
-                  ))}
-                </>
-              )}
+                  <X className="w-3 h-3 text-red-400 hover:text-red-600" />
+                </span>
+              ))}
             </div>
           </div>
         )}
@@ -429,7 +369,7 @@ export function ImageMarkerModal({
         <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
           <button
             onClick={handleClear}
-            disabled={totalCount === 0}
+            disabled={marks.length === 0}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Trash2 className="w-4 h-4" />
@@ -448,8 +388,8 @@ export function ImageMarkerModal({
               disabled={isGenerating}
               className={cn(
                 "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all",
-                totalCount > 0
-                  ? "bg-gradient-to-r from-red-500 to-blue-500 hover:from-red-600 hover:to-blue-600 shadow-lg"
+                marks.length > 0
+                  ? "bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/25"
                   : "bg-neutral-400 hover:bg-neutral-500",
                 isGenerating && "opacity-70 cursor-wait"
               )}
