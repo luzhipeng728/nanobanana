@@ -116,8 +116,9 @@ export async function POST(request: NextRequest) {
             continueLoop = false;
 
             const apiKey = getNextApiKey();
-            // 使用最新 Gemini 3 Pro Preview 模型 + 流式 API
+            // 使用 Gemini 3 Pro Preview 模型 + 流式 API
             const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:streamGenerateContent?alt=sse";
+            console.log(`[WebsiteGen] Calling Gemini API: ${apiUrl}`);
 
             const requestBody = {
               contents: messages,
@@ -140,9 +141,11 @@ export async function POST(request: NextRequest) {
             if (!response.ok) {
               const errorText = await response.text();
               console.error(`[WebsiteGen] Gemini API error: ${response.status}`, errorText);
-              sendEvent({ type: "error", message: `API error: ${response.status}` });
+              sendEvent({ type: "error", message: `API error: ${response.status} - ${errorText.substring(0, 200)}` });
               break;
             }
+
+            console.log(`[WebsiteGen] Got response, starting to read stream...`);
 
             // 处理流式响应
             const reader = response.body?.getReader();
@@ -155,12 +158,24 @@ export async function POST(request: NextRequest) {
             let buffer = "";
             let accumulatedText = "";
             let functionCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+            let chunkCount = 0;
 
             while (true) {
               const { done, value } = await reader.read();
-              if (done) break;
+              if (done) {
+                console.log(`[WebsiteGen] Stream finished, total chunks: ${chunkCount}`);
+                break;
+              }
 
-              buffer += decoder.decode(value, { stream: true });
+              const chunk = decoder.decode(value, { stream: true });
+              buffer += chunk;
+              chunkCount++;
+
+              // 每 10 个 chunk 打印一次进度
+              if (chunkCount % 10 === 1) {
+                console.log(`[WebsiteGen] Received chunk #${chunkCount}, buffer size: ${buffer.length}`);
+              }
+
               const lines = buffer.split("\n");
               buffer = lines.pop() || "";
 
@@ -182,6 +197,7 @@ export async function POST(request: NextRequest) {
                         }
                         // 函数调用（通常在流结束时）
                         if (part.functionCall) {
+                          console.log(`[WebsiteGen] Got function call: ${part.functionCall.name}`);
                           functionCalls.push({
                             name: part.functionCall.name,
                             args: part.functionCall.args || {},
@@ -189,8 +205,8 @@ export async function POST(request: NextRequest) {
                         }
                       }
                     }
-                  } catch {
-                    // 忽略解析错误
+                  } catch (e) {
+                    console.error(`[WebsiteGen] Parse error:`, e, jsonStr.substring(0, 100));
                   }
                 }
               }
