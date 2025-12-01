@@ -178,27 +178,35 @@ export function ImageMarkerModal({
         <div className="flex-1 p-6 overflow-auto bg-neutral-50 dark:bg-neutral-950">
           <div className="flex justify-center">
             <div
-              className="relative cursor-crosshair rounded-xl shadow-lg overflow-hidden"
+              className="relative cursor-crosshair rounded-xl shadow-lg inline-block"
               onClick={handleImageClick}
+              style={{ position: 'relative' }}
             >
               {/* 原图 */}
               <img
                 ref={imageRef}
                 src={imageUrl}
                 alt="待标记图片"
-                className="max-w-full max-h-[60vh] object-contain"
-                onLoad={() => setImageLoaded(true)}
-                onError={() => setImageError(true)}
+                className="max-w-full max-h-[60vh] object-contain block"
+                onLoad={() => {
+                  console.log('[ImageMarkerModal] Image loaded');
+                  setImageLoaded(true);
+                }}
+                onError={() => {
+                  console.log('[ImageMarkerModal] Image load error');
+                  setImageError(true);
+                }}
               />
 
-              {/* 标记层 */}
-              {imageLoaded && marks.map((mark) => (
+              {/* 标记层 - 始终渲染，不依赖 imageLoaded */}
+              {marks.map((mark) => (
                 <div
                   key={mark.id}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-110 transition-transform"
+                  className="absolute cursor-pointer hover:scale-110 transition-transform z-10"
                   style={{
                     left: `${mark.x * 100}%`,
                     top: `${mark.y * 100}%`,
+                    transform: 'translate(-50%, -50%)',
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -207,7 +215,7 @@ export function ImageMarkerModal({
                   title="点击删除此标记"
                 >
                   <div
-                    className="flex items-center justify-center rounded-full font-bold shadow-lg"
+                    className="flex items-center justify-center rounded-full font-bold"
                     style={{
                       width: mergedStyle.size,
                       height: mergedStyle.size,
@@ -215,7 +223,7 @@ export function ImageMarkerModal({
                       color: mergedStyle.textColor,
                       fontSize: mergedStyle.fontSize,
                       border: `${mergedStyle.borderWidth}px solid ${mergedStyle.borderColor}`,
-                      boxShadow: mergedStyle.shadow ? '0 4px 12px rgba(0,0,0,0.3)' : 'none',
+                      boxShadow: mergedStyle.shadow ? '0 4px 12px rgba(0,0,0,0.4)' : 'none',
                     }}
                   >
                     {mark.number}
@@ -225,7 +233,7 @@ export function ImageMarkerModal({
 
               {/* 图片加载失败提示 */}
               {imageError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
+                <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 z-20">
                   <div className="text-center text-neutral-500">
                     <p className="text-sm">图片加载失败</p>
                     <p className="text-xs mt-1">请检查图片链接</p>
