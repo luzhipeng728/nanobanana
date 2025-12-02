@@ -43,7 +43,7 @@ import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, GalleryVerticalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles, Share2, Loader2, Video, Mic2, Check, Film, Download, Play } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, GalleryVerticalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles, Share2, Loader2, Video, Mic2, Check, Film, Download, Play, Import } from "lucide-react";
 import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
 import ModelCapabilityTip from "./ModelCapabilityTip";
@@ -157,6 +157,11 @@ export default function InfiniteCanvas() {
   const isTouchDevice = useIsTouchDevice();
   const [pendingNodeType, setPendingNodeType] = useState<string | null>(null);
 
+  // 导入幻灯片素材
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importInput, setImportInput] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+
   // Drag and drop handlers for adding nodes
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
@@ -234,6 +239,91 @@ export default function InfiniteCanvas() {
       }
     }, 100);
   }, [setNodes, nodes.length, reactFlowInstance]);
+
+  // 导入幻灯片素材
+  const importSlideshow = useCallback(async () => {
+    if (!importInput.trim()) return;
+
+    // 从输入中提取 ID（支持完整 URL 或纯 ID）
+    let slideshowId = importInput.trim();
+    // 匹配 /slides/xxx 或 slides/xxx 格式
+    const urlMatch = slideshowId.match(/\/slides\/([a-zA-Z0-9-]+)/);
+    if (urlMatch) {
+      slideshowId = urlMatch[1];
+    }
+
+    setIsImporting(true);
+    try {
+      const res = await fetch(`/api/slideshow?id=${slideshowId}`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "获取幻灯片失败");
+      }
+
+      const data = await res.json();
+      const images: string[] = data.images || [];
+
+      if (images.length === 0) {
+        throw new Error("幻灯片没有图片");
+      }
+
+      // 计算布局位置
+      const COLS = Math.min(images.length, 5); // 最多5列
+      const NODE_WIDTH = 400;
+      const NODE_HEIGHT = 300;
+      const GAP_X = 40;
+      const GAP_Y = 60;
+      // 在现有节点右侧添加，或者从左上角开始
+      const existingMaxX = nodes.length > 0
+        ? Math.max(...nodes.map(n => (n.position?.x || 0) + 500))
+        : 50;
+      const START_X = existingMaxX + 100;
+      const START_Y = 80;
+
+      const newNodes: Node[] = images.map((url, index) => {
+        const col = index % COLS;
+        const row = Math.floor(index / COLS);
+
+        return {
+          id: `import-${Date.now()}-${index}`,
+          type: "image",
+          position: {
+            x: START_X + col * (NODE_WIDTH + GAP_X),
+            y: START_Y + row * (NODE_HEIGHT + GAP_Y),
+          },
+          style: {
+            width: NODE_WIDTH,
+            height: NODE_HEIGHT,
+          },
+          data: {
+            imageUrl: url,
+            prompt: "",
+            timestamp: new Date().toLocaleString(),
+            isLoading: false,
+            label: `${data.title} #${index + 1}`,
+          },
+        };
+      });
+
+      setNodes((nds) => [...nds, ...newNodes]);
+      console.log(`✅ Imported ${newNodes.length} images from slideshow: ${data.title}`);
+
+      // 关闭弹窗并清空输入
+      setIsImportModalOpen(false);
+      setImportInput("");
+
+      // 延迟执行 fitView
+      setTimeout(() => {
+        if (reactFlowInstance) {
+          reactFlowInstance.fitView({ padding: 0.1 });
+        }
+      }, 100);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "导入失败");
+    } finally {
+      setIsImporting(false);
+    }
+  }, [importInput, nodes, setNodes, reactFlowInstance]);
 
   // Auto-save canvas to localStorage with debounce to prevent lag during dragging
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1238,6 +1328,13 @@ export default function InfiniteCanvas() {
           <LayoutGrid className="w-5 h-5" />
         </button>
         <button
+          onClick={() => setIsImportModalOpen(true)}
+          className="p-2 rounded-full hover:bg-orange-500/20 transition-colors text-orange-600 dark:text-orange-400"
+          title="导入幻灯片素材"
+        >
+          <Import className="w-5 h-5" />
+        </button>
+        <button
           onClick={enterSlideshowMode}
           className="p-2 rounded-full hover:bg-green-500/20 transition-colors text-green-600 dark:text-green-400"
           title="发布幻灯片"
@@ -1777,6 +1874,64 @@ export default function InfiniteCanvas() {
         onClose={() => setIsGalleryOpen(false)}
         onImageClick={handleGalleryImageClick}
       />
+
+      {/* 导入幻灯片弹窗 */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 w-[400px] shadow-2xl border border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100">
+                导入幻灯片素材
+              </h3>
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-neutral-500" />
+              </button>
+            </div>
+
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+              粘贴幻灯片链接或 ID，快速导入所有图片到画布
+            </p>
+
+            <input
+              type="text"
+              value={importInput}
+              onChange={(e) => setImportInput(e.target.value)}
+              placeholder="https://canvas.luzhipeng.com/slides/xxx 或直接输入 ID"
+              className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50 mb-4"
+              onKeyDown={(e) => e.key === "Enter" && importSlideshow()}
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={importSlideshow}
+                disabled={isImporting || !importInput.trim()}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    导入中...
+                  </>
+                ) : (
+                  <>
+                    <Import className="w-4 h-4" />
+                    导入
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 右下角访问计数 */}
       <div className="fixed bottom-4 right-4 bg-white/80 dark:bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-neutral-200/50 dark:border-white/10 z-50">
