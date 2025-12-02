@@ -95,8 +95,9 @@ export async function GET(request: NextRequest) {
     const images: string[] = JSON.parse(slideshow.images);
     let prompts: string[] = slideshow.prompts ? JSON.parse(slideshow.prompts) : [];
 
-    // 如果没有存储 prompts，通过 imageUrl 去 ImageTask 表匹配
-    if (prompts.length === 0 && images.length > 0) {
+    // 如果 prompts 为空或全是空字符串，通过 imageUrl 去 ImageTask 表匹配
+    const hasValidPrompts = prompts.some(p => p && p.trim().length > 0);
+    if (!hasValidPrompts && images.length > 0) {
       const imageTasks = await prisma.imageTask.findMany({
         where: {
           imageUrl: { in: images },
