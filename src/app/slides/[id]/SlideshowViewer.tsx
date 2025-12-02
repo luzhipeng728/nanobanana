@@ -88,6 +88,7 @@ export default function SlideshowViewer({
   const [speaker, setSpeaker] = useState("zh_female_vivi");
   const [speed, setSpeed] = useState(1.0);
   const [transition, setTransition] = useState("fade");
+  const [style, setStyle] = useState("");
 
   // 缩放和平移状态
   const [scale, setScale] = useState(1);
@@ -334,6 +335,7 @@ export default function SlideshowViewer({
           speaker,
           transition,
           speed,
+          style: style || undefined,
         }),
       });
 
@@ -691,6 +693,20 @@ export default function SlideshowViewer({
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* 讲解风格 */}
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">
+                      讲解风格 <span className="text-neutral-500">(可选)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={style}
+                      onChange={(e) => setStyle(e.target.value)}
+                      placeholder="如：轻松活泼 / 专业解说 / 故事感..."
+                      className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    />
                   </div>
 
                   {/* 语速 */}
