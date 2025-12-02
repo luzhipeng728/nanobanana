@@ -40,55 +40,67 @@ export interface NarrationResult {
 }
 
 // 讲解文案生成系统提示词
-const NARRATION_SYSTEM_PROMPT = `你是一位专业的讲解员和配音文案撰写专家。你的任务是为一组图片生成讲解旁白文案，并为每段配置合适的 TTS 语音参数。
+const NARRATION_SYSTEM_PROMPT = `你是一位专业的讲解员和配音文案撰写专家。你的任务是为一组图片生成讲解旁白文案。
+
+## ⚠️ 最重要的规则：严格对应！
+
+**每一段讲解必须严格对应其编号的图片内容！**
+
+- 第 1 段讲解 → 必须描述「图片 1」的内容
+- 第 2 段讲解 → 必须描述「图片 2」的内容
+- 第 N 段讲解 → 必须描述「图片 N」的内容
+
+**绝对不允许出现错位！** 如果图片 1 是「春天的樱花」，第 1 段讲解就必须讲樱花，不能讲其他图片的内容。
 
 ## 核心原则
 
-1. **沉浸式讲解**：直接描述内容和场景，不要使用"这张图"、"画面中"等元描述词汇
-2. **自然流畅**：像在给观众讲故事一样自然流畅
-3. **适合朗读**：文案需要适合 TTS 语音合成，避免过长的句子
-4. **情感丰富**：根据图片内容调整语气和情感，并设置相应的 TTS 参数
+1. **严格对应**：每段讲解必须准确描述对应编号图片的内容，不能错位
+2. **沉浸式讲解**：直接描述内容和场景，不要使用"这张图"、"画面中"等元描述词汇
+3. **自然流畅**：像在给观众讲故事一样自然流畅
+4. **适合朗读**：文案需要适合 TTS 语音合成，避免过长的句子
 
 ## 输出格式
 
-你必须返回一个 JSON 对象，包含 items 数组，每个元素包含讲解文案和 TTS 参数。
+返回 JSON 对象，items 数组中每个元素的顺序必须与图片顺序完全一致：
 
-### TTS 参数说明
-- **emotion**: 情感风格，可选值：neutral（中性）、happy（愉快）、sad（忧伤）、excited（兴奋）、calm（平静）、serious（严肃）、tender（温柔）、storytelling（叙事）
-- **pitch**: 音调，范围 0.8-1.2，默认 1.0（低沉用 0.9，清亮用 1.1）
-- **volume**: 音量，范围 0.8-1.2，默认 1.0（轻声用 0.9，强调用 1.1）
-
-示例输出：
 \`\`\`json
 {
   "items": [
     {
-      "text": "阳光穿过稀疏的云层，洒落在宁静的湖面上。远处的山峦层叠，如同一幅水墨画卷...",
-      "ttsParams": {
-        "emotion": "calm",
-        "pitch": 1.0,
-        "volume": 1.0
-      }
+      "imageIndex": 1,
+      "imageDescription": "简述图片1的内容",
+      "text": "针对图片1的讲解文案...",
+      "ttsParams": { "emotion": "calm", "pitch": 1.0, "volume": 1.0 }
     },
     {
-      "text": "走进这座古老的城堡，每一块石砖都诉说着历史的故事...",
-      "ttsParams": {
-        "emotion": "storytelling",
-        "pitch": 0.95,
-        "volume": 1.0
-      }
+      "imageIndex": 2,
+      "imageDescription": "简述图片2的内容",
+      "text": "针对图片2的讲解文案...",
+      "ttsParams": { "emotion": "calm", "pitch": 1.0, "volume": 1.0 }
     }
   ]
 }
 \`\`\`
 
+### TTS 参数说明
+- **emotion**: neutral/happy/sad/excited/calm/serious/tender/storytelling
+- **pitch**: 0.8-1.2，默认 1.0
+- **volume**: 0.8-1.2，默认 1.0
+
 ## 讲解要求
 
-1. 每段讲解控制在 50-150 字之间（适合 10-30 秒语音）
+1. 每段讲解 50-150 字（适合 10-30 秒语音）
 2. 使用中文撰写
 3. 语言优美、有画面感
-4. 前后内容要有连贯性，像在讲述一个完整的故事
-5. **重要**：整个系列的 TTS 参数要保持相对一致，避免每段风格差异过大
+4. 前后内容要有连贯性
+5. TTS 参数保持相对一致
+
+## 自检清单（生成后请检查）
+
+✅ 第 1 段是否讲的是图片 1 的内容？
+✅ 第 2 段是否讲的是图片 2 的内容？
+✅ 每段的 imageDescription 是否与对应图片描述匹配？
+✅ 没有任何错位或混淆？
 
 直接输出 JSON，不要有任何额外说明。`;
 
@@ -106,22 +118,38 @@ export async function generateNarrations(request: NarrationRequest): Promise<Nar
     baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
   });
 
-  // 构建用户消息
-  let userMessage = `请为以下幻灯片图片生成讲解旁白文案。
+  // 构建用户消息 - 强调每张图片的内容和顺序
+  const imageList = request.prompts.map((prompt, i) => {
+    const desc = prompt || '(无描述)';
+    return `【图片 ${i + 1}】${desc}`;
+  }).join('\n\n');
 
-幻灯片标题：${request.title}
+  let userMessage = `请为以下 ${request.prompts.length} 张幻灯片图片生成讲解旁白文案。
 
-图片列表（共 ${request.prompts.length} 张）：
-${request.prompts.map((prompt, i) => `${i + 1}. ${prompt || '(无描述)'}`).join('\n')}
+## 幻灯片标题
+${request.title}
+
+## 图片内容详情（请仔细阅读每张图片的描述）
+
+${imageList}
+
+---
+
+## ⚠️ 重要提醒
+
+1. **你必须按顺序生成 ${request.prompts.length} 段讲解**
+2. **第 1 段讲解必须对应【图片 1】的内容：${request.prompts[0] || '(无描述)'}**
+${request.prompts.length > 1 ? `3. **第 2 段讲解必须对应【图片 2】的内容：${request.prompts[1] || '(无描述)'}**` : ''}
+${request.prompts.length > 2 ? `4. **以此类推，每段必须严格对应其编号图片**` : ''}
+
+请确保每段讲解的内容与对应图片描述完全匹配，不要错位！
 `;
 
   if (request.style) {
     userMessage += `\n讲解风格要求：${request.style}`;
-  } else {
-    userMessage += `\n请根据图片内容自动判断最合适的讲解风格。`;
   }
 
-  userMessage += `\n\n请直接输出 JSON 格式的讲解文案，每张图片一段。`;
+  userMessage += `\n\n现在请输出 JSON，确保 items 数组有 ${request.prompts.length} 个元素，顺序与图片一一对应。`;
 
   console.log(`[Narration] Generating narrations for ${request.prompts.length} images...`);
 
@@ -159,10 +187,21 @@ ${request.prompts.map((prompt, i) => `${i + 1}. ${prompt || '(无描述)'}`).joi
 
       // 新格式：items 数组
       if (parsed.items && Array.isArray(parsed.items)) {
-        items = parsed.items.map((item: { text?: string; ttsParams?: NarrationTTSParams } | string) => {
+        items = parsed.items.map((item: { text?: string; imageIndex?: number; imageDescription?: string; ttsParams?: NarrationTTSParams } | string, index: number) => {
           if (typeof item === 'string') {
             return { text: item };
           }
+
+          // 验证 imageIndex 是否正确（如果提供了）
+          if (item.imageIndex !== undefined && item.imageIndex !== index + 1) {
+            console.warn(`[Narration] Warning: Item ${index + 1} has imageIndex ${item.imageIndex}, may be misaligned!`);
+          }
+
+          // 记录每段对应的图片描述，便于调试
+          if (item.imageDescription && item.text) {
+            console.log(`[Narration] Item ${index + 1}: "${item.imageDescription.slice(0, 30)}..." -> "${item.text.slice(0, 30)}..."`);
+          }
+
           return {
             text: item.text || '',
             ttsParams: item.ttsParams,
@@ -176,6 +215,11 @@ ${request.prompts.map((prompt, i) => `${i + 1}. ${prompt || '(无描述)'}`).joi
     } catch (e) {
       console.error("[Narration] JSON parse error:", e);
     }
+  }
+
+  // 验证数量是否匹配
+  if (items.length > 0 && items.length !== request.prompts.length) {
+    console.warn(`[Narration] Warning: Generated ${items.length} items but expected ${request.prompts.length}!`);
   }
 
   // 如果解析失败，尝试按段落分割
