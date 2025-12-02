@@ -116,14 +116,28 @@ ${imageList}
   let items: NarrationItem[] = [];
 
   // 尝试从 markdown 代码块中提取 JSON
-  const jsonMatch = output.match(/```json\s*([\s\S]*?)\s*```/) ||
-                    output.match(/```\s*([\s\S]*?)\s*```/) ||
-                    output.match(/\{[\s\S]*(?:"items"|"narrations")[\s\S]*\}/);
+  let jsonString = '';
 
-  if (jsonMatch) {
-    const jsonString = jsonMatch[1] || jsonMatch[0];
+  // 方法1: 匹配 ```json ... ``` 代码块
+  const codeBlockMatch = output.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch && codeBlockMatch[1]) {
+    jsonString = codeBlockMatch[1].trim();
+  } else {
+    // 方法2: 直接查找 JSON 对象
+    const jsonObjectMatch = output.match(/\{[\s\S]*\}/);
+    if (jsonObjectMatch) {
+      jsonString = jsonObjectMatch[0];
+    }
+  }
+
+  console.log(`[Narration] Extracted JSON string length: ${jsonString.length}`);
+  if (jsonString.length > 0 && jsonString.length < 500) {
+    console.log(`[Narration] JSON string preview: ${jsonString}`);
+  }
+
+  if (jsonString) {
     try {
-      const parsed = JSON.parse(jsonString.trim());
+      const parsed = JSON.parse(jsonString);
 
       // 新格式：items 数组
       if (parsed.items && Array.isArray(parsed.items)) {
