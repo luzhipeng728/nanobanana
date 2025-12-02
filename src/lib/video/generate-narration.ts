@@ -40,69 +40,16 @@ export interface NarrationResult {
 }
 
 // 讲解文案生成系统提示词
-const NARRATION_SYSTEM_PROMPT = `你是一位专业的讲解员和配音文案撰写专家。你的任务是为一组图片生成讲解旁白文案。
+const NARRATION_SYSTEM_PROMPT = `你是专业讲解员。为图片生成讲解旁白。
 
-## ⚠️ 最重要的规则：严格对应！
+规则：
+1. 第N段讲解必须对应第N张图片，严禁错位
+2. 每段50-150字，适合朗读
+3. 沉浸式描述，不要说"这张图"
+4. 输出纯JSON，无其他内容
 
-**每一段讲解必须严格对应其编号的图片内容！**
-
-- 第 1 段讲解 → 必须描述「图片 1」的内容
-- 第 2 段讲解 → 必须描述「图片 2」的内容
-- 第 N 段讲解 → 必须描述「图片 N」的内容
-
-**绝对不允许出现错位！** 如果图片 1 是「春天的樱花」，第 1 段讲解就必须讲樱花，不能讲其他图片的内容。
-
-## 核心原则
-
-1. **严格对应**：每段讲解必须准确描述对应编号图片的内容，不能错位
-2. **沉浸式讲解**：直接描述内容和场景，不要使用"这张图"、"画面中"等元描述词汇
-3. **自然流畅**：像在给观众讲故事一样自然流畅
-4. **适合朗读**：文案需要适合 TTS 语音合成，避免过长的句子
-
-## 输出格式
-
-返回 JSON 对象，items 数组中每个元素的顺序必须与图片顺序完全一致：
-
-\`\`\`json
-{
-  "items": [
-    {
-      "imageIndex": 1,
-      "imageDescription": "简述图片1的内容",
-      "text": "针对图片1的讲解文案...",
-      "ttsParams": { "emotion": "calm", "pitch": 1.0, "volume": 1.0 }
-    },
-    {
-      "imageIndex": 2,
-      "imageDescription": "简述图片2的内容",
-      "text": "针对图片2的讲解文案...",
-      "ttsParams": { "emotion": "calm", "pitch": 1.0, "volume": 1.0 }
-    }
-  ]
-}
-\`\`\`
-
-### TTS 参数说明
-- **emotion**: neutral/happy/sad/excited/calm/serious/tender/storytelling
-- **pitch**: 0.8-1.2，默认 1.0
-- **volume**: 0.8-1.2，默认 1.0
-
-## 讲解要求
-
-1. 每段讲解 50-150 字（适合 10-30 秒语音）
-2. 使用中文撰写
-3. 语言优美、有画面感
-4. 前后内容要有连贯性
-5. TTS 参数保持相对一致
-
-## 自检清单（生成后请检查）
-
-✅ 第 1 段是否讲的是图片 1 的内容？
-✅ 第 2 段是否讲的是图片 2 的内容？
-✅ 每段的 imageDescription 是否与对应图片描述匹配？
-✅ 没有任何错位或混淆？
-
-直接输出 JSON，不要有任何额外说明。`;
+输出格式：
+{"items":[{"text":"讲解文案1"},{"text":"讲解文案2"}]}`;
 
 /**
  * 生成讲解文案
@@ -118,38 +65,24 @@ export async function generateNarrations(request: NarrationRequest): Promise<Nar
     baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
   });
 
-  // 构建用户消息 - 强调每张图片的内容和顺序
-  const imageList = request.prompts.map((prompt, i) => {
-    const desc = prompt || '(无描述)';
-    return `【图片 ${i + 1}】${desc}`;
-  }).join('\n\n');
+  // 构建用户消息 - 简洁明了
+  const imageList = request.prompts.map((prompt, i) =>
+    `${i + 1}. ${prompt || '(无描述)'}`
+  ).join('\n');
 
-  let userMessage = `请为以下 ${request.prompts.length} 张幻灯片图片生成讲解旁白文案。
+  let userMessage = `标题：${request.title}
 
-## 幻灯片标题
-${request.title}
-
-## 图片内容详情（请仔细阅读每张图片的描述）
-
+图片列表（共${request.prompts.length}张，按顺序）：
 ${imageList}
 
----
+请为每张图片生成一段讲解，输出JSON格式：
+{"items":[{"text":"第1张图的讲解"},{"text":"第2张图的讲解"},...]}
 
-## ⚠️ 重要提醒
-
-1. **你必须按顺序生成 ${request.prompts.length} 段讲解**
-2. **第 1 段讲解必须对应【图片 1】的内容：${request.prompts[0] || '(无描述)'}**
-${request.prompts.length > 1 ? `3. **第 2 段讲解必须对应【图片 2】的内容：${request.prompts[1] || '(无描述)'}**` : ''}
-${request.prompts.length > 2 ? `4. **以此类推，每段必须严格对应其编号图片**` : ''}
-
-请确保每段讲解的内容与对应图片描述完全匹配，不要错位！
-`;
+注意：第1段讲解必须讲第1张图的内容"${request.prompts[0] || ''}"，第2段讲第2张图，以此类推。`;
 
   if (request.style) {
-    userMessage += `\n讲解风格要求：${request.style}`;
+    userMessage += `\n风格：${request.style}`;
   }
-
-  userMessage += `\n\n现在请输出 JSON，确保 items 数组有 ${request.prompts.length} 个元素，顺序与图片一一对应。`;
 
   console.log(`[Narration] Generating narrations for ${request.prompts.length} images...`);
 
@@ -171,6 +104,7 @@ ${request.prompts.length > 2 ? `4. **以此类推，每段必须严格对应其�
 
   const output = textBlock.text;
   console.log(`[Narration] Claude response length: ${output.length}`);
+  console.log(`[Narration] Claude response:\n${output}`);
 
   // 解析 JSON
   let items: NarrationItem[] = [];
@@ -235,20 +169,30 @@ ${request.prompts.length > 2 ? `4. **以此类推，每段必须严格对应其�
     }
   }
 
-  // 如果还是没有，生成默认文案
+  // 如果还是没有，基于 prompt 生成简单文案（不要用"这是第N个画面"这种垃圾）
   if (items.length === 0) {
-    console.log("[Narration] Fallback: generating default narrations");
-    items = request.prompts.map((prompt, i) => {
-      if (prompt) {
-        return { text: `让我们来欣赏这幅作品。${prompt.slice(0, 100)}...` };
+    console.log("[Narration] Fallback: generating narrations from prompts");
+    items = request.prompts.map((prompt) => {
+      if (prompt && prompt.trim()) {
+        // 直接用 prompt 内容作为讲解，稍作润色
+        const cleanPrompt = prompt.trim();
+        // 如果 prompt 比较短，直接使用；如果长，截取并添加省略
+        if (cleanPrompt.length <= 150) {
+          return { text: cleanPrompt };
+        } else {
+          return { text: cleanPrompt.slice(0, 140) + '...' };
+        }
       }
-      return { text: `这是幻灯片的第 ${i + 1} 个画面。` };
+      // 没有描述的情况，用标题
+      return { text: `${request.title}的精彩画面` };
     });
   }
 
   // 确保数量匹配
   while (items.length < request.prompts.length) {
-    items.push({ text: `这是一幅精心创作的作品。` });
+    const idx = items.length;
+    const prompt = request.prompts[idx];
+    items.push({ text: prompt?.trim() || `${request.title}` });
   }
 
   // 截断到正确数量

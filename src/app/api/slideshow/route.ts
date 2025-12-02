@@ -92,10 +92,39 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const images: string[] = JSON.parse(slideshow.images);
+    let prompts: string[] = slideshow.prompts ? JSON.parse(slideshow.prompts) : [];
+
+    // 如果没有存储 prompts，通过 imageUrl 去 ImageTask 表匹配
+    if (prompts.length === 0 && images.length > 0) {
+      const imageTasks = await prisma.imageTask.findMany({
+        where: {
+          imageUrl: { in: images },
+        },
+        select: {
+          imageUrl: true,
+          prompt: true,
+        },
+      });
+
+      // 构建 URL -> prompt 映射
+      const urlToPrompt = new Map<string, string>();
+      for (const task of imageTasks) {
+        if (task.imageUrl) {
+          urlToPrompt.set(task.imageUrl, task.prompt);
+        }
+      }
+
+      // 按图片顺序获取 prompts
+      prompts = images.map(url => urlToPrompt.get(url) || "");
+      console.log(`[Slideshow API] Matched ${imageTasks.length} prompts from ImageTask table`);
+    }
+
     return NextResponse.json({
       id: slideshow.id,
       title: slideshow.title,
-      images: JSON.parse(slideshow.images),
+      images,
+      prompts,
       createdAt: slideshow.createdAt,
     });
   } catch (error) {

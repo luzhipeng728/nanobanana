@@ -262,6 +262,7 @@ export default function InfiniteCanvas() {
 
       const data = await res.json();
       const images: string[] = data.images || [];
+      const prompts: string[] = data.prompts || [];
 
       if (images.length === 0) {
         throw new Error("幻灯片没有图片");
@@ -283,6 +284,7 @@ export default function InfiniteCanvas() {
       const newNodes: Node[] = images.map((url, index) => {
         const col = index % COLS;
         const row = Math.floor(index / COLS);
+        const prompt = prompts[index] || "";
 
         return {
           id: `import-${Date.now()}-${index}`,
@@ -297,10 +299,10 @@ export default function InfiniteCanvas() {
           },
           data: {
             imageUrl: url,
-            prompt: "",
+            prompt,  // 使用对应的 prompt
             timestamp: new Date().toLocaleString(),
             isLoading: false,
-            label: `${data.title} #${index + 1}`,
+            label: prompt ? `${prompt.slice(0, 20)}...` : `${data.title} #${index + 1}`,
           },
         };
       });
