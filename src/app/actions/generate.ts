@@ -35,6 +35,7 @@ const RECOVERY_TIME = 24 * 60 * 60 * 1000; // 24 小时后重试失败的 Key
 // 优先 API 配置（省钱方案）
 // ============================================================================
 const PRIORITY_API = {
+  enabled: false, // 暂时禁用优先 API
   baseUrl: 'http://172.93.101.237:8317/v1beta/models',
   apiKey: 'sk-12345',
   cooldownTime: 20 * 60 * 1000, // 20 分钟冷却时间
@@ -77,6 +78,9 @@ function savePriorityApiState(state: PriorityApiState): void {
  * 检查优先 API 是否可用（未在冷却中）
  */
 function isPriorityApiAvailable(): boolean {
+  // 检查是否启用
+  if (!PRIORITY_API.enabled) return false;
+
   const state = readPriorityApiState();
 
   if (!state.failedAt) return true;
