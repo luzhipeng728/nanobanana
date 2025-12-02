@@ -32,6 +32,14 @@ export interface TTSResult {
   error?: string;
 }
 
+// Resource ID 映射（不同类别需要不同的 resource ID）
+const RESOURCE_IDS = {
+  '通用场景': 'volc.service_type.10029',
+  '儿童绘本': 'volc.service_type.10029',
+  '视频配音': 'volc.service_type.10043',
+  '角色扮演': 'volc.service_type.10061',
+} as const;
+
 // 预设发音人列表
 export const TTS_SPEAKERS = {
   // ========== 有声阅读 / 儿童绘本 ==========
@@ -40,7 +48,7 @@ export const TTS_SPEAKERS = {
     name: '学艾伊',
     language: 'zh',
     gender: 'female',
-    category: '儿童绘本',
+    category: '儿童绘本' as const,
   },
   // ========== 通用场景 ==========
   'zh_female_vivi': {
@@ -48,35 +56,35 @@ export const TTS_SPEAKERS = {
     name: 'Vivi',
     language: 'zh/en',
     gender: 'female',
-    category: '通用场景',
+    category: '通用场景' as const,
   },
   'zh_male_ruyayichen': {
     id: 'zh_male_ruyayichen_saturn_bigtts',
     name: '儒雅逸辰',
     language: 'zh',
     gender: 'male',
-    category: '通用场景',
+    category: '通用场景' as const,
   },
   'zh_female_xiaohe': {
     id: 'zh_female_xiaohe_uranus_bigtts',
     name: '小何',
     language: 'zh',
     gender: 'female',
-    category: '通用场景',
+    category: '通用场景' as const,
   },
   'zh_male_yunzhou': {
     id: 'zh_male_m191_uranus_bigtts',
     name: '云舟',
     language: 'zh',
     gender: 'male',
-    category: '通用场景',
+    category: '通用场景' as const,
   },
   'zh_male_xiaotian': {
     id: 'zh_male_taocheng_uranus_bigtts',
     name: '小天',
     language: 'zh',
     gender: 'male',
-    category: '通用场景',
+    category: '通用场景' as const,
   },
   // ========== 视频配音 ==========
   'zh_male_dayi': {
@@ -84,35 +92,35 @@ export const TTS_SPEAKERS = {
     name: '大壹',
     language: 'zh',
     gender: 'male',
-    category: '视频配音',
+    category: '视频配音' as const,
   },
   'zh_female_mizai': {
     id: 'zh_female_mizai_saturn_bigtts',
     name: '咪仔',
     language: 'zh',
     gender: 'female',
-    category: '视频配音',
+    category: '视频配音' as const,
   },
   'zh_female_jitangnv': {
     id: 'zh_female_jitangnv_saturn_bigtts',
     name: '鸡汤女',
     language: 'zh',
     gender: 'female',
-    category: '视频配音',
+    category: '视频配音' as const,
   },
   'zh_female_meilinvyou': {
     id: 'zh_female_meilinvyou_saturn_bigtts',
     name: '魅力女友',
     language: 'zh',
     gender: 'female',
-    category: '视频配音',
+    category: '视频配音' as const,
   },
   'zh_female_liuchang': {
     id: 'zh_female_santongyongns_saturn_bigtts',
     name: '流畅女声',
     language: 'zh',
     gender: 'female',
-    category: '视频配音',
+    category: '视频配音' as const,
   },
   // ========== 角色扮演 ==========
   'zh_female_keai': {
@@ -120,37 +128,53 @@ export const TTS_SPEAKERS = {
     name: '可爱女生',
     language: 'zh',
     gender: 'female',
-    category: '角色扮演',
+    category: '角色扮演' as const,
   },
   'zh_female_tiaopi': {
     id: 'saturn_zh_female_tiaopigongzhu_tob',
     name: '调皮公主',
     language: 'zh',
     gender: 'female',
-    category: '角色扮演',
+    category: '角色扮演' as const,
   },
   'zh_male_shuanglang': {
     id: 'saturn_zh_male_shuanglangshaonian_tob',
     name: '爽朗少年',
     language: 'zh',
     gender: 'male',
-    category: '角色扮演',
+    category: '角色扮演' as const,
   },
   'zh_male_tiancai': {
     id: 'saturn_zh_male_tiancaitongzhuo_tob',
     name: '天才同桌',
     language: 'zh',
     gender: 'male',
-    category: '角色扮演',
+    category: '角色扮演' as const,
   },
   'zh_female_cancan': {
     id: 'saturn_zh_female_cancan_tob',
     name: '知性灿灿',
     language: 'zh',
     gender: 'female',
-    category: '角色扮演',
+    category: '角色扮演' as const,
   },
 } as const;
+
+// 根据发音人 key 获取对应的 resource ID
+export function getResourceIdForSpeaker(speakerKey: SpeakerKey): string {
+  const speaker = TTS_SPEAKERS[speakerKey];
+  return RESOURCE_IDS[speaker.category] || RESOURCE_IDS['通用场景'];
+}
+
+// 根据 speaker id 反向查找 resource ID
+function getResourceIdBySpeakerId(speakerId: string): string {
+  for (const [, speaker] of Object.entries(TTS_SPEAKERS)) {
+    if (speaker.id === speakerId) {
+      return RESOURCE_IDS[speaker.category] || RESOURCE_IDS['通用场景'];
+    }
+  }
+  return RESOURCE_IDS['通用场景'];
+}
 
 export type SpeakerKey = keyof typeof TTS_SPEAKERS;
 
@@ -202,9 +226,14 @@ export class BytedanceTTSClient {
     }
 
     try {
+      // 根据 speaker 动态获取正确的 resource ID
+      const resourceId = opts.speaker
+        ? getResourceIdBySpeakerId(opts.speaker)
+        : this.config.resourceId;
+
       const headers = {
         'x-api-key': this.config.apiKey,
-        'X-Api-Resource-Id': this.config.resourceId,
+        'X-Api-Resource-Id': resourceId,
         'Content-Type': 'application/json',
         'Connection': 'keep-alive',
       };
