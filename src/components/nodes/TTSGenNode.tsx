@@ -95,7 +95,7 @@ const TTSGenNode = ({ data, id, selected }: NodeProps<any>) => {
     <BaseNode
       title="语音合成"
       icon={Mic2}
-      color="cyan"
+      color="blue"
       selected={selected}
       className="w-[340px]"
     >

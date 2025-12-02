@@ -107,7 +107,7 @@ const TTSNode = ({ data, id, selected }: NodeProps<any>) => {
     <BaseNode
       title="语音"
       icon={Volume2}
-      color="cyan"
+      color="blue"
       selected={selected}
       className="w-[300px]"
     >
