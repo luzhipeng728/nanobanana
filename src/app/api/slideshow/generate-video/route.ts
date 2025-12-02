@@ -120,40 +120,31 @@ async function* videoGenerationProcess(
     const narrationItems = narrationResult.items;
     console.log(`[Video API] Generated ${narrations.length} narrations with TTS params`);
 
-    // 4. 生成 TTS 音频
-    yield sendProgress(30, "tts", "正在生成语音...");
+    // 4. 并发生成 TTS 音频
+    yield sendProgress(30, "tts", "正在并发生成语音...");
 
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "slideshow-tts-"));
-    const audioPaths: string[] = [];
     const speakerId = BytedanceTTSClient.getSpeakerId(speaker as keyof typeof import("@/lib/tts/bytedance-tts").TTS_SPEAKERS);
 
-    for (let i = 0; i < narrations.length; i++) {
-      yield sendProgress(
-        30 + (i / narrations.length) * 30,
-        "tts",
-        `正在生成语音 ${i + 1}/${narrations.length}...`,
-        { current: i + 1, total: narrations.length }
-      );
+    console.log(`[Video API] Starting ${narrations.length} TTS tasks in parallel...`);
+    const ttsStartTime = Date.now();
 
-      // 构建上下文文本（前面所有段落的内容）
-      const contextText = i > 0
-        ? narrations.slice(0, i).join('\n')
-        : undefined;
-
-      // 获取大模型生成的 TTS 参数
+    // 所有 TTS 请求并发执行
+    const ttsPromises = narrations.map(async (text, i) => {
       const ttsParams = narrationItems[i]?.ttsParams;
+      const startTime = Date.now();
 
-      const ttsResult = await textToSpeech(narrations[i], {
+      const ttsResult = await textToSpeech(text, {
         speaker: speakerId,
         format: "mp3",
         speed,
-        // 传递上下文文本保持语调一致性
-        contextText,
-        // 传递大模型决定的情感和音调参数
+        // 使用大模型生成的参数保持一致性
         emotion: ttsParams?.emotion,
         pitch: ttsParams?.pitch,
         volume: ttsParams?.volume,
       });
+
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
       if (!ttsResult.success || !ttsResult.audioBuffer) {
         throw new Error(`语音生成失败 (${i + 1}): ${ttsResult.error}`);
@@ -161,12 +152,15 @@ async function* videoGenerationProcess(
 
       const audioPath = path.join(tempDir, `audio_${i}.mp3`);
       fs.writeFileSync(audioPath, ttsResult.audioBuffer);
-      audioPaths.push(audioPath);
 
-      console.log(`[Video API] TTS ${i + 1}/${narrations.length}: emotion=${ttsParams?.emotion || 'default'}, pitch=${ttsParams?.pitch || 1.0}`);
-    }
+      console.log(`[Video API] TTS ${i + 1} done in ${elapsed}s`);
+      return audioPath;
+    });
 
-    console.log(`[Video API] Generated ${audioPaths.length} audio files`);
+    const audioPaths = await Promise.all(ttsPromises);
+
+    const ttsElapsed = ((Date.now() - ttsStartTime) / 1000).toFixed(1);
+    console.log(`[Video API] All ${audioPaths.length} TTS completed in ${ttsElapsed}s`);
 
     // 5. 合成视频
     yield sendProgress(60, "compose", "正在合成视频...");
