@@ -20,7 +20,7 @@ interface CanvasContextType {
   addMusicNode: (taskId: string, prompt: string, position: { x: number; y: number }) => string;
   addVideoNode: (taskId: string, prompt: string, position: { x: number; y: number }, options?: { apiSource?: "sora" | "veo"; model?: string }) => string;
   addStickerNode: (taskId: string, animationType: string, position: { x: number; y: number }) => string;
-  addTTSNode: (audioUrl: string, text: string, position: { x: number; y: number }) => string;
+  addTTSNode: (taskId: string, text: string, position: { x: number; y: number }) => string;
   getConnectedImageNodes: (nodeId: string) => Node[];
   getSelectedImageNodes: () => Node[];
   getNode: (nodeId: string) => Node | undefined;

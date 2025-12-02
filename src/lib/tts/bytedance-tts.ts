@@ -34,44 +34,121 @@ export interface TTSResult {
 
 // 预设发音人列表
 export const TTS_SPEAKERS = {
-  // 中文男声
-  'zh_male_beijingxiaoye': {
-    id: 'zh_male_beijingxiaoye_emo_v2_mars_bigtts',
-    name: '北京小爷',
-    language: 'zh',
-    gender: 'male',
-  },
-  'zh_male_shaonianxiaoxiao': {
-    id: 'zh_male_shaonianxiaoxiao_mars_bigtts',
-    name: '少年萧萧',
-    language: 'zh',
-    gender: 'male',
-  },
-  // 中文女声
-  'zh_female_tianmeixiaoyuan': {
-    id: 'zh_female_tianmeixiaoyuan_mars_bigtts',
-    name: '甜美小源',
+  // ========== 有声阅读 / 儿童绘本 ==========
+  'zh_female_xueayi': {
+    id: 'zh_female_xueayi_saturn_bigtts',
+    name: '学艾伊',
     language: 'zh',
     gender: 'female',
+    category: '儿童绘本',
   },
-  'zh_female_wanwanxiaohe': {
-    id: 'zh_female_wanwanxiaohe_mars_bigtts',
-    name: '湾湾小何',
+  // ========== 通用场景 ==========
+  'zh_female_vivi': {
+    id: 'zh_female_vv_uranus_bigtts',
+    name: 'Vivi',
+    language: 'zh/en',
+    gender: 'female',
+    category: '通用场景',
+  },
+  'zh_male_ruyayichen': {
+    id: 'zh_male_ruyayichen_saturn_bigtts',
+    name: '儒雅逸辰',
+    language: 'zh',
+    gender: 'male',
+    category: '通用场景',
+  },
+  'zh_female_xiaohe': {
+    id: 'zh_female_xiaohe_uranus_bigtts',
+    name: '小何',
     language: 'zh',
     gender: 'female',
+    category: '通用场景',
   },
-  // 英文
-  'en_male_adam': {
-    id: 'en_male_adam_mars_bigtts',
-    name: 'Adam',
-    language: 'en',
+  'zh_male_yunzhou': {
+    id: 'zh_male_m191_uranus_bigtts',
+    name: '云舟',
+    language: 'zh',
     gender: 'male',
+    category: '通用场景',
   },
-  'en_female_sarah': {
-    id: 'en_female_sarah_mars_bigtts',
-    name: 'Sarah',
-    language: 'en',
+  'zh_male_xiaotian': {
+    id: 'zh_male_taocheng_uranus_bigtts',
+    name: '小天',
+    language: 'zh',
+    gender: 'male',
+    category: '通用场景',
+  },
+  // ========== 视频配音 ==========
+  'zh_male_dayi': {
+    id: 'zh_male_dayi_saturn_bigtts',
+    name: '大壹',
+    language: 'zh',
+    gender: 'male',
+    category: '视频配音',
+  },
+  'zh_female_mizai': {
+    id: 'zh_female_mizai_saturn_bigtts',
+    name: '咪仔',
+    language: 'zh',
     gender: 'female',
+    category: '视频配音',
+  },
+  'zh_female_jitangnv': {
+    id: 'zh_female_jitangnv_saturn_bigtts',
+    name: '鸡汤女',
+    language: 'zh',
+    gender: 'female',
+    category: '视频配音',
+  },
+  'zh_female_meilinvyou': {
+    id: 'zh_female_meilinvyou_saturn_bigtts',
+    name: '魅力女友',
+    language: 'zh',
+    gender: 'female',
+    category: '视频配音',
+  },
+  'zh_female_liuchang': {
+    id: 'zh_female_santongyongns_saturn_bigtts',
+    name: '流畅女声',
+    language: 'zh',
+    gender: 'female',
+    category: '视频配音',
+  },
+  // ========== 角色扮演 ==========
+  'zh_female_keai': {
+    id: 'saturn_zh_female_keainvsheng_tob',
+    name: '可爱女生',
+    language: 'zh',
+    gender: 'female',
+    category: '角色扮演',
+  },
+  'zh_female_tiaopi': {
+    id: 'saturn_zh_female_tiaopigongzhu_tob',
+    name: '调皮公主',
+    language: 'zh',
+    gender: 'female',
+    category: '角色扮演',
+  },
+  'zh_male_shuanglang': {
+    id: 'saturn_zh_male_shuanglangshaonian_tob',
+    name: '爽朗少年',
+    language: 'zh',
+    gender: 'male',
+    category: '角色扮演',
+  },
+  'zh_male_tiancai': {
+    id: 'saturn_zh_male_tiancaitongzhuo_tob',
+    name: '天才同桌',
+    language: 'zh',
+    gender: 'male',
+    category: '角色扮演',
+  },
+  'zh_female_cancan': {
+    id: 'saturn_zh_female_cancan_tob',
+    name: '知性灿灿',
+    language: 'zh',
+    gender: 'female',
+    category: '角色扮演',
   },
 } as const;
 
@@ -84,7 +161,7 @@ const DEFAULT_CONFIG: TTSConfig = {
 };
 
 const DEFAULT_OPTIONS: Partial<TTSOptions> = {
-  speaker: TTS_SPEAKERS.zh_male_beijingxiaoye.id,
+  speaker: TTS_SPEAKERS.zh_female_vivi.id,
   format: 'mp3',
   sampleRate: 24000,
   speed: 1.0,
@@ -229,7 +306,7 @@ export class BytedanceTTSClient {
    * 获取发音人 ID
    */
   static getSpeakerId(key: SpeakerKey): string {
-    return TTS_SPEAKERS[key]?.id || TTS_SPEAKERS.zh_male_beijingxiaoye.id;
+    return TTS_SPEAKERS[key]?.id || TTS_SPEAKERS.zh_female_vivi.id;
   }
 }
 

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, images } = body;
+    const { title, images, prompts } = body;
 
     // 验证参数
     if (!title || typeof title !== "string" || title.trim().length === 0) {
@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: title.trim(),
         images: JSON.stringify(validImages),
+        prompts: prompts ? JSON.stringify(prompts) : null,
         userId,
       },
     });

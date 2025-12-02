@@ -43,7 +43,7 @@ import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, GalleryVerticalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles, Share2, Loader2 } from "lucide-react";
+import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, GalleryVerticalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles, Share2, Loader2, Video, Mic2, Check, Film, Download, Play } from "lucide-react";
 import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
 import ModelCapabilityTip from "./ModelCapabilityTip";
@@ -69,6 +69,25 @@ const nodeTypes = {
 };
 
 const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
+
+// 讲解视频发音人列表
+const NARRATION_SPEAKERS = [
+  { key: 'zh_female_vivi', name: 'Vivi', gender: '女', lang: '中/英' },
+  { key: 'zh_male_ruyayichen', name: '儒雅逸辰', gender: '男', lang: '中文' },
+  { key: 'zh_female_xiaohe', name: '小何', gender: '女', lang: '中文' },
+  { key: 'zh_male_yunzhou', name: '云舟', gender: '男', lang: '中文' },
+  { key: 'zh_male_dayi', name: '大壹', gender: '男', lang: '中文' },
+  { key: 'zh_female_cancan', name: '知性灿灿', gender: '女', lang: '中文' },
+];
+
+// 转场效果列表
+const TRANSITIONS = [
+  { key: 'fade', name: '优雅淡入淡出', desc: '平滑过渡' },
+  { key: 'slideleft', name: '向左滑动', desc: '动感切换' },
+  { key: 'slideright', name: '向右滑动', desc: '动感切换' },
+  { key: 'dissolve', name: '溶解效果', desc: '柔和过渡' },
+  { key: 'none', name: '直接切换', desc: '无转场' },
+];
 
 // Start with empty canvas - users will drag nodes from toolbar
 const initialNodes: Node[] = [];
@@ -112,6 +131,19 @@ export default function InfiniteCanvas() {
   const [slideshowTitle, setSlideshowTitle] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  // 讲解视频配置
+  const [enableNarration, setEnableNarration] = useState(false);
+  const [narrationSpeaker, setNarrationSpeaker] = useState("zh_female_vivi");
+  const [narrationTransition, setNarrationTransition] = useState("fade");
+  const [narrationStyle, setNarrationStyle] = useState("");
+  // 视频生成进度
+  const [videoGenerating, setVideoGenerating] = useState(false);
+  const [videoProgress, setVideoProgress] = useState<{
+    percent: number;
+    steps: { index: number; step: string; status: string; text?: string }[];
+    error?: string;
+  } | null>(null);
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
 
   // Image Upload Placement State
   const [isPlacingImage, setIsPlacingImage] = useState(false);
@@ -485,7 +517,7 @@ export default function InfiniteCanvas() {
           : pendingNodeType === 'chatAgent'
           ? {}
           : pendingNodeType === 'ttsGen'
-          ? { text: '', speaker: 'zh_male_beijingxiaoye', speed: 1.0 }
+          ? { text: '', speaker: 'zh_female_vivi', speed: 1.0 }
           : {},
       };
       setNodes((nds) => nds.concat(newNode));
@@ -583,7 +615,7 @@ export default function InfiniteCanvas() {
           : type === 'chatAgent'
           ? {}
           : type === 'ttsGen'
-          ? { text: '', speaker: 'zh_male_beijingxiaoye', speed: 1.0 }
+          ? { text: '', speaker: 'zh_female_vivi', speed: 1.0 }
           : {},
       };
 
@@ -852,8 +884,8 @@ export default function InfiniteCanvas() {
     return nodeId;
   }, [setNodes]);
 
-  // Add TTS node programmatically
-  const addTTSNode = useCallback((audioUrl: string, text: string, position: { x: number; y: number }): string => {
+  // Add TTS node programmatically (task-based)
+  const addTTSNode = useCallback((taskId: string, text: string, position: { x: number; y: number }): string => {
     const nodeId = `tts-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     const newNode: Node = {
@@ -861,9 +893,9 @@ export default function InfiniteCanvas() {
       type: "tts",
       position,
       data: {
-        audioUrl,
+        taskId,
         text,
-        isLoading: false,
+        isLoading: true,  // 初始为 loading 状态
       },
     };
     setNodes((nds) => nds.concat(newNode));
@@ -967,6 +999,14 @@ export default function InfiniteCanvas() {
     setSlideshowSelections(new Map());
     setSlideshowTitle("");
     setPublishedUrl(null);
+    // 重置讲解视频状态
+    setEnableNarration(false);
+    setNarrationSpeaker("zh_female_vivi");
+    setNarrationTransition("fade");
+    setNarrationStyle("");
+    setVideoGenerating(false);
+    setVideoProgress(null);
+    setGeneratedVideoUrl(null);
   }, []);
 
   // Publish slideshow
@@ -982,18 +1022,20 @@ export default function InfiniteCanvas() {
 
     setIsPublishing(true);
     try {
-      // Get image URLs in order
+      // Get image URLs and prompts in order
       const orderedNodeIds = Array.from(slideshowSelections.entries())
         .sort((a, b) => a[1] - b[1])
         .map(([nodeId]) => nodeId);
 
       const imageUrls: string[] = [];
+      const prompts: string[] = [];
       const currentNodes = nodesRef.current;
 
       for (const nodeId of orderedNodeIds) {
         const node = currentNodes.find(n => n.id === nodeId);
         if (node && node.data?.imageUrl && typeof node.data.imageUrl === 'string') {
           imageUrls.push(node.data.imageUrl as string);
+          prompts.push((node.data.prompt as string) || '');
         }
       }
 
@@ -1009,12 +1051,83 @@ export default function InfiniteCanvas() {
         body: JSON.stringify({
           title: slideshowTitle.trim(),
           images: imageUrls,
+          prompts: prompts,
         }),
       });
 
       const result = await response.json();
       if (result.success) {
         setPublishedUrl(result.url);
+
+        // 如果勾选了生成讲解视频，开始 SSE 流式生成
+        if (enableNarration) {
+          setIsPublishing(false);
+          setVideoGenerating(true);
+          setVideoProgress({ percent: 0, steps: [] });
+
+          try {
+            const videoResponse = await fetch("/api/slideshow/generate-video", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                slideshowId: result.id,
+                speaker: narrationSpeaker,
+                transition: narrationTransition,
+                style: narrationStyle || undefined,
+              }),
+            });
+
+            if (!videoResponse.ok) {
+              throw new Error("视频生成请求失败");
+            }
+
+            const reader = videoResponse.body?.getReader();
+            if (!reader) throw new Error("无法读取响应流");
+
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+
+                    if (data.type === 'progress') {
+                      setVideoProgress(prev => ({
+                        percent: data.percent ?? prev?.percent ?? 0,
+                        steps: data.steps ?? prev?.steps ?? [],
+                      }));
+                    } else if (data.type === 'complete') {
+                      setVideoProgress(prev => ({ ...prev!, percent: 100 }));
+                      setGeneratedVideoUrl(data.videoUrl);
+                      setVideoGenerating(false);
+                    } else if (data.type === 'error') {
+                      setVideoProgress(prev => ({ ...prev!, error: data.message }));
+                      setVideoGenerating(false);
+                    }
+                  } catch (e) {
+                    console.error("Parse SSE error:", e);
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Video generation error:", error);
+            setVideoProgress(prev => ({
+              ...prev!,
+              error: error instanceof Error ? error.message : "视频生成失败",
+            }));
+            setVideoGenerating(false);
+          }
+        }
       } else {
         alert(result.error || "发布失败");
       }
@@ -1022,9 +1135,11 @@ export default function InfiniteCanvas() {
       console.error("Publish slideshow error:", error);
       alert("发布失败，请重试");
     } finally {
-      setIsPublishing(false);
+      if (!enableNarration) {
+        setIsPublishing(false);
+      }
     }
-  }, [slideshowSelections, slideshowTitle]);
+  }, [slideshowSelections, slideshowTitle, enableNarration, narrationSpeaker, narrationTransition, narrationStyle]);
 
   // Getter functions that use refs - stable references, no re-renders on node changes
   const getNodes = useCallback(() => nodesRef.current, []);
@@ -1213,14 +1328,70 @@ export default function InfiniteCanvas() {
 
       {/* Slideshow Mode Panel */}
       {slideshowMode && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white dark:bg-neutral-900 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-4 min-w-[400px]">
-          {publishedUrl ? (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white dark:bg-neutral-900 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-4 min-w-[420px] max-w-[480px]">
+          {/* 视频生成进度状态 */}
+          {videoGenerating && videoProgress ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <Film className="w-5 h-5 text-purple-600 animate-pulse" />
+                <span className="font-semibold text-neutral-800 dark:text-neutral-100">生成讲解视频中...</span>
+              </div>
+
+              {/* 进度条 */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-neutral-500">
+                  <span>进度</span>
+                  <span>{videoProgress.percent}%</span>
+                </div>
+                <div className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+                    style={{ width: `${videoProgress.percent}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* 步骤列表 */}
+              <div className="max-h-48 overflow-y-auto space-y-1.5">
+                {videoProgress.steps.map((step, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-xs">
+                    {step.status === 'done' ? (
+                      <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                    ) : step.status === 'generating' ? (
+                      <Loader2 className="w-3.5 h-3.5 text-purple-500 animate-spin flex-shrink-0" />
+                    ) : (
+                      <div className="w-3.5 h-3.5 rounded-full border border-neutral-300 dark:border-neutral-600 flex-shrink-0" />
+                    )}
+                    <span className={step.status === 'done' ? 'text-neutral-500' : step.status === 'generating' ? 'text-purple-600 font-medium' : 'text-neutral-400'}>
+                      {step.step === 'narration' ? `第 ${step.index + 1} 张：生成文案` :
+                       step.step === 'tts' ? `第 ${step.index + 1} 张：语音合成` :
+                       step.step === 'video' ? '合成视频' : step.step}
+                      {step.status === 'generating' && '...'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {videoProgress.error && (
+                <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-600">
+                  {videoProgress.error}
+                </div>
+              )}
+            </div>
+          ) : publishedUrl || generatedVideoUrl ? (
             // 发布成功状态
             <div className="flex flex-col items-center gap-4">
               <div className="flex items-center gap-2 text-green-600">
-                <Share2 className="w-5 h-5" />
-                <span className="font-semibold">发布成功！</span>
+                {generatedVideoUrl ? <Video className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+                <span className="font-semibold">{generatedVideoUrl ? '视频生成完成！' : '发布成功！'}</span>
               </div>
+
+              {generatedVideoUrl && (
+                <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
+                  <video src={generatedVideoUrl} controls className="w-full h-full" />
+                </div>
+              )}
+
               <div className="flex items-center gap-2 w-full">
                 <input
                   type="text"
@@ -1240,11 +1411,22 @@ export default function InfiniteCanvas() {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => window.open(publishedUrl, "_blank")}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+                  onClick={() => publishedUrl && window.open(publishedUrl, "_blank")}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
                 >
+                  <Play className="w-4 h-4" />
                   打开预览
                 </button>
+                {generatedVideoUrl && (
+                  <a
+                    href={generatedVideoUrl}
+                    download
+                    className="flex items-center gap-1.5 px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    下载视频
+                  </a>
+                )}
                 <button
                   onClick={exitSlideshowMode}
                   className="px-4 py-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-lg text-sm font-medium hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
@@ -1282,16 +1464,103 @@ export default function InfiniteCanvas() {
                 className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-transparent text-sm focus:ring-2 focus:ring-green-500 outline-none"
               />
 
+              {/* 生成讲解视频勾选框 */}
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                  enableNarration
+                    ? 'bg-purple-500 border-purple-500'
+                    : 'border-neutral-300 dark:border-neutral-600 group-hover:border-purple-400'
+                }`}>
+                  {enableNarration && <Check className="w-3.5 h-3.5 text-white" />}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Video className="w-4 h-4 text-purple-500" />
+                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">生成讲解视频</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={enableNarration}
+                  onChange={(e) => setEnableNarration(e.target.checked)}
+                  className="sr-only"
+                />
+              </label>
+
+              {/* 讲解视频配置区 */}
+              {enableNarration && (
+                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl space-y-3 border border-purple-200 dark:border-purple-800">
+                  {/* 发音人选择 */}
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                      <Mic2 className="w-3.5 h-3.5" />
+                      发音人
+                    </label>
+                    <select
+                      value={narrationSpeaker}
+                      onChange={(e) => setNarrationSpeaker(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-neutral-800 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+                    >
+                      {NARRATION_SPEAKERS.map(s => (
+                        <option key={s.key} value={s.key}>
+                          {s.name} ({s.gender} · {s.lang})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 转场效果选择 */}
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                      <Film className="w-3.5 h-3.5" />
+                      转场效果
+                    </label>
+                    <select
+                      value={narrationTransition}
+                      onChange={(e) => setNarrationTransition(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-neutral-800 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+                    >
+                      {TRANSITIONS.map(t => (
+                        <option key={t.key} value={t.key}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 讲解风格 */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                      讲解风格 <span className="text-neutral-400">(选填)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={narrationStyle}
+                      onChange={(e) => setNarrationStyle(e.target.value)}
+                      placeholder="如：轻松活泼 / 专业解说 / 故事感..."
+                      className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-neutral-800 text-sm focus:ring-2 focus:ring-purple-500 outline-none placeholder:text-neutral-400"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <button
                   onClick={publishSlideshow}
                   disabled={isPublishing || slideshowSelections.size === 0 || !slideshowTitle.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    enableNarration
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+                      : 'bg-green-500 hover:bg-green-600'
+                  }`}
                 >
                   {isPublishing ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       发布中...
+                    </>
+                  ) : enableNarration ? (
+                    <>
+                      <Video className="w-4 h-4" />
+                      发布并生成视频
                     </>
                   ) : (
                     <>

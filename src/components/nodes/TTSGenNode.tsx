@@ -1,28 +1,41 @@
 "use client";
 
-import { memo, useState, useCallback, useEffect } from "react";
+import { memo, useState } from "react";
 import { NodeProps, useReactFlow } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
-import { Loader2, Volume2, Mic2, Play, Settings2 } from "lucide-react";
+import { Loader2, Mic2, Play, Settings2 } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import { NodeTextarea, NodeButton, NodeLabel, NodeSelect } from "@/components/ui/NodeUI";
+import { createTTSTask } from "@/app/actions/tts-task";
 
-// 发音人列表（与后端保持一致）
+// 发音人列表（按分类）
 const SPEAKERS = [
-  { key: 'zh_male_beijingxiaoye', name: '北京小爷', language: '中文', gender: '男' },
-  { key: 'zh_male_shaonianxiaoxiao', name: '少年萧萧', language: '中文', gender: '男' },
-  { key: 'zh_female_tianmeixiaoyuan', name: '甜美小源', language: '中文', gender: '女' },
-  { key: 'zh_female_wanwanxiaohe', name: '湾湾小何', language: '中文', gender: '女' },
-  { key: 'en_male_adam', name: 'Adam', language: '英文', gender: '男' },
-  { key: 'en_female_sarah', name: 'Sarah', language: '英文', gender: '女' },
+  // 通用场景
+  { key: 'zh_female_vivi', name: 'Vivi', category: '通用', gender: '女', lang: '中/英' },
+  { key: 'zh_male_ruyayichen', name: '儒雅逸辰', category: '通用', gender: '男', lang: '中文' },
+  { key: 'zh_female_xiaohe', name: '小何', category: '通用', gender: '女', lang: '中文' },
+  { key: 'zh_male_yunzhou', name: '云舟', category: '通用', gender: '男', lang: '中文' },
+  { key: 'zh_male_xiaotian', name: '小天', category: '通用', gender: '男', lang: '中文' },
+  // 视频配音
+  { key: 'zh_male_dayi', name: '大壹', category: '配音', gender: '男', lang: '中文' },
+  { key: 'zh_female_mizai', name: '咪仔', category: '配音', gender: '女', lang: '中文' },
+  { key: 'zh_female_jitangnv', name: '鸡汤女', category: '配音', gender: '女', lang: '中文' },
+  { key: 'zh_female_meilinvyou', name: '魅力女友', category: '配音', gender: '女', lang: '中文' },
+  { key: 'zh_female_liuchang', name: '流畅女声', category: '配音', gender: '女', lang: '中文' },
+  // 角色扮演
+  { key: 'zh_female_keai', name: '可爱女生', category: '角色', gender: '女', lang: '中文' },
+  { key: 'zh_female_tiaopi', name: '调皮公主', category: '角色', gender: '女', lang: '中文' },
+  { key: 'zh_male_shuanglang', name: '爽朗少年', category: '角色', gender: '男', lang: '中文' },
+  { key: 'zh_male_tiancai', name: '天才同桌', category: '角色', gender: '男', lang: '中文' },
+  { key: 'zh_female_cancan', name: '知性灿灿', category: '角色', gender: '女', lang: '中文' },
+  // 儿童绘本
+  { key: 'zh_female_xueayi', name: '学艾伊', category: '绘本', gender: '女', lang: '中文' },
 ];
 
 type TTSGenNodeData = {
   text: string;
   speaker: string;
   speed: number;
-  volume: number;
-  pitch: number;
 };
 
 const TTSGenNode = ({ data, id, selected }: NodeProps<any>) => {
@@ -30,7 +43,7 @@ const TTSGenNode = ({ data, id, selected }: NodeProps<any>) => {
   const { getNode } = useReactFlow();
 
   const [text, setText] = useState(data.text || "");
-  const [speaker, setSpeaker] = useState(data.speaker || "zh_male_beijingxiaoye");
+  const [speaker, setSpeaker] = useState(data.speaker || "zh_female_vivi");
   const [speed, setSpeed] = useState(data.speed || 1.0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -53,43 +66,31 @@ const TTSGenNode = ({ data, id, selected }: NodeProps<any>) => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: text.trim(),
-          speaker,
-          speed,
-        }),
+      // 创建 TTS 任务
+      const { taskId } = await createTTSTask({
+        text: text.trim(),
+        speaker,
+        speed,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "TTS 生成失败");
-      }
+      console.log(`[TTS] Created task: ${taskId}`);
 
-      const result = await response.json();
-      console.log(`[TTS] Generated audio: ${result.audioUrl}`);
-
-      // 创建 TTS 音频节点
+      // 立即创建 TTS 音频节点（loading 状态）
       const currentNode = getNode(id);
       if (currentNode && addTTSNode) {
         addTTSNode(
-          result.audioUrl,
+          taskId,
           text.trim(),
           { x: currentNode.position.x + 380, y: currentNode.position.y }
         );
       }
     } catch (error) {
-      console.error("[TTS] Generation failed:", error);
-      alert(error instanceof Error ? error.message : "TTS 生成失败");
+      console.error("[TTS] Task creation failed:", error);
+      alert(error instanceof Error ? error.message : "TTS 任务创建失败");
     } finally {
       setIsGenerating(false);
     }
   };
-
-  // 获取当前发音人信息
-  const currentSpeaker = SPEAKERS.find(s => s.key === speaker) || SPEAKERS[0];
 
   return (
     <BaseNode
@@ -108,7 +109,7 @@ const TTSGenNode = ({ data, id, selected }: NodeProps<any>) => {
             value={text}
             onChange={handleTextChange}
             placeholder="输入要转换为语音的文本..."
-            className="focus:border-cyan-500 focus:ring-cyan-500/20"
+            className="focus:border-blue-500 focus:ring-blue-500/20"
           />
           <div className="flex justify-end">
             <span className="text-xs text-neutral-400">{text.length}/5000</span>
@@ -121,13 +122,36 @@ const TTSGenNode = ({ data, id, selected }: NodeProps<any>) => {
           <NodeSelect
             value={speaker}
             onChange={handleSpeakerChange}
-            className="focus:border-cyan-500 focus:ring-cyan-500/20"
+            className="focus:border-blue-500 focus:ring-blue-500/20"
           >
-            {SPEAKERS.map(s => (
-              <option key={s.key} value={s.key}>
-                {s.name} ({s.language} · {s.gender})
-              </option>
-            ))}
+            <optgroup label="通用场景">
+              {SPEAKERS.filter(s => s.category === '通用').map(s => (
+                <option key={s.key} value={s.key}>
+                  {s.name} ({s.gender} · {s.lang})
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="视频配音">
+              {SPEAKERS.filter(s => s.category === '配音').map(s => (
+                <option key={s.key} value={s.key}>
+                  {s.name} ({s.gender})
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="角色扮演">
+              {SPEAKERS.filter(s => s.category === '角色').map(s => (
+                <option key={s.key} value={s.key}>
+                  {s.name} ({s.gender})
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="儿童绘本">
+              {SPEAKERS.filter(s => s.category === '绘本').map(s => (
+                <option key={s.key} value={s.key}>
+                  {s.name} ({s.gender})
+                </option>
+              ))}
+            </optgroup>
           </NodeSelect>
         </div>
 
@@ -160,7 +184,7 @@ const TTSGenNode = ({ data, id, selected }: NodeProps<any>) => {
                     setSpeed(v);
                     data.speed = v;
                   }}
-                  className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full appearance-none cursor-pointer accent-cyan-500"
+                  className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full appearance-none cursor-pointer accent-blue-500"
                 />
               </div>
             </div>
@@ -172,12 +196,12 @@ const TTSGenNode = ({ data, id, selected }: NodeProps<any>) => {
           onClick={onGenerate}
           disabled={isGenerating || !text.trim()}
           variant="primary"
-          className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+          className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
         >
           {isGenerating ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              生成中...
+              创建任务...
             </>
           ) : (
             <>

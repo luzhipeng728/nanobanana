@@ -22,6 +22,7 @@ model User {
   stickerTasks StickerTask[]
   veoTasks    VeoTask[]
   spriteTasks SpriteTask[]
+  ttsTasks    TTSTask[]
 }
 
 model Canvas {
@@ -187,12 +188,19 @@ model SpriteTask {
 
 // 幻灯片分享
 model Slideshow {
-  id        String   @id @default(uuid())  // 同时作为分享链接的 slug
-  title     String                         // 幻灯片标题
-  images    String   @db.LongText          // JSON 数组：按顺序存储图片 URL
-  cover     String?                        // 封面图 URL（自动生成或使用第一张图）
-  userId    String?                        // 创建者（可选，便于统计）
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())  // 同时作为分享链接的 slug
+  title       String                         // 幻灯片标题
+  images      String   @db.LongText          // JSON 数组：按顺序存储图片 URL
+  prompts     String?  @db.LongText          // JSON 数组：每张图片的提示词
+  cover       String?                        // 封面图 URL（自动生成或使用第一张图）
+  userId      String?                        // 创建者（可选，便于统计）
+  createdAt   DateTime @default(now())
+  // 讲解视频相关
+  videoUrl    String?  @db.Text              // 讲解视频 URL
+  narrations  String?  @db.LongText          // JSON 数组：每张图片的讲解文案
+  speaker     String?                        // 使用的发音人
+  transition  String?                        // 转场效果
+  videoStatus String?                        // 视频生成状态: generating, completed, failed
 
   @@index([userId])
 }
@@ -221,4 +229,25 @@ model PageView {
   updatedAt DateTime @updatedAt             // 最后访问时间
 
   @@index([page])
+}
+
+// TTS 语音合成任务
+model TTSTask {
+  id          String    @id @default(uuid())
+  status      String    // pending, processing, completed, failed
+  text        String    @db.Text             // 要转换的文本
+  speaker     String    @default("zh_female_vivi") // 发音人 ID
+  speed       Float     @default(1.0)        // 语速 0.5-2.0
+  audioUrl    String?   @db.Text             // 生成的音频 URL
+  error       String?   @db.Text             // 错误信息
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+  deletedAt   DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([deletedAt])
 }

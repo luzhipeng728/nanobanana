@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Calendar, Images, Loader2, ZoomIn, ZoomOut, RotateCcw, ArrowLeft, Home } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Images, Loader2, ZoomIn, ZoomOut, RotateCcw, ArrowLeft, Home, PlayCircle, ImageIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SlideshowViewerProps {
   title: string;
   images: string[];
   createdAt: string;
+  videoUrl?: string;
 }
 
 // 生成 Cloudflare Image Resizing URL
@@ -46,6 +47,7 @@ export default function SlideshowViewer({
   title,
   images,
   createdAt,
+  videoUrl,
 }: SlideshowViewerProps) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -53,6 +55,10 @@ export default function SlideshowViewer({
   const [imageError, setImageError] = useState(false);
   const thumbnailContainerRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+
+  // 视频模式状态
+  const [showVideo, setShowVideo] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // 缩放和平移状态
   const [scale, setScale] = useState(1);
@@ -314,173 +320,224 @@ export default function SlideshowViewer({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* 缩放控制 */}
-            <div className="hidden sm:flex items-center gap-1 mr-2">
+            {/* 视频/图片切换按钮 */}
+            {videoUrl && (
               <button
-                onClick={() => setScale(s => Math.max(s / 1.3, 0.5))}
-                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                title="缩小"
+                onClick={() => setShowVideo(!showVideo)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all",
+                  showVideo
+                    ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                    : "bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30"
+                )}
               >
-                <ZoomOut className="w-4 h-4 text-white" />
+                {showVideo ? (
+                  <>
+                    <ImageIcon className="w-4 h-4" />
+                    <span className="text-sm font-medium">看图片</span>
+                  </>
+                ) : (
+                  <>
+                    <PlayCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">讲解视频</span>
+                  </>
+                )}
               </button>
-              <span className="text-xs text-white/70 w-12 text-center">
-                {Math.round(scale * 100)}%
-              </span>
-              <button
-                onClick={() => setScale(s => Math.min(s * 1.3, 5))}
-                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                title="放大"
-              >
-                <ZoomIn className="w-4 h-4 text-white" />
-              </button>
-              {scale !== 1 && (
-                <button
-                  onClick={resetTransform}
-                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors ml-1"
-                  title="重置"
-                >
-                  <RotateCcw className="w-4 h-4 text-white" />
-                </button>
-              )}
-            </div>
+            )}
 
-            {/* 页码指示器 */}
-            <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm">
-              <span className="text-sm font-medium text-white">
-                {currentIndex + 1} / {images.length}
-              </span>
-            </div>
+            {/* 缩放控制 - 仅图片模式 */}
+            {!showVideo && (
+              <div className="hidden sm:flex items-center gap-1 mr-2">
+                <button
+                  onClick={() => setScale(s => Math.max(s / 1.3, 0.5))}
+                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                  title="缩小"
+                >
+                  <ZoomOut className="w-4 h-4 text-white" />
+                </button>
+                <span className="text-xs text-white/70 w-12 text-center">
+                  {Math.round(scale * 100)}%
+                </span>
+                <button
+                  onClick={() => setScale(s => Math.min(s * 1.3, 5))}
+                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                  title="放大"
+                >
+                  <ZoomIn className="w-4 h-4 text-white" />
+                </button>
+                {scale !== 1 && (
+                  <button
+                    onClick={resetTransform}
+                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors ml-1"
+                    title="重置"
+                  >
+                    <RotateCcw className="w-4 h-4 text-white" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* 页码指示器 - 仅图片模式 */}
+            {!showVideo && (
+              <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm">
+                <span className="text-sm font-medium text-white">
+                  {currentIndex + 1} / {images.length}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {/* 主图区域 */}
-      <main
-        ref={imageContainerRef}
-        className={cn(
-          "flex-1 relative flex items-center justify-center overflow-hidden",
-          scale > 1 ? "cursor-grab" : "cursor-default",
-          isDragging && "cursor-grabbing"
-        )}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={handleMouseDown}
-        onDoubleClick={handleDoubleClick}
-      >
-        {/* 左右切换按钮 */}
-        {images.length > 1 && scale <= 1 && (
-          <>
-            <button
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
-              onClick={goToPrev}
-            >
-              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            </button>
-            <button
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
-              onClick={goToNext}
-            >
-              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            </button>
-          </>
-        )}
-
-        {/* 加载指示器 - 只在模糊图也没加载时显示 */}
-
-        {/* 加载失败提示 */}
-        {imageError && (
-          <div className="absolute inset-0 flex items-center justify-center z-5">
-            <div className="flex flex-col items-center gap-3 text-center px-4">
-              <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center">
-                <Images className="w-8 h-8 text-red-400" />
-              </div>
-              <span className="text-sm text-white/70">图片加载失败</span>
-              <span className="text-xs text-white/40 max-w-xs break-all">{images[currentIndex]}</span>
-            </div>
-          </div>
-        )}
-
-        {/* 当前大图 - 渐进式加载 */}
-        <div
-          className="relative flex items-center justify-center"
-          style={{
-            width: '90vw',
-            height: 'calc(100vh - 160px)',
-            transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
-            transition: isDragging ? "none" : "transform 0.2s ease-out",
-          }}
-        >
-          {/* 预览图（快速加载，铺满容器） */}
-          <img
-            key={`preview-${currentIndex}`}
-            src={getBlurPreviewUrl(images[currentIndex])}
-            alt=""
-            className={cn(
-              "absolute inset-0 w-full h-full object-contain transition-opacity duration-300",
-              isImageLoading ? "opacity-100" : "opacity-0"
-            )}
-            aria-hidden="true"
-          />
-          {/* 清晰大图（铺满同样容器） */}
-          <img
-            key={`main-${currentIndex}`}
-            src={images[currentIndex]}
-            alt={`图片 ${currentIndex + 1}`}
-            className={cn(
-              "absolute inset-0 w-full h-full object-contain transition-opacity duration-300",
-              isImageLoading ? "opacity-0" : "opacity-100"
-            )}
-            onLoad={() => setIsImageLoading(false)}
-            onError={() => {
-              setIsImageLoading(false);
-              setImageError(true);
+      {/* 视频播放模式 */}
+      {showVideo && videoUrl ? (
+        <main className="flex-1 relative flex items-center justify-center overflow-hidden bg-black">
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            className="max-w-full max-h-full w-auto h-auto"
+            controls
+            autoPlay
+            playsInline
+            style={{
+              maxWidth: '90vw',
+              maxHeight: 'calc(100vh - 80px)',
             }}
-            draggable={false}
-          />
-        </div>
+          >
+            您的浏览器不支持视频播放
+          </video>
+        </main>
+      ) : (
+        <>
+          {/* 主图区域 */}
+          <main
+            ref={imageContainerRef}
+            className={cn(
+              "flex-1 relative flex items-center justify-center overflow-hidden",
+              scale > 1 ? "cursor-grab" : "cursor-default",
+              isDragging && "cursor-grabbing"
+            )}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleMouseDown}
+            onDoubleClick={handleDoubleClick}
+          >
+            {/* 左右切换按钮 */}
+            {images.length > 1 && scale <= 1 && (
+              <>
+                <button
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+                  onClick={goToPrev}
+                >
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </button>
+                <button
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+                  onClick={goToNext}
+                >
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </button>
+              </>
+            )}
 
-        {/* 缩放提示 */}
-        {scale <= 1 && !isImageLoading && !imageError && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
-            <span className="text-xs text-white/70">滚轮缩放 · 双击放大 · 拖拽平移</span>
-          </div>
-        )}
-      </main>
+            {/* 加载指示器 - 只在模糊图也没加载时显示 */}
 
-      {/* 底部缩略图导航 */}
-      <footer className="flex-shrink-0 bg-black/80 backdrop-blur-sm border-t border-white/10 px-4 py-3">
-        <div
-          ref={thumbnailContainerRef}
-          className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
-        >
-          {images.map((url, index) => (
-            <button
-              key={index}
-              className={cn(
-                "relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden transition-all duration-200",
-                index === currentIndex
-                  ? "ring-2 ring-white ring-offset-2 ring-offset-black scale-105"
-                  : "opacity-50 hover:opacity-80"
-              )}
-              onClick={() => setCurrentIndex(index)}
-            >
-              <img
-                src={getThumbnailUrl(url)}
-                alt={`缩略图 ${index + 1}`}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-              {/* 序号角标 */}
-              <div className="absolute bottom-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-black/70 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-white">
-                  {index + 1}
-                </span>
+            {/* 加载失败提示 */}
+            {imageError && (
+              <div className="absolute inset-0 flex items-center justify-center z-5">
+                <div className="flex flex-col items-center gap-3 text-center px-4">
+                  <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <Images className="w-8 h-8 text-red-400" />
+                  </div>
+                  <span className="text-sm text-white/70">图片加载失败</span>
+                  <span className="text-xs text-white/40 max-w-xs break-all">{images[currentIndex]}</span>
+                </div>
               </div>
-            </button>
-          ))}
-        </div>
-      </footer>
+            )}
+
+            {/* 当前大图 - 渐进式加载 */}
+            <div
+              className="relative flex items-center justify-center"
+              style={{
+                width: '90vw',
+                height: 'calc(100vh - 160px)',
+                transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
+                transition: isDragging ? "none" : "transform 0.2s ease-out",
+              }}
+            >
+              {/* 预览图（快速加载，铺满容器） */}
+              <img
+                key={`preview-${currentIndex}`}
+                src={getBlurPreviewUrl(images[currentIndex])}
+                alt=""
+                className={cn(
+                  "absolute inset-0 w-full h-full object-contain transition-opacity duration-300",
+                  isImageLoading ? "opacity-100" : "opacity-0"
+                )}
+                aria-hidden="true"
+              />
+              {/* 清晰大图（铺满同样容器） */}
+              <img
+                key={`main-${currentIndex}`}
+                src={images[currentIndex]}
+                alt={`图片 ${currentIndex + 1}`}
+                className={cn(
+                  "absolute inset-0 w-full h-full object-contain transition-opacity duration-300",
+                  isImageLoading ? "opacity-0" : "opacity-100"
+                )}
+                onLoad={() => setIsImageLoading(false)}
+                onError={() => {
+                  setIsImageLoading(false);
+                  setImageError(true);
+                }}
+                draggable={false}
+              />
+            </div>
+
+            {/* 缩放提示 */}
+            {scale <= 1 && !isImageLoading && !imageError && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
+                <span className="text-xs text-white/70">滚轮缩放 · 双击放大 · 拖拽平移</span>
+              </div>
+            )}
+          </main>
+
+          {/* 底部缩略图导航 */}
+          <footer className="flex-shrink-0 bg-black/80 backdrop-blur-sm border-t border-white/10 px-4 py-3">
+            <div
+              ref={thumbnailContainerRef}
+              className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+            >
+              {images.map((url, index) => (
+                <button
+                  key={index}
+                  className={cn(
+                    "relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden transition-all duration-200",
+                    index === currentIndex
+                      ? "ring-2 ring-white ring-offset-2 ring-offset-black scale-105"
+                      : "opacity-50 hover:opacity-80"
+                  )}
+                  onClick={() => setCurrentIndex(index)}
+                >
+                  <img
+                    src={getThumbnailUrl(url)}
+                    alt={`缩略图 ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  {/* 序号角标 */}
+                  <div className="absolute bottom-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-black/70 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-white">
+                      {index + 1}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </footer>
+        </>
+      )}
     </div>
   );
 }

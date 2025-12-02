@@ -2,15 +2,19 @@
 
 import { memo, useState, useRef, useEffect } from "react";
 import { NodeProps } from "@xyflow/react";
-import { Volume2, Play, Pause, Download, Loader2 } from "lucide-react";
+import { Volume2, Play, Pause, Download, Loader2, AlertCircle } from "lucide-react";
 import { BaseNode } from "./BaseNode";
+import { getTTSTaskStatus } from "@/app/actions/tts-task";
 
 type TTSNodeData = {
+  taskId?: string;
   audioUrl?: string;
   text?: string;
   isLoading?: boolean;
   error?: string;
 };
+
+const POLL_INTERVAL = 2000; // 2 seconds
 
 const TTSNode = ({ data, id, selected }: NodeProps<any>) => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -19,7 +23,71 @@ const TTSNode = ({ data, id, selected }: NodeProps<any>) => {
   const [duration, setDuration] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const { audioUrl, text, isLoading, error } = data as TTSNodeData;
+  // 本地状态用于轮询更新
+  const [audioUrl, setAudioUrl] = useState<string | undefined>(data.audioUrl);
+  const [text, setText] = useState<string | undefined>(data.text);
+  const [isLoading, setIsLoading] = useState<boolean>(data.isLoading ?? true);
+  const [error, setError] = useState<string | undefined>(data.error);
+
+  const { taskId } = data as TTSNodeData;
+
+  // 轮询任务状态
+  useEffect(() => {
+    if (!taskId || audioUrl || error) return;
+
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
+    const pollStatus = async () => {
+      try {
+        const status = await getTTSTaskStatus(taskId);
+
+        if (!isMounted) return;
+
+        if (!status) {
+          setError("任务不存在");
+          setIsLoading(false);
+          return;
+        }
+
+        if (status.status === "completed" && status.audioUrl) {
+          setAudioUrl(status.audioUrl);
+          setText(status.text);
+          setIsLoading(false);
+          // 更新 data 以便保存
+          data.audioUrl = status.audioUrl;
+          data.text = status.text;
+          data.isLoading = false;
+          return;
+        }
+
+        if (status.status === "failed") {
+          setError(status.error || "生成失败");
+          setIsLoading(false);
+          data.error = status.error;
+          data.isLoading = false;
+          return;
+        }
+
+        // 继续轮询
+        timeoutId = setTimeout(pollStatus, POLL_INTERVAL);
+      } catch (err) {
+        console.error("[TTS] Poll error:", err);
+        if (isMounted) {
+          timeoutId = setTimeout(pollStatus, POLL_INTERVAL);
+        }
+      }
+    };
+
+    pollStatus();
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [taskId, audioUrl, error, data]);
 
   // 音频事件处理
   useEffect(() => {
@@ -92,8 +160,8 @@ const TTSNode = ({ data, id, selected }: NodeProps<any>) => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Download failed:", error);
+    } catch (err) {
+      console.error("Download failed:", err);
     }
   };
 
@@ -129,9 +197,12 @@ const TTSNode = ({ data, id, selected }: NodeProps<any>) => {
         )}
 
         {/* 错误状态 */}
-        {error && (
+        {error && !isLoading && (
           <div className="py-4 px-3 bg-red-50 dark:bg-red-900/10 rounded-lg">
-            <p className="text-xs text-red-500 dark:text-red-400 text-center">{error}</p>
+            <div className="flex items-center gap-2 justify-center">
+              <AlertCircle className="w-4 h-4 text-red-500" />
+              <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+            </div>
           </div>
         )}
 

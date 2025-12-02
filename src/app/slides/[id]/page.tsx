@@ -57,6 +57,7 @@ export default async function SlideshowPage({ params }: PageProps) {
       title={slideshow.title}
       images={images}
       createdAt={slideshow.createdAt.toISOString()}
+      videoUrl={slideshow.videoUrl || undefined}
     />
   );
 }
