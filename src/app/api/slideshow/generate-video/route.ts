@@ -94,9 +94,35 @@ async function* videoGenerationProcess(
     }
 
     const images: string[] = JSON.parse(slideshow.images);
-    const prompts: string[] = slideshow.prompts
+    let prompts: string[] = slideshow.prompts
       ? JSON.parse(slideshow.prompts)
-      : images.map(() => "");
+      : [];
+
+    // 如果 prompts 为空或全是空字符串，通过 imageUrl 去 ImageTask 表匹配
+    const hasValidPrompts = prompts.some(p => p && p.trim().length > 0);
+    if (!hasValidPrompts && images.length > 0) {
+      const imageTasks = await prisma.imageTask.findMany({
+        where: {
+          imageUrl: { in: images },
+        },
+        select: {
+          imageUrl: true,
+          prompt: true,
+        },
+      });
+
+      // 构建 URL -> prompt 映射
+      const urlToPrompt = new Map<string, string>();
+      for (const task of imageTasks) {
+        if (task.imageUrl) {
+          urlToPrompt.set(task.imageUrl, task.prompt);
+        }
+      }
+
+      // 按图片顺序获取 prompts
+      prompts = images.map(url => urlToPrompt.get(url) || "");
+      console.log(`[Video API] Matched ${imageTasks.length} prompts from ImageTask table`);
+    }
 
     if (images.length === 0) {
       throw new Error("幻灯片没有图片");
