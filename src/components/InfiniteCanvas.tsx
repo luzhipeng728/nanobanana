@@ -33,6 +33,7 @@ import SuperAgentNode from "./nodes/SuperAgentNode";
 // WebsiteGenNode 和 WebsitePreviewNode 已隐藏
 import ImageModal from "./ImageModal";
 import NodeToolbar from "./NodeToolbar";
+import PromptPanel from "./PromptPanel";
 import { CanvasContext } from "@/contexts/CanvasContext";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { TouchContextMenuProvider } from "./TouchContextMenu";
@@ -94,6 +95,9 @@ export default function InfiniteCanvas() {
 
   // Gallery State
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
+  // Selected Image Prompt Panel State
+  const [selectedImagePrompt, setSelectedImagePrompt] = useState<{ prompt: string; label?: string } | null>(null);
 
   // Selection Mode State (for box selection)
   const [selectionMode, setSelectionMode] = useState(false);
@@ -880,6 +884,22 @@ export default function InfiniteCanvas() {
     setIsImageModalOpen(true);
   }, []);
 
+  // Handle node selection change - show prompt panel for image nodes
+  const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Node[] }) => {
+    // 只有当选中单个 image 节点时才显示提示词面板
+    if (selectedNodes.length === 1 && selectedNodes[0].type === 'image') {
+      const node = selectedNodes[0];
+      const prompt = node.data?.prompt as string | undefined;
+      const label = node.data?.label as string | undefined;
+      if (prompt && prompt.trim()) {
+        setSelectedImagePrompt({ prompt, label });
+        return;
+      }
+    }
+    // 其他情况隐藏面板
+    setSelectedImagePrompt(null);
+  }, []);
+
   // Toggle slideshow selection for a node
   const toggleSlideshowSelection = useCallback((nodeId: string) => {
     setSlideshowSelections(prev => {
@@ -1309,6 +1329,7 @@ export default function InfiniteCanvas() {
               onInit={setReactFlowInstance}
               onDrop={onDrop}
               onDragOver={onDragOver}
+              onSelectionChange={handleSelectionChange}
               nodeTypes={nodeTypes}
               fitView
               minZoom={0.1}
@@ -1407,6 +1428,15 @@ export default function InfiniteCanvas() {
             <p className="text-sm text-neutral-500">Loading...</p>
           </div>
         </div>
+      )}
+
+      {/* Selected Image Prompt Panel */}
+      {selectedImagePrompt && (
+        <PromptPanel
+          prompt={selectedImagePrompt.prompt}
+          label={selectedImagePrompt.label}
+          onClose={() => setSelectedImagePrompt(null)}
+        />
       )}
 
       {/* Global Image Modal */}
