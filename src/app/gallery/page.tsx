@@ -24,6 +24,7 @@ async function getInitialSlides() {
         images: true,
         cover: true,
         createdAt: true,
+        videoUrl: true,
       },
     });
 
@@ -38,6 +39,7 @@ async function getInitialSlides() {
         imageCount: images.length,
         createdAt: s.createdAt.toISOString(),
         needsCover: !s.cover, // 没有专属封面就需要生成
+        videoUrl: s.videoUrl, // 视频 URL
       };
     });
 

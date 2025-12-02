@@ -2,7 +2,10 @@
  * 使用 FFmpeg 合成讲解视频
  */
 
-import { execSync, spawn } from "child_process";
+import { execSync, exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -64,6 +67,7 @@ async function downloadImage(url: string, outputPath: string): Promise<void> {
 
 /**
  * 检测图片尺寸并确定视频分辨率
+ * 使用 720p 分辨率以提升编码速度
  */
 async function detectVideoSize(imagePath: string): Promise<{ width: number; height: number }> {
   try {
@@ -74,20 +78,20 @@ async function detectVideoSize(imagePath: string): Promise<{ width: number; heig
     const [width, height] = result.trim().split("x").map(Number);
     const ratio = width / height;
 
-    // 根据比例决定输出尺寸
+    // 根据比例决定输出尺寸（使用 720p 分辨率提升速度）
     if (ratio > 1.2) {
-      // 横屏
-      return { width: 1920, height: 1080 };
+      // 横屏 720p
+      return { width: 1280, height: 720 };
     } else if (ratio < 0.8) {
-      // 竖屏
-      return { width: 1080, height: 1920 };
+      // 竖屏 720p
+      return { width: 720, height: 1280 };
     } else {
       // 方形
-      return { width: 1080, height: 1080 };
+      return { width: 720, height: 720 };
     }
   } catch (e) {
     console.error("[Video] Failed to detect image size:", e);
-    return { width: 1920, height: 1080 }; // 默认横屏
+    return { width: 1280, height: 720 }; // 默认横屏 720p
   }
 }
 
@@ -137,39 +141,54 @@ export async function composeVideo(
 
     onProgress?.(40, "正在合成视频...");
 
-    // 为每张图片生成带时长的视频片段
-    const segmentPaths: string[] = [];
-    for (let i = 0; i < localImagePaths.length; i++) {
+    // 并发生成所有视频片段（真正的并行处理）
+    const vfFilter = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
+
+    console.log(`[Video] Processing ${localImagePaths.length} segments in parallel...`);
+    const startTimeAll = Date.now();
+
+    const segmentPromises = localImagePaths.map(async (imagePath, i) => {
       const segmentPath = path.join(tempDir, `segment_${i}.mp4`);
-      const imagePath = localImagePaths[i];
       const audioPath = audioPaths[i];
       const duration = durations[i];
 
-      // 使用 FFmpeg 生成单个片段（图片 + 音频）
-      // 注意：-vf 参数需要用引号包裹，因为包含括号
-      const vfFilter = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
       const cmd = [
         "ffmpeg", "-y",
         "-loop", "1",
+        "-framerate", "1",
         "-i", `"${imagePath}"`,
         "-i", `"${audioPath}"`,
         "-c:v", "libx264",
+        "-preset", "ultrafast",
         "-tune", "stillimage",
+        "-crf", "28",
+        "-r", "24",
         "-c:a", "aac",
-        "-b:a", "192k",
+        "-b:a", "128k",
         "-pix_fmt", "yuv420p",
         "-vf", `"${vfFilter}"`,
         "-t", duration.toFixed(2),
         "-shortest",
         `"${segmentPath}"`,
-      ];
+      ].join(" ");
 
-      console.log(`[Video] Creating segment ${i + 1}...`);
-      execSync(cmd.join(" "), { stdio: "pipe", shell: "/bin/bash" });
-      segmentPaths.push(segmentPath);
+      const startTime = Date.now();
+      console.log(`[Video] Starting segment ${i + 1}...`);
 
-      onProgress?.(40 + (i / localImagePaths.length) * 40, `合成片段 ${i + 1}/${localImagePaths.length}`);
-    }
+      await execAsync(cmd, { shell: "/bin/bash" });
+
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`[Video] Segment ${i + 1} done in ${elapsed}s`);
+
+      return segmentPath;
+    });
+
+    const segmentPaths = await Promise.all(segmentPromises);
+
+    const totalElapsed = ((Date.now() - startTimeAll) / 1000).toFixed(1);
+    console.log(`[Video] All ${segmentPaths.length} segments completed in ${totalElapsed}s`);
+
+    onProgress?.(80, `已完成 ${segmentPaths.length} 个片段`);
 
     onProgress?.(80, "正在拼接视频...");
 
@@ -178,38 +197,20 @@ export async function composeVideo(
     const concatContent = segmentPaths.map(p => `file '${p}'`).join("\n");
     fs.writeFileSync(concatListPath, concatContent);
 
-    // 如果有转场效果，使用 xfade 滤镜
-    if (transition !== "none" && segmentPaths.length > 1) {
-      // 复杂滤镜链方式实现转场
-      // 由于 xfade 复杂度较高，这里使用简单的 concat 方式
-      // 后续可以优化为真正的 xfade
-      const finalCmd = [
-        "ffmpeg", "-y",
-        "-f", "concat",
-        "-safe", "0",
-        "-i", `"${concatListPath}"`,
-        "-c:v", "libx264",
-        "-c:a", "aac",
-        "-movflags", "+faststart",
-        `"${outputPath}"`,
-      ];
+    // 拼接所有片段（直接复制流，不重新编码）
+    // 注：转场效果暂时不实现，因为 xfade 需要重新编码，太慢
+    const finalCmd = [
+      "ffmpeg", "-y",
+      "-f", "concat",
+      "-safe", "0",
+      "-i", `"${concatListPath}"`,
+      "-c", "copy",  // 直接复制，不重新编码
+      "-movflags", "+faststart",
+      `"${outputPath}"`,
+    ];
 
-      console.log(`[Video] Concatenating segments...`);
-      execSync(finalCmd.join(" "), { stdio: "pipe", shell: "/bin/bash" });
-    } else {
-      // 无转场，直接拼接
-      const finalCmd = [
-        "ffmpeg", "-y",
-        "-f", "concat",
-        "-safe", "0",
-        "-i", `"${concatListPath}"`,
-        "-c", "copy",
-        "-movflags", "+faststart",
-        `"${outputPath}"`,
-      ];
-
-      execSync(finalCmd.join(" "), { stdio: "pipe", shell: "/bin/bash" });
-    }
+    console.log(`[Video] Concatenating segments...`);
+    execSync(finalCmd.join(" "), { stdio: "pipe", shell: "/bin/bash" });
 
     onProgress?.(95, "视频生成完成");
 

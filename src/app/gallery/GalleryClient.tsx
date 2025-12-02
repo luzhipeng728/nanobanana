@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Images, Calendar, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowLeft, Images, Calendar, ExternalLink, Loader2, Video } from "lucide-react";
 import PageViewCounter from "@/components/PageViewCounter";
 
 // Cloudflare Image Resizing URL
@@ -26,6 +26,7 @@ interface SlideItem {
   imageCount: number;
   createdAt: string;
   needsCover?: boolean;
+  videoUrl?: string | null;
 }
 
 interface GalleryClientProps {
@@ -160,10 +161,20 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                         </div>
                       </div>
                     </div>
-                    {/* Image Count Badge */}
-                    <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                      <Images className="w-3 h-3" />
-                      {slide.imageCount}
+                    {/* Badges */}
+                    <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+                      {/* Video Badge */}
+                      {slide.videoUrl && (
+                        <div className="bg-purple-600/90 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                          <Video className="w-3 h-3" />
+                          <span>视频</span>
+                        </div>
+                      )}
+                      {/* Image Count Badge */}
+                      <div className="bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                        <Images className="w-3 h-3" />
+                        {slide.imageCount}
+                      </div>
                     </div>
                   </div>
 
