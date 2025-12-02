@@ -32,13 +32,8 @@ export interface TTSResult {
   error?: string;
 }
 
-// Resource ID 映射（不同类别需要不同的 resource ID）
-const RESOURCE_IDS = {
-  '通用场景': 'volc.service_type.10029',
-  '儿童绘本': 'volc.service_type.10029',
-  '视频配音': 'volc.service_type.10043',
-  '角色扮演': 'volc.service_type.10061',
-} as const;
+// 通用 Resource ID（适用于所有发音人）
+const DEFAULT_RESOURCE_ID = 'volc.seedtts.default';
 
 // 预设发音人列表
 export const TTS_SPEAKERS = {
@@ -160,28 +155,13 @@ export const TTS_SPEAKERS = {
   },
 } as const;
 
-// 根据发音人 key 获取对应的 resource ID
-export function getResourceIdForSpeaker(speakerKey: SpeakerKey): string {
-  const speaker = TTS_SPEAKERS[speakerKey];
-  return RESOURCE_IDS[speaker.category] || RESOURCE_IDS['通用场景'];
-}
-
-// 根据 speaker id 反向查找 resource ID
-function getResourceIdBySpeakerId(speakerId: string): string {
-  for (const [, speaker] of Object.entries(TTS_SPEAKERS)) {
-    if (speaker.id === speakerId) {
-      return RESOURCE_IDS[speaker.category] || RESOURCE_IDS['通用场景'];
-    }
-  }
-  return RESOURCE_IDS['通用场景'];
-}
 
 export type SpeakerKey = keyof typeof TTS_SPEAKERS;
 
 // 默认配置
 const DEFAULT_CONFIG: TTSConfig = {
   apiKey: process.env.BYTEDANCE_TTS_API_KEY || '',
-  resourceId: process.env.BYTEDANCE_TTS_RESOURCE_ID || 'volc.service_type.10029',
+  resourceId: process.env.BYTEDANCE_TTS_RESOURCE_ID || DEFAULT_RESOURCE_ID,
 };
 
 const DEFAULT_OPTIONS: Partial<TTSOptions> = {
@@ -226,14 +206,9 @@ export class BytedanceTTSClient {
     }
 
     try {
-      // 根据 speaker 动态获取正确的 resource ID
-      const resourceId = opts.speaker
-        ? getResourceIdBySpeakerId(opts.speaker)
-        : this.config.resourceId;
-
       const headers = {
         'x-api-key': this.config.apiKey,
-        'X-Api-Resource-Id': resourceId,
+        'X-Api-Resource-Id': this.config.resourceId,
         'Content-Type': 'application/json',
         'Connection': 'keep-alive',
       };
