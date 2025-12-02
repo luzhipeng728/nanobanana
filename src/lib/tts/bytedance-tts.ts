@@ -235,13 +235,19 @@ export class BytedanceTTSClient {
         additions.context_text = opts.contextText;
       }
 
-      // 构建 audio_params（包含速度、音量、音调、情感等）
+      // 转换参数值：speed/volume/pitch 范围 0.5-2.0 → speech_rate/loudness_rate 范围 -50 到 100
+      // 公式：(value - 1) * 100，例如 1.5 → 50，0.5 → -50，1.0 → 0
+      const speechRate = Math.round((opts.speed! - 1) * 100);
+      const loudnessRate = Math.round((opts.volume! - 1) * 100);
+      const pitchRate = Math.round((opts.pitch! - 1) * 100);
+
+      // 构建 audio_params（使用正确的 v3 API 参数名）
       const audioParams: Record<string, unknown> = {
         format: opts.format,
         sample_rate: opts.sampleRate,
-        speed_ratio: opts.speed,
-        volume_ratio: opts.volume,
-        pitch_ratio: opts.pitch,
+        speech_rate: speechRate,      // 语速：-50 到 100
+        loudness_rate: loudnessRate,  // 音量：-50 到 100
+        pitch_rate: pitchRate,        // 音调：-50 到 100
       };
 
       // 添加情感/风格参数
@@ -249,7 +255,7 @@ export class BytedanceTTSClient {
         audioParams.emotion = opts.emotion;
       }
 
-      console.log(`[BytedanceTTS] Params: speed=${opts.speed}, pitch=${opts.pitch}, volume=${opts.volume}, emotion=${opts.emotion}`);
+      console.log(`[BytedanceTTS] Params: speed=${opts.speed}→speech_rate=${speechRate}, pitch=${opts.pitch}→pitch_rate=${pitchRate}, volume=${opts.volume}→loudness_rate=${loudnessRate}, emotion=${opts.emotion}`);
 
       const payload = {
         req_params: {
