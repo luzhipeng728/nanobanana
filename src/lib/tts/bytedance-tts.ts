@@ -217,43 +217,46 @@ export class BytedanceTTSClient {
         'Connection': 'keep-alive',
       };
 
-      // 构建 additions 参数
+      // 构建 additions 参数（仅包含非音频参数）
       const additions: Record<string, unknown> = {
         disable_markdown_filter: true,
         enable_language_detector: true,
         enable_latex_tn: true,
         disable_default_bit_rate: true,
         max_length_to_filter_parenthesis: 0,
-        speed_ratio: opts.speed,
-        volume_ratio: opts.volume,
-        pitch_ratio: opts.pitch,
         cache_config: {
           text_type: 1,
           use_cache: true,
         },
       };
 
-      console.log(`[BytedanceTTS] Params: speed=${opts.speed}, pitch=${opts.pitch}, volume=${opts.volume}, emotion=${opts.emotion}`);
-
       // 添加上下文文本（用于保持语调一致性）
       if (opts.contextText) {
         additions.context_text = opts.contextText;
       }
 
+      // 构建 audio_params（包含速度、音量、音调、情感等）
+      const audioParams: Record<string, unknown> = {
+        format: opts.format,
+        sample_rate: opts.sampleRate,
+        speed_ratio: opts.speed,
+        volume_ratio: opts.volume,
+        pitch_ratio: opts.pitch,
+      };
+
       // 添加情感/风格参数
       if (opts.emotion) {
-        additions.emotion = opts.emotion;
+        audioParams.emotion = opts.emotion;
       }
+
+      console.log(`[BytedanceTTS] Params: speed=${opts.speed}, pitch=${opts.pitch}, volume=${opts.volume}, emotion=${opts.emotion}`);
 
       const payload = {
         req_params: {
           text: opts.text,
           speaker: opts.speaker,
           additions: JSON.stringify(additions),
-          audio_params: {
-            format: opts.format,
-            sample_rate: opts.sampleRate,
-          },
+          audio_params: audioParams,
         },
       };
 
