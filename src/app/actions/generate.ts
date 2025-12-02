@@ -5,6 +5,8 @@ import { uploadBufferToR2 } from "@/lib/r2";
 import { GEMINI_IMAGE_MODELS, type GeminiImageModel, type ImageGenerationConfig } from "@/types/image-gen";
 import { prisma } from "@/lib/prisma";
 import { fetchAndCompressImage } from "@/lib/image-utils";
+import * as fs from 'fs';
+import * as path from 'path';
 
 // OpenAI Client for Prompt Rewriting
 const openai = new OpenAI({
@@ -28,6 +30,225 @@ for (const envName of keyEnvNames) {
 console.log(`[GeminiKeys] Loaded ${GEMINI_API_KEYS.length} API key(s)`);
 
 const RECOVERY_TIME = 24 * 60 * 60 * 1000; // 24 小时后重试失败的 Key
+
+// ============================================================================
+// 优先 API 配置（省钱方案）
+// ============================================================================
+const PRIORITY_API = {
+  baseUrl: 'http://172.93.101.237:8317/v1beta/models',
+  apiKey: 'sk-12345',
+  cooldownTime: 20 * 60 * 1000, // 20 分钟冷却时间
+};
+
+// 冷却状态配置文件路径
+const PRIORITY_API_STATE_FILE = path.join(process.cwd(), '.priority-api-state.json');
+
+interface PriorityApiState {
+  failedAt: number | null;
+}
+
+/**
+ * 读取优先 API 状态（从文件）
+ */
+function readPriorityApiState(): PriorityApiState {
+  try {
+    if (fs.existsSync(PRIORITY_API_STATE_FILE)) {
+      const content = fs.readFileSync(PRIORITY_API_STATE_FILE, 'utf-8');
+      return JSON.parse(content);
+    }
+  } catch (error) {
+    console.error(`[PriorityAPI] Error reading state file:`, error);
+  }
+  return { failedAt: null };
+}
+
+/**
+ * 保存优先 API 状态（到文件）
+ */
+function savePriorityApiState(state: PriorityApiState): void {
+  try {
+    fs.writeFileSync(PRIORITY_API_STATE_FILE, JSON.stringify(state, null, 2));
+  } catch (error) {
+    console.error(`[PriorityAPI] Error saving state file:`, error);
+  }
+}
+
+/**
+ * 检查优先 API 是否可用（未在冷却中）
+ */
+function isPriorityApiAvailable(): boolean {
+  const state = readPriorityApiState();
+
+  if (!state.failedAt) return true;
+
+  const now = Date.now();
+  const elapsed = now - state.failedAt;
+
+  if (elapsed >= PRIORITY_API.cooldownTime) {
+    // 冷却时间结束，重置状态
+    console.log(`[PriorityAPI] ✅ Cooldown ended, re-enabling priority API`);
+    savePriorityApiState({ failedAt: null });
+    return true;
+  }
+
+  const remainingMinutes = Math.ceil((PRIORITY_API.cooldownTime - elapsed) / 60000);
+  console.log(`[PriorityAPI] ⏳ Still in cooldown, ${remainingMinutes} minutes remaining`);
+  return false;
+}
+
+/**
+ * 标记优先 API 失败，开始冷却
+ */
+function markPriorityApiFailed(): void {
+  savePriorityApiState({ failedAt: Date.now() });
+  console.log(`[PriorityAPI] ❌ Marked as failed, cooldown for 20 minutes`);
+}
+
+/**
+ * 使用优先 API 生成图片
+ */
+async function generateImageWithPriorityApi(
+  prompt: string,
+  model: GeminiImageModel,
+  configOptions: ImageGenerationConfig,
+  referenceImages: string[]
+): Promise<{ success: boolean; imageUrl?: string; error?: string; prompt?: string; model?: string } | null> {
+  if (!isPriorityApiAvailable()) {
+    return null; // 在冷却中，返回 null 表示跳过
+  }
+
+  const modelName = GEMINI_IMAGE_MODELS[model];
+  const apiUrl = `${PRIORITY_API.baseUrl}/${modelName}:generateContent`;
+
+  console.log(`[PriorityAPI] 🚀 Attempting priority API: ${apiUrl}`);
+
+  // 构建 parts
+  const parts: any[] = [{ text: prompt }];
+
+  // 添加参考图片
+  if (referenceImages.length > 0) {
+    for (const imageUrl of referenceImages) {
+      try {
+        const compressed = await fetchAndCompressImage(imageUrl, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          maxSizeBytes: 800 * 1024,
+          quality: 0.8,
+          format: 'jpeg'
+        });
+        if (compressed) {
+          parts.push({
+            inline_data: {
+              mime_type: compressed.mimeType,
+              data: compressed.base64,
+            },
+          });
+        }
+      } catch (error) {
+        console.error(`[PriorityAPI] Error processing reference image:`, error);
+      }
+    }
+  }
+
+  // 构建请求体
+  const requestBody: any = {
+    contents: [{ role: "user", parts }],
+    generationConfig: {
+      responseModalities: ['IMAGE', 'TEXT'],
+    },
+  };
+
+  // 添加 imageConfig
+  if (configOptions.aspectRatio || configOptions.imageSize) {
+    requestBody.generationConfig.imageConfig = {};
+    if (configOptions.aspectRatio) {
+      requestBody.generationConfig.imageConfig.aspectRatio = configOptions.aspectRatio;
+    }
+    if (configOptions.imageSize) {
+      requestBody.generationConfig.imageConfig.image_size = configOptions.imageSize;
+    }
+  }
+
+  // Pro 模型添加 Google Search 工具
+  if (model === "nano-banana-pro") {
+    requestBody.tools = [{ googleSearch: {} }];
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 分钟超时（优先 API 应该更快）
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': PRIORITY_API.apiKey,
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[PriorityAPI] ❌ API error: ${response.status} - ${errorText.substring(0, 200)}`);
+      markPriorityApiFailed();
+      return null; // 返回 null，让调用者回退到普通 API
+    }
+
+    const data = await response.json();
+    console.log(`[PriorityAPI] ✅ Response received`);
+
+    // 解析响应
+    const candidates = data?.candidates;
+    if (!candidates || candidates.length === 0) {
+      console.error(`[PriorityAPI] ❌ No candidates in response`);
+      markPriorityApiFailed();
+      return null;
+    }
+
+    const responseParts = candidates[0]?.content?.parts;
+    if (!responseParts || responseParts.length === 0) {
+      console.error(`[PriorityAPI] ❌ No content parts in response`);
+      markPriorityApiFailed();
+      return null;
+    }
+
+    // 查找图片数据
+    for (const part of responseParts) {
+      if (part.inlineData && part.inlineData.data) {
+        console.log(`[PriorityAPI] ✅ Image data found`);
+        const base64Data = part.inlineData.data;
+        const mimeType = part.inlineData.mimeType || "image/png";
+        const buffer = Buffer.from(base64Data, "base64");
+
+        console.log(`[PriorityAPI] Image size: ${buffer.length} bytes`);
+
+        // 上传到 R2
+        const imageUrl = await uploadBufferToR2(buffer, mimeType);
+        console.log(`[PriorityAPI] ✅ Image uploaded: ${imageUrl}`);
+
+        return {
+          success: true,
+          imageUrl,
+          prompt,
+          model: `priority/${modelName}`,
+        };
+      }
+    }
+
+    console.error(`[PriorityAPI] ❌ No image data in response`);
+    markPriorityApiFailed();
+    return null;
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`[PriorityAPI] ❌ Error:`, errorMessage);
+    markPriorityApiFailed();
+    return null;
+  }
+}
 
 // 获取或初始化 API Key 状态（从数据库）
 async function getKeyState() {
@@ -226,6 +447,21 @@ export async function generateImageAction(
   configOptions: ImageGenerationConfig = {},
   referenceImages: string[] = []
 ) {
+  // ============================================================================
+  // 第一优先级：尝试使用优先 API（省钱）
+  // ============================================================================
+  const priorityResult = await generateImageWithPriorityApi(prompt, model, configOptions, referenceImages);
+  if (priorityResult) {
+    // 优先 API 成功，直接返回
+    return priorityResult;
+  }
+  // 优先 API 失败或在冷却中，继续使用普通 API
+  console.log(`[Gemini] Falling back to standard Gemini API...`);
+
+  // ============================================================================
+  // 第二优先级：使用标准 Gemini API Keys
+  // ============================================================================
+
   // 获取当前可用的 Key（从数据库读取全局状态）
   const keyInfo = await getCurrentApiKey();
   if (!keyInfo) {
