@@ -146,24 +146,26 @@ export async function composeVideo(
       const duration = durations[i];
 
       // 使用 FFmpeg 生成单个片段（图片 + 音频）
+      // 注意：-vf 参数需要用引号包裹，因为包含括号
+      const vfFilter = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
       const cmd = [
         "ffmpeg", "-y",
         "-loop", "1",
-        "-i", imagePath,
-        "-i", audioPath,
+        "-i", `"${imagePath}"`,
+        "-i", `"${audioPath}"`,
         "-c:v", "libx264",
         "-tune", "stillimage",
         "-c:a", "aac",
         "-b:a", "192k",
         "-pix_fmt", "yuv420p",
-        "-vf", `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`,
+        "-vf", `"${vfFilter}"`,
         "-t", duration.toFixed(2),
         "-shortest",
-        segmentPath,
+        `"${segmentPath}"`,
       ];
 
       console.log(`[Video] Creating segment ${i + 1}...`);
-      execSync(cmd.join(" "), { stdio: "pipe" });
+      execSync(cmd.join(" "), { stdio: "pipe", shell: "/bin/bash" });
       segmentPaths.push(segmentPath);
 
       onProgress?.(40 + (i / localImagePaths.length) * 40, `合成片段 ${i + 1}/${localImagePaths.length}`);
@@ -185,28 +187,28 @@ export async function composeVideo(
         "ffmpeg", "-y",
         "-f", "concat",
         "-safe", "0",
-        "-i", concatListPath,
+        "-i", `"${concatListPath}"`,
         "-c:v", "libx264",
         "-c:a", "aac",
         "-movflags", "+faststart",
-        outputPath,
+        `"${outputPath}"`,
       ];
 
       console.log(`[Video] Concatenating segments...`);
-      execSync(finalCmd.join(" "), { stdio: "pipe" });
+      execSync(finalCmd.join(" "), { stdio: "pipe", shell: "/bin/bash" });
     } else {
       // 无转场，直接拼接
       const finalCmd = [
         "ffmpeg", "-y",
         "-f", "concat",
         "-safe", "0",
-        "-i", concatListPath,
+        "-i", `"${concatListPath}"`,
         "-c", "copy",
         "-movflags", "+faststart",
-        outputPath,
+        `"${outputPath}"`,
       ];
 
-      execSync(finalCmd.join(" "), { stdio: "pipe" });
+      execSync(finalCmd.join(" "), { stdio: "pipe", shell: "/bin/bash" });
     }
 
     onProgress?.(95, "视频生成完成");
