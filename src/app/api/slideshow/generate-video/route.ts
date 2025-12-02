@@ -136,17 +136,39 @@ async function* videoGenerationProcess(
       data: { videoStatus: "generating" },
     });
 
-    // 3. 生成讲解文案
+    // 3. 生成讲解文案（带心跳，防止超时）
     yield sendProgress(15, "narration", "正在生成讲解文案...");
-    const narrationResult = await generateNarrations({
+
+    const narrationPromise = generateNarrations({
       prompts,
       style,
       title: slideshow.title,
     });
 
+    // 使用心跳机制防止 SSE 超时
+    let narrationResult: Awaited<ReturnType<typeof generateNarrations>> | null = null;
+    let elapsed = 0;
+    const heartbeatInterval = 5000; // 每5秒发送心跳
+
+    while (!narrationResult) {
+      const result = await Promise.race([
+        narrationPromise.then(r => ({ type: 'done' as const, data: r })),
+        new Promise<{ type: 'heartbeat' }>(resolve =>
+          setTimeout(() => resolve({ type: 'heartbeat' }), heartbeatInterval)
+        ),
+      ]);
+
+      if (result.type === 'heartbeat') {
+        elapsed += heartbeatInterval / 1000;
+        yield sendProgress(15, "narration", `正在生成讲解文案... ${elapsed}秒`);
+      } else {
+        narrationResult = result.data;
+      }
+    }
+
     const narrations = narrationResult.narrations;
     const narrationItems = narrationResult.items;
-    console.log(`[Video API] Generated ${narrations.length} narrations with TTS params`);
+    console.log(`[Video API] Generated ${narrations.length} narrations in ${elapsed}s`);
 
     // 4. 并发生成 TTS 音频
     yield sendProgress(30, "tts", "正在并发生成语音...");
@@ -158,6 +180,7 @@ async function* videoGenerationProcess(
     const ttsStartTime = Date.now();
 
     // 所有 TTS 请求并发执行
+    let completedCount = 0;
     const ttsPromises = narrations.map(async (text, i) => {
       const ttsParams = narrationItems[i]?.ttsParams;
       const startTime = Date.now();
@@ -172,7 +195,7 @@ async function* videoGenerationProcess(
         volume: ttsParams?.volume,
       });
 
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
 
       if (!ttsResult.success || !ttsResult.audioBuffer) {
         throw new Error(`语音生成失败 (${i + 1}): ${ttsResult.error}`);
@@ -181,20 +204,42 @@ async function* videoGenerationProcess(
       const audioPath = path.join(tempDir, `audio_${i}.mp3`);
       fs.writeFileSync(audioPath, ttsResult.audioBuffer);
 
-      console.log(`[Video API] TTS ${i + 1} done in ${elapsed}s`);
+      completedCount++;
+      console.log(`[Video API] TTS ${i + 1} done in ${elapsedTime}s (${completedCount}/${narrations.length})`);
       return audioPath;
     });
 
-    const audioPaths = await Promise.all(ttsPromises);
+    // TTS 带心跳
+    const ttsAllPromise = Promise.all(ttsPromises);
+    let audioPaths: string[] | null = null;
+    let ttsHeartbeatElapsed = 0;
+
+    while (!audioPaths) {
+      const result = await Promise.race([
+        ttsAllPromise.then(r => ({ type: 'done' as const, data: r })),
+        new Promise<{ type: 'heartbeat' }>(resolve =>
+          setTimeout(() => resolve({ type: 'heartbeat' }), 3000)
+        ),
+      ]);
+
+      if (result.type === 'heartbeat') {
+        ttsHeartbeatElapsed += 3;
+        yield sendProgress(30, "tts", `正在生成语音... ${completedCount}/${narrations.length} (${ttsHeartbeatElapsed}秒)`);
+      } else {
+        audioPaths = result.data;
+      }
+    }
 
     const ttsElapsed = ((Date.now() - ttsStartTime) / 1000).toFixed(1);
     console.log(`[Video API] All ${audioPaths.length} TTS completed in ${ttsElapsed}s`);
 
-    // 5. 合成视频
+    // 5. 合成视频（带心跳）
     yield sendProgress(60, "compose", "正在合成视频...");
 
     const outputPath = path.join(tempDir, "output.mp4");
-    const composeResult = await composeVideo(
+    let lastComposeMessage = "正在合成视频...";
+
+    const composePromise = composeVideo(
       {
         imageUrls: images,
         audioPaths,
@@ -202,12 +247,30 @@ async function* videoGenerationProcess(
         outputPath,
       },
       (percent, message) => {
-        // FFmpeg 内部进度（60-90%）
-        const overallPercent = 60 + (percent / 100) * 30;
-        // 这里无法 yield，所以只打印日志
+        lastComposeMessage = message;
         console.log(`[Video API] Compose progress: ${percent}% - ${message}`);
       }
     );
+
+    // 视频合成带心跳
+    let composeResult: Awaited<ReturnType<typeof composeVideo>> | null = null;
+    let composeHeartbeatElapsed = 0;
+
+    while (!composeResult) {
+      const result = await Promise.race([
+        composePromise.then(r => ({ type: 'done' as const, data: r })),
+        new Promise<{ type: 'heartbeat' }>(resolve =>
+          setTimeout(() => resolve({ type: 'heartbeat' }), 3000)
+        ),
+      ]);
+
+      if (result.type === 'heartbeat') {
+        composeHeartbeatElapsed += 3;
+        yield sendProgress(60, "compose", `${lastComposeMessage} (${composeHeartbeatElapsed}秒)`);
+      } else {
+        composeResult = result.data;
+      }
+    }
 
     if (!composeResult.success) {
       throw new Error(`视频合成失败: ${composeResult.error}`);
