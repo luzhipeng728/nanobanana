@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles, Bot } from "lucide-react";
+import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles, Bot, Mic2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 
-type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'chatAgent' | 'sprite' | 'superAgent';
+type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'chatAgent' | 'sprite' | 'superAgent' | 'ttsGen';
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, nodeType: NodeType) => void;
@@ -58,6 +58,13 @@ const baseItems = [
     description: 'AI 音乐生成',
     icon: Music,
     accentColor: '#22c55e',
+  },
+  {
+    type: 'ttsGen' as NodeType,
+    title: 'TTS',
+    description: '文字转语音',
+    icon: Mic2,
+    accentColor: '#06b6d4',
   },
   {
     type: 'chatAgent' as NodeType,

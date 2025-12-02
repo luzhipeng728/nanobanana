@@ -1,0 +1,242 @@
+/**
+ * 火山引擎（字节跳动）TTS 服务封装
+ * 支持流式音频生成，可复用
+ */
+
+export interface TTSConfig {
+  apiKey: string;
+  resourceId: string;
+}
+
+export interface TTSOptions {
+  /** 要转换的文本 */
+  text: string;
+  /** 发音人 ID */
+  speaker?: string;
+  /** 音频格式 */
+  format?: 'mp3' | 'wav' | 'pcm';
+  /** 采样率 */
+  sampleRate?: number;
+  /** 语速 (0.5-2.0) */
+  speed?: number;
+  /** 音量 (0.5-2.0) */
+  volume?: number;
+  /** 音调 (0.5-2.0) */
+  pitch?: number;
+}
+
+export interface TTSResult {
+  success: boolean;
+  audioBuffer?: Buffer;
+  mimeType?: string;
+  error?: string;
+}
+
+// 预设发音人列表
+export const TTS_SPEAKERS = {
+  // 中文男声
+  'zh_male_beijingxiaoye': {
+    id: 'zh_male_beijingxiaoye_emo_v2_mars_bigtts',
+    name: '北京小爷',
+    language: 'zh',
+    gender: 'male',
+  },
+  'zh_male_shaonianxiaoxiao': {
+    id: 'zh_male_shaonianxiaoxiao_mars_bigtts',
+    name: '少年萧萧',
+    language: 'zh',
+    gender: 'male',
+  },
+  // 中文女声
+  'zh_female_tianmeixiaoyuan': {
+    id: 'zh_female_tianmeixiaoyuan_mars_bigtts',
+    name: '甜美小源',
+    language: 'zh',
+    gender: 'female',
+  },
+  'zh_female_wanwanxiaohe': {
+    id: 'zh_female_wanwanxiaohe_mars_bigtts',
+    name: '湾湾小何',
+    language: 'zh',
+    gender: 'female',
+  },
+  // 英文
+  'en_male_adam': {
+    id: 'en_male_adam_mars_bigtts',
+    name: 'Adam',
+    language: 'en',
+    gender: 'male',
+  },
+  'en_female_sarah': {
+    id: 'en_female_sarah_mars_bigtts',
+    name: 'Sarah',
+    language: 'en',
+    gender: 'female',
+  },
+} as const;
+
+export type SpeakerKey = keyof typeof TTS_SPEAKERS;
+
+// 默认配置
+const DEFAULT_CONFIG: TTSConfig = {
+  apiKey: process.env.BYTEDANCE_TTS_API_KEY || '',
+  resourceId: process.env.BYTEDANCE_TTS_RESOURCE_ID || 'volc.service_type.10029',
+};
+
+const DEFAULT_OPTIONS: Partial<TTSOptions> = {
+  speaker: TTS_SPEAKERS.zh_male_beijingxiaoye.id,
+  format: 'mp3',
+  sampleRate: 24000,
+  speed: 1.0,
+  volume: 1.0,
+  pitch: 1.0,
+};
+
+const TTS_API_URL = 'https://openspeech.bytedance.com/api/v3/tts/unidirectional';
+
+/**
+ * 火山引擎 TTS 客户端
+ */
+export class BytedanceTTSClient {
+  private config: TTSConfig;
+
+  constructor(config?: Partial<TTSConfig>) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
+  /**
+   * 将文本转换为语音
+   */
+  async synthesize(options: TTSOptions): Promise<TTSResult> {
+    const opts = { ...DEFAULT_OPTIONS, ...options };
+
+    if (!this.config.apiKey) {
+      return {
+        success: false,
+        error: 'TTS API Key is not configured',
+      };
+    }
+
+    if (!opts.text || !opts.text.trim()) {
+      return {
+        success: false,
+        error: 'Text is required',
+      };
+    }
+
+    try {
+      const headers = {
+        'x-api-key': this.config.apiKey,
+        'X-Api-Resource-Id': this.config.resourceId,
+        'Content-Type': 'application/json',
+        'Connection': 'keep-alive',
+      };
+
+      const payload = {
+        req_params: {
+          text: opts.text,
+          speaker: opts.speaker,
+          additions: JSON.stringify({
+            disable_markdown_filter: true,
+            enable_language_detector: true,
+            enable_latex_tn: true,
+            disable_default_bit_rate: true,
+            max_length_to_filter_parenthesis: 0,
+            speed_ratio: opts.speed,
+            volume_ratio: opts.volume,
+            pitch_ratio: opts.pitch,
+            cache_config: {
+              text_type: 1,
+              use_cache: true,
+            },
+          }),
+          audio_params: {
+            format: opts.format,
+            sample_rate: opts.sampleRate,
+          },
+        },
+      };
+
+      const response = await fetch(TTS_API_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          success: false,
+          error: `TTS API error: ${response.status} - ${errorText}`,
+        };
+      }
+
+      // 解析流式 JSON Lines 响应
+      const responseText = await response.text();
+      const lines = responseText.split('\n').filter(line => line.trim());
+
+      const audioChunks: Buffer[] = [];
+
+      for (const line of lines) {
+        const data = JSON.parse(line);
+
+        if (data.code !== 0 && data.message !== 'OK') {
+          return {
+            success: false,
+            error: `TTS API error: ${data.message || 'Unknown error'}`,
+          };
+        }
+
+        // 提取 base64 编码的音频数据
+        if (data.data) {
+          audioChunks.push(Buffer.from(data.data, 'base64'));
+        }
+      }
+
+      if (audioChunks.length === 0) {
+        return {
+          success: false,
+          error: 'No audio data received',
+        };
+      }
+
+      // 合并音频块
+      const audioBuffer = Buffer.concat(audioChunks);
+
+      return {
+        success: true,
+        audioBuffer,
+        mimeType: opts.format === 'mp3' ? 'audio/mpeg' : opts.format === 'wav' ? 'audio/wav' : 'audio/pcm',
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[BytedanceTTS] Error:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * 获取发音人列表
+   */
+  static getSpeakers() {
+    return TTS_SPEAKERS;
+  }
+
+  /**
+   * 获取发音人 ID
+   */
+  static getSpeakerId(key: SpeakerKey): string {
+    return TTS_SPEAKERS[key]?.id || TTS_SPEAKERS.zh_male_beijingxiaoye.id;
+  }
+}
+
+// 导出单例实例（使用默认配置）
+export const ttsClient = new BytedanceTTSClient();
+
+// 便捷函数
+export async function textToSpeech(text: string, options?: Partial<TTSOptions>): Promise<TTSResult> {
+  return ttsClient.synthesize({ text, ...options });
+}

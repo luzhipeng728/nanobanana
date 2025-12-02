@@ -30,6 +30,8 @@ import StickerGenNode from "./nodes/StickerGenNode";
 import StickerNode from "./nodes/StickerNode";
 import SpriteNode from "./nodes/SpriteNode";
 import SuperAgentNode from "./nodes/SuperAgentNode";
+import TTSGenNode from "./nodes/TTSGenNode";
+import TTSNode from "./nodes/TTSNode";
 // WebsiteGenNode 和 WebsitePreviewNode 已隐藏
 import ImageModal from "./ImageModal";
 import NodeToolbar from "./NodeToolbar";
@@ -61,6 +63,8 @@ const nodeTypes = {
   sticker: StickerNode as any,
   sprite: SpriteNode as any,
   superAgent: SuperAgentNode as any,
+  ttsGen: TTSGenNode as any,
+  tts: TTSNode as any,
   // websiteGen 和 websitePreview 已隐藏
 };
 
@@ -465,6 +469,8 @@ export default function InfiniteCanvas() {
           ? { width: 450 }
           : pendingNodeType === 'chatAgent'
           ? { width: 550, height: 700 }
+          : pendingNodeType === 'ttsGen'
+          ? { width: 340 }
           : undefined,
         data: pendingNodeType === 'imageGen'
           ? { prompt: '' }
@@ -478,6 +484,8 @@ export default function InfiniteCanvas() {
           ? { messages: [], systemPrompt: 'You are a helpful AI assistant that generates image prompts. When user asks for images, wrap your prompt suggestions in ```text\n[prompt text]\n``` blocks.' }
           : pendingNodeType === 'chatAgent'
           ? {}
+          : pendingNodeType === 'ttsGen'
+          ? { text: '', speaker: 'zh_male_beijingxiaoye', speed: 1.0 }
           : {},
       };
       setNodes((nds) => nds.concat(newNode));
@@ -555,6 +563,8 @@ export default function InfiniteCanvas() {
           ? { width: 450 }
           : type === 'chatAgent'
           ? { width: 550, height: 700 }
+          : type === 'ttsGen'
+          ? { width: 340 }
           : undefined,
         data: type === 'imageGen'
           ? { prompt: '' }
@@ -572,6 +582,8 @@ export default function InfiniteCanvas() {
           ? {}
           : type === 'chatAgent'
           ? {}
+          : type === 'ttsGen'
+          ? { text: '', speaker: 'zh_male_beijingxiaoye', speed: 1.0 }
           : {},
       };
 
@@ -840,6 +852,24 @@ export default function InfiniteCanvas() {
     return nodeId;
   }, [setNodes]);
 
+  // Add TTS node programmatically
+  const addTTSNode = useCallback((audioUrl: string, text: string, position: { x: number; y: number }): string => {
+    const nodeId = `tts-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    const newNode: Node = {
+      id: nodeId,
+      type: "tts",
+      position,
+      data: {
+        audioUrl,
+        text,
+        isLoading: false,
+      },
+    };
+    setNodes((nds) => nds.concat(newNode));
+    return nodeId;
+  }, [setNodes]);
+
   // Use refs to avoid re-creating callbacks on every render
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
@@ -1007,6 +1037,7 @@ export default function InfiniteCanvas() {
     addMusicNode,
     addVideoNode,
     addStickerNode,
+    addTTSNode,
     getConnectedImageNodes,
     getSelectedImageNodes: () => [], // Remove selected functionality
     getNode,
@@ -1017,7 +1048,7 @@ export default function InfiniteCanvas() {
     slideshowMode,
     slideshowSelections,
     toggleSlideshowSelection,
-  }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, addStickerNode, getConnectedImageNodes, getNode, openImageModal, getNodes, getEdges, slideshowMode, slideshowSelections, toggleSlideshowSelection]);
+  }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, addStickerNode, addTTSNode, getConnectedImageNodes, getNode, openImageModal, getNodes, getEdges, slideshowMode, slideshowSelections, toggleSlideshowSelection]);
 
   return (
     <div className="w-full h-screen relative bg-neutral-50 dark:bg-black">
@@ -1298,7 +1329,7 @@ export default function InfiniteCanvas() {
             )}
             <span className="text-sm font-medium">
               {pendingNodeType
-                ? `点击画布放置 ${pendingNodeType === 'imageGen' ? 'Generator' : pendingNodeType === 'agent' ? 'Agent' : pendingNodeType === 'superAgent' ? 'Prompt Expert' : pendingNodeType === 'musicGen' ? 'Music' : pendingNodeType === 'videoGen' ? 'Video' : pendingNodeType === 'chat' ? 'Chat' : pendingNodeType === 'sprite' ? 'Sprite' : pendingNodeType === 'chatAgent' ? 'Agent Chat' : pendingNodeType} 节点`
+                ? `点击画布放置 ${pendingNodeType === 'imageGen' ? 'Generator' : pendingNodeType === 'agent' ? 'Agent' : pendingNodeType === 'superAgent' ? 'Prompt Expert' : pendingNodeType === 'musicGen' ? 'Music' : pendingNodeType === 'videoGen' ? 'Video' : pendingNodeType === 'chat' ? 'Chat' : pendingNodeType === 'sprite' ? 'Sprite' : pendingNodeType === 'chatAgent' ? 'Agent Chat' : pendingNodeType === 'ttsGen' ? 'TTS' : pendingNodeType} 节点`
                 : pendingGalleryImage
                 ? '点击画布放置画廊图片'
                 : '点击画布选择图片放置位置'}

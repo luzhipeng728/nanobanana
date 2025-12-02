@@ -23,7 +23,17 @@ export const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || "";
 
 export async function uploadBufferToR2(buffer: Buffer, contentType: string = "image/png", folder: string = "images") {
   // 根据 contentType 确定扩展名
-  const ext = contentType.includes("png") ? "png" : contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : contentType.includes("webp") ? "webp" : "png";
+  let ext = "bin";
+  if (contentType.includes("png")) ext = "png";
+  else if (contentType.includes("jpeg") || contentType.includes("jpg")) ext = "jpg";
+  else if (contentType.includes("webp")) ext = "webp";
+  else if (contentType.includes("gif")) ext = "gif";
+  else if (contentType.includes("mp3") || contentType.includes("mpeg")) ext = "mp3";
+  else if (contentType.includes("wav")) ext = "wav";
+  else if (contentType.includes("ogg")) ext = "ogg";
+  else if (contentType.includes("mp4")) ext = "mp4";
+  else if (contentType.includes("webm")) ext = "webm";
+
   const fileName = `nanobanana/${folder}/${uuidv4()}.${ext}`;
 
   const command = new PutObjectCommand({
