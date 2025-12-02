@@ -1159,6 +1159,7 @@ export default function InfiniteCanvas() {
           setVideoProgress({ percent: 0, steps: [] });
 
           try {
+            console.log(`[Video] Sending params: speaker=${narrationSpeaker}, speed=${narrationSpeed}, transition=${narrationTransition}`);
             const videoResponse = await fetch("/api/slideshow/generate-video", {
               method: "POST",
               headers: { "Content-Type": "application/json" },

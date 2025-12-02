@@ -40,16 +40,22 @@ export interface NarrationResult {
 }
 
 // 讲解文案生成系统提示词
-const NARRATION_SYSTEM_PROMPT = `你是专业讲解员。为图片生成讲解旁白。
+const NARRATION_SYSTEM_PROMPT = `你是专业讲解员。为图片生成讲解旁白和语音参数。
 
 规则：
 1. 第N段讲解必须对应第N张图片，严禁错位
 2. 每段50-150字，适合朗读
 3. 沉浸式描述，不要说"这张图"
-4. 输出纯JSON，无其他内容
+4. 根据内容情感选择合适的ttsParams
+5. 输出纯JSON，无其他内容
+
+ttsParams说明：
+- emotion: neutral(默认)/happy/sad/excited/calm/serious
+- pitch: 音调0.8-1.2，激动时略高，沉静时略低
+- volume: 音量0.9-1.1，强调时略高
 
 输出格式：
-{"items":[{"text":"讲解文案1"},{"text":"讲解文案2"}]}`;
+{"items":[{"text":"讲解文案","ttsParams":{"emotion":"neutral","pitch":1.0,"volume":1.0}}]}`;
 
 /**
  * 生成讲解文案

@@ -233,6 +233,8 @@ export class BytedanceTTSClient {
         },
       };
 
+      console.log(`[BytedanceTTS] Params: speed=${opts.speed}, pitch=${opts.pitch}, volume=${opts.volume}, emotion=${opts.emotion}`);
+
       // 添加上下文文本（用于保持语调一致性）
       if (opts.contextText) {
         additions.context_text = opts.contextText;

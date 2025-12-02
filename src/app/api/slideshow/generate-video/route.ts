@@ -66,6 +66,8 @@ async function* videoGenerationProcess(
 ): AsyncGenerator<string, void, unknown> {
   const { slideshowId, speaker, transition, style, speed = 1.0 } = request;
 
+  console.log(`[Video API] Request params: speaker=${speaker}, speed=${speed}, transition=${transition}`);
+
   // 发送进度
   const sendProgress = (
     percent: number,
