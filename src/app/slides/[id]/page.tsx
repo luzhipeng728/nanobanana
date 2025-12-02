@@ -54,10 +54,12 @@ export default async function SlideshowPage({ params }: PageProps) {
 
   return (
     <SlideshowViewer
+      slideshowId={slideshow.id}
       title={slideshow.title}
       images={images}
       createdAt={slideshow.createdAt.toISOString()}
       videoUrl={slideshow.videoUrl || undefined}
+      videoStatus={slideshow.videoStatus || undefined}
     />
   );
 }
