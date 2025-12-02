@@ -23,6 +23,10 @@ export interface TTSOptions {
   volume?: number;
   /** 音调 (0.5-2.0) */
   pitch?: number;
+  /** 上下文文本（用于保持语调一致性） */
+  contextText?: string;
+  /** 情感/风格（如：happy, sad, neutral, excited 等） */
+  emotion?: string;
 }
 
 export interface TTSResult {
@@ -213,24 +217,37 @@ export class BytedanceTTSClient {
         'Connection': 'keep-alive',
       };
 
+      // 构建 additions 参数
+      const additions: Record<string, unknown> = {
+        disable_markdown_filter: true,
+        enable_language_detector: true,
+        enable_latex_tn: true,
+        disable_default_bit_rate: true,
+        max_length_to_filter_parenthesis: 0,
+        speed_ratio: opts.speed,
+        volume_ratio: opts.volume,
+        pitch_ratio: opts.pitch,
+        cache_config: {
+          text_type: 1,
+          use_cache: true,
+        },
+      };
+
+      // 添加上下文文本（用于保持语调一致性）
+      if (opts.contextText) {
+        additions.context_text = opts.contextText;
+      }
+
+      // 添加情感/风格参数
+      if (opts.emotion) {
+        additions.emotion = opts.emotion;
+      }
+
       const payload = {
         req_params: {
           text: opts.text,
           speaker: opts.speaker,
-          additions: JSON.stringify({
-            disable_markdown_filter: true,
-            enable_language_detector: true,
-            enable_latex_tn: true,
-            disable_default_bit_rate: true,
-            max_length_to_filter_parenthesis: 0,
-            speed_ratio: opts.speed,
-            volume_ratio: opts.volume,
-            pitch_ratio: opts.pitch,
-            cache_config: {
-              text_type: 1,
-              use_cache: true,
-            },
-          }),
+          additions: JSON.stringify(additions),
           audio_params: {
             format: opts.format,
             sample_rate: opts.sampleRate,

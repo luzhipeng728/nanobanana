@@ -136,6 +136,7 @@ export default function InfiniteCanvas() {
   const [narrationSpeaker, setNarrationSpeaker] = useState("zh_female_vivi");
   const [narrationTransition, setNarrationTransition] = useState("fade");
   const [narrationStyle, setNarrationStyle] = useState("");
+  const [narrationSpeed, setNarrationSpeed] = useState(1.0);
   // 视频生成进度
   const [videoGenerating, setVideoGenerating] = useState(false);
   const [videoProgress, setVideoProgress] = useState<{
@@ -1074,6 +1075,7 @@ export default function InfiniteCanvas() {
                 speaker: narrationSpeaker,
                 transition: narrationTransition,
                 style: narrationStyle || undefined,
+                speed: narrationSpeed,
               }),
             });
 
@@ -1139,7 +1141,7 @@ export default function InfiniteCanvas() {
         setIsPublishing(false);
       }
     }
-  }, [slideshowSelections, slideshowTitle, enableNarration, narrationSpeaker, narrationTransition, narrationStyle]);
+  }, [slideshowSelections, slideshowTitle, enableNarration, narrationSpeaker, narrationTransition, narrationStyle, narrationSpeed]);
 
   // Getter functions that use refs - stable references, no re-renders on node changes
   const getNodes = useCallback(() => nodesRef.current, []);
@@ -1505,6 +1507,28 @@ export default function InfiniteCanvas() {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* 语速选择 */}
+                  <div className="space-y-1">
+                    <label className="flex items-center justify-between text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                      <span>语速</span>
+                      <span className="text-purple-500">{narrationSpeed.toFixed(1)}x</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="2.0"
+                      step="0.1"
+                      value={narrationSpeed}
+                      onChange={(e) => setNarrationSpeed(parseFloat(e.target.value))}
+                      className="w-full h-2 bg-purple-200 dark:bg-purple-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                    />
+                    <div className="flex justify-between text-[10px] text-neutral-400">
+                      <span>慢 0.5x</span>
+                      <span>正常 1.0x</span>
+                      <span>快 2.0x</span>
+                    </div>
                   </div>
 
                   {/* 转场效果选择 */}

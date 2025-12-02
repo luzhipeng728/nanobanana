@@ -21,6 +21,7 @@ interface VideoGenerationRequest {
   speaker: string;
   transition: string;
   style?: string;
+  speed?: number;
 }
 
 /**
@@ -63,7 +64,7 @@ function createSSEResponse(
 async function* videoGenerationProcess(
   request: VideoGenerationRequest
 ): AsyncGenerator<string, void, unknown> {
-  const { slideshowId, speaker, transition, style } = request;
+  const { slideshowId, speaker, transition, style, speed = 1.0 } = request;
 
   // 发送进度
   const sendProgress = (
@@ -116,7 +117,8 @@ async function* videoGenerationProcess(
     });
 
     const narrations = narrationResult.narrations;
-    console.log(`[Video API] Generated ${narrations.length} narrations`);
+    const narrationItems = narrationResult.items;
+    console.log(`[Video API] Generated ${narrations.length} narrations with TTS params`);
 
     // 4. 生成 TTS 音频
     yield sendProgress(30, "tts", "正在生成语音...");
@@ -133,10 +135,24 @@ async function* videoGenerationProcess(
         { current: i + 1, total: narrations.length }
       );
 
+      // 构建上下文文本（前面所有段落的内容）
+      const contextText = i > 0
+        ? narrations.slice(0, i).join('\n')
+        : undefined;
+
+      // 获取大模型生成的 TTS 参数
+      const ttsParams = narrationItems[i]?.ttsParams;
+
       const ttsResult = await textToSpeech(narrations[i], {
         speaker: speakerId,
         format: "mp3",
-        speed: 1.0,
+        speed,
+        // 传递上下文文本保持语调一致性
+        contextText,
+        // 传递大模型决定的情感和音调参数
+        emotion: ttsParams?.emotion,
+        pitch: ttsParams?.pitch,
+        volume: ttsParams?.volume,
       });
 
       if (!ttsResult.success || !ttsResult.audioBuffer) {
@@ -146,6 +162,8 @@ async function* videoGenerationProcess(
       const audioPath = path.join(tempDir, `audio_${i}.mp3`);
       fs.writeFileSync(audioPath, ttsResult.audioBuffer);
       audioPaths.push(audioPath);
+
+      console.log(`[Video API] TTS ${i + 1}/${narrations.length}: emotion=${ttsParams?.emotion || 'default'}, pitch=${ttsParams?.pitch || 1.0}`);
     }
 
     console.log(`[Video API] Generated ${audioPaths.length} audio files`);
@@ -224,7 +242,7 @@ async function* videoGenerationProcess(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { slideshowId, speaker, transition, style } = body;
+    const { slideshowId, speaker, transition, style, speed } = body;
 
     // 验证参数
     if (!slideshowId) {
@@ -260,6 +278,7 @@ export async function POST(request: NextRequest) {
       speaker: speaker || "zh_female_vivi",
       transition: transition || "fade",
       style,
+      speed: speed || 1.0,
     });
 
     return createSSEResponse(generator);
