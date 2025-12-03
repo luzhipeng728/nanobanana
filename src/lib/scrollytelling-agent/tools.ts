@@ -1,4 +1,4 @@
-// Reveal.js 演示文稿 Agent 工具定义
+// Scrollytelling 动效网站 Agent 工具定义
 
 export interface ScrollytellingTool {
   name: string;
@@ -14,13 +14,13 @@ export interface ScrollytellingTool {
 export const SCROLLYTELLING_TOOLS: ScrollytellingTool[] = [
   {
     name: 'plan_structure',
-    description: `规划演示文稿的整体结构，包括幻灯片划分、叙事线索、AI 生图提示词和高级动画效果。
+    description: `规划 Scrollytelling 动效网站的整体结构，包括 section 划分、叙事线索、AI 生图提示词和 GSAP 动画效果。
 
 ⚠️ 重要：
 1. 用户提供的图片仅作参考，不直接展示
-2. 每张幻灯片需要的图片都由 AI 生成
-3. 必须为每张需要图片的幻灯片编写详细的生图提示词
-4. 必须使用 reveal.js 高级动画特性（auto-animate、fragments、transitions）
+2. 每个 section 需要的图片都由 AI 生成
+3. 必须为每个需要图片的 section 编写详细的生图提示词
+4. 必须设计丰富的 GSAP ScrollTrigger 动画效果
 
 这是第一步，基于参考图片分析主题和风格。`,
     parameters: {
@@ -36,12 +36,12 @@ export const SCROLLYTELLING_TOOLS: ScrollytellingTool[] = [
         },
         global_transition: {
           type: 'string',
-          enum: ['none', 'fade', 'slide', 'convex', 'concave', 'zoom'],
-          description: '全局默认过渡效果'
+          enum: ['fade', 'slide-up', 'slide-left', 'scale', 'parallax'],
+          description: '全局默认入场动画效果'
         },
         slides: {
           type: 'array',
-          description: '幻灯片规划列表',
+          description: 'Section 规划列表（网站各个全屏区块）',
           items: {
             type: 'object',
             properties: {
@@ -77,55 +77,54 @@ export const SCROLLYTELLING_TOOLS: ScrollytellingTool[] = [
                 enum: ['line', 'bar', 'pie', 'gauge', 'radar', 'none'],
                 description: '图表类型，如果不需要图表填 none'
               },
-              // reveal.js 高级动画配置
-              auto_animate: {
+              // GSAP ScrollTrigger 动画配置
+              scroll_animation: {
+                type: 'string',
+                enum: ['fade-in', 'slide-up', 'slide-left', 'slide-right', 'scale-in', 'parallax', 'pin', 'stagger'],
+                description: '滚动触发的入场动画类型'
+              },
+              pin_section: {
                 type: 'boolean',
-                description: '是否与下一张幻灯片使用 auto-animate 动画（元素会自动平滑过渡）'
+                description: '是否在滚动时固定此 section（Pin 效果）'
               },
-              transition: {
-                type: 'string',
-                enum: ['none', 'fade', 'slide', 'convex', 'concave', 'zoom', 'slide-in fade-out', 'fade-in slide-out', 'convex-in concave-out'],
-                description: '此幻灯片的过渡效果（覆盖全局设置）'
-              },
-              transition_speed: {
-                type: 'string',
-                enum: ['default', 'fast', 'slow'],
-                description: '过渡速度'
+              scrub: {
+                type: 'boolean',
+                description: '动画进度是否与滚动位置同步（Scrub 效果）'
               },
               background_color: {
                 type: 'string',
-                description: '背景颜色，如 #1e293b'
+                description: '背景颜色，如 #0f172a'
               },
               background_gradient: {
                 type: 'string',
-                description: '背景渐变，如 linear-gradient(to bottom, #283048, #859398)'
+                description: '背景渐变，如 linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
               },
-              fragments: {
+              text_animations: {
                 type: 'array',
                 items: {
                   type: 'object',
                   properties: {
                     element: {
                       type: 'string',
-                      description: '元素描述（如：标题、列表项、图片）'
+                      description: '元素描述（如：标题、段落、列表）'
                     },
                     effect: {
                       type: 'string',
-                      enum: ['fade-in', 'fade-out', 'fade-up', 'fade-down', 'fade-left', 'fade-right', 'grow', 'shrink', 'strike', 'highlight-red', 'highlight-green', 'highlight-blue', 'highlight-current-blue', 'fade-in-then-out', 'fade-in-then-semi-out', 'current-visible', 'blur'],
-                      description: 'Fragment 动画效果'
+                      enum: ['letter-by-letter', 'word-by-word', 'line-by-line', 'fade-in', 'slide-up', 'typewriter', 'gradient-reveal'],
+                      description: '文字动画效果'
                     },
-                    order: {
+                    stagger: {
                       type: 'number',
-                      description: '显示顺序（data-fragment-index）'
+                      description: '错落延迟时间（秒），如 0.05'
                     }
                   }
                 },
-                description: 'Fragment 动画配置，用于逐步揭示内容'
+                description: '文字动画配置'
               },
-              animations: {
+              special_effects: {
                 type: 'array',
                 items: { type: 'string' },
-                description: '其他动画效果，如：count-up, progress-bar, typewriter 等'
+                description: '特殊效果，如：counter（计数）、progress-bar、parallax-image、hover-card、glassmorphism'
               }
             },
             required: ['title', 'layout', 'key_points']
@@ -202,9 +201,9 @@ export const SCROLLYTELLING_TOOLS: ScrollytellingTool[] = [
     description: `整合所有收集的材料，生成最终的详细提示词。这是最后一步。
 
 调用后将：
-1. 并发生成所有幻灯片的 AI 图片
+1. 并发生成所有 section 的 AI 图片
 2. 等待图片生成完成
-3. 使用 Gemini 生成 reveal.js HTML`,
+3. 使用 Gemini 生成 GSAP Scrollytelling 动效网站 HTML`,
     parameters: {
       type: 'object',
       properties: {

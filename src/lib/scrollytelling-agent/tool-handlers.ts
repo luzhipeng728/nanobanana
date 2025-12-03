@@ -41,35 +41,36 @@ export const handlePlanStructure: ToolHandler = async (params, state, sendEvent)
     }
 
     return {
-      title: slide.title || `幻灯片 ${index + 1}`,
+      title: slide.title || `Section ${index + 1}`,
       subtitle: slide.subtitle,
       layout: slide.layout || 'content',
       imageConfig,
       keyPoints: slide.key_points || [],
       chartType: slide.chart_type !== 'none' ? slide.chart_type : undefined,
-      // reveal.js 高级动画配置
-      autoAnimate: slide.auto_animate || false,
-      transition: slide.transition,
-      transitionSpeed: slide.transition_speed,
+      // GSAP ScrollTrigger 动画配置
+      scrollAnimation: slide.scroll_animation || 'fade-in',
+      pinSection: slide.pin_section || false,
+      scrub: slide.scrub || false,
       backgroundColor: slide.background_color,
       backgroundGradient: slide.background_gradient,
-      fragments: slide.fragments || [],
-      animations: slide.animations || [],
+      textAnimations: slide.text_animations || [],
+      specialEffects: slide.special_effects || [],
       searchQuery: slide.key_points?.[0]
     };
   });
 
-  // 如果没有规划幻灯片，基于参考图片数量创建默认结构
+  // 如果没有规划 section，基于参考图片数量创建默认结构
   if (slides.length === 0) {
     const defaultSlideCount = Math.max(5, state.images.length + 2);
     for (let i = 0; i < defaultSlideCount; i++) {
       slides.push({
-        title: i === 0 ? '开场' : i === defaultSlideCount - 1 ? '总结' : `要点 ${i}`,
-        layout: i === 0 ? 'title' : i === defaultSlideCount - 1 ? 'content' : 'image-left',
+        title: i === 0 ? 'Hero' : i === defaultSlideCount - 1 ? 'CTA' : `Section ${i}`,
+        layout: i === 0 ? 'hero' : i === defaultSlideCount - 1 ? 'cta' : 'image-left',
         keyPoints: ['待补充'],
-        autoAnimate: i > 0 && i < defaultSlideCount - 1,  // 中间幻灯片默认使用 auto-animate
-        transition: i === 0 ? 'zoom' : i === defaultSlideCount - 1 ? 'fade' : undefined,
-        animations: ['fade-in']
+        scrollAnimation: i === 0 ? 'fade-in' : 'slide-up',
+        pinSection: i === 1,  // 第二个 section 默认 pin
+        scrub: i > 0 && i < defaultSlideCount - 1,
+        specialEffects: i === 0 ? ['letter-animation'] : ['parallax-image']
       });
     }
   }
@@ -97,20 +98,20 @@ export const handlePlanStructure: ToolHandler = async (params, state, sendEvent)
 
   // 统计需要生成的图片数量和动画类型
   const imageCount = slides.filter(s => s.imageConfig).length;
-  const autoAnimateCount = slides.filter(s => s.autoAnimate).length;
-  const fragmentCount = slides.filter(s => s.fragments && s.fragments.length > 0).length;
+  const pinCount = slides.filter(s => s.pinSection).length;
+  const scrubCount = slides.filter(s => s.scrub).length;
 
   return {
     success: true,
     data: {
-      slidesCount: slides.length,
+      sectionsCount: slides.length,
       imagePromptCount: imageCount,
-      autoAnimateSlides: autoAnimateCount,
-      fragmentSlides: fragmentCount,
+      pinSections: pinCount,
+      scrubSections: scrubCount,
       theme: theme_style,
       globalTransition: global_transition,
       interactions: plan.interactionTypes,
-      message: `已规划 ${slides.length} 张幻灯片，${imageCount} 张需 AI 生图，${autoAnimateCount} 张使用 auto-animate`
+      message: `已规划 ${slides.length} 个 Section，${imageCount} 张需 AI 生图，${pinCount} 个 Pin 效果，${scrubCount} 个 Scrub 同步`
     }
   };
 };
@@ -376,7 +377,7 @@ export const handleFinalizePrompt: ToolHandler = async (params, state, sendEvent
   };
 };
 
-// 构建最终提示词（用于 Gemini 生成 reveal.js）
+// 构建最终提示词（用于 Gemini 生成 Scrollytelling 动效网站）
 function buildFinalPrompt(
   state: ScrollytellingAgentState,
   additionalRequirements: string[],
@@ -384,53 +385,72 @@ function buildFinalPrompt(
 ): string {
   const plan = state.structurePlan!;
 
-  let prompt = `请创建一个【${plan.theme}】风格的高端 reveal.js 演示文稿，必须充分使用高级动画特性！
+  let prompt = `请创建一个【${plan.theme}】风格的 **Awwwards 级别 Scrollytelling 动效网站**，必须充分使用 GSAP ScrollTrigger 实现丝滑动画！
 
 ## 整体设计
 
 **叙事方式**: ${plan.overallNarrative}
 **配色方案**: ${plan.colorScheme.join(', ')}
-**全局过渡**: ${plan.globalTransition}
+**设计风格**: Linear + Swiss Modern 极简高端风格
 **交互类型**: ${plan.interactionTypes.join(', ')}
 
-## ⚠️ 必须使用的 reveal.js 高级特性
+## ⚠️ 必须使用的核心技术
 
-### 1. Auto-Animate（自动动画）
-在相邻 section 添加 \`data-auto-animate\` 属性，元素会自动平滑过渡：
-\`\`\`html
-<section data-auto-animate>
-  <h1>标题</h1>
-</section>
-<section data-auto-animate>
-  <h1 style="color: #3b82f6; margin-top: 100px;">标题</h1>
-  <p>新内容</p>
-</section>
+### 1. GSAP ScrollTrigger - 滚动触发动画（核心！）
+\`\`\`javascript
+// 元素入场动画
+gsap.from(".element", {
+  scrollTrigger: {
+    trigger: ".element",
+    start: "top 80%",
+    end: "top 20%",
+    scrub: true
+  },
+  y: 100,
+  opacity: 0,
+  duration: 1
+});
+
+// Pin 固定效果
+ScrollTrigger.create({
+  trigger: ".section",
+  start: "top top",
+  end: "+=100%",
+  pin: true,
+  scrub: 1
+});
+
+// 时间线编排
+let tl = gsap.timeline({
+  scrollTrigger: {
+    trigger: ".container",
+    start: "top top",
+    end: "+=200%",
+    scrub: 1,
+    pin: true
+  }
+});
+tl.from(".title", { y: 100, opacity: 0 })
+  .from(".content", { y: 50, opacity: 0 }, "-=0.5");
 \`\`\`
 
-### 2. Fragments（片段动画）
-使用 \`class="fragment"\` 逐步揭示内容：
-- \`fragment fade-up\` - 上滑淡入
-- \`fragment grow\` - 放大
-- \`fragment highlight-blue\` - 蓝色高亮
-- \`fragment fade-in-then-out\` - 先淡入再淡出
-- \`data-fragment-index="1"\` - 控制显示顺序
+### 2. 文字动画
+- 标题逐字入场：\`stagger: 0.05\`
+- 段落逐行显现
+- 渐变文字效果
 
-### 3. r-stack（堆叠层）
-同位置切换多个元素：
-\`\`\`html
-<div class="r-stack">
-  <img class="fragment fade-in-then-out" src="a.png">
-  <img class="fragment" src="b.png">
-</div>
-\`\`\`
+### 3. 图片效果
+- 视差滚动：\`y: "-30%"\`
+- 缩放揭示：\`clipPath + scale\`
+- 悬停放大
 
-### 4. 过渡效果
-- \`data-transition="zoom"\` - 缩放
-- \`data-transition="slide-in fade-out"\` - 混合过渡
-- \`data-transition-speed="fast"\` - 速度控制
-- \`data-background-transition="zoom"\` - 背景过渡
+### 4. 现代 CSS 效果
+- 毛玻璃：\`backdrop-filter: blur(20px)\`
+- 渐变文字：\`background-clip: text\`
+- 发光效果：\`box-shadow: 0 0 60px\`
+- 流动渐变背景
 
-## 幻灯片详情（共 ${plan.slides.length} 张）
+## Section 详情（共 ${plan.slides.length} 个）
 
 `;
 
@@ -438,7 +458,7 @@ function buildFinalPrompt(
   for (let i = 0; i < plan.slides.length; i++) {
     const slide = plan.slides[i];
 
-    prompt += `### 幻灯片 ${i + 1}: ${slide.title}
+    prompt += `### Section ${i + 1}: ${slide.title}
 
 **布局**: ${slide.layout}
 **关键内容**: ${slide.keyPoints.join('、')}
@@ -446,14 +466,14 @@ function buildFinalPrompt(
 
     // 动画配置
     const animationInfo: string[] = [];
-    if (slide.autoAnimate) {
-      animationInfo.push('✨ **使用 data-auto-animate** - 与下一张幻灯片平滑过渡');
+    if (slide.scrollAnimation) {
+      animationInfo.push(`🎬 **入场动画**: ${slide.scrollAnimation}`);
     }
-    if (slide.transition) {
-      animationInfo.push(`🎬 **过渡效果**: ${slide.transition}`);
+    if (slide.pinSection) {
+      animationInfo.push('📌 **Pin 固定** - 滚动时固定此 section');
     }
-    if (slide.transitionSpeed) {
-      animationInfo.push(`⚡ **过渡速度**: ${slide.transitionSpeed}`);
+    if (slide.scrub) {
+      animationInfo.push('🔄 **Scrub 同步** - 动画进度与滚动位置同步');
     }
     if (slide.backgroundColor) {
       animationInfo.push(`🎨 **背景色**: ${slide.backgroundColor}`);
@@ -461,19 +481,19 @@ function buildFinalPrompt(
     if (slide.backgroundGradient) {
       animationInfo.push(`🌈 **背景渐变**: ${slide.backgroundGradient}`);
     }
-    if (slide.fragments && slide.fragments.length > 0) {
-      const fragmentDesc = slide.fragments.map(f =>
-        `${f.element}: ${f.effect}${f.order !== undefined ? ` (顺序${f.order})` : ''}`
+    if (slide.textAnimations && slide.textAnimations.length > 0) {
+      const textAnimDesc = slide.textAnimations.map(t =>
+        `${t.element}: ${t.effect}${t.stagger ? ` (stagger: ${t.stagger}s)` : ''}`
       ).join(', ');
-      animationInfo.push(`📍 **Fragments**: ${fragmentDesc}`);
+      animationInfo.push(`✨ **文字动画**: ${textAnimDesc}`);
     }
-    if (slide.animations && slide.animations.length > 0) {
-      animationInfo.push(`💫 **其他动画**: ${slide.animations.join('、')}`);
+    if (slide.specialEffects && slide.specialEffects.length > 0) {
+      animationInfo.push(`💫 **特殊效果**: ${slide.specialEffects.join('、')}`);
     }
 
     if (animationInfo.length > 0) {
       prompt += `
-**动画配置**:
+**GSAP 动画配置**:
 ${animationInfo.join('\n')}
 `;
     }
@@ -521,101 +541,176 @@ ${state.collectedMaterials.join('\n\n')}
   // 添加技术要求
   prompt += `## 技术要求
 
-1. **使用 reveal.js 框架**，全局过渡设为 \`${plan.globalTransition}\`
+1. **技术栈**：纯 HTML + CSS + JavaScript，使用 GSAP ScrollTrigger
 
-2. **CDN 引入**:
+2. **CDN 引入（必须！）**:
 \`\`\`html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.min.css">
-<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.min.js"></script>
+<!-- GSAP 核心 + ScrollTrigger -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- ECharts（如需图表） -->
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<!-- 平滑滚动（可选但推荐） -->
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.0.45/dist/lenis.min.js"></script>
 \`\`\`
 
-3. **Reveal.initialize 配置**:
+3. **GSAP 初始化（⚠️ 必须！）**:
 \`\`\`javascript
-Reveal.initialize({
-  hash: true,
-  transition: '${plan.globalTransition}',
-  backgroundTransition: 'fade',
-  transitionSpeed: 'default',
-  // 启用鼠标滚轮切换（重要！）
-  mouseWheel: true,
-  // 隐藏左右箭头导航
-  controls: false,
-  // 启用所有高级特性
-  autoAnimate: true,
-  autoAnimateDuration: 1.0,
-  autoAnimateEasing: 'ease-in-out',
-  fragments: true,
-  // 内容居中
-  center: true,
-  // 禁用幻灯片缩放以防内容溢出
-  width: '100%',
-  height: '100%',
-  margin: 0.1,
-  minScale: 0.2,
-  maxScale: 1.0
+// 注册插件
+gsap.registerPlugin(ScrollTrigger);
+
+// 可选：平滑滚动
+const lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.add((time) => lenis.raf(time * 1000));
+gsap.ticker.lagSmoothing(0);
+\`\`\`
+
+4. **全局样式（必须完整添加！）**:
+\`\`\`css
+/* 基础重置 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0f172a;
+  color: #f8fafc;
+  overflow-x: hidden;
+}
+
+/* Section 全屏 */
+section {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 5vh 8vw;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 毛玻璃效果 */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+/* 渐变文字 */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 发光效果 */
+.glow {
+  box-shadow: 0 0 60px rgba(102, 126, 234, 0.4);
+}
+
+/* 流动渐变背景 */
+@keyframes gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.flowing-bg {
+  background: linear-gradient(-45deg, #0f172a, #1e293b, #0066ff20, #8b5cf620);
+  background-size: 400% 400%;
+  animation: gradient-flow 15s ease infinite;
+}
+
+/* 悬停效果 */
+.hover-lift {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* 图片容器 */
+.img-container {
+  overflow: hidden;
+  border-radius: 12px;
+}
+.img-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.img-container:hover img {
+  transform: scale(1.05);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  section { padding: 4vh 5vw; }
+  h1 { font-size: 2.5rem !important; }
+  h2 { font-size: 1.8rem !important; }
+}
+\`\`\`
+
+5. **必须实现的动画效果**:
+   - ✅ 标题逐字入场（stagger: 0.05）
+   - ✅ 图片视差滚动（y: "-30%"）
+   - ✅ 元素滚动入场（opacity + y 动画）
+   - ✅ Pin 固定效果（关键 section）
+   - ✅ 数字计数动画（snap: { textContent: 1 }）
+   - ✅ 卡片错落入场（stagger）
+   - ✅ 进度指示器
+
+6. **动画代码模板**:
+\`\`\`javascript
+// Hero 标题入场
+gsap.from(".hero-title span", {
+  y: 100, opacity: 0, stagger: 0.05, duration: 1,
+  ease: "power4.out", delay: 0.5
+});
+
+// 滚动触发入场
+gsap.utils.toArray(".fade-in").forEach(el => {
+  gsap.from(el, {
+    scrollTrigger: { trigger: el, start: "top 85%", toggleActions: "play none none reverse" },
+    y: 60, opacity: 0, duration: 1, ease: "power3.out"
+  });
+});
+
+// 图片视差
+gsap.utils.toArray(".parallax-img").forEach(img => {
+  gsap.to(img, {
+    scrollTrigger: { trigger: img.parentElement, start: "top bottom", end: "bottom top", scrub: true },
+    y: "-20%", ease: "none"
+  });
+});
+
+// 数字计数
+gsap.utils.toArray(".counter").forEach(el => {
+  gsap.from(el, {
+    scrollTrigger: { trigger: el, start: "top 80%" },
+    textContent: 0, duration: 2, snap: { textContent: 1 }, ease: "power1.inOut"
+  });
 });
 \`\`\`
 
-4. **⚠️ 防止内容溢出的 CSS（必须添加！）**:
-\`\`\`css
-.reveal .slides section {
-  height: 100%;
-  overflow: hidden;
-  padding: 20px 40px;
-  box-sizing: border-box;
-}
-.reveal .slides section > * {
-  max-height: 100%;
-}
-/* 限制图片大小 */
-.reveal .slides img {
-  max-width: 45%;
-  max-height: 50vh;
-  object-fit: contain;
-}
-/* 限制图表容器 */
-.chart-container {
-  max-height: 40vh;
-  width: 100%;
-}
-/* 列表不要太长 */
-.reveal ul, .reveal ol {
-  max-height: 60vh;
-  overflow-y: auto;
-}
-/* 数据卡片紧凑布局 */
-.data-card {
-  padding: 15px;
-  margin: 10px;
-}
-\`\`\`
+7. **布局原则**:
+   - 每个 section 高度 100vh
+   - 内容居中，左右留白 8vw
+   - 标题：4-6rem，副标题：1.5-2rem
+   - 段落最大宽度：60ch
+   - 图片最大高度：60vh
+   - 卡片网格：grid-cols-1 md:grid-cols-2 lg:grid-cols-3
 
-5. **必须实现的高级效果**:
-   - ✅ Auto-Animate 平滑过渡（连续幻灯片之间）
-   - ✅ Fragments 逐步揭示（列表、要点）
-   - ✅ r-stack 层叠切换（图片对比）
-   - ✅ 数字滚动计数动画
-   - ✅ ECharts 图表入场动画
-   - ✅ 进度条动画
+8. **特殊效果**: ${specialEffects.length > 0 ? specialEffects.join('、') : '视差滚动、文字动画、卡片入场、数字计数'}
 
-6. **Fragment 动画最佳实践**:
-   - 列表项使用 \`fragment fade-up\`
-   - 重要数据使用 \`fragment grow\` 或 \`fragment highlight-blue\`
-   - 对比内容使用 \`fragment fade-in-then-out\`
-
-7. **⚠️ 布局约束（防止内容溢出！）**:
-   - 每张幻灯片内容必须在一屏内显示完
-   - 图片最大宽度 45%，最大高度 50vh
-   - 图表容器最大高度 40vh
-   - 列表最多显示 5-6 项，超过的分到下一张幻灯片
-   - 使用 flexbox 或 grid 布局，设置 gap 而非 margin
-   - 文字大小：标题 2-3em，正文 1-1.2em，数据 1.5-2em
-
-8. **特殊效果**: ${specialEffects.length > 0 ? specialEffects.join('、') : 'auto-animate 元素位移、数字滚动、图表渐入'}
-
-9. **额外要求**: ${additionalRequirements.length > 0 ? additionalRequirements.join('；') : '确保动画丝滑流畅，内容不溢出'}
+9. **额外要求**: ${additionalRequirements.length > 0 ? additionalRequirements.join('；') : '动画丝滑流畅，60fps，无卡顿'}
 
 ## 输出格式
 
@@ -626,11 +721,12 @@ Reveal.initialize({
 - 代码中的 {{IMAGE_0}}、{{IMAGE_1}} 等占位符会在后续被替换为真实的 AI 生成图片 URL
 - 请确保正确使用这些占位符
 
-**⚠️ 核心要求**：
-1. **鼠标滚轮切换** - 必须启用 mouseWheel: true
-2. **内容不溢出** - 所有内容必须在一屏内显示，使用上面的 CSS 约束
-3. **丝滑动画** - 大量使用 auto-animate + fragments
-4. **隐藏箭头** - controls: false，只用滚轮切换`;
+**⚠️ 核心要求（必须严格遵守！）**：
+1. **必须使用 GSAP ScrollTrigger** - 这是实现动效的核心
+2. **每个 section 都要有动画** - 入场、视差、或交互效果
+3. **丝滑流畅** - 使用 scrub、ease、stagger 让动画更自然
+4. **深色高端风格** - 深色背景 + 渐变 + 毛玻璃
+5. **响应式设计** - 移动端也要好看`;
 
   return prompt;
 }

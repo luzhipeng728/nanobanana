@@ -1,4 +1,4 @@
-// Reveal.js 演示文稿 Agent 类型定义
+// Scrollytelling 动效网站 Agent 类型定义
 
 // 参考图片信息（仅作参考，不直接使用）
 export interface ImageInfo {
@@ -7,7 +7,7 @@ export interface ImageInfo {
   analysis?: string; // Claude 分析的结果
 }
 
-// 幻灯片图片生成配置
+// Section 图片生成配置
 export interface SlideImageConfig {
   prompt: string;           // 生图提示词
   aspectRatio: '16:9' | '1:1' | '4:3' | '3:4' | '9:16';  // 图片比例
@@ -17,37 +17,41 @@ export interface SlideImageConfig {
   status?: 'pending' | 'processing' | 'completed' | 'failed';
 }
 
-// Fragment 动画配置
-export interface FragmentConfig {
-  element: string;          // 元素描述
-  effect: 'fade-in' | 'fade-out' | 'fade-up' | 'fade-down' | 'fade-left' | 'fade-right' |
-          'grow' | 'shrink' | 'strike' | 'highlight-red' | 'highlight-green' | 'highlight-blue' |
-          'highlight-current-blue' | 'fade-in-then-out' | 'fade-in-then-semi-out' | 'current-visible' | 'blur';
-  order?: number;           // 显示顺序
+// 文字动画配置
+export interface TextAnimationConfig {
+  element: string;          // 元素描述（如：标题、段落）
+  effect: 'letter-by-letter' | 'word-by-word' | 'line-by-line' | 'fade-in' | 'slide-up' | 'typewriter' | 'gradient-reveal';
+  stagger?: number;         // 错落延迟时间（秒）
 }
 
-// 幻灯片结构（替代原来的章节）
+// Section 结构（网站的全屏区块）
 export interface SlidePlan {
   title: string;
   subtitle?: string;
-  layout: 'title' | 'content' | 'image-left' | 'image-right' | 'full-image' | 'two-column' | 'data' | 'comparison';
+  layout: 'hero' | 'content' | 'image-left' | 'image-right' | 'full-image' | 'two-column' | 'data' | 'cards' | 'timeline' | 'cta';
   imageConfig?: SlideImageConfig;  // 需要 AI 生成的图片配置
-  keyPoints: string[];      // 关键数据点
-  chartType?: 'line' | 'bar' | 'pie' | 'gauge' | 'radar';  // 推荐的图表类型
+  keyPoints: string[];      // 关键内容点
+  chartType?: 'line' | 'bar' | 'pie' | 'gauge' | 'radar';  // 图表类型
   chartData?: any;          // 图表数据
   searchQuery?: string;     // 需要搜索的查询
   searchResults?: string;   // 搜索结果
   content?: string;         // 补充内容
 
-  // reveal.js 高级动画配置
-  autoAnimate?: boolean;    // 是否使用 auto-animate
-  transition?: 'none' | 'fade' | 'slide' | 'convex' | 'concave' | 'zoom' |
-               'slide-in fade-out' | 'fade-in slide-out' | 'convex-in concave-out';
-  transitionSpeed?: 'default' | 'fast' | 'slow';
+  // GSAP ScrollTrigger 动画配置
+  scrollAnimation?: 'fade-in' | 'slide-up' | 'slide-left' | 'slide-right' | 'scale-in' | 'parallax' | 'pin' | 'stagger';
+  pinSection?: boolean;     // 是否固定此 section
+  scrub?: boolean;          // 动画是否与滚动同步
   backgroundColor?: string;    // 背景颜色
   backgroundGradient?: string; // 背景渐变
-  fragments?: FragmentConfig[];  // Fragment 动画配置
-  animations?: string[];    // 其他动画效果
+  textAnimations?: TextAnimationConfig[];  // 文字动画配置
+  specialEffects?: string[];   // 特殊效果（counter、parallax-image、hover-card 等）
+
+  // 兼容旧字段
+  autoAnimate?: boolean;
+  transition?: string;
+  transitionSpeed?: string;
+  fragments?: any[];
+  animations?: string[];
 }
 
 // 演示文稿结构规划
