@@ -445,7 +445,8 @@ export default function ScrollytellingPreview({
   // 开始生成
   const startGeneration = useCallback(async (additionalPrompt?: string) => {
     // 无图片模式需要 title 作为 userPrompt
-    if (!hasImages && !title?.trim()) return;
+    const hasImagesLocal = images && images.length > 0;
+    if (!hasImagesLocal && !title?.trim()) return;
 
     // 重置状态
     setHtmlContent("");
@@ -546,7 +547,7 @@ export default function ScrollytellingPreview({
     } finally {
       setIsGenerating(false);
     }
-  }, [images, prompts, customPrompt, handleStreamEvent, renderToIframe, resetWorkflow, hasImages, title]);
+  }, [images, prompts, customPrompt, handleStreamEvent, renderToIframe, resetWorkflow, title]);
 
   // 打开时自动开始生成
   useEffect(() => {
