@@ -1,7 +1,8 @@
-// Scrollytelling HTML 生成 API - 两阶段流式响应
-// 阶段1: Claude Agent 分析图片、收集材料、规划结构
-// 阶段2: Gemini 根据 Claude 准备的 prompt 生成 HTML
-// 修改模式: 跳过阶段1，直接让 Gemini 根据上下文修改
+// Reveal.js 演示文稿生成 API - 三阶段流式响应
+// 阶段1: Claude Agent 分析参考图片、规划结构、收集材料
+// 阶段2: 并发生成 AI 图片（nanobanana pro）
+// 阶段3: Gemini 生成 reveal.js HTML
+// 修改模式: 跳过阶段1和2，直接让 Gemini 修改
 
 import { NextRequest } from 'next/server';
 import {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
   // 监听请求中断
   request.signal.addEventListener('abort', () => {
     isAborted = true;
-    console.log('[Scrollytelling API] Request aborted by client');
+    console.log('[Presentation API] Request aborted by client');
   });
 
   // 发送事件的辅助函数
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       // SSE 格式
       await writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
     } catch (error) {
-      console.error('[Scrollytelling API] Write error:', error);
+      console.error('[Presentation API] Write error:', error);
       isAborted = true;
     }
   };
@@ -53,17 +54,20 @@ export async function POST(request: NextRequest) {
         theme,
         // 修改模式参数
         modification,
-        previousHtml
+        previousHtml,
+        // 图片分辨率
+        imageResolution = '1k'
       } = body as {
         images: string[];
         prompts?: string[];
         theme?: string;
-        modification?: string;    // 用户的修改请求
-        previousHtml?: string;    // 之前生成的 HTML
+        modification?: string;
+        previousHtml?: string;
+        imageResolution?: '1k' | '2k' | '4k';
       };
 
       if (!images || !Array.isArray(images) || images.length === 0) {
-        await sendEvent({ type: 'error', error: '请提供至少一张图片' });
+        await sendEvent({ type: 'error', error: '请提供至少一张参考图片' });
         await writer.close();
         return;
       }
@@ -74,10 +78,9 @@ export async function POST(request: NextRequest) {
         prompt: prompts?.[i] || undefined
       }));
 
-      // ========== 修改模式：跳过 Claude Agent，直接让 Gemini 修改 ==========
+      // ========== 修改模式：跳过 Claude Agent 和图片生成 ==========
       if (modification && previousHtml) {
-        console.log('[Scrollytelling API] Modification mode: Skipping Claude Agent...');
-        console.log('[Scrollytelling API] Modification request:', modification.slice(0, 100));
+        console.log('[Presentation API] Modification mode: Skipping Agent and image generation...');
 
         await sendEvent({
           type: 'phase',
@@ -97,26 +100,27 @@ export async function POST(request: NextRequest) {
           htmlLength: 0
         });
 
-        console.log('[Scrollytelling API] Modification completed');
+        console.log('[Presentation API] Modification completed');
         await writer.close();
         return;
       }
 
-      // ========== 正常模式：两阶段生成 ==========
-      console.log('[Scrollytelling API] Starting two-phase generation...');
-      console.log('[Scrollytelling API] Images count:', images.length);
-      console.log('[Scrollytelling API] Has prompts:', !!prompts && prompts.length > 0);
-      console.log('[Scrollytelling API] Theme:', theme || 'auto');
+      // ========== 正常模式：三阶段生成 ==========
+      console.log('[Presentation API] Starting three-phase generation...');
+      console.log('[Presentation API] Reference images count:', images.length);
+      console.log('[Presentation API] Theme:', theme || 'auto');
+      console.log('[Presentation API] Image resolution:', imageResolution);
 
       // Agent 配置
       const agentConfig: ScrollytellingAgentConfig = {
         theme,
         enableSearch: true,
-        maxSearchQueries: images.length * 2
+        maxSearchQueries: images.length * 2,
+        imageResolution
       };
 
-      // ========== 阶段1: Claude Agent 收集材料 ==========
-      console.log('[Scrollytelling API] Phase 1: Running Claude Agent...');
+      // ========== 阶段1 & 2: Claude Agent + 图片生成 ==========
+      console.log('[Presentation API] Phase 1 & 2: Running Claude Agent and generating images...');
 
       const agentResult = await runScrollytellingAgent(
         imageInfos,
@@ -125,33 +129,44 @@ export async function POST(request: NextRequest) {
       );
 
       if (!agentResult) {
-        await sendEvent({ type: 'error', error: 'Claude Agent 未能完成材料收集' });
+        await sendEvent({ type: 'error', error: 'Claude Agent 未能完成任务' });
         await writer.close();
         return;
       }
 
-      console.log('[Scrollytelling API] Phase 1 complete. Prompt length:', agentResult.finalPrompt.length);
+      console.log('[Presentation API] Phase 1 & 2 complete.');
+      console.log('[Presentation API] Slides:', agentResult.structurePlan.slides.length);
+      console.log('[Presentation API] Generated images:', agentResult.generatedImages.length);
 
-      // ========== 阶段2: Gemini 生成 HTML ==========
-      console.log('[Scrollytelling API] Phase 2: Generating HTML with Gemini...');
+      // 构建图片 URL Map
+      const generatedImageUrls = new Map<number, string>();
+      agentResult.structurePlan.slides.forEach((slide, index) => {
+        if (slide.imageConfig?.generatedUrl) {
+          generatedImageUrls.set(index, slide.imageConfig.generatedUrl);
+        }
+      });
+
+      // ========== 阶段3: Gemini 生成 reveal.js HTML ==========
+      console.log('[Presentation API] Phase 3: Generating reveal.js HTML with Gemini...');
 
       await generateHtmlWithGemini(
         agentResult.finalPrompt,
         imageInfos,
+        generatedImageUrls,
         sendEvent
       );
 
       // 发送完成事件
       await sendEvent({
         type: 'complete',
-        htmlLength: 0 // 客户端会自行计算
+        htmlLength: 0
       });
 
-      console.log('[Scrollytelling API] Generation completed');
+      console.log('[Presentation API] Generation completed');
 
     } catch (error) {
       if (!isAborted) {
-        console.error('[Scrollytelling API] Error:', error);
+        console.error('[Presentation API] Error:', error);
         await sendEvent({
           type: 'error',
           error: error instanceof Error ? error.message : '未知错误'

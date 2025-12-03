@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 interface StreamEvent {
   type: string;
   message?: string;
-  phase?: 'preparation' | 'generation';
+  phase?: 'preparation' | 'image_generation' | 'generation';
   iteration?: number;
   chunk?: string;
   content?: string;
@@ -20,16 +20,21 @@ interface StreamEvent {
   plan?: any;
   query?: string;
   chapter?: number;
+  slideIndex?: number;
   summary?: string;
   chartType?: string;
   promptLength?: number;
   htmlLength?: number;
   error?: string;
+  prompt?: string;
+  status?: string;
+  imageUrl?: string;
+  count?: number;
 }
 
 // Agent 活动日志项
 interface AgentLogItem {
-  type: 'thought' | 'action' | 'observation' | 'image' | 'search' | 'chart' | 'prompt' | 'structure';
+  type: 'thought' | 'action' | 'observation' | 'image' | 'search' | 'chart' | 'prompt' | 'structure' | 'image_gen';
   content: string;
   timestamp: number;
   step?: number;
@@ -70,17 +75,24 @@ export default function ScrollytellingPreview({
   const [copied, setCopied] = useState(false);
 
   // 当前阶段
-  const [currentPhase, setCurrentPhase] = useState<'preparation' | 'generation' | null>(null);
+  const [currentPhase, setCurrentPhase] = useState<'preparation' | 'image_generation' | 'generation' | null>(null);
   const [phaseMessage, setPhaseMessage] = useState<string>("");
+
+  // 图片生成状态
+  const [imageGenProgress, setImageGenProgress] = useState<{ total: number; completed: number; current: string }>({
+    total: 0,
+    completed: 0,
+    current: ''
+  });
 
   // 工作流程步骤
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([
-    { id: 'analyze', name: '分析图片', description: '理解图片内容和主题', icon: <Image className="w-4 h-4" />, status: 'pending' },
-    { id: 'plan', name: '规划结构', description: '设计网页章节和布局', icon: <Layout className="w-4 h-4" />, status: 'pending' },
+    { id: 'plan', name: '规划幻灯片', description: '分析主题、设计结构', icon: <Layout className="w-4 h-4" />, status: 'pending' },
     { id: 'search', name: '搜索资料', description: '查找相关数据和信息', icon: <Search className="w-4 h-4" />, status: 'pending' },
     { id: 'chart', name: '生成图表', description: '创建数据可视化配置', icon: <BarChart3 className="w-4 h-4" />, status: 'pending' },
     { id: 'prompt', name: '整合提示词', description: '汇总所有材料', icon: <FileText className="w-4 h-4" />, status: 'pending' },
-    { id: 'generate', name: '生成 HTML', description: 'Gemini 流式输出代码', icon: <Code className="w-4 h-4" />, status: 'pending' },
+    { id: 'image_gen', name: '生成图片', description: '并发生成 AI 图片', icon: <Image className="w-4 h-4" />, status: 'pending' },
+    { id: 'generate', name: '生成 HTML', description: 'Gemini 生成 reveal.js', icon: <Code className="w-4 h-4" />, status: 'pending' },
   ]);
 
   // Agent 活动日志
@@ -281,10 +293,14 @@ export default function ScrollytellingPreview({
       case 'phase':
         setCurrentPhase(event.phase || null);
         setPhaseMessage(event.message || '');
-        if (event.phase === 'generation') {
+        if (event.phase === 'image_generation') {
           updateStepStatus('prompt', 'completed');
+          updateStepStatus('image_gen', 'active');
+          addLog('image_gen', '🎨 开始并发生成 AI 图片...');
+        } else if (event.phase === 'generation') {
+          updateStepStatus('image_gen', 'completed');
           updateStepStatus('generate', 'active');
-          addLog('prompt', '✅ 准备工作完成，开始生成 HTML...');
+          addLog('prompt', '✅ 图片生成完成，开始生成 reveal.js...');
         }
         break;
 
@@ -298,8 +314,7 @@ export default function ScrollytellingPreview({
       case 'action':
         if (event.tool) {
           const toolMapping: Record<string, { step: string; name: string }> = {
-            'analyze_images': { step: 'analyze', name: '🔍 分析图片' },
-            'plan_structure': { step: 'plan', name: '📋 规划结构' },
+            'plan_structure': { step: 'plan', name: '📋 规划幻灯片结构' },
             'web_search': { step: 'search', name: '🌐 搜索资料' },
             'generate_chart_data': { step: 'chart', name: '📊 生成图表数据' },
             'finalize_prompt': { step: 'prompt', name: '✨ 整合提示词' }
@@ -320,18 +335,42 @@ export default function ScrollytellingPreview({
         }
         break;
 
-      case 'image_analysis':
-        addLog('image', `📸 图片 ${(event.index || 0) + 1} 分析完成`);
-        if (event.index === images.length - 1) {
-          updateStepStatus('analyze', 'completed');
-        }
-        break;
-
       case 'structure_planned':
         updateStepStatus('plan', 'completed');
         if (event.plan) {
-          addLog('structure', `✅ 结构规划完成：${event.plan.chapters?.length || 0} 个章节，${event.plan.theme || '自动'} 风格`);
+          const slidesCount = event.plan.slides?.length || event.plan.chapters?.length || 0;
+          addLog('structure', `✅ 结构规划完成：${slidesCount} 张幻灯片，${event.plan.theme || '自动'} 风格`);
         }
+        break;
+
+      // 图片生成事件
+      case 'image_gen_start':
+        setImageGenProgress(prev => ({
+          ...prev,
+          total: prev.total + 1,
+          current: event.prompt || ''
+        }));
+        addLog('image_gen', `🎨 开始生成图片 ${(event.slideIndex || 0) + 1}: ${(event.prompt || '').slice(0, 30)}...`);
+        break;
+
+      case 'image_gen_progress':
+        addLog('image_gen', `⏳ 图片 ${(event.slideIndex || 0) + 1}: ${event.status}`);
+        break;
+
+      case 'image_gen_complete':
+        setImageGenProgress(prev => ({
+          ...prev,
+          completed: prev.completed + 1
+        }));
+        addLog('image_gen', `✅ 图片 ${(event.slideIndex || 0) + 1} 生成完成`);
+        break;
+
+      case 'image_gen_error':
+        addLog('image_gen', `❌ 图片 ${(event.slideIndex || 0) + 1} 生成失败: ${event.error}`);
+        break;
+
+      case 'all_images_complete':
+        addLog('image_gen', `🎉 全部图片生成完成 (${event.count} 张)`);
         break;
 
       case 'search_start':
@@ -379,6 +418,7 @@ export default function ScrollytellingPreview({
   // 重置工作流程
   const resetWorkflow = useCallback(() => {
     setWorkflowSteps(prev => prev.map(step => ({ ...step, status: 'pending' as const })));
+    setImageGenProgress({ total: 0, completed: 0, current: '' });
   }, []);
 
   // 开始生成
@@ -669,6 +709,7 @@ export default function ScrollytellingPreview({
       case 'action': return { icon: <Sparkles className="w-4 h-4" />, color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/20' };
       case 'observation': return { icon: <FileCode className="w-4 h-4" />, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' };
       case 'image': return { icon: <Image className="w-4 h-4" />, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
+      case 'image_gen': return { icon: <Image className="w-4 h-4" />, color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/20' };
       case 'search': return { icon: <Search className="w-4 h-4" />, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' };
       case 'chart': return { icon: <BarChart3 className="w-4 h-4" />, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' };
       case 'prompt': return { icon: <FileText className="w-4 h-4" />, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' };
@@ -694,6 +735,7 @@ export default function ScrollytellingPreview({
               <span>
                 {isModificationMode ? 'Gemini 快速修改中...' :
                  currentPhase === 'preparation' ? 'Claude 分析中...' :
+                 currentPhase === 'image_generation' ? `AI 生图中 (${imageGenProgress.completed}/${imageGenProgress.total || '...'})` :
                  currentPhase === 'generation' ? 'Gemini 生成中...' :
                  isAutoFixing ? '自动修复中...' : '处理中...'}
               </span>
@@ -953,17 +995,70 @@ export default function ScrollytellingPreview({
               </div>
             </div>
           </div>
+        ) : isGenerating && currentPhase === 'image_generation' ? (
+          // 阶段2: 图片生成阶段 - 显示并发生成进度
+          <div className="flex-1 bg-neutral-950 flex flex-col items-center justify-center">
+            <div className="flex items-center gap-3 text-indigo-400">
+              <Image className="w-8 h-8 animate-pulse" />
+              <span className="text-xl">AI 图片生成中...</span>
+            </div>
+            <p className="text-neutral-500 mt-3">
+              使用 nanobanana pro 模型并发生成高质量图片
+            </p>
+
+            {/* 进度显示 */}
+            <div className="mt-6 w-80">
+              <div className="flex justify-between text-sm text-neutral-400 mb-2">
+                <span>生成进度</span>
+                <span>{imageGenProgress.completed} / {imageGenProgress.total || '...'}</span>
+              </div>
+              <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                  style={{
+                    width: imageGenProgress.total > 0
+                      ? `${(imageGenProgress.completed / imageGenProgress.total) * 100}%`
+                      : '10%'
+                  }}
+                />
+              </div>
+              {imageGenProgress.current && (
+                <p className="text-xs text-neutral-500 mt-2 truncate">
+                  当前: {imageGenProgress.current.slice(0, 50)}...
+                </p>
+              )}
+            </div>
+
+            {/* 实时日志（小型） */}
+            <div className="mt-6 w-96 max-h-48 overflow-auto bg-neutral-900 rounded-lg border border-neutral-800 p-3">
+              {agentLogs.filter(l => l.type === 'image_gen').slice(-5).map((log, index) => {
+                const style = getLogStyle(log.type);
+                return (
+                  <div key={index} className="flex items-center gap-2 text-sm py-1">
+                    <span className={style.color}>{style.icon}</span>
+                    <span className="text-neutral-300 truncate">{log.content}</span>
+                  </div>
+                );
+              })}
+              {agentLogs.filter(l => l.type === 'image_gen').length === 0 && (
+                <div className="flex items-center gap-2 text-sm text-neutral-500">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>正在创建图片生成任务...</span>
+                </div>
+              )}
+            </div>
+          </div>
         ) : isGenerating && currentPhase === 'generation' && !htmlContent ? (
-          // 阶段2开始但还没有内容 - 显示等待状态
+          // 阶段3开始但还没有内容 - 显示等待状态
           <div className="flex-1 bg-neutral-950 flex flex-col items-center justify-center">
             <div className="flex items-center gap-3 text-cyan-400">
               <Loader2 className="w-8 h-8 animate-spin" />
-              <span className="text-xl">Gemini 正在生成 HTML...</span>
+              <span className="text-xl">Gemini 正在生成 reveal.js...</span>
             </div>
             <p className="text-neutral-500 mt-3">即将开始流式输出代码</p>
           </div>
         ) : isGenerating || (currentPhase === 'generation' && !isComplete) ? (
-          // 阶段2: Gemini 生成阶段 - 显示代码
+          // 阶段3: Gemini 生成阶段 - 显示代码
           <div className="flex-1 bg-neutral-950 flex flex-col">
             <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-800">
               <div className="flex items-center gap-3">

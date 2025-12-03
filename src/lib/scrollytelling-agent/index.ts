@@ -1,4 +1,4 @@
-// Scrollytelling Agent 模块导出
+// Reveal.js 演示文稿 Agent 模块导出
 
 export * from './types';
 export * from './tools';

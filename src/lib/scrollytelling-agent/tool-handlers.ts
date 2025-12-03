@@ -1,26 +1,14 @@
-// Scrollytelling Agent 工具处理器
+// Reveal.js 演示文稿 Agent 工具处理器
 
-import Anthropic from '@anthropic-ai/sdk';
 import {
   ImageInfo,
-  WebStructurePlan,
-  ChapterPlan,
+  PresentationPlan,
+  SlidePlan,
+  SlideImageConfig,
   ToolResult,
   ScrollytellingStreamEvent,
   ScrollytellingAgentState
 } from './types';
-
-// Anthropic 客户端
-function getAnthropicClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY 未配置');
-  }
-  return new Anthropic({
-    apiKey,
-    baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
-  });
-}
 
 // 工具处理器类型
 type ToolHandler = (
@@ -29,87 +17,63 @@ type ToolHandler = (
   sendEvent: (event: ScrollytellingStreamEvent) => Promise<void>
 ) => Promise<ToolResult>;
 
-// 1. 分析图片 - 优化版：直接使用图片提示词，无需调用 Vision API
-export const handleAnalyzeImages: ToolHandler = async (params, state, sendEvent) => {
-  const { focus_areas = ['主题', '元素', '色调', '情感'] } = params;
-
-  const analysisResults: string[] = [];
-
-  // 直接使用图片的提示词作为分析结果，无需调用 Vision API
-  for (let i = 0; i < state.images.length; i++) {
-    const image = state.images[i];
-
-    // 使用用户提供的提示词作为分析基础
-    const analysis = image.prompt
-      ? `用户描述：${image.prompt}\n关注方向：${focus_areas.join('、')}`
-      : `图片 ${i + 1}（无描述）\n关注方向：${focus_areas.join('、')}`;
-
-    // 更新状态
-    state.images[i].analysis = analysis;
-    analysisResults.push(`【图片${i + 1}】\n${analysis}`);
-
-    // 发送事件
-    await sendEvent({
-      type: 'image_analysis',
-      index: i,
-      analysis: analysis.slice(0, 200) + (analysis.length > 200 ? '...' : '')
-    });
-  }
-
-  return {
-    success: true,
-    data: {
-      analysisCount: analysisResults.length,
-      analyses: analysisResults,
-      note: '已使用图片提示词作为分析基础，无需额外 Vision API 调用'
-    }
-  };
-};
-
-// 2. 规划结构
+// 1. 规划结构（包含幻灯片和生图提示词）
 export const handlePlanStructure: ToolHandler = async (params, state, sendEvent) => {
-  const { theme_style, narrative_approach, interaction_preferences = [] } = params;
+  const {
+    theme_style,
+    narrative_approach,
+    slides: slidesInput,
+    transitions = 'slide',
+    interaction_preferences = []
+  } = params;
 
-  // 基于图片分析结果规划结构
-  const chapters: ChapterPlan[] = state.images.map((image, index) => {
-    // 从分析中提取关键信息
-    const analysis = image.analysis || '';
-
-    // 简单的关键词提取
-    const keyPoints: string[] = [];
-    if (analysis.includes('数据') || analysis.includes('统计')) {
-      keyPoints.push('数据展示');
-    }
-    if (analysis.includes('趋势') || analysis.includes('增长')) {
-      keyPoints.push('趋势分析');
-    }
-    if (analysis.includes('对比') || analysis.includes('比较')) {
-      keyPoints.push('对比分析');
-    }
-
-    // 默认关键点
-    if (keyPoints.length === 0) {
-      keyPoints.push('核心要点', '详细说明', '相关数据');
+  // 构建幻灯片列表
+  const slides: SlidePlan[] = (slidesInput || []).map((slide: any, index: number) => {
+    // 构建图片配置
+    let imageConfig: SlideImageConfig | undefined;
+    if (slide.image_prompt) {
+      imageConfig = {
+        prompt: slide.image_prompt,
+        aspectRatio: slide.image_aspect_ratio || '16:9',
+        style: theme_style,
+        status: 'pending'
+      };
     }
 
     return {
-      title: `第 ${index + 1} 章`,
-      subtitle: image.prompt || '探索发现',
-      imageUrl: image.url,
-      keyPoints,
-      chartType: index === 0 ? 'bar' : index === 1 ? 'line' : 'pie',
-      searchQuery: image.prompt?.split(/[,，、\s]+/).slice(0, 3).join(' ') || undefined
+      title: slide.title || `幻灯片 ${index + 1}`,
+      subtitle: slide.subtitle,
+      layout: slide.layout || 'content',
+      imageConfig,
+      keyPoints: slide.key_points || [],
+      chartType: slide.chart_type !== 'none' ? slide.chart_type : undefined,
+      animations: slide.animations || [],
+      searchQuery: slide.key_points?.[0]
     };
   });
 
-  const plan: WebStructurePlan = {
+  // 如果没有规划幻灯片，基于参考图片数量创建默认结构
+  if (slides.length === 0) {
+    const defaultSlideCount = Math.max(5, state.images.length + 2);
+    for (let i = 0; i < defaultSlideCount; i++) {
+      slides.push({
+        title: i === 0 ? '开场' : i === defaultSlideCount - 1 ? '总结' : `要点 ${i}`,
+        layout: i === 0 ? 'title' : i === defaultSlideCount - 1 ? 'content' : 'image-left',
+        keyPoints: ['待补充'],
+        animations: ['fade-in']
+      });
+    }
+  }
+
+  const plan: PresentationPlan = {
     theme: theme_style,
     colorScheme: getColorScheme(theme_style),
-    chapters,
+    slides,
     overallNarrative: narrative_approach,
     interactionTypes: interaction_preferences.length > 0
       ? interaction_preferences
-      : ['tabs', 'counters', 'charts', 'timeline']
+      : ['tabs', 'counters', 'charts', 'progress-bars'],
+    transitions
   };
 
   // 更新状态
@@ -121,12 +85,18 @@ export const handlePlanStructure: ToolHandler = async (params, state, sendEvent)
     plan
   });
 
+  // 统计需要生成的图片数量
+  const imageCount = slides.filter(s => s.imageConfig).length;
+
   return {
     success: true,
     data: {
-      chaptersCount: chapters.length,
+      slidesCount: slides.length,
+      imagePromptCount: imageCount,
       theme: theme_style,
-      interactions: plan.interactionTypes
+      transitions,
+      interactions: plan.interactionTypes,
+      message: `已规划 ${slides.length} 张幻灯片，其中 ${imageCount} 张需要 AI 生成图片`
     }
   };
 };
@@ -139,15 +109,17 @@ function getColorScheme(theme: string): string[] {
     '商务专业': ['#1e3a5f', '#3d5a80', '#98c1d9', '#e0fbfc', '#293241'],
     '艺术创意': ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff'],
     '暗黑风格': ['#121212', '#1e1e1e', '#2d2d2d', '#3d3d3d', '#00ff88'],
-    '简约现代': ['#2c3e50', '#34495e', '#ecf0f1', '#3498db', '#e74c3c']
+    '简约现代': ['#2c3e50', '#34495e', '#ecf0f1', '#3498db', '#e74c3c'],
+    '手绘温馨': ['#ffeaa7', '#fdcb6e', '#fab1a0', '#74b9ff', '#a29bfe'],
+    '未来科幻': ['#00f5d4', '#00bbf9', '#9b5de5', '#f15bb5', '#fee440']
   };
 
   return schemes[theme] || schemes['简约现代'];
 }
 
-// 3. 网络搜索
+// 2. 网络搜索
 export const handleWebSearch: ToolHandler = async (params, state, sendEvent) => {
-  const { query, search_type, chapter_index } = params;
+  const { query, search_type, slide_index } = params;
 
   const tavilyApiKey = process.env.TAVILY_API_KEY;
   if (!tavilyApiKey) {
@@ -161,7 +133,7 @@ export const handleWebSearch: ToolHandler = async (params, state, sendEvent) => 
   await sendEvent({
     type: 'search_start',
     query,
-    chapter: chapter_index ?? -1
+    chapter: slide_index ?? -1
   });
 
   try {
@@ -195,9 +167,9 @@ export const handleWebSearch: ToolHandler = async (params, state, sendEvent) => 
       }
     }
 
-    // 更新章节的搜索结果
-    if (chapter_index !== undefined && state.structurePlan?.chapters[chapter_index]) {
-      state.structurePlan.chapters[chapter_index].searchResults = summary;
+    // 更新幻灯片的搜索结果
+    if (slide_index !== undefined && state.structurePlan?.slides[slide_index]) {
+      state.structurePlan.slides[slide_index].searchResults = summary;
     }
 
     // 添加到收集的材料
@@ -206,7 +178,7 @@ export const handleWebSearch: ToolHandler = async (params, state, sendEvent) => 
     // 发送搜索结果事件
     await sendEvent({
       type: 'search_result',
-      chapter: chapter_index ?? -1,
+      chapter: slide_index ?? -1,
       summary: summary.slice(0, 200) + '...'
     });
 
@@ -221,7 +193,7 @@ export const handleWebSearch: ToolHandler = async (params, state, sendEvent) => 
     };
 
   } catch (error) {
-    console.error('[Scrollytelling Agent] Search error:', error);
+    console.error('[Presentation Agent] Search error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : '搜索失败'
@@ -229,23 +201,23 @@ export const handleWebSearch: ToolHandler = async (params, state, sendEvent) => 
   }
 };
 
-// 4. 生成图表数据
+// 3. 生成图表数据
 export const handleGenerateChartData: ToolHandler = async (params, state, sendEvent) => {
-  const { chapter_index, chart_type, data_description, data_points } = params;
+  const { slide_index, chart_type, data_description, data_points } = params;
 
   // 生成 ECharts 配置
   const chartConfig = generateEChartsConfig(chart_type, data_description, data_points);
 
-  // 更新章节
-  if (state.structurePlan?.chapters[chapter_index]) {
-    state.structurePlan.chapters[chapter_index].chartType = chart_type;
-    state.structurePlan.chapters[chapter_index].chartData = chartConfig;
+  // 更新幻灯片
+  if (state.structurePlan?.slides[slide_index]) {
+    state.structurePlan.slides[slide_index].chartType = chart_type;
+    state.structurePlan.slides[slide_index].chartData = chartConfig;
   }
 
   // 发送事件
   await sendEvent({
     type: 'data_generated',
-    chapter: chapter_index,
+    chapter: slide_index,
     chartType: chart_type
   });
 
@@ -276,7 +248,7 @@ function generateEChartsConfig(
     title: {
       text: description,
       left: 'center',
-      textStyle: { fontSize: 14 }
+      textStyle: { fontSize: 14, color: '#fff' }
     }
   };
 
@@ -284,8 +256,8 @@ function generateEChartsConfig(
     case 'bar':
       return {
         ...baseConfig,
-        xAxis: { type: 'category', data: labels },
-        yAxis: { type: 'value' },
+        xAxis: { type: 'category', data: labels, axisLabel: { color: '#ccc' } },
+        yAxis: { type: 'value', axisLabel: { color: '#ccc' } },
         series: [{
           type: 'bar',
           data: values,
@@ -296,8 +268,8 @@ function generateEChartsConfig(
     case 'line':
       return {
         ...baseConfig,
-        xAxis: { type: 'category', data: labels },
-        yAxis: { type: 'value' },
+        xAxis: { type: 'category', data: labels, axisLabel: { color: '#ccc' } },
+        yAxis: { type: 'value', axisLabel: { color: '#ccc' } },
         series: [{
           type: 'line',
           data: values,
@@ -313,7 +285,7 @@ function generateEChartsConfig(
           type: 'pie',
           radius: ['40%', '70%'],
           data: dataPoints.map(d => ({ name: d.label, value: d.value })),
-          label: { show: true, formatter: '{b}: {d}%' }
+          label: { show: true, formatter: '{b}: {d}%', color: '#fff' }
         }]
       };
 
@@ -349,14 +321,14 @@ function generateEChartsConfig(
   }
 }
 
-// 5. 最终化提示词
+// 4. 最终化提示词
 export const handleFinalizePrompt: ToolHandler = async (params, state, sendEvent) => {
   const { additional_requirements = [], special_effects = [] } = params;
 
   if (!state.structurePlan) {
     return {
       success: false,
-      error: '请先调用 plan_structure 规划网页结构'
+      error: '请先调用 plan_structure 规划演示文稿结构'
     };
   }
 
@@ -373,17 +345,24 @@ export const handleFinalizePrompt: ToolHandler = async (params, state, sendEvent
     promptLength: finalPrompt.length
   });
 
+  // 统计需要生成的图片
+  const imageConfigs = state.structurePlan.slides
+    .map((slide, index) => slide.imageConfig ? { ...slide.imageConfig, slideIndex: index } : null)
+    .filter(Boolean);
+
   return {
     success: true,
     data: {
       promptLength: finalPrompt.length,
-      chaptersCount: state.structurePlan.chapters.length,
-      materialsCount: state.collectedMaterials.length
+      slidesCount: state.structurePlan.slides.length,
+      materialsCount: state.collectedMaterials.length,
+      imagesToGenerate: imageConfigs.length,
+      message: `准备就绪！将并发生成 ${imageConfigs.length} 张 AI 图片，然后生成 reveal.js 演示文稿`
     }
   };
 };
 
-// 构建最终提示词
+// 构建最终提示词（用于 Gemini 生成 reveal.js）
 function buildFinalPrompt(
   state: ScrollytellingAgentState,
   additionalRequirements: string[],
@@ -391,107 +370,59 @@ function buildFinalPrompt(
 ): string {
   const plan = state.structurePlan!;
 
-  // 从图片提示词中提取风格关键词
-  const allPrompts = state.images.map(img => img.prompt || '').join(' ').toLowerCase();
-  const isHandDrawn = /手绘|插画|卡通|水彩|涂鸦|漫画|可爱|温馨/.test(allPrompts);
-  const isTech = /科技|数据|未来|数字|AI|智能/.test(allPrompts);
-  const isNature = /自然|风景|户外|山|海|森林|花/.test(allPrompts);
-
-  // 根据图片风格推荐配色和设计风格
-  let styleGuide = '';
-  if (isHandDrawn) {
-    styleGuide = `
-**⚠️ 检测到手绘/插画风格图片，请使用温馨可爱的设计：**
-- 配色：柔和的粉色、米色、浅蓝、薄荷绿等
-- 字体：圆润可爱的字体风格
-- 边框：圆角、手绘风格边框
-- 背景：纯色或渐变，不要深色商务风
-- 整体氛围：温馨、活泼、有亲和力`;
-  } else if (isTech) {
-    styleGuide = `
-**检测到科技风格图片，请使用科技感设计：**
-- 配色：深蓝、霓虹色、渐变色
-- 字体：现代无衬线字体
-- 特效：发光、粒子、网格线`;
-  } else if (isNature) {
-    styleGuide = `
-**检测到自然风格图片，请使用自然清新设计：**
-- 配色：绿色系、大地色、天空蓝
-- 字体：优雅简洁
-- 氛围：清新、舒适、放松`;
-  }
-
-  // 生成图片 URL 列表
-  const imageUrlList = state.images.map((img, i) =>
-    `图片${i + 1}: ${img.url}`
-  ).join('\n');
-
-  let prompt = `请创建一个【${plan.theme}】风格的高端沉浸式一镜到底交互网页。
-
-${styleGuide}
-
-## ⚠️ 图片 URL 列表（重要！）
-
-以下是本次使用的所有图片 URL，如需在网页中展示图片，必须使用这些真实 URL：
-
-\`\`\`
-${imageUrlList}
-\`\`\`
-
-**禁止使用占位符！** 不要生成 [Image #1]、[图片1] 等占位符，必须使用上面的真实 URL！
+  let prompt = `请创建一个【${plan.theme}】风格的高端 reveal.js 演示文稿。
 
 ## 整体设计
 
 **叙事方式**: ${plan.overallNarrative}
 **配色方案**: ${plan.colorScheme.join(', ')}
+**转场效果**: ${plan.transitions}
 **交互类型**: ${plan.interactionTypes.join(', ')}
 
-## 章节详情（共 ${plan.chapters.length} 章，每章内容要丰富！）
+## 幻灯片详情（共 ${plan.slides.length} 张）
 
 `;
 
-  // 添加每个章节的详细信息
-  for (let i = 0; i < plan.chapters.length; i++) {
-    const chapter = plan.chapters[i];
-    const imagePrompt = state.images[i]?.prompt || '';
+  // 添加每张幻灯片的详细信息
+  for (let i = 0; i < plan.slides.length; i++) {
+    const slide = plan.slides[i];
 
-    prompt += `### 第 ${i + 1} 章: ${chapter.title}
+    prompt += `### 幻灯片 ${i + 1}: ${slide.title}
 
-**🖼️ 图片 ${i + 1}**:
-\`\`\`
-URL: ${chapter.imageUrl}
-描述: ${imagePrompt || '(无描述)'}
-\`\`\`
-⚠️ 如需展示此图片，请直接使用上面的 URL，禁止使用 [Image #${i + 1}] 等占位符！
-
-**副标题**: ${chapter.subtitle || ''}
-**关键数据点**: ${chapter.keyPoints.join('、')}
+**布局**: ${slide.layout}
+**关键内容**: ${slide.keyPoints.join('、')}
 `;
 
-    if (chapter.searchResults) {
+    // 图片信息（占位符，实际 URL 会在生成后替换）
+    if (slide.imageConfig) {
       prompt += `
-**📚 扩展资料（必须全部融入内容）**:
-${chapter.searchResults}
+**图片**: {{IMAGE_${i}}}
+**图片描述**: ${slide.imageConfig.prompt}
+**图片比例**: ${slide.imageConfig.aspectRatio}
 `;
     }
 
-    if (chapter.chartData) {
+    if (slide.searchResults) {
       prompt += `
-**📊 图表配置** (${chapter.chartType}类型):
+**扩展资料**:
+${slide.searchResults}
+`;
+    }
+
+    if (slide.chartData) {
+      prompt += `
+**图表配置** (${slide.chartType}类型):
 \`\`\`json
-${JSON.stringify(chapter.chartData, null, 2)}
+${JSON.stringify(slide.chartData, null, 2)}
 \`\`\`
 `;
+    }
+
+    if (slide.animations && slide.animations.length > 0) {
+      prompt += `**动画效果**: ${slide.animations.join('、')}\n`;
     }
 
     prompt += `
-**本章内容要求**:
-- 核心文字精炼（2-3 段，每段 50-80 字）
-- 详细内容放 Tab 切换里
-- 3-5 个数据卡片（带计数动画）
-- 1 个 ECharts 图表
-- 融入搜索到的资料
-
 ---
 
 `;
@@ -499,7 +430,7 @@ ${JSON.stringify(chapter.chartData, null, 2)}
 
   // 添加收集的材料
   if (state.collectedMaterials.length > 0) {
-    prompt += `## 📝 补充材料（必须全部使用！）
+    prompt += `## 补充材料
 
 ${state.collectedMaterials.join('\n\n')}
 
@@ -509,57 +440,41 @@ ${state.collectedMaterials.join('\n\n')}
   // 添加技术要求
   prompt += `## 技术要求
 
-1. **CDN引入**（放在 </body> 之前）:
+1. **使用 reveal.js 框架**
+2. **CDN 引入**:
 \`\`\`html
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.min.css">
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 \`\`\`
 
-2. **禁止使用**: Lenis、Locomotive Scroll（只用 GSAP + ECharts）
-
 3. **必须包含的交互元素**:
-   - 数据卡片（带计数动画，使用 GSAP）
-   - ECharts 图表（随滚动触发动画）
-   - Tab 切换面板
-   - 时间线组件
-   - 滚动视差效果（图片和内容）
-   - Pin 固定场景效果
+   - 数据卡片（带计数动画）
+   - ECharts 图表
+   - 进度条动画
+   - 片段动画（fragment）
 
-4. **特殊效果**: ${specialEffects.length > 0 ? specialEffects.join('、') : '视差滚动、数字滚动计数、图表入场动画'}
+4. **特殊效果**: ${specialEffects.length > 0 ? specialEffects.join('、') : '平滑转场、数字滚动计数、图表入场动画'}
 
-5. **额外要求**: ${additionalRequirements.length > 0 ? additionalRequirements.join('；') : '确保移动端适配'}
-
-## ⚠️ 内容丰富度要求
-
-**每个章节建议包含（可灵活组合）：**
-- 核心内容（文字 + 视觉元素）
-- 数据可视化（数据卡片、图表等）
-- 交互元素（Tab、时间线等）
-- 融入搜索到的资料
-
-**整体网页建议包含：**
-- 视差滚动效果
-- Pin 固定场景
-- Tab 切换面板
-- 时间线组件
-- 计数动画
-
-**布局可以灵活多变，发挥创意！**
+5. **额外要求**: ${additionalRequirements.length > 0 ? additionalRequirements.join('；') : '确保在演示模式下流畅运行'}
 
 ## 输出格式
 
 直接输出完整的 HTML 代码，从 <!DOCTYPE html> 开始，到 </html> 结束。
 不要任何解释，不要 markdown 代码块。
 
-**⚠️ 核心：内容丰富 + 视觉精美 + 交互流畅！每章布局可以不同！**`;
+**⚠️ 图片占位符说明**：
+- 代码中的 {{IMAGE_0}}、{{IMAGE_1}} 等占位符会在后续被替换为真实的 AI 生成图片 URL
+- 请确保正确使用这些占位符
+
+**⚠️ 核心：内容丰富 + 视觉精美 + 交互流畅！**`;
 
   return prompt;
 }
 
 // 工具处理器映射
 export const TOOL_HANDLERS: Record<string, ToolHandler> = {
-  analyze_images: handleAnalyzeImages,
   plan_structure: handlePlanStructure,
   web_search: handleWebSearch,
   generate_chart_data: handleGenerateChartData,
@@ -581,7 +496,7 @@ export async function executeToolCall(
   try {
     return await handler(params, state, sendEvent);
   } catch (error) {
-    console.error(`[Scrollytelling Agent] Tool ${toolName} error:`, error);
+    console.error(`[Presentation Agent] Tool ${toolName} error:`, error);
     return {
       success: false,
       error: error instanceof Error ? error.message : '工具执行失败'
