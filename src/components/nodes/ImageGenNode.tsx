@@ -231,6 +231,7 @@ Generate a CLEAN image as if the markers do not exist.
         isGenerating={isGenerating}
         onGenerate={onGenerate}
         generateButtonText="生成"
+        generateButtonClassName="flex-[2]" // Use 2x width relative to secondary button
         generateButtonDisabled={!prompt}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -252,7 +253,7 @@ Generate a CLEAN image as if the markers do not exist.
             variant="secondary"
             onClick={onRewrite}
             disabled={isRewriting || !prompt}
-            className="flex-1"
+            className="flex-1 whitespace-nowrap px-3" // Ensure text doesn't wrap
           >
             {isRewriting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
             优化

@@ -2,6 +2,7 @@ import React, { ReactNode } from "react";
 import { LucideIcon, Loader2 } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import { NodeButton } from "@/components/ui/NodeUI";
+import { cn } from "@/lib/utils";
 
 interface GeneratorNodeLayoutProps {
   title: string;
@@ -17,6 +18,7 @@ interface GeneratorNodeLayoutProps {
   onGenerate: () => void;
   generateButtonText?: string;
   generateButtonDisabled?: boolean;
+  generateButtonClassName?: string; // Added custom className prop
   loadingText?: ReactNode;
   
   // Optional secondary actions next to generate button
@@ -40,6 +42,7 @@ export const GeneratorNodeLayout = React.memo(({
   onGenerate,
   generateButtonText = "Generate",
   generateButtonDisabled = false,
+  generateButtonClassName,
   loadingText,
   footerActions,
   onTouchStart,
@@ -72,14 +75,16 @@ export const GeneratorNodeLayout = React.memo(({
               variant="primary"
               onClick={onGenerate}
               disabled={isGenerating || generateButtonDisabled}
-              className={`w-full text-white ${
+              className={cn(
+                "flex-1 text-white", // Default to flex-1 instead of w-full
                 // Auto-map colors based on prop
                 color === 'blue' ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700' :
                 color === 'green' ? 'bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700' :
                 color === 'orange' ? 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-700' :
                 color === 'purple' ? 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700' :
-                'bg-neutral-800 hover:bg-neutral-900'
-              }`}
+                'bg-neutral-800 hover:bg-neutral-900',
+                generateButtonClassName // Allow override
+              )}
             >
               {isGenerating ? (
                 loadingText || <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -95,4 +100,3 @@ export const GeneratorNodeLayout = React.memo(({
 });
 
 GeneratorNodeLayout.displayName = "GeneratorNodeLayout";
-
