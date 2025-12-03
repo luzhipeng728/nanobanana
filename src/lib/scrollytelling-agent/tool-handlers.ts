@@ -391,7 +391,46 @@ function buildFinalPrompt(
 ): string {
   const plan = state.structurePlan!;
 
+  // 从图片提示词中提取风格关键词
+  const allPrompts = state.images.map(img => img.prompt || '').join(' ').toLowerCase();
+  const isHandDrawn = /手绘|插画|卡通|水彩|涂鸦|漫画|可爱|温馨/.test(allPrompts);
+  const isTech = /科技|数据|未来|数字|AI|智能/.test(allPrompts);
+  const isNature = /自然|风景|户外|山|海|森林|花/.test(allPrompts);
+
+  // 根据图片风格推荐配色和设计风格
+  let styleGuide = '';
+  if (isHandDrawn) {
+    styleGuide = `
+**⚠️ 检测到手绘/插画风格图片，请使用温馨可爱的设计：**
+- 配色：柔和的粉色、米色、浅蓝、薄荷绿等
+- 字体：圆润可爱的字体风格
+- 边框：圆角、手绘风格边框
+- 背景：纯色或渐变，不要深色商务风
+- 整体氛围：温馨、活泼、有亲和力`;
+  } else if (isTech) {
+    styleGuide = `
+**检测到科技风格图片，请使用科技感设计：**
+- 配色：深蓝、霓虹色、渐变色
+- 字体：现代无衬线字体
+- 特效：发光、粒子、网格线`;
+  } else if (isNature) {
+    styleGuide = `
+**检测到自然风格图片，请使用自然清新设计：**
+- 配色：绿色系、大地色、天空蓝
+- 字体：优雅简洁
+- 氛围：清新、舒适、放松`;
+  }
+
   let prompt = `请创建一个【${plan.theme}】风格的高端沉浸式一镜到底交互网页。
+
+${styleGuide}
+
+## 图片使用说明
+
+提供的图片是**参考素材**，帮助你理解内容主题和风格：
+- 你可以自由决定是否在网页中展示图片
+- 如果展示图片，由你决定最合理的展示方式
+- 图片放置位置和大小由你根据整体设计来决定
 
 ## 整体设计
 
@@ -399,38 +438,61 @@ function buildFinalPrompt(
 **配色方案**: ${plan.colorScheme.join(', ')}
 **交互类型**: ${plan.interactionTypes.join(', ')}
 
-## 章节详情
+## 章节详情（共 ${plan.chapters.length} 章，每章内容要丰富！）
 
 `;
 
   // 添加每个章节的详细信息
   for (let i = 0; i < plan.chapters.length; i++) {
     const chapter = plan.chapters[i];
+    const imagePrompt = state.images[i]?.prompt || '';
+
     prompt += `### 第 ${i + 1} 章: ${chapter.title}
 
-**图片URL**: ${chapter.imageUrl}
+**🖼️ 图片信息**:
+- URL: ${chapter.imageUrl}
+- 原始描述: ${imagePrompt}
+- **展示要求**: 必须用 <img> 标签清晰展示此图片！
+
 **副标题**: ${chapter.subtitle || ''}
 **关键数据点**: ${chapter.keyPoints.join('、')}
 `;
 
     if (chapter.searchResults) {
-      prompt += `\n**扩展资料**:\n${chapter.searchResults}\n`;
+      prompt += `
+**📚 扩展资料（必须全部融入内容）**:
+${chapter.searchResults}
+`;
     }
 
     if (chapter.chartData) {
-      prompt += `\n**图表配置** (${chapter.chartType}类型):
+      prompt += `
+**📊 图表配置** (${chapter.chartType}类型):
 \`\`\`json
 ${JSON.stringify(chapter.chartData, null, 2)}
 \`\`\`
 `;
     }
 
-    prompt += '\n---\n\n';
+    prompt += `
+**本章内容要求**:
+- 至少 300 字的详细说明（包含背景、分析、趋势）
+- 3-5 个数据卡片（带计数动画）
+- 1 个 ECharts 图表
+- 融入所有搜索到的资料
+
+---
+
+`;
   }
 
   // 添加收集的材料
   if (state.collectedMaterials.length > 0) {
-    prompt += `## 补充材料\n\n${state.collectedMaterials.join('\n\n')}\n\n`;
+    prompt += `## 📝 补充材料（必须全部使用！）
+
+${state.collectedMaterials.join('\n\n')}
+
+`;
   }
 
   // 添加技术要求
@@ -446,21 +508,37 @@ ${JSON.stringify(chapter.chartData, null, 2)}
 2. **禁止使用**: Lenis、Locomotive Scroll（只用 GSAP + ECharts）
 
 3. **必须包含的交互元素**:
-   - 数据卡片（带计数动画）
+   - 数据卡片（带计数动画，使用 GSAP）
    - ECharts 图表（随滚动触发动画）
    - Tab 切换面板
    - 时间线组件
-   - 滚动视差效果
+   - 滚动视差效果（图片和内容）
    - Pin 固定场景效果
 
 4. **特殊效果**: ${specialEffects.length > 0 ? specialEffects.join('、') : '视差滚动、数字滚动计数、图表入场动画'}
 
 5. **额外要求**: ${additionalRequirements.length > 0 ? additionalRequirements.join('；') : '确保移动端适配'}
 
+## ⚠️ 内容丰富度要求（最重要！）
+
+**每个章节必须包含：**
+- 300+ 字的详细说明内容
+- 3-5 个数据卡片（带 GSAP 计数动画）
+- 1 个 ECharts 图表（带滚动触发动画）
+- 融入所有提供的搜索资料
+
+**整体网页必须包含：**
+- 视差滚动效果
+- Pin 固定场景
+- Tab 切换面板
+- 时间线组件
+
 ## 输出格式
 
 直接输出完整的 HTML 代码，从 <!DOCTYPE html> 开始，到 </html> 结束。
-不要任何解释，不要 markdown 代码块。`;
+不要任何解释，不要 markdown 代码块。
+
+**⚠️ 内容必须丰富、详细、有深度！每章至少 300 字！必须使用所有搜索资料！**`;
 
   return prompt;
 }
