@@ -1,6 +1,7 @@
 // Scrollytelling HTML 生成 API - 两阶段流式响应
 // 阶段1: Claude Agent 分析图片、收集材料、规划结构
 // 阶段2: Gemini 根据 Claude 准备的 prompt 生成 HTML
+// 修改模式: 跳过阶段1，直接让 Gemini 根据上下文修改
 
 import { NextRequest } from 'next/server';
 import {
@@ -8,7 +9,8 @@ import {
   ScrollytellingStreamEvent,
   ScrollytellingAgentConfig,
   runScrollytellingAgent,
-  generateHtmlWithGemini
+  generateHtmlWithGemini,
+  modifyHtmlWithGemini
 } from '@/lib/scrollytelling-agent';
 
 export const maxDuration = 300; // 5分钟超时
@@ -45,10 +47,19 @@ export async function POST(request: NextRequest) {
   (async () => {
     try {
       const body = await request.json();
-      const { images, prompts, theme } = body as {
-        images: string[];   // 图片 URL 数组
-        prompts?: string[]; // 图片描述数组（与 images 对应）
-        theme?: string;     // 可选的主题描述
+      const {
+        images,
+        prompts,
+        theme,
+        // 修改模式参数
+        modification,
+        previousHtml
+      } = body as {
+        images: string[];
+        prompts?: string[];
+        theme?: string;
+        modification?: string;    // 用户的修改请求
+        previousHtml?: string;    // 之前生成的 HTML
       };
 
       if (!images || !Array.isArray(images) || images.length === 0) {
@@ -57,16 +68,45 @@ export async function POST(request: NextRequest) {
         return;
       }
 
-      console.log('[Scrollytelling API] Starting two-phase generation...');
-      console.log('[Scrollytelling API] Images count:', images.length);
-      console.log('[Scrollytelling API] Has prompts:', !!prompts && prompts.length > 0);
-      console.log('[Scrollytelling API] Theme:', theme || 'auto');
-
       // 构建图片信息
       const imageInfos: ImageInfo[] = images.map((url, i) => ({
         url,
         prompt: prompts?.[i] || undefined
       }));
+
+      // ========== 修改模式：跳过 Claude Agent，直接让 Gemini 修改 ==========
+      if (modification && previousHtml) {
+        console.log('[Scrollytelling API] Modification mode: Skipping Claude Agent...');
+        console.log('[Scrollytelling API] Modification request:', modification.slice(0, 100));
+
+        await sendEvent({
+          type: 'phase',
+          phase: 'generation',
+          message: 'Gemini 正在根据您的要求修改...'
+        });
+
+        await modifyHtmlWithGemini(
+          previousHtml,
+          modification,
+          imageInfos,
+          sendEvent
+        );
+
+        await sendEvent({
+          type: 'complete',
+          htmlLength: 0
+        });
+
+        console.log('[Scrollytelling API] Modification completed');
+        await writer.close();
+        return;
+      }
+
+      // ========== 正常模式：两阶段生成 ==========
+      console.log('[Scrollytelling API] Starting two-phase generation...');
+      console.log('[Scrollytelling API] Images count:', images.length);
+      console.log('[Scrollytelling API] Has prompts:', !!prompts && prompts.length > 0);
+      console.log('[Scrollytelling API] Theme:', theme || 'auto');
 
       // Agent 配置
       const agentConfig: ScrollytellingAgentConfig = {

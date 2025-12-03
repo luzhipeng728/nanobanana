@@ -454,6 +454,150 @@ ${config.theme}
   return message;
 }
 
+// 调用 Gemini 修改 HTML（修改模式）- 跳过 Claude Agent
+export async function modifyHtmlWithGemini(
+  previousHtml: string,
+  modification: string,
+  images: ImageInfo[],
+  sendEvent: (event: ScrollytellingStreamEvent) => Promise<void>
+): Promise<void> {
+  const startTime = Date.now();
+
+  const apiBaseUrl = process.env.SCROLLYTELLING_API_BASE_URL || 'http://172.93.101.237:8317';
+  const apiKey = process.env.SCROLLYTELLING_API_KEY || 'sk-12345';
+  const model = process.env.SCROLLYTELLING_MODEL || 'gemini-3-pro-preview';
+
+  // 构建图片 URL 列表
+  const imageUrlList = images.map((img, i) => `图片${i + 1}: ${img.url}`).join('\n');
+
+  // 修改模式的系统提示词
+  const modifySystemPrompt = `你是一位专业的前端开发专家。用户已经有一个生成好的 HTML 网页，现在需要你根据用户的要求进行修改。
+
+## 任务
+根据用户的修改要求，对提供的 HTML 进行调整。
+
+## 图片 URL 列表
+如果修改涉及图片，请使用以下真实 URL：
+\`\`\`
+${imageUrlList}
+\`\`\`
+
+## 图片显示规则
+如果涉及图片展示，必须保持图片原始比例：
+\`\`\`css
+img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+\`\`\`
+
+## 输出要求
+1. 直接输出修改后的完整 HTML 代码
+2. 从 <!DOCTYPE html> 开始，到 </html> 结束
+3. 不要任何解释，不要 markdown 代码块
+4. 保留原有的 GSAP、ECharts 等功能`;
+
+  // 构建用户消息
+  const userContent: any[] = [];
+
+  // 添加图片（供参考）
+  for (const image of images) {
+    userContent.push({
+      type: 'image_url',
+      image_url: { url: image.url }
+    });
+  }
+
+  // 添加修改请求
+  userContent.push({
+    type: 'text',
+    text: `## 当前 HTML 代码
+
+\`\`\`html
+${previousHtml}
+\`\`\`
+
+## 用户修改要求
+
+${modification}
+
+请根据以上要求修改 HTML，直接输出完整的修改后代码。`
+  });
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: modifySystemPrompt },
+          { role: 'user', content: userContent }
+        ],
+        stream: true,
+        temperature: 0.7,
+        max_tokens: 64000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    }
+
+    // 处理流式响应
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('无法读取响应流');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let chunkCount = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === 'data: [DONE]') continue;
+
+        if (trimmed.startsWith('data: ')) {
+          try {
+            const json = JSON.parse(trimmed.slice(6));
+            const content = json.choices?.[0]?.delta?.content;
+            if (content) {
+              chunkCount++;
+              await sendEvent({
+                type: 'html_chunk',
+                chunk: content
+              });
+            }
+          } catch {
+            // 忽略解析错误
+          }
+        }
+      }
+    }
+
+    const totalDuration = Math.round((Date.now() - startTime) / 1000);
+    console.log(`[Scrollytelling Agent] Gemini modification completed in ${totalDuration}s, ${chunkCount} chunks`);
+
+  } catch (error) {
+    console.error('[Scrollytelling Agent] Gemini modification error:', error);
+    throw error;
+  }
+}
+
 // 调用 Gemini 生成 HTML（阶段2）- 带心跳
 export async function generateHtmlWithGemini(
   finalPrompt: string,
@@ -518,10 +662,45 @@ export async function generateHtmlWithGemini(
 - **详细内容可交互**：Tab 切换、展开/收起
 - **视觉优先**：用图表和可视化增强表达
 
-## 图片使用说明
-提供的图片是**参考素材**：
-- 你可以自由决定是否展示图片
-- 如果展示，由你决定最合理的展示方式
+## ⚠️ 图片使用说明（重要！）
+
+**图片已通过 image_url 传递给你，你可以直接看到图片内容。**
+
+### 图片展示规则
+
+如果你要在网页中展示图片，必须：
+1. 使用提供的实际 URL（禁止使用占位符如 [Image #1]）
+2. **保持图片原始比例，显示完整图像**
+
+**正确的图片样式（必须使用）：**
+\`\`\`css
+img {
+  width: 100%;
+  height: auto; /* 自动高度，保持比例 */
+  object-fit: contain; /* 完整显示，不裁剪 */
+  max-width: 100%;
+}
+\`\`\`
+
+**或者使用固定容器 + 完整显示：**
+\`\`\`css
+.img-container {
+  width: 100%;
+  aspect-ratio: 16/9; /* 或其他合适比例 */
+}
+.img-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* 完整显示 */
+}
+\`\`\`
+
+**禁止：**
+- ❌ 设置固定 width 和 height 导致图片变形
+- ❌ 使用 object-fit: cover 裁剪图片
+- ❌ 使用占位符如 [Image #1]、[图片1]
+
+图片的实际 URL 会在后续的"章节详情"中提供。
 
 ## 内容结构要求
 

@@ -421,16 +421,24 @@ function buildFinalPrompt(
 - 氛围：清新、舒适、放松`;
   }
 
+  // 生成图片 URL 列表
+  const imageUrlList = state.images.map((img, i) =>
+    `图片${i + 1}: ${img.url}`
+  ).join('\n');
+
   let prompt = `请创建一个【${plan.theme}】风格的高端沉浸式一镜到底交互网页。
 
 ${styleGuide}
 
-## 图片使用说明
+## ⚠️ 图片 URL 列表（重要！）
 
-提供的图片是**参考素材**，帮助你理解内容主题和风格：
-- 你可以自由决定是否在网页中展示图片
-- 如果展示图片，由你决定最合理的展示方式
-- 图片放置位置和大小由你根据整体设计来决定
+以下是本次使用的所有图片 URL，如需在网页中展示图片，必须使用这些真实 URL：
+
+\`\`\`
+${imageUrlList}
+\`\`\`
+
+**禁止使用占位符！** 不要生成 [Image #1]、[图片1] 等占位符，必须使用上面的真实 URL！
 
 ## 整体设计
 
@@ -449,10 +457,12 @@ ${styleGuide}
 
     prompt += `### 第 ${i + 1} 章: ${chapter.title}
 
-**🖼️ 图片信息**:
-- URL: ${chapter.imageUrl}
-- 原始描述: ${imagePrompt}
-- **展示要求**: 必须用 <img> 标签清晰展示此图片！
+**🖼️ 图片 ${i + 1}**:
+\`\`\`
+URL: ${chapter.imageUrl}
+描述: ${imagePrompt || '(无描述)'}
+\`\`\`
+⚠️ 如需展示此图片，请直接使用上面的 URL，禁止使用 [Image #${i + 1}] 等占位符！
 
 **副标题**: ${chapter.subtitle || ''}
 **关键数据点**: ${chapter.keyPoints.join('、')}

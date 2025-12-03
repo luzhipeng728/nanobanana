@@ -110,6 +110,10 @@ export default function ScrollytellingPreview({
   const [autoFixAttempts, setAutoFixAttempts] = useState(0);
   const MAX_AUTO_FIX_ATTEMPTS = 2;
 
+  // 修改模式：保存之前生成的 HTML，用于增量修改
+  const [previousHtml, setPreviousHtml] = useState<string>("");
+  const [isModificationMode, setIsModificationMode] = useState(false);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastRenderTimeRef = useRef<number>(0);
@@ -357,6 +361,13 @@ export default function ScrollytellingPreview({
         updateStepStatus('generate', 'completed');
         setIsComplete(true);
         setShowCode(false);
+        // 保存生成的 HTML，供后续修改模式使用
+        setHtmlContent(prev => {
+          if (prev) {
+            setPreviousHtml(prev);
+          }
+          return prev;
+        });
         break;
 
       case 'error':
@@ -535,10 +546,120 @@ export default function ScrollytellingPreview({
     window.open(url, "_blank");
   };
 
-  // 手动重新生成
+  // 手动重新生成（完整流程）
   const handleRegenerate = () => {
     setAutoFixAttempts(0);
+    setPreviousHtml(""); // 清除之前的 HTML，强制完整生成
+    setIsModificationMode(false);
     startGeneration();
+  };
+
+  // 修改模式：跳过 Claude Agent，直接让 Gemini 修改
+  const startModification = useCallback(async (modificationRequest: string) => {
+    if (!previousHtml || !modificationRequest.trim()) return;
+
+    // 重置状态（但保留 previousHtml）
+    setHtmlContent("");
+    setError(null);
+    setJsErrors([]);
+    setIsComplete(false);
+    setIsGenerating(true);
+    setPublishedUrl(null);
+    setShowCode(true);
+    setCurrentPhase('generation'); // 直接进入生成阶段
+    setPhaseMessage('Gemini 正在根据您的要求修改...');
+    setAgentLogs([{ type: 'prompt', content: `📝 修改请求: ${modificationRequest}`, timestamp: Date.now() }]);
+    setIsModificationMode(true);
+
+    // 取消之前的请求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const response = await fetch("/api/scrollytelling", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          images,
+          prompts,
+          modification: modificationRequest,
+          previousHtml,
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`API 错误: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("无法读取响应流");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // 解析 SSE 事件
+        const lines = buffer.split('\n');
+        buffer = '';
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+
+          if (i === lines.length - 1 && !line.endsWith('\n')) {
+            buffer = line;
+            continue;
+          }
+
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const event = JSON.parse(trimmed.slice(6)) as StreamEvent;
+              handleStreamEvent(event);
+            } catch {
+              // 忽略解析错误
+            }
+          }
+        }
+      }
+
+      // 最终渲染
+      if (htmlContent) {
+        renderToIframe(htmlContent, true);
+      }
+
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        return;
+      }
+      setError(err instanceof Error ? err.message : "修改失败");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [images, prompts, previousHtml, handleStreamEvent, renderToIframe]);
+
+  // 智能发送：如果已有生成结果，使用修改模式；否则完整生成
+  const handleSmartSend = () => {
+    if (isGenerating) return;
+
+    if (previousHtml && customPrompt.trim()) {
+      // 修改模式
+      startModification(customPrompt);
+    } else {
+      // 完整生成
+      handleRegenerate();
+    }
   };
 
   // 获取日志图标和颜色
@@ -565,10 +686,14 @@ export default function ScrollytellingPreview({
         <div className="flex items-center gap-3">
           <h2 className="text-white font-semibold">{title || "一镜到底网页预览"}</h2>
           {isGenerating && (
-            <div className="flex items-center gap-2 text-cyan-400 text-sm">
+            <div className={cn(
+              "flex items-center gap-2 text-sm",
+              isModificationMode ? "text-purple-400" : "text-cyan-400"
+            )}>
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>
-                {currentPhase === 'preparation' ? 'Claude 分析中...' :
+                {isModificationMode ? 'Gemini 快速修改中...' :
+                 currentPhase === 'preparation' ? 'Claude 分析中...' :
                  currentPhase === 'generation' ? 'Gemini 生成中...' :
                  isAutoFixing ? '自动修复中...' : '处理中...'}
               </span>
@@ -677,8 +802,23 @@ export default function ScrollytellingPreview({
 
       {/* 主内容区 */}
       <div className="flex-1 flex overflow-hidden">
-        {/* 阶段1: Claude Agent 准备阶段 */}
-        {isGenerating && currentPhase === 'preparation' ? (
+        {/* 修改模式等待状态 */}
+        {isGenerating && isModificationMode && !htmlContent ? (
+          <div className="flex-1 bg-neutral-950 flex flex-col items-center justify-center">
+            <div className="flex items-center gap-3 text-purple-400">
+              <Loader2 className="w-8 h-8 animate-spin" />
+              <span className="text-xl">Gemini 正在修改网页...</span>
+            </div>
+            <p className="text-neutral-500 mt-3">快速修改模式 - 跳过分析流程</p>
+            <div className="mt-6 p-4 bg-neutral-900 rounded-lg border border-neutral-800 max-w-md">
+              <p className="text-sm text-neutral-400">
+                <span className="text-purple-400 font-medium">修改请求：</span>
+                {customPrompt || '...'}
+              </p>
+            </div>
+          </div>
+        ) : isGenerating && currentPhase === 'preparation' ? (
+          /* 阶段1: Claude Agent 准备阶段 */
           <div className="flex-1 bg-neutral-950 flex">
             {/* 左侧：工作流程步骤指示器 */}
             <div className="w-64 border-r border-neutral-800 p-4 flex flex-col">
@@ -960,35 +1100,58 @@ export default function ScrollytellingPreview({
         <div className="bg-neutral-900 p-4">
           <div className="max-w-4xl mx-auto flex gap-3">
             <div className="flex-1 relative">
-              <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500" />
+              <Sparkles className={cn(
+                "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
+                previousHtml ? "text-purple-500" : "text-cyan-500"
+              )} />
               <input
                 type="text"
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="输入额外指令，如：科技感风格、添加更多视差效果、让第三张图放大显示..."
-                className="w-full pl-10 pr-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500"
+                placeholder={previousHtml
+                  ? "输入修改指令，如：让标题更大、更换配色方案、添加更多动画效果..."
+                  : "输入额外指令，如：科技感风格、添加更多视差效果、让第三张图放大显示..."
+                }
+                className={cn(
+                  "w-full pl-10 pr-4 py-3 bg-neutral-800 border rounded-xl text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2",
+                  previousHtml
+                    ? "border-purple-700/50 focus:ring-purple-500/50 focus:border-purple-500"
+                    : "border-neutral-700 focus:ring-cyan-500/50 focus:border-cyan-500"
+                )}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !isGenerating) {
-                    handleRegenerate();
+                    handleSmartSend();
                   }
                 }}
               />
             </div>
             <button
-              onClick={handleRegenerate}
+              onClick={handleSmartSend}
               disabled={isGenerating}
-              className="flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-500/50 text-white rounded-xl font-medium transition-colors disabled:cursor-not-allowed"
+              className={cn(
+                "flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-colors disabled:cursor-not-allowed",
+                previousHtml && customPrompt.trim()
+                  ? "bg-purple-500 hover:bg-purple-600 disabled:bg-purple-500/50 text-white"
+                  : "bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-500/50 text-white"
+              )}
             >
               {isGenerating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Send className="w-4 h-4" />
               )}
-              生成
+              {previousHtml && customPrompt.trim() ? "修改" : "生成"}
             </button>
           </div>
           <p className="text-xs text-neutral-500 mt-2 max-w-4xl mx-auto">
-            提示：Claude 会先分析图片、搜索资料、规划结构，然后 Gemini 生成最终 HTML
+            {previousHtml ? (
+              <>
+                <span className="text-purple-400">✨ 快速修改模式：</span>
+                直接输入修改要求，Gemini 将基于当前网页进行调整（跳过分析流程）
+              </>
+            ) : (
+              "提示：Claude 会先分析图片、搜索资料、规划结构，然后 Gemini 生成最终 HTML"
+            )}
           </p>
         </div>
       </div>

@@ -4,4 +4,4 @@ export * from './types';
 export * from './tools';
 export * from './tool-handlers';
 export * from './system-prompt';
-export { runScrollytellingAgent, generateHtmlWithGemini } from './react-loop';
+export { runScrollytellingAgent, generateHtmlWithGemini, modifyHtmlWithGemini } from './react-loop';
