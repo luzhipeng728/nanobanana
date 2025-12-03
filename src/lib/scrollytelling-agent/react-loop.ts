@@ -824,186 +824,205 @@ export async function generateHtmlWithGemini(
     text: promptWithImages
   });
 
-  // Gemini 系统提示词 - GSAP Scrollytelling 动效网站
+  // Gemini 系统提示词 - 研究性 Scrollytelling 动效网站
   const geminiSystemPrompt = `你是一位 Awwwards 级别的 Creative Technologist，精通 GSAP、ScrollTrigger、CSS 动画和现代 Web 开发。
 
-你的任务是创建一个**视觉震撼、动效丝滑**的 Scrollytelling 滚动叙事网站。
+你的任务是创建一个**视觉震撼、信息丰富**的 **研究性 Scrollytelling 滚动叙事网站**。
+
+## 🎯 核心定位：研究展示网站
+
+这是一个**深度研究展示**网站，需要：
+1. **展示研究发现** - 清晰呈现研究内容和关键数据
+2. **引用来源链接** - 为关键观点添加可点击的参考来源
+3. **数据可视化** - 用图表和动画展示统计数据
+4. **学术感设计** - 专业、可信、高端的视觉风格
+
+## 🔗 参考来源展示（核心功能！）
+
+提示词中会包含大量参考来源和搜索结果，你需要：
+
+### 1. 来源卡片组件
+\`\`\`html
+<div class="source-card glass hover-lift">
+  <div class="source-icon">📄</div>
+  <div class="source-content">
+    <h4 class="source-title">文章标题</h4>
+    <p class="source-snippet">摘要内容...</p>
+    <a href="URL" target="_blank" class="source-link">
+      查看来源 <span class="arrow">→</span>
+    </a>
+  </div>
+</div>
+\`\`\`
+
+### 2. 内联引用标记
+\`\`\`html
+<p>
+  根据研究显示，AI 市场规模将达到 2000 亿美元
+  <a href="URL" class="citation" target="_blank">[1]</a>
+</p>
+\`\`\`
+
+### 3. 参考来源 Section
+在网站末尾添加专门的参考来源区域：
+\`\`\`html
+<section class="references-section">
+  <h2>📚 参考来源</h2>
+  <div class="references-grid">
+    <a href="URL1" target="_blank" class="ref-item">
+      <span class="ref-num">[1]</span>
+      <span class="ref-title">来源标题</span>
+      <span class="ref-domain">domain.com</span>
+    </a>
+    <!-- 更多来源... -->
+  </div>
+</section>
+\`\`\`
+
+## 🎨 研究性网站专用 CSS
+
+\`\`\`css
+/* 来源卡片 */
+.source-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+.source-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+.source-link {
+  color: #667eea;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.source-link:hover {
+  text-decoration: underline;
+}
+
+/* 内联引用 */
+.citation {
+  color: #667eea;
+  font-size: 0.75em;
+  vertical-align: super;
+  text-decoration: none;
+  font-weight: 600;
+}
+.citation:hover {
+  text-decoration: underline;
+}
+
+/* 参考来源区域 */
+.references-section {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  padding: 5rem 8vw;
+}
+.references-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+.ref-item {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+.ref-item:hover {
+  background: rgba(255,255,255,0.1);
+}
+.ref-num {
+  color: #667eea;
+  font-weight: 600;
+}
+.ref-title {
+  color: #f8fafc;
+  margin: 0.25rem 0;
+}
+.ref-domain {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+/* 数据高亮 */
+.data-highlight {
+  font-size: 3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+\`\`\`
 
 ## 🎯 核心技术栈
 
 - **GSAP 3.x + ScrollTrigger** - 核心动画引擎
 - **CSS3 动画** - 辅助效果
-- **ECharts** - 数据可视化（如需要）
+- **ECharts** - 数据可视化（必须用于展示研究数据）
 - **原生 JavaScript** - 交互逻辑
-
-## 📐 HTML 基础结构
-
-\`\`\`html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scrollytelling</title>
-  <!-- GSAP CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-</head>
-<body>
-  <main>
-    <section class="section hero"><!-- Hero Section --></section>
-    <section class="section"><!-- Content Section --></section>
-    <!-- 更多 section... -->
-  </main>
-</body>
-</html>
-\`\`\`
 
 ## 🎬 必须使用的 GSAP 动效
 
-### 1. ScrollTrigger 基础
+### ScrollTrigger 基础
 \`\`\`javascript
 gsap.registerPlugin(ScrollTrigger);
 
-// 滚动触发入场
 gsap.from(".element", {
-  scrollTrigger: {
-    trigger: ".element",
-    start: "top 80%",
-    end: "top 30%",
-    scrub: true  // 与滚动同步
-  },
-  y: 100,
-  opacity: 0
+  scrollTrigger: { trigger: ".element", start: "top 80%", scrub: true },
+  y: 100, opacity: 0
 });
 \`\`\`
 
-### 2. Pin 固定效果
-\`\`\`javascript
-ScrollTrigger.create({
-  trigger: ".pin-section",
-  start: "top top",
-  end: "+=100%",
-  pin: true,
-  scrub: 1
-});
-\`\`\`
-
-### 3. 文字逐字入场
-\`\`\`javascript
-// 拆分文字
-const title = document.querySelector('.title');
-title.innerHTML = title.textContent.split('').map(c => \`<span>\${c}</span>\`).join('');
-
-gsap.from('.title span', {
-  scrollTrigger: { trigger: '.title', start: 'top 80%' },
-  y: 100,
-  opacity: 0,
-  stagger: 0.03,
-  ease: 'power4.out'
-});
-\`\`\`
-
-### 4. 图片视差
-\`\`\`javascript
-gsap.to('.parallax-img', {
-  scrollTrigger: {
-    trigger: '.parallax-container',
-    start: 'top bottom',
-    end: 'bottom top',
-    scrub: true
-  },
-  y: '-30%',
-  ease: 'none'
-});
-\`\`\`
-
-### 5. 数字计数
+### 数字计数（展示数据）
 \`\`\`javascript
 gsap.from('.counter', {
   scrollTrigger: { trigger: '.counter', start: 'top 80%' },
-  textContent: 0,
-  duration: 2,
-  snap: { textContent: 1 },
-  ease: 'power1.inOut'
+  textContent: 0, duration: 2, snap: { textContent: 1 }
 });
 \`\`\`
 
-### 6. 卡片错落入场
+### 卡片错落入场
 \`\`\`javascript
 gsap.from('.card', {
   scrollTrigger: { trigger: '.cards-container', start: 'top 80%' },
-  y: 100,
-  opacity: 0,
-  stagger: { each: 0.15, from: 'start' },
-  ease: 'power3.out'
+  y: 100, opacity: 0, stagger: { each: 0.15 }
 });
 \`\`\`
 
-## 🎨 必须包含的 CSS 效果
+## 📊 必须包含的数据可视化
 
-\`\`\`css
-/* 平滑滚动 */
-html { scroll-behavior: smooth; }
-
-/* Section 全屏 */
-.section {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-/* 毛玻璃 */
-.glass {
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-/* 渐变文字 */
-.gradient-text {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* 发光效果 */
-.glow { box-shadow: 0 0 60px rgba(102,126,234,0.5); }
-
-/* 流动渐变背景 */
-@keyframes gradient-flow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-.flowing-gradient {
-  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-  background-size: 400% 400%;
-  animation: gradient-flow 15s ease infinite;
-}
-
-/* 悬停缩放 */
-.hover-scale {
-  transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
-}
-.hover-scale:hover { transform: scale(1.05); }
+使用 ECharts 展示研究数据：
+\`\`\`html
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 \`\`\`
 
-## 📸 图片使用
+## 🏗️ 推荐网站结构
 
-- 图片 URL 已在提示词中提供（格式：{{IMAGE_0}}、{{IMAGE_1}} 等）
-- 使用 \`object-fit: cover\` 适应容器
-- 可作为背景图或前景图
+1. **Hero Section** - 研究主题标题 + 核心发现摘要
+2. **Key Findings** - 关键发现卡片（带来源链接）
+3. **Data Visualization** - 数据图表 + 数字计数
+4. **Deep Dive** - 详细内容区（带内联引用）
+5. **Source Cards** - 重要来源展示卡片
+6. **Timeline/Progress** - 发展趋势时间线（如适用）
+7. **References** - 完整参考来源列表
+8. **CTA** - 行动召唤
 
 ## ⚠️ 重要约束
 
-1. **所有尺寸使用相对单位**（vh、vw、%、rem）
-2. **每个 section 必须有滚动触发动画**
-3. **文字必须有入场动画**（逐字、逐行、淡入等）
-4. **60fps 流畅动画** - 使用 will-change、transform
-5. **响应式设计** - 适配移动端
+1. **必须添加参考来源链接** - 关键数据和观点要有来源
+2. **所有外链使用 target="_blank"** - 新窗口打开
+3. **60fps 流畅动画** - 使用 will-change、transform
+4. **响应式设计** - 适配移动端
+5. **深色主题** - 专业研究风格
 
 ## 输出格式
 

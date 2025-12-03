@@ -70,6 +70,14 @@ export interface WebStructurePlan extends PresentationPlan {
   chapters: SlidePlan[];    // 兼容旧代码
 }
 
+// 搜索结果条目
+export interface ResearchSearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+  source?: string;
+}
+
 // 深度研究结果
 export interface DeepResearchResult {
   topic: string;
@@ -80,6 +88,10 @@ export interface DeepResearchResult {
   colorRecommendations: string[]; // 配色建议
   visualStyle: string;          // 推荐视觉风格
   researchDuration: number;     // 研究耗时（秒）
+  // 新增：完整的引用和搜索结果
+  citations?: string[];                    // 引用来源 URL 列表
+  searchResults?: ResearchSearchResult[];  // 搜索结果详情
+  searchQueriesCount?: number;             // 搜索查询次数
 }
 
 // Agent 状态

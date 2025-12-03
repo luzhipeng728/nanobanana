@@ -14,9 +14,8 @@ import {
 // 导入 HyprLab 深度研究
 import {
   callHyprLabDeepResearch,
-  parseHyprLabResponse,
-  type ReasoningEffort,
-  type ResearchProgressEvent
+  type ResearchProgressEvent,
+  type FullResearchResult
 } from '@/lib/super-agent/hyprlab-research';
 
 // 工具处理器类型
@@ -79,14 +78,15 @@ export const handleDeepResearch: ToolHandler = async (params, state, sendEvent) 
 
   try {
     // 使用 HyprLab 深度研究 - medium 级别（3-7分钟）
-    const response = await callHyprLabDeepResearch(
-      researchTopic,
-      'medium' as ReasoningEffort,
+    // 使用新接口获取完整数据（包括 search_results 和 citations）
+    const result = await callHyprLabDeepResearch(researchTopic, {
+      reasoningEffort: 'medium',
       onProgress,
-      systemPrompt
-    );
+      systemPrompt,
+      includeRawResponse: true
+    }) as FullResearchResult;
 
-    const parsed = parseHyprLabResponse(response);
+    const { response, parsed } = result;
     const researchDuration = Math.round((Date.now() - startTime) / 1000);
 
     // 从研究内容中提取关键信息
@@ -103,7 +103,7 @@ export const handleDeepResearch: ToolHandler = async (params, state, sendEvent) 
       dataPoints.push(...[...new Set(numbers)].slice(0, 15));
     }
 
-    // 构建研究结果
+    // 构建研究结果 - 包含完整的 citations 和 search_results
     const deepResearchResult: DeepResearchResult = {
       topic,
       summary: parsed.content,
@@ -113,28 +113,46 @@ export const handleDeepResearch: ToolHandler = async (params, state, sendEvent) 
         `基于 "${topic}" 主题的深度研究，建议使用现代化设计风格`,
         '利用研究数据创建数据可视化卡片',
         '使用 GSAP ScrollTrigger 实现滚动叙事',
-        '添加视差效果和文字入场动画增强体验'
+        '添加视差效果和文字入场动画增强体验',
+        '为关键内容添加参考来源链接'
       ],
       colorRecommendations: style_preferences?.includes('科技')
         ? ['#0f172a', '#1e293b', '#0066ff', '#00d4ff']
         : ['#0f172a', '#1e293b', '#667eea', '#764ba2'],
       visualStyle: style_preferences || '现代科技 + 数据驱动',
-      researchDuration
+      researchDuration,
+      // 新增：完整的引用和搜索结果
+      citations: parsed.citations,
+      searchResults: parsed.searchResults.map(sr => ({
+        title: sr.title,
+        url: sr.url,
+        snippet: sr.snippet,
+        source: sr.source
+      })),
+      searchQueriesCount: parsed.meta.searchQueriesCount
     };
 
     // 更新状态
     state.deepResearch = deepResearchResult;
     state.collectedMaterials.push(`【深度研究: ${topic}】\n${parsed.content.slice(0, 3000)}`);
 
-    // 添加引用来源
+    // 添加引用来源（为 Gemini 提供）
     if (parsed.citations.length > 0) {
-      state.collectedMaterials.push(`【参考来源】\n${parsed.citations.slice(0, 10).join('\n')}`);
+      state.collectedMaterials.push(`【参考来源 (${parsed.citations.length} 个)】\n${parsed.citations.slice(0, 20).join('\n')}`);
+    }
+
+    // 添加搜索结果详情（为 Gemini 提供带标题的链接）
+    if (parsed.searchResults.length > 0) {
+      const searchResultsText = parsed.searchResults.slice(0, 15).map((sr, i) =>
+        `${i + 1}. [${sr.title}](${sr.url})\n   ${sr.snippet?.slice(0, 150) || ''}`
+      ).join('\n\n');
+      state.collectedMaterials.push(`【搜索结果详情】\n${searchResultsText}`);
     }
 
     await sendEvent({
       type: 'thought',
       iteration: state.iteration,
-      content: `✅ 深度研究完成！耗时 ${researchDuration} 秒，获得 ${parsed.citations.length} 个引用来源`
+      content: `✅ 深度研究完成！耗时 ${researchDuration} 秒，获得 ${parsed.citations.length} 个引用来源，${parsed.searchResults.length} 个搜索结果`
     });
 
     return {
@@ -143,13 +161,14 @@ export const handleDeepResearch: ToolHandler = async (params, state, sendEvent) 
         topic,
         researchDuration,
         citationsCount: parsed.citations.length,
+        searchResultsCount: parsed.searchResults.length,
         searchQueriesCount: parsed.meta.searchQueriesCount,
         keyFindingsCount: keyFindings.length,
         dataPointsCount: dataPoints.length,
         summary: parsed.content.slice(0, 800) + '...',
         designSuggestions: deepResearchResult.designSuggestions,
         colorRecommendations: deepResearchResult.colorRecommendations,
-        message: `深度研究完成，耗时 ${researchDuration} 秒，获得 ${parsed.citations.length} 个来源。现在请调用 plan_structure 规划网站结构。`
+        message: `深度研究完成，耗时 ${researchDuration} 秒，获得 ${parsed.citations.length} 个引用来源和 ${parsed.searchResults.length} 个搜索结果。现在请调用 plan_structure 规划网站结构。`
       }
     };
   } catch (error) {

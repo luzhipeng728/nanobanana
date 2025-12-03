@@ -75,20 +75,58 @@ export interface ResearchProgressEvent {
 // 进度回调类型
 export type ProgressCallback = (event: ResearchProgressEvent) => Promise<void>;
 
+// 深度研究选项
+export interface DeepResearchOptions {
+  /** 研究强度 (low/medium/high)，默认 'low' */
+  reasoningEffort?: ReasoningEffort;
+  /** 进度回调，每5秒调用一次 */
+  onProgress?: ProgressCallback;
+  /** 可选的系统提示词 */
+  systemPrompt?: string;
+  /** 是否返回完整的原始响应（包括 search_results 等），默认 false */
+  includeRawResponse?: boolean;
+}
+
+// 完整研究结果（包含原始响应）
+export interface FullResearchResult {
+  response: HyprLabResponse;
+  parsed: ParsedResearchResult;
+}
+
 /**
  * 调用 HyprLab sonar-deep-research API
  *
  * @param topic 研究主题
- * @param reasoningEffort 研究强度 (low/medium/high)
- * @param onProgress 进度回调，每5秒调用一次
- * @param systemPrompt 可选的系统提示词
+ * @param optionsOrEffort 研究选项对象 或 研究强度字符串（向后兼容）
+ * @param onProgressLegacy 进度回调（向后兼容）
+ * @param systemPromptLegacy 系统提示词（向后兼容）
+ * @returns HyprLabResponse 或 FullResearchResult（取决于 includeRawResponse）
  */
 export async function callHyprLabDeepResearch(
   topic: string,
-  reasoningEffort: ReasoningEffort = 'low',
-  onProgress?: ProgressCallback,
-  systemPrompt?: string
-): Promise<HyprLabResponse> {
+  optionsOrEffort?: DeepResearchOptions | ReasoningEffort,
+  onProgressLegacy?: ProgressCallback,
+  systemPromptLegacy?: string
+): Promise<HyprLabResponse | FullResearchResult> {
+  // 处理向后兼容：支持旧的调用方式
+  let reasoningEffort: ReasoningEffort = 'low';
+  let onProgress: ProgressCallback | undefined;
+  let systemPrompt: string | undefined;
+  let includeRawResponse = false;
+
+  if (typeof optionsOrEffort === 'string') {
+    // 旧调用方式：callHyprLabDeepResearch(topic, 'low', callback, prompt)
+    reasoningEffort = optionsOrEffort;
+    onProgress = onProgressLegacy;
+    systemPrompt = systemPromptLegacy;
+  } else if (optionsOrEffort && typeof optionsOrEffort === 'object') {
+    // 新调用方式：callHyprLabDeepResearch(topic, { reasoningEffort, onProgress, ... })
+    reasoningEffort = optionsOrEffort.reasoningEffort || 'low';
+    onProgress = optionsOrEffort.onProgress;
+    systemPrompt = optionsOrEffort.systemPrompt;
+    includeRawResponse = optionsOrEffort.includeRawResponse || false;
+  }
+
   const apiKey = process.env.HYPRLAB_API_KEY;
 
   if (!apiKey) {
@@ -200,6 +238,14 @@ export async function callHyprLabDeepResearch(
         message: `✅ 深度研究完成！用时 ${(elapsedSeconds / 60).toFixed(1)} 分钟，获得 ${data.citations?.length || 0} 个引用来源`,
         data
       });
+    }
+
+    // 根据 includeRawResponse 决定返回格式
+    if (includeRawResponse) {
+      return {
+        response: data,
+        parsed: parseHyprLabResponse(data)
+      } as FullResearchResult;
     }
 
     return data;

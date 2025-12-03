@@ -12,6 +12,7 @@ import {
   formatResearchForImagePrompt,
   type ReasoningEffort,
   type ResearchProgressEvent as HyprLabProgressEvent,
+  type HyprLabResponse,
   REASONING_EFFORT_TIME
 } from './hyprlab-research';
 import { fetchAndCompressImage } from '@/lib/image-utils';
@@ -310,13 +311,13 @@ export const handleDeepResearch: ToolHandler = async (params, sendEvent) => {
       ? `You are a helpful research assistant. Context: ${context}. Provide comprehensive, well-structured research reports in the same language as the user query.`
       : 'You are a helpful research assistant. Provide comprehensive, well-structured research reports in the same language as the user query.';
 
-    // 调用 HyprLab API
+    // 调用 HyprLab API（旧调用方式，返回 HyprLabResponse）
     const response = await callHyprLabDeepResearch(
       topic,
       effort,
       onProgress,
       systemPrompt
-    );
+    ) as HyprLabResponse;
 
     // 解析响应
     const parsed = parseHyprLabResponse(response);

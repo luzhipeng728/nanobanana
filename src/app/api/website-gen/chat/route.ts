@@ -40,6 +40,7 @@ import {
   callHyprLabDeepResearch,
   parseHyprLabResponse,
   type ReasoningEffort,
+  type HyprLabResponse,
 } from "@/lib/super-agent/hyprlab-research";
 
 // Gemini API Keys rotation
@@ -635,7 +636,8 @@ async function performDeepResearch(
       }
     : undefined;
 
-  const response = await callHyprLabDeepResearch(topic, reasoningEffort, hyprLabProgress);
+  // 旧调用方式，返回 HyprLabResponse
+  const response = await callHyprLabDeepResearch(topic, reasoningEffort, hyprLabProgress) as HyprLabResponse;
   const parsed = parseHyprLabResponse(response);
 
   console.log(`[WebsiteGen] Deep research completed, citations: ${parsed.citations.length}`);
