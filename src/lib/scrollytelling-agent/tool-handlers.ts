@@ -1,4 +1,4 @@
-// Reveal.js 演示文稿 Agent 工具处理器
+// Scrollytelling 动效网站 Agent 工具处理器
 
 import {
   ImageInfo,
@@ -7,7 +7,8 @@ import {
   SlideImageConfig,
   ToolResult,
   ScrollytellingStreamEvent,
-  ScrollytellingAgentState
+  ScrollytellingAgentState,
+  DeepResearchResult
 } from './types';
 
 // 工具处理器类型
@@ -17,7 +18,141 @@ type ToolHandler = (
   sendEvent: (event: ScrollytellingStreamEvent) => Promise<void>
 ) => Promise<ToolResult>;
 
-// 1. 规划结构（包含幻灯片和生图提示词）
+// 0. 深度研究（无图片时必须调用）
+export const handleDeepResearch: ToolHandler = async (params, state, sendEvent) => {
+  const { topic, research_focus = [], style_preferences } = params;
+  const startTime = Date.now();
+
+  // 发送开始事件
+  await sendEvent({
+    type: 'thought',
+    iteration: state.iteration,
+    content: `🔍 开始深度研究主题: "${topic}"...`
+  });
+
+  const tavilyApiKey = process.env.TAVILY_API_KEY;
+  if (!tavilyApiKey) {
+    return {
+      success: false,
+      error: 'TAVILY_API_KEY 未配置，无法进行深度研究'
+    };
+  }
+
+  // 构建多个搜索查询
+  const searchQueries = [
+    `${topic} 概述 介绍`,
+    `${topic} 最新趋势 2024 2025`,
+    `${topic} 数据统计 市场规模`,
+    `${topic} 案例 示例 最佳实践`,
+    ...(research_focus.length > 0 ? research_focus.map((f: string) => `${topic} ${f}`) : [])
+  ];
+
+  const allResults: string[] = [];
+  const keyFindings: string[] = [];
+  const dataPoints: string[] = [];
+
+  // 并发执行多个搜索
+  const searchPromises = searchQueries.slice(0, 6).map(async (query, index) => {
+    try {
+      await sendEvent({
+        type: 'search_start',
+        query,
+        chapter: index
+      });
+
+      const response = await fetch('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: tavilyApiKey,
+          query,
+          search_depth: 'advanced',  // 深度搜索
+          max_results: 8,
+          include_answer: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Search API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      let summary = '';
+      if (data.answer) {
+        summary += data.answer + '\n';
+        keyFindings.push(data.answer.slice(0, 200));
+      }
+
+      if (data.results) {
+        for (const result of data.results.slice(0, 4)) {
+          summary += `- ${result.title}: ${result.content?.slice(0, 150)}\n`;
+
+          // 提取数据点
+          const numbers = result.content?.match(/\d+[\d,.]*[%万亿美元元人民币]+|\d{4}年|\d+%/g);
+          if (numbers) {
+            dataPoints.push(...numbers.slice(0, 3));
+          }
+        }
+      }
+
+      return summary;
+    } catch (error) {
+      console.error(`[Deep Research] Search error for "${query}":`, error);
+      return '';
+    }
+  });
+
+  const results = await Promise.all(searchPromises);
+  allResults.push(...results.filter(r => r.length > 0));
+
+  const researchDuration = Math.round((Date.now() - startTime) / 1000);
+
+  // 构建研究结果
+  const deepResearchResult: DeepResearchResult = {
+    topic,
+    summary: allResults.join('\n\n').slice(0, 5000),
+    keyFindings: [...new Set(keyFindings)].slice(0, 10),
+    dataPoints: [...new Set(dataPoints)].slice(0, 15),
+    designSuggestions: [
+      `基于 "${topic}" 主题，建议使用深色科技风格`,
+      '使用大标题 + 数据卡片布局',
+      '添加滚动触发的数字计数动画',
+      '使用渐变和毛玻璃效果增加层次感'
+    ],
+    colorRecommendations: style_preferences?.includes('科技')
+      ? ['#0f172a', '#1e293b', '#0066ff', '#00d4ff']
+      : ['#0f172a', '#1e293b', '#667eea', '#764ba2'],
+    visualStyle: style_preferences || '科技感 + 极简主义',
+    researchDuration
+  };
+
+  // 更新状态
+  state.deepResearch = deepResearchResult;
+  state.collectedMaterials.push(`【深度研究: ${topic}】\n${deepResearchResult.summary.slice(0, 2000)}`);
+
+  await sendEvent({
+    type: 'thought',
+    iteration: state.iteration,
+    content: `✅ 深度研究完成！耗时 ${researchDuration} 秒，发现 ${keyFindings.length} 个关键点，${dataPoints.length} 个数据点`
+  });
+
+  return {
+    success: true,
+    data: {
+      topic,
+      researchDuration,
+      keyFindingsCount: keyFindings.length,
+      dataPointsCount: dataPoints.length,
+      summary: deepResearchResult.summary.slice(0, 500) + '...',
+      designSuggestions: deepResearchResult.designSuggestions,
+      colorRecommendations: deepResearchResult.colorRecommendations,
+      message: `深度研究完成，耗时 ${researchDuration} 秒。现在请调用 plan_structure 规划网站结构。`
+    }
+  };
+};
+
+// 1. 规划结构（包含 section 和生图提示词）
 export const handlePlanStructure: ToolHandler = async (params, state, sendEvent) => {
   const {
     theme_style,
@@ -733,6 +868,7 @@ gsap.utils.toArray(".counter").forEach(el => {
 
 // 工具处理器映射
 export const TOOL_HANDLERS: Record<string, ToolHandler> = {
+  deep_research: handleDeepResearch,
   plan_structure: handlePlanStructure,
   web_search: handleWebSearch,
   generate_chart_data: handleGenerateChartData,

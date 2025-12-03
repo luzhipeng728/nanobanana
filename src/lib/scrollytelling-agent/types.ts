@@ -70,12 +70,26 @@ export interface WebStructurePlan extends PresentationPlan {
   chapters: SlidePlan[];    // 兼容旧代码
 }
 
+// 深度研究结果
+export interface DeepResearchResult {
+  topic: string;
+  summary: string;              // 研究摘要
+  keyFindings: string[];        // 关键发现
+  dataPoints: string[];         // 数据点
+  designSuggestions: string[];  // 设计建议
+  colorRecommendations: string[]; // 配色建议
+  visualStyle: string;          // 推荐视觉风格
+  researchDuration: number;     // 研究耗时（秒）
+}
+
 // Agent 状态
 export interface ScrollytellingAgentState {
   iteration: number;
   maxIterations: number;
   isComplete: boolean;
   images: ImageInfo[];          // 参考图片（仅供分析）
+  userPrompt?: string;          // 用户提示词（无图片时必须）
+  deepResearch?: DeepResearchResult;  // 深度研究结果
   structurePlan?: PresentationPlan;
   collectedMaterials: string[];
   finalPrompt?: string;
@@ -128,6 +142,7 @@ export interface ScrollytellingFinalOutput {
 // Agent 配置
 export interface ScrollytellingAgentConfig {
   theme?: string;           // 用户指定的主题
+  userPrompt?: string;      // 用户提示词（无图片时必须）
   enableSearch?: boolean;   // 是否启用搜索
   maxSearchQueries?: number; // 最大搜索次数
   imageResolution?: '1k' | '2k' | '4k';  // 图片分辨率

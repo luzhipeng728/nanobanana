@@ -254,6 +254,91 @@ async function generateAllImages(
 }
 
 // ============================================
+// 快速图片分析（使用 fast 2.5 模型）
+// ============================================
+
+// 快速审图模型 - 使用 Claude 3.5 Haiku 或用户配置的快速模型
+const FAST_VISION_MODEL = process.env.FAST_VISION_MODEL || 'claude-3-5-haiku-latest';
+
+// 使用快速模型分析参考图片
+async function analyzeImagesWithFastModel(
+  images: ImageInfo[],
+  anthropic: Anthropic,
+  sendEvent: (event: ScrollytellingStreamEvent) => Promise<void>
+): Promise<string[]> {
+  if (images.length === 0) return [];
+
+  const analyses: string[] = [];
+
+  console.log(`[Presentation Agent] Analyzing ${images.length} images with fast model: ${FAST_VISION_MODEL}`);
+
+  // 并发分析所有图片
+  const analyzePromises = images.map(async (image, index) => {
+    try {
+      await sendEvent({
+        type: 'image_analysis',
+        index,
+        analysis: `正在分析参考图片 ${index + 1}...`
+      });
+
+      const response = await anthropic.messages.create({
+        model: FAST_VISION_MODEL,
+        max_tokens: 500,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'url',
+                  url: image.url
+                }
+              },
+              {
+                type: 'text',
+                text: `简要分析这张图片的：
+1. 主题内容（1句话）
+2. 视觉风格（配色、氛围）
+3. 适合的网站类型
+
+输出格式：
+主题：xxx
+风格：xxx
+适合：xxx`
+              }
+            ]
+          }
+        ]
+      });
+
+      const analysis = response.content[0].type === 'text' ? response.content[0].text : '';
+
+      await sendEvent({
+        type: 'image_analysis',
+        index,
+        analysis: `图片 ${index + 1} 分析完成`
+      });
+
+      return { index, analysis };
+    } catch (error) {
+      console.error(`[Presentation Agent] Failed to analyze image ${index}:`, error);
+      return { index, analysis: `图片 ${index + 1}: 分析失败` };
+    }
+  });
+
+  const results = await Promise.all(analyzePromises);
+
+  // 按索引排序
+  results.sort((a, b) => a.index - b.index);
+  analyses.push(...results.map(r => r.analysis));
+
+  console.log(`[Presentation Agent] Image analysis complete: ${analyses.length} images analyzed`);
+
+  return analyses;
+}
+
+// ============================================
 // 主流程
 // ============================================
 
@@ -291,42 +376,70 @@ export async function runScrollytellingAgent(
     }
   };
 
+  // 判断工作模式
+  const hasImages = images.length > 0;
+  const userPrompt = config.userPrompt;
+
+  // 无图片模式必须有用户提示词
+  if (!hasImages && !userPrompt) {
+    throw new Error('无图片模式下，用户提示词（userPrompt）是必须的');
+  }
+
   // 初始化状态
   const state: ScrollytellingAgentState = {
     iteration: 0,
     maxIterations: 15,
     isComplete: false,
     images,
+    userPrompt,
     collectedMaterials: []
   };
 
-  // 构建系统提示
+  // 构建系统提示（根据是否有图片决定工作流程）
   const systemPrompt = buildScrollytellingSystemPrompt({
     theme: config.theme,
-    imageCount: images.length
+    imageCount: images.length,
+    userPrompt,
+    hasImages
   });
 
   // 格式化工具
   const tools = formatToolsForClaude();
 
-  // 构建初始消息
+  // 发送开始事件（根据模式不同显示不同消息）
+  await sendEvent({
+    type: 'start',
+    message: hasImages
+      ? '开始分析参考图片和规划动效网站...'
+      : '开始深度研究主题和规划动效网站...'
+  });
+
+  // 如果有图片，先用快速模型进行图片分析
+  let imageAnalyses: string[] = [];
+  if (hasImages) {
+    await sendEvent({
+      type: 'phase',
+      phase: 'preparation',
+      message: '使用快速模型分析参考图片...'
+    });
+
+    imageAnalyses = await analyzeImagesWithFastModel(images, anthropic, sendEvent);
+  }
+
+  // 构建初始消息（包含图片分析结果）
   const messages: Anthropic.MessageParam[] = [
     {
       role: 'user',
-      content: buildInitialUserMessage(images, config)
+      content: buildInitialUserMessage(images, config, hasImages, imageAnalyses)
     }
   ];
-
-  // 发送开始事件
-  await sendEvent({
-    type: 'start',
-    message: '开始分析参考图片和规划演示文稿...'
-  });
 
   await sendEvent({
     type: 'phase',
     phase: 'preparation',
-    message: 'Claude 正在分析参考图片、规划幻灯片结构、搜索资料...'
+    message: hasImages
+      ? 'Claude 正在分析参考图片、规划网站结构、搜索资料...'
+      : 'Claude 正在进行深度研究、规划网站结构、搜索资料...（预计 30-60 秒）'
   });
 
   startHeartbeat();
@@ -535,48 +648,101 @@ export async function runScrollytellingAgent(
   }
 }
 
-// 构建初始用户消息
-function buildInitialUserMessage(images: ImageInfo[], config: ScrollytellingAgentConfig): string {
-  let message = `请为以下主题创建一个高端 reveal.js 演示文稿。
+// 构建初始用户消息（根据是否有图片采用不同模板）
+function buildInitialUserMessage(
+  images: ImageInfo[],
+  config: ScrollytellingAgentConfig,
+  hasImages: boolean,
+  imageAnalyses: string[] = []
+): string {
+  if (hasImages) {
+    // 有图片模式：分析图片 → 规划结构 → 搜索 → 完成
+    let message = `请为以下主题创建一个 Awwwards 级别的 GSAP Scrollytelling 动效网站。
 
-## 参考图片（仅供分析主题和风格，不直接使用）
+## 📸 参考图片分析结果（已由快速模型预分析）
 
 `;
 
-  for (let i = 0; i < images.length; i++) {
-    const img = images[i];
-    message += `### 参考图片 ${i + 1}
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
+      const analysis = imageAnalyses[i] || '(分析中...)';
+      message += `### 参考图片 ${i + 1}
 - URL: ${img.url}
-- 描述: ${img.prompt || '(无描述)'}
+- 用户描述: ${img.prompt || '(无描述)'}
+- **AI 分析**:
+${analysis}
 
 `;
-  }
+    }
 
-  if (config.theme) {
-    message += `## 用户指定的风格
+    if (config.theme) {
+      message += `## 🎨 用户指定的风格
 ${config.theme}
 
 `;
+    }
+
+    message += `## ✅ 任务要求
+
+1. 分析参考图片，理解主题和视觉风格
+2. 调用 \`plan_structure\` 规划网站结构（5-8 个 section）
+3. 为每个 section 编写 AI 生图提示词
+4. 调用 \`web_search\` 搜索相关资料（至少 5 次）
+5. 调用 \`generate_chart_data\` 生成图表配置（如需要）
+6. 调用 \`finalize_prompt\` 完成
+
+⚠️ 重要：
+- 参考图片仅供分析，网站中的图片全部由 AI 生成！
+- 必须设计丰富的 GSAP ScrollTrigger 动画效果！
+- 必须在工作结束前调用 \`finalize_prompt\`！
+
+请开始工作，先调用 \`plan_structure\`。`;
+
+    return message;
+
+  } else {
+    // 无图片模式：深度研究 → 规划结构 → 搜索 → 完成
+    let message = `请为以下主题创建一个 Awwwards 级别的 GSAP Scrollytelling 动效网站。
+
+## 📝 用户需求
+
+${config.userPrompt}
+
+`;
+
+    if (config.theme) {
+      message += `## 🎨 用户指定的风格
+${config.theme}
+
+`;
+    }
+
+    message += `## ⚠️ 重要：必须遵循的流程
+
+由于没有参考图片，你**必须首先调用 \`deep_research\`** 进行深度研究！
+
+### 完整流程：
+1. **首先调用 \`deep_research\`** - 对主题进行深度研究（约 30-60 秒）
+2. 基于研究结果，调用 \`plan_structure\` 规划网站结构（5-8 个 section）
+3. 为每个 section 编写 AI 生图提示词
+4. 调用 \`web_search\` 搜索更多补充资料（至少 8 次）
+5. 调用 \`generate_chart_data\` 生成图表配置（如需要）
+6. 调用 \`finalize_prompt\` 完成
+
+⚠️ 注意：
+- 网站中的图片全部由 AI 生成！
+- 必须设计丰富的 GSAP ScrollTrigger 动画效果！
+- 必须在工作结束前调用 \`finalize_prompt\`！
+- **无图片模式必须先调用 \`deep_research\`！**
+
+请开始工作，先调用 \`deep_research\`。`;
+
+    return message;
   }
-
-  message += `## 任务要求
-
-1. 分析参考图片，理解主题和风格
-2. 规划幻灯片结构（5-10张）
-3. 为每张幻灯片编写 AI 生图提示词
-4. 搜索相关资料丰富内容
-5. 生成图表数据配置
-6. 调用 finalize_prompt 完成
-
-⚠️ 重要：参考图片仅供分析，幻灯片中的图片全部由 AI 生成！
-
-请开始工作，先调用 plan_structure。`;
-
-  return message;
 }
 
 // ============================================
-// Gemini 生成 reveal.js HTML
+// Gemini 生成 GSAP Scrollytelling HTML
 // ============================================
 
 export async function generateHtmlWithGemini(
@@ -590,7 +756,7 @@ export async function generateHtmlWithGemini(
   await sendEvent({
     type: 'phase',
     phase: 'generation',
-    message: 'Gemini 正在生成 reveal.js 演示文稿...'
+    message: 'Gemini 正在生成 GSAP Scrollytelling 动效网站...'
   });
 
   const apiBaseUrl = process.env.SCROLLYTELLING_API_BASE_URL || 'http://172.93.101.237:8317';
@@ -606,12 +772,14 @@ export async function generateHtmlWithGemini(
   // 构建用户消息
   const userContent: any[] = [];
 
-  // 添加参考图片（供 Gemini 理解风格）
-  for (const image of images.slice(0, 3)) {
-    userContent.push({
-      type: 'image_url',
-      image_url: { url: image.url }
-    });
+  // 添加参考图片（供 Gemini 理解风格，仅有图片时添加）
+  if (images.length > 0) {
+    for (const image of images.slice(0, 3)) {
+      userContent.push({
+        type: 'image_url',
+        image_url: { url: image.url }
+      });
+    }
   }
 
   userContent.push({
@@ -619,71 +787,192 @@ export async function generateHtmlWithGemini(
     text: promptWithImages
   });
 
-  // Gemini 系统提示词
-  const geminiSystemPrompt = `你是一位顶级 Creative Technologist，精通 reveal.js、ECharts、CSS 动画。
+  // Gemini 系统提示词 - GSAP Scrollytelling 动效网站
+  const geminiSystemPrompt = `你是一位 Awwwards 级别的 Creative Technologist，精通 GSAP、ScrollTrigger、CSS 动画和现代 Web 开发。
 
-你的任务是创建一个**视觉精美、交互丰富**的 reveal.js 演示文稿。
+你的任务是创建一个**视觉震撼、动效丝滑**的 Scrollytelling 滚动叙事网站。
 
-## reveal.js 基础结构
+## 🎯 核心技术栈
+
+- **GSAP 3.x + ScrollTrigger** - 核心动画引擎
+- **CSS3 动画** - 辅助效果
+- **ECharts** - 数据可视化（如需要）
+- **原生 JavaScript** - 交互逻辑
+
+## 📐 HTML 基础结构
 
 \`\`\`html
-<div class="reveal">
-  <div class="slides">
-    <section>幻灯片 1</section>
-    <section>
-      <section>垂直幻灯片 2.1</section>
-      <section>垂直幻灯片 2.2</section>
-    </section>
-  </div>
-</div>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrollytelling</title>
+  <!-- GSAP CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+</head>
+<body>
+  <main>
+    <section class="section hero"><!-- Hero Section --></section>
+    <section class="section"><!-- Content Section --></section>
+    <!-- 更多 section... -->
+  </main>
+</body>
+</html>
 \`\`\`
 
-## 必须包含的功能
+## 🎬 必须使用的 GSAP 动效
 
-1. **片段动画**
-\`\`\`html
-<p class="fragment fade-in">渐入</p>
-<p class="fragment fade-up">上滑入</p>
-<p class="fragment highlight-red">高亮</p>
-\`\`\`
-
-2. **数据卡片 + 计数动画**
+### 1. ScrollTrigger 基础
 \`\`\`javascript
-Reveal.on('slidechanged', event => {
-  const counters = event.currentSlide.querySelectorAll('.counter');
-  counters.forEach(counter => {
-    const target = parseInt(counter.dataset.target);
-    animateCounter(counter, target);
-  });
+gsap.registerPlugin(ScrollTrigger);
+
+// 滚动触发入场
+gsap.from(".element", {
+  scrollTrigger: {
+    trigger: ".element",
+    start: "top 80%",
+    end: "top 30%",
+    scrub: true  // 与滚动同步
+  },
+  y: 100,
+  opacity: 0
 });
 \`\`\`
 
-3. **ECharts 图表**
-在幻灯片切换时初始化图表
-
-4. **进度条动画**
-\`\`\`css
-.progress-bar {
-  animation: fillProgress 2s ease-out forwards;
-}
+### 2. Pin 固定效果
+\`\`\`javascript
+ScrollTrigger.create({
+  trigger: ".pin-section",
+  start: "top top",
+  end: "+=100%",
+  pin: true,
+  scrub: 1
+});
 \`\`\`
 
-## 图片使用
+### 3. 文字逐字入场
+\`\`\`javascript
+// 拆分文字
+const title = document.querySelector('.title');
+title.innerHTML = title.textContent.split('').map(c => \`<span>\${c}</span>\`).join('');
 
-- 图片 URL 已在提示词中提供
-- 使用 \`object-fit: contain\` 保持比例
-- 可以作为背景或内嵌图片
+gsap.from('.title span', {
+  scrollTrigger: { trigger: '.title', start: 'top 80%' },
+  y: 100,
+  opacity: 0,
+  stagger: 0.03,
+  ease: 'power4.out'
+});
+\`\`\`
 
-## 配色和风格
+### 4. 图片视差
+\`\`\`javascript
+gsap.to('.parallax-img', {
+  scrollTrigger: {
+    trigger: '.parallax-container',
+    start: 'top bottom',
+    end: 'bottom top',
+    scrub: true
+  },
+  y: '-30%',
+  ease: 'none'
+});
+\`\`\`
 
-- 根据主题选择合适的配色
-- 使用渐变增加视觉层次
-- 保持整体风格一致
+### 5. 数字计数
+\`\`\`javascript
+gsap.from('.counter', {
+  scrollTrigger: { trigger: '.counter', start: 'top 80%' },
+  textContent: 0,
+  duration: 2,
+  snap: { textContent: 1 },
+  ease: 'power1.inOut'
+});
+\`\`\`
+
+### 6. 卡片错落入场
+\`\`\`javascript
+gsap.from('.card', {
+  scrollTrigger: { trigger: '.cards-container', start: 'top 80%' },
+  y: 100,
+  opacity: 0,
+  stagger: { each: 0.15, from: 'start' },
+  ease: 'power3.out'
+});
+\`\`\`
+
+## 🎨 必须包含的 CSS 效果
+
+\`\`\`css
+/* 平滑滚动 */
+html { scroll-behavior: smooth; }
+
+/* Section 全屏 */
+.section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 毛玻璃 */
+.glass {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* 渐变文字 */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 发光效果 */
+.glow { box-shadow: 0 0 60px rgba(102,126,234,0.5); }
+
+/* 流动渐变背景 */
+@keyframes gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.flowing-gradient {
+  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+  background-size: 400% 400%;
+  animation: gradient-flow 15s ease infinite;
+}
+
+/* 悬停缩放 */
+.hover-scale {
+  transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+.hover-scale:hover { transform: scale(1.05); }
+\`\`\`
+
+## 📸 图片使用
+
+- 图片 URL 已在提示词中提供（格式：{{IMAGE_0}}、{{IMAGE_1}} 等）
+- 使用 \`object-fit: cover\` 适应容器
+- 可作为背景图或前景图
+
+## ⚠️ 重要约束
+
+1. **所有尺寸使用相对单位**（vh、vw、%、rem）
+2. **每个 section 必须有滚动触发动画**
+3. **文字必须有入场动画**（逐字、逐行、淡入等）
+4. **60fps 流畅动画** - 使用 will-change、transform
+5. **响应式设计** - 适配移动端
 
 ## 输出格式
 
 直接输出完整 HTML，从 <!DOCTYPE html> 开始到 </html> 结束。
-不要任何解释，不要 markdown 代码块。`;
+不要任何解释，不要 markdown 代码块。
+所有 CSS 和 JS 内联在 HTML 中。`;
 
   // 心跳
   let lastChunkTime = Date.now();
@@ -799,7 +1088,7 @@ export async function modifyHtmlWithGemini(
   const apiKey = process.env.SCROLLYTELLING_API_KEY || 'sk-12345';
   const model = process.env.SCROLLYTELLING_MODEL || 'gemini-3-pro-preview';
 
-  const modifySystemPrompt = `你是一位专业的前端开发专家。用户已经有一个 reveal.js 演示文稿，现在需要你根据要求进行修改。
+  const modifySystemPrompt = `你是一位 Awwwards 级别的前端开发专家，精通 GSAP、ScrollTrigger 和 CSS 动画。用户已经有一个 Scrollytelling 动效网站，现在需要你根据要求进行修改。
 
 ## 任务
 根据用户的修改要求，对提供的 HTML 进行调整。
@@ -808,7 +1097,8 @@ export async function modifyHtmlWithGemini(
 1. 直接输出修改后的完整 HTML 代码
 2. 从 <!DOCTYPE html> 开始，到 </html> 结束
 3. 不要任何解释，不要 markdown 代码块
-4. 保留原有的 reveal.js、ECharts 等功能`;
+4. 保留原有的 GSAP、ScrollTrigger、ECharts 等功能
+5. 确保动画流畅，使用相对单位`;
 
   const userContent: any[] = [];
 

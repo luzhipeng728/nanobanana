@@ -13,16 +13,53 @@ export interface ScrollytellingTool {
 // 工具列表
 export const SCROLLYTELLING_TOOLS: ScrollytellingTool[] = [
   {
+    name: 'deep_research',
+    description: `深度研究工具 - 当用户没有提供参考图片时必须首先调用！
+
+⚠️ 使用场景：
+- 用户只提供了文字描述/主题，没有上传图片
+- 需要深入了解主题背景、行业知识、设计灵感
+
+功能：
+1. 对用户主题进行全面深度研究
+2. 收集相关数据、趋势、案例
+3. 分析最佳设计方向和视觉风格
+4. 返回研究摘要和设计建议
+
+⚠️ 注意：此操作耗时较长（约 30-60 秒），会返回研究时长。`,
+    parameters: {
+      type: 'object',
+      properties: {
+        topic: {
+          type: 'string',
+          description: '用户提供的主题/需求描述（必填）'
+        },
+        research_focus: {
+          type: 'array',
+          items: { type: 'string' },
+          description: '研究重点方向，如：行业背景、设计趋势、竞品分析、数据统计、用户画像'
+        },
+        style_preferences: {
+          type: 'string',
+          description: '用户期望的视觉风格（可选），如：科技感、极简、商务、艺术'
+        }
+      },
+      required: ['topic']
+    }
+  },
+  {
     name: 'plan_structure',
     description: `规划 Scrollytelling 动效网站的整体结构，包括 section 划分、叙事线索、AI 生图提示词和 GSAP 动画效果。
+
+⚠️ 调用条件：
+- 如果有参考图片：直接调用此工具
+- 如果无参考图片：必须先调用 deep_research，然后再调用此工具
 
 ⚠️ 重要：
 1. 用户提供的图片仅作参考，不直接展示
 2. 每个 section 需要的图片都由 AI 生成
 3. 必须为每个需要图片的 section 编写详细的生图提示词
-4. 必须设计丰富的 GSAP ScrollTrigger 动画效果
-
-这是第一步，基于参考图片分析主题和风格。`,
+4. 必须设计丰富的 GSAP ScrollTrigger 动画效果`,
     parameters: {
       type: 'object',
       properties: {
