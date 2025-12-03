@@ -146,6 +146,12 @@ export default function ScrollytellingPreview({
   const [previousHtml, setPreviousHtml] = useState<string>("");
   const [isModificationMode, setIsModificationMode] = useState(false);
 
+  // 多轮对话历史（真正的 conversation history）
+  const [conversationHistory, setConversationHistory] = useState<Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>>([]);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastRenderTimeRef = useRef<number>(0);
@@ -425,6 +431,19 @@ export default function ScrollytellingPreview({
         setHtmlContent(prev => {
           if (prev) {
             setPreviousHtml(prev);
+            // 保存对话历史（首次生成或修改后）
+            setConversationHistory(history => {
+              // 如果是修改模式，追加 assistant 消息
+              if (isModificationMode && history.length > 0) {
+                return [...history, { role: 'assistant', content: prev }];
+              }
+              // 首次生成：创建完整对话
+              const userMessage = title || customPrompt || '生成滚动叙事网站';
+              return [
+                { role: 'user', content: userMessage },
+                { role: 'assistant', content: prev }
+              ];
+            });
           }
           return prev;
         });
@@ -434,7 +453,7 @@ export default function ScrollytellingPreview({
         setError(event.error || '未知错误');
         break;
     }
-  }, [addLog, updateStepStatus, images.length, finalizeCurrentThinking]);
+  }, [addLog, updateStepStatus, images.length, finalizeCurrentThinking, isModificationMode, title, customPrompt]);
 
   // 重置工作流程
   const resetWorkflow = useCallback(() => {
@@ -624,15 +643,20 @@ export default function ScrollytellingPreview({
   const handleRegenerate = () => {
     setAutoFixAttempts(0);
     setPreviousHtml(""); // 清除之前的 HTML，强制完整生成
+    setConversationHistory([]); // 清空对话历史
     setIsModificationMode(false);
     startGeneration();
   };
 
-  // 修改模式：跳过 Claude Agent，直接让 Gemini 修改
+  // 修改模式：跳过 Claude Agent，直接让 Gemini 修改（真正的多轮对话）
   const startModification = useCallback(async (modificationRequest: string) => {
     if (!previousHtml || !modificationRequest.trim()) return;
 
-    // 重置状态（但保留 previousHtml）
+    // 追加用户消息到对话历史
+    const newHistory = [...conversationHistory, { role: 'user' as const, content: modificationRequest }];
+    setConversationHistory(newHistory);
+
+    // 重置状态（但保留 previousHtml 和 conversationHistory）
     setHtmlContent("");
     setError(null);
     setJsErrors([]);
@@ -660,6 +684,8 @@ export default function ScrollytellingPreview({
           prompts,
           modification: modificationRequest,
           previousHtml,
+          // 传递完整对话历史（真正的多轮对话）
+          conversationHistory: newHistory,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -721,7 +747,7 @@ export default function ScrollytellingPreview({
     } finally {
       setIsGenerating(false);
     }
-  }, [images, prompts, previousHtml, handleStreamEvent, renderToIframe]);
+  }, [images, prompts, previousHtml, conversationHistory, handleStreamEvent, renderToIframe]);
 
   // 智能发送：如果已有生成结果，使用修改模式；否则完整生成
   const handleSmartSend = () => {

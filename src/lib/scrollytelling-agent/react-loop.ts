@@ -824,156 +824,21 @@ export async function generateHtmlWithGemini(
     text: promptWithImages
   });
 
-  // Gemini 系统提示词 - 研究性 Scrollytelling 动效网站
-  const geminiSystemPrompt = `你是一位 Awwwards 级别的 Creative Technologist，精通 GSAP、ScrollTrigger、CSS 动画和现代 Web 开发。
+  // Gemini 系统提示词 - 简洁美观的研究展示网站（轻量版）
+  const geminiSystemPrompt = `你是一位优秀的前端开发者，擅长用 Tailwind CSS 创建简洁美观的网站。
 
-你的任务是创建一个**视觉震撼、信息丰富**的 **研究性 Scrollytelling 滚动叙事网站**。
+## 🎯 核心定位：简洁研究展示网站
 
-## 🎯 核心定位：研究展示网站
+创建一个**简洁、流畅、高性能**的研究展示网站。
 
-这是一个**深度研究展示**网站，需要：
-1. **展示研究发现** - 清晰呈现研究内容和关键数据
-2. **引用来源链接** - 为关键观点添加可点击的参考来源
-3. **数据可视化** - 用图表和动画展示统计数据
-4. **学术感设计** - 专业、可信、高端的视觉风格
+**⚠️ 性能第一原则：**
+- ❌ 禁止使用 GSAP、ScrollTrigger、Lenis
+- ❌ 禁止使用 Canvas 动画（如 Matrix Rain、粒子效果）
+- ❌ 禁止使用 setInterval/setTimeout 做持续动画
+- ✅ 只用 CSS 动画和 Intersection Observer
+- ✅ 保持简洁，追求流畅体验
 
-## 🔗 参考来源展示（核心功能！）
-
-提示词中会包含大量参考来源和搜索结果，你需要：
-
-### 1. 来源卡片组件
-\`\`\`html
-<div class="source-card glass hover-lift">
-  <div class="source-icon">📄</div>
-  <div class="source-content">
-    <h4 class="source-title">文章标题</h4>
-    <p class="source-snippet">摘要内容...</p>
-    <a href="URL" target="_blank" class="source-link">
-      查看来源 <span class="arrow">→</span>
-    </a>
-  </div>
-</div>
-\`\`\`
-
-### 2. 内联引用标记
-\`\`\`html
-<p>
-  根据研究显示，AI 市场规模将达到 2000 亿美元
-  <a href="URL" class="citation" target="_blank">[1]</a>
-</p>
-\`\`\`
-
-### 3. 参考来源 Section
-在网站末尾添加专门的参考来源区域：
-\`\`\`html
-<section class="references-section">
-  <h2>📚 参考来源</h2>
-  <div class="references-grid">
-    <a href="URL1" target="_blank" class="ref-item">
-      <span class="ref-num">[1]</span>
-      <span class="ref-title">来源标题</span>
-      <span class="ref-domain">domain.com</span>
-    </a>
-    <!-- 更多来源... -->
-  </div>
-</section>
-\`\`\`
-
-## 🎨 研究性网站专用 CSS
-
-\`\`\`css
-/* 来源卡片 */
-.source-card {
-  display: flex;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-.source-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-}
-.source-link {
-  color: #667eea;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-.source-link:hover {
-  text-decoration: underline;
-}
-
-/* 内联引用 */
-.citation {
-  color: #667eea;
-  font-size: 0.75em;
-  vertical-align: super;
-  text-decoration: none;
-  font-weight: 600;
-}
-.citation:hover {
-  text-decoration: underline;
-}
-
-/* 参考来源区域 */
-.references-section {
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-  padding: 5rem 8vw;
-}
-.references-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-}
-.ref-item {
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  background: rgba(255,255,255,0.05);
-  border-radius: 8px;
-  text-decoration: none;
-  color: inherit;
-  transition: all 0.2s ease;
-}
-.ref-item:hover {
-  background: rgba(255,255,255,0.1);
-}
-.ref-num {
-  color: #667eea;
-  font-weight: 600;
-}
-.ref-title {
-  color: #f8fafc;
-  margin: 0.25rem 0;
-}
-.ref-domain {
-  color: #64748b;
-  font-size: 0.875rem;
-}
-
-/* 数据高亮 */
-.data-highlight {
-  font-size: 3rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-\`\`\`
-
-## 🎯 核心技术栈
-
-- **GSAP 3.x + ScrollTrigger** - 核心动画引擎
-- **Lenis** - 平滑滚动
-- **CSS3 动画** - 辅助效果
-- **ECharts** - 数据可视化（必须用于展示研究数据）
-- **原生 JavaScript** - 交互逻辑
-
-## ⚠️ 必须包含的 CDN（缺一不可！）
-
-在 \`<head>\` 中必须包含以下 CDN 脚本，**顺序不可变**：
+## 🎨 技术栈（仅使用）
 
 \`\`\`html
 <head>
@@ -982,117 +847,132 @@ export async function generateHtmlWithGemini(
   <title>研究报告</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- GSAP 核心 + ScrollTrigger（必须！）-->
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-  <!-- Lenis 平滑滚动（必须！）-->
-  <script src="https://cdn.jsdelivr.net/npm/lenis@1.0.45/dist/lenis.min.js"></script>
-  <!-- ECharts 数据可视化 -->
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- ECharts（可选，用于图表）-->
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-  <style>
-    /* 你的 CSS 样式 */
-  </style>
 </head>
 \`\`\`
 
-**⚠️ 在 \`</body>\` 前的 \`<script>\` 中必须包含（顺序严格！）：**
+## 🎬 动画方案（纯 CSS + Intersection Observer）
 
-\`\`\`javascript
-// ============================================
-// ⚠️ 初始化顺序严格不可变！否则滚动失效！
-// ============================================
-
-// 【第1步】必须先注册 GSAP 插件！
-gsap.registerPlugin(ScrollTrigger);
-
-// 【第2步】再初始化 Lenis 平滑滚动
-const lenis = new Lenis({
-  lerp: 0.1,
-  smoothWheel: true,
-  wheelMultiplier: 1
-});
-
-// 【第3步】连接 Lenis 与 ScrollTrigger
-lenis.on('scroll', ScrollTrigger.update);
-gsap.ticker.add((time) => lenis.raf(time * 1000));
-gsap.ticker.lagSmoothing(0);
-
-// 【第4步】启动 RAF 循环
-function raf(time) {
-  lenis.raf(time);
-  requestAnimationFrame(raf);
+### 1. CSS 动画类
+\`\`\`css
+/* 入场动画 */
+.fade-up {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
 }
-requestAnimationFrame(raf);
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-// ============================================
-// 以上初始化代码必须放在所有动画代码之前！
-// ============================================
+/* 延迟类 */
+.delay-100 { transition-delay: 0.1s; }
+.delay-200 { transition-delay: 0.2s; }
+.delay-300 { transition-delay: 0.3s; }
+
+/* 悬浮效果 */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
 \`\`\`
 
-**❌ 常见错误（会导致滚动失效）：**
-- Lenis 初始化在 gsap.registerPlugin 之前
-- 缺少 requestAnimationFrame 循环
-- 把初始化代码放在动画代码之后
-
-## 🎬 必须使用的 GSAP 动效
-
-### ScrollTrigger 基础
+### 2. Intersection Observer（简单入场）
 \`\`\`javascript
-gsap.registerPlugin(ScrollTrigger);
+// 入场动画（简洁高效）
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
 
-gsap.from(".element", {
-  scrollTrigger: { trigger: ".element", start: "top 80%", scrub: true },
-  y: 100, opacity: 0
-});
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 \`\`\`
 
-### 数字计数（展示数据）
-\`\`\`javascript
-gsap.from('.counter', {
-  scrollTrigger: { trigger: '.counter', start: 'top 80%' },
-  textContent: 0, duration: 2, snap: { textContent: 1 }
-});
-\`\`\`
+## 🔗 参考来源展示
 
-### 卡片错落入场
-\`\`\`javascript
-gsap.from('.card', {
-  scrollTrigger: { trigger: '.cards-container', start: 'top 80%' },
-  y: 100, opacity: 0, stagger: { each: 0.15 }
-});
-\`\`\`
-
-## 📊 必须包含的数据可视化
-
-使用 ECharts 展示研究数据：
+### 内联引用
 \`\`\`html
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<p>AI 市场规模将达到 2000 亿美元<a href="URL" target="_blank" class="text-blue-400 text-xs align-super hover:underline">[1]</a></p>
+\`\`\`
+
+### 来源卡片
+\`\`\`html
+<a href="URL" target="_blank" class="block p-4 bg-slate-800/50 rounded-xl border border-slate-700 hover-lift">
+  <div class="flex items-start gap-3">
+    <i data-lucide="file-text" class="w-5 h-5 text-blue-400"></i>
+    <div>
+      <h4 class="font-medium text-white">来源标题</h4>
+      <p class="text-sm text-slate-400 mt-1">摘要内容...</p>
+    </div>
+  </div>
+</a>
+\`\`\`
+
+### 底部参考来源区
+\`\`\`html
+<section class="bg-slate-900 py-16 px-8">
+  <h2 class="text-2xl font-bold text-white mb-8">📚 参考来源</h2>
+  <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <a href="URL" target="_blank" class="p-4 bg-slate-800/30 rounded-lg hover:bg-slate-800/50 transition">
+      <span class="text-blue-400 font-mono">[1]</span>
+      <span class="text-white ml-2">来源标题</span>
+      <span class="block text-slate-500 text-sm mt-1">domain.com</span>
+    </a>
+  </div>
+</section>
 \`\`\`
 
 ## 🏗️ 推荐网站结构
 
-1. **Hero Section** - 研究主题标题 + 核心发现摘要
-2. **Key Findings** - 关键发现卡片（带来源链接）
-3. **Data Visualization** - 数据图表 + 数字计数
-4. **Deep Dive** - 详细内容区（带内联引用）
-5. **Source Cards** - 重要来源展示卡片
-6. **Timeline/Progress** - 发展趋势时间线（如适用）
-7. **References** - 完整参考来源列表
-8. **CTA** - 行动召唤
+1. **Hero** - 标题 + 核心数据（3个关键数字）
+2. **Key Findings** - 2-3 个核心发现卡片
+3. **Data Section** - ECharts 图表（可选，最多1个）
+4. **Content** - 研究内容 + 内联引用
+5. **References** - 参考来源列表
 
-## ⚠️ 重要约束
+## 📊 ECharts 使用（可选，最多1个图表）
 
-1. **必须添加参考来源链接** - 关键数据和观点要有来源
-2. **所有外链使用 target="_blank"** - 新窗口打开
-3. **60fps 流畅动画** - 使用 will-change、transform
-4. **响应式设计** - 适配移动端
-5. **深色主题** - 专业研究风格
+\`\`\`javascript
+// 延迟初始化，不阻塞渲染
+setTimeout(() => {
+  const chart = echarts.init(document.getElementById('chart'));
+  chart.setOption({ /* 配置 */ });
+  window.addEventListener('resize', () => chart.resize());
+}, 100);
+\`\`\`
+
+## ✅ 设计规范
+
+1. **深色主题** - bg-slate-900, bg-slate-800
+2. **渐变文字** - bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent
+3. **毛玻璃效果** - backdrop-blur-md bg-white/5
+4. **圆角卡片** - rounded-xl 或 rounded-2xl
+5. **适当留白** - py-16 px-8 或更多
+6. **Lucide 图标** - \`<i data-lucide="icon-name"></i>\` 然后调用 \`lucide.createIcons()\`
+
+## ⚠️ 严格禁止
+
+1. ❌ GSAP / ScrollTrigger / Lenis
+2. ❌ Canvas 动画（粒子、Matrix Rain 等）
+3. ❌ setInterval / setTimeout 持续动画
+4. ❌ 复杂视差效果
+5. ❌ 过多动画（保持简洁）
 
 ## 输出格式
 
-直接输出完整 HTML，从 <!DOCTYPE html> 开始到 </html> 结束。
+直接输出完整 HTML，从 \`<!DOCTYPE html>\` 到 \`</html>\`。
 不要任何解释，不要 markdown 代码块。
-所有 CSS 和 JS 内联在 HTML 中。`;
+保持代码简洁，追求流畅体验。`;
 
   // 心跳 - 每 10 秒检查一次，如果超过 8 秒没有收到数据则发送心跳
   let lastChunkTime = Date.now();
@@ -1197,11 +1077,15 @@ gsap.from('.card', {
 // 修改模式
 // ============================================
 
+// 对话历史类型
+type ConversationMessage = { role: 'user' | 'assistant'; content: string };
+
 export async function modifyHtmlWithGemini(
   previousHtml: string,
   modification: string,
   images: ImageInfo[],
-  sendEvent: (event: ScrollytellingStreamEvent) => Promise<void>
+  sendEvent: (event: ScrollytellingStreamEvent) => Promise<void>,
+  conversationHistory?: ConversationMessage[]
 ): Promise<void> {
   const startTime = Date.now();
 
@@ -1209,30 +1093,56 @@ export async function modifyHtmlWithGemini(
   const apiKey = process.env.SCROLLYTELLING_API_KEY || 'sk-12345';
   const model = process.env.SCROLLYTELLING_MODEL || 'gemini-3-pro-preview';
 
-  const modifySystemPrompt = `你是一位 Awwwards 级别的前端开发专家，精通 GSAP、ScrollTrigger 和 CSS 动画。用户已经有一个 Scrollytelling 动效网站，现在需要你根据要求进行修改。
+  const modifySystemPrompt = `你是一位优秀的前端开发者，擅长用 Tailwind CSS 创建简洁美观的网站。
 
 ## 任务
-根据用户的修改要求，对提供的 HTML 进行调整。
+你正在与用户进行多轮对话，帮助用户修改研究展示网站。
+用户会提出修改要求，你需要根据之前生成的 HTML 进行调整。
+
+## 性能原则（必须遵守）
+- ❌ 禁止使用 GSAP、ScrollTrigger、Lenis
+- ❌ 禁止使用 Canvas 动画（Matrix Rain、粒子等）
+- ❌ 禁止使用 setInterval/setTimeout 做持续动画
+- ✅ 只用 CSS 动画和 Intersection Observer
+- ✅ 保持简洁流畅
 
 ## 输出要求
 1. 直接输出修改后的完整 HTML 代码
 2. 从 <!DOCTYPE html> 开始，到 </html> 结束
 3. 不要任何解释，不要 markdown 代码块
-4. 保留原有的 GSAP、ScrollTrigger、ECharts 等功能
-5. 确保动画流畅，使用相对单位`;
+4. 保持简洁的 Tailwind CSS 风格
+5. 如果原代码有 GSAP/Lenis，改为纯 CSS 动画`;
 
-  const userContent: any[] = [];
+  // 构建消息数组
+  const messages: Array<{ role: string; content: any }> = [
+    { role: 'system', content: modifySystemPrompt }
+  ];
 
-  for (const image of images.slice(0, 2)) {
+  // 如果有对话历史，使用真正的多轮对话
+  if (conversationHistory && conversationHistory.length > 0) {
+    console.log(`[modifyHtmlWithGemini] Using conversation history with ${conversationHistory.length} messages`);
+
+    // 添加对话历史（user/assistant 交替）
+    for (const msg of conversationHistory) {
+      messages.push({
+        role: msg.role,
+        content: msg.content
+      });
+    }
+  } else {
+    // 旧模式：把 previousHtml 放在 user message 里（向后兼容）
+    console.log('[modifyHtmlWithGemini] No conversation history, using legacy mode');
+
+    const userContent: any[] = [];
+    for (const image of images.slice(0, 2)) {
+      userContent.push({
+        type: 'image_url',
+        image_url: { url: image.url }
+      });
+    }
     userContent.push({
-      type: 'image_url',
-      image_url: { url: image.url }
-    });
-  }
-
-  userContent.push({
-    type: 'text',
-    text: `## 当前 HTML 代码
+      type: 'text',
+      text: `## 当前 HTML 代码
 
 \`\`\`html
 ${previousHtml}
@@ -1243,7 +1153,12 @@ ${previousHtml}
 ${modification}
 
 请根据以上要求修改 HTML，直接输出完整的修改后代码。`
-  });
+    });
+
+    messages.push({ role: 'user', content: userContent });
+  }
+
+  console.log(`[modifyHtmlWithGemini] Sending ${messages.length} messages to Gemini`);
 
   try {
     const response = await fetch(`${apiBaseUrl}/v1/chat/completions`, {
@@ -1254,10 +1169,7 @@ ${modification}
       },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: 'system', content: modifySystemPrompt },
-          { role: 'user', content: userContent }
-        ],
+        messages,
         stream: true,
         temperature: 0.7,
         max_tokens: 64000,

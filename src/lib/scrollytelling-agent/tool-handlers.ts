@@ -110,11 +110,11 @@ export const handleDeepResearch: ToolHandler = async (params, state, sendEvent) 
       keyFindings,
       dataPoints,
       designSuggestions: [
-        `基于 "${topic}" 主题的深度研究，建议使用现代化设计风格`,
-        '利用研究数据创建数据可视化卡片',
-        '使用 GSAP ScrollTrigger 实现滚动叙事',
-        '添加视差效果和文字入场动画增强体验',
-        '为关键内容添加参考来源链接'
+        `基于 "${topic}" 主题的深度研究，建议使用简洁现代的 Tailwind CSS 风格`,
+        '利用研究数据创建简洁的数据展示卡片',
+        '使用纯 CSS 动画和 Intersection Observer 实现入场效果',
+        '保持简洁流畅，避免复杂动效影响性能',
+        '为关键内容添加可点击的参考来源链接'
       ],
       colorRecommendations: style_preferences?.includes('科技')
         ? ['#0f172a', '#1e293b', '#0066ff', '#00d4ff']
@@ -562,7 +562,7 @@ export const handleFinalizePrompt: ToolHandler = async (params, state, sendEvent
   };
 };
 
-// 构建最终提示词（用于 Gemini 生成 Scrollytelling 动效网站）
+// 构建最终提示词（用于 Gemini 生成简洁美观的研究展示网站）
 function buildFinalPrompt(
   state: ScrollytellingAgentState,
   additionalRequirements: string[],
@@ -570,70 +570,86 @@ function buildFinalPrompt(
 ): string {
   const plan = state.structurePlan!;
 
-  let prompt = `请创建一个【${plan.theme}】风格的 **Awwwards 级别 Scrollytelling 动效网站**，必须充分使用 GSAP ScrollTrigger 实现丝滑动画！
+  let prompt = `请创建一个【${plan.theme}】风格的 **简洁美观的研究展示网站**。
+
+## ⚠️ 性能第一原则（必须遵守！）
+
+**禁止使用（会导致卡顿）：**
+- ❌ GSAP / ScrollTrigger / Lenis
+- ❌ Canvas 动画（Matrix Rain、粒子效果等）
+- ❌ setInterval / setTimeout 持续动画
+- ❌ 复杂视差效果
+
+**只使用（轻量高效）：**
+- ✅ Tailwind CSS
+- ✅ 纯 CSS 动画（transition、animation）
+- ✅ Intersection Observer（入场动画）
+- ✅ Lucide Icons
+- ✅ ECharts（可选，最多1个图表）
 
 ## 整体设计
 
 **叙事方式**: ${plan.overallNarrative}
 **配色方案**: ${plan.colorScheme.join(', ')}
-**设计风格**: Linear + Swiss Modern 极简高端风格
-**交互类型**: ${plan.interactionTypes.join(', ')}
+**设计风格**: 简洁现代、深色主题、高端专业
+**交互类型**: 悬浮效果、入场动画
 
-## ⚠️ 必须使用的核心技术
+## 技术栈（仅使用这些 CDN）
 
-### 1. GSAP ScrollTrigger - 滚动触发动画（核心！）
-\`\`\`javascript
-// 元素入场动画
-gsap.from(".element", {
-  scrollTrigger: {
-    trigger: ".element",
-    start: "top 80%",
-    end: "top 20%",
-    scrub: true
-  },
-  y: 100,
-  opacity: 0,
-  duration: 1
-});
-
-// Pin 固定效果
-ScrollTrigger.create({
-  trigger: ".section",
-  start: "top top",
-  end: "+=100%",
-  pin: true,
-  scrub: 1
-});
-
-// 时间线编排
-let tl = gsap.timeline({
-  scrollTrigger: {
-    trigger: ".container",
-    start: "top top",
-    end: "+=200%",
-    scrub: 1,
-    pin: true
-  }
-});
-tl.from(".title", { y: 100, opacity: 0 })
-  .from(".content", { y: 50, opacity: 0 }, "-=0.5");
+\`\`\`html
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
 \`\`\`
 
-### 2. 文字动画
-- 标题逐字入场：\`stagger: 0.05\`
-- 段落逐行显现
-- 渐变文字效果
+## CSS 动画方案
 
-### 3. 图片效果
-- 视差滚动：\`y: "-30%"\`
-- 缩放揭示：\`clipPath + scale\`
-- 悬停放大
+\`\`\`css
+/* 入场动画 */
+.fade-up {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-### 4. 现代 CSS 效果
-- 毛玻璃：\`backdrop-filter: blur(20px)\`
-- 渐变文字：\`background-clip: text\`
-- 发光效果：\`box-shadow: 0 0 60px\`
-- 流动渐变背景
+/* 延迟类 */
+.delay-100 { transition-delay: 0.1s; }
+.delay-200 { transition-delay: 0.2s; }
+.delay-300 { transition-delay: 0.3s; }
+
+/* 悬浮效果 */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+\`\`\`
+
+## JavaScript（简洁高效）
+
+\`\`\`javascript
+// 入场动画（Intersection Observer）
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+// Lucide 图标初始化
+lucide.createIcons();
+\`\`\`
 
 ## Section 详情（共 ${plan.slides.length} 个）
 
@@ -649,37 +665,18 @@ tl.from(".title", { y: 100, opacity: 0 })
 **关键内容**: ${slide.keyPoints.join('、')}
 `;
 
-    // 动画配置
-    const animationInfo: string[] = [];
-    if (slide.scrollAnimation) {
-      animationInfo.push(`🎬 **入场动画**: ${slide.scrollAnimation}`);
-    }
-    if (slide.pinSection) {
-      animationInfo.push('📌 **Pin 固定** - 滚动时固定此 section');
-    }
-    if (slide.scrub) {
-      animationInfo.push('🔄 **Scrub 同步** - 动画进度与滚动位置同步');
-    }
+    // 样式配置（简洁版）
+    const styleInfo: string[] = [];
     if (slide.backgroundColor) {
-      animationInfo.push(`🎨 **背景色**: ${slide.backgroundColor}`);
+      styleInfo.push(`🎨 **背景色**: ${slide.backgroundColor}`);
     }
     if (slide.backgroundGradient) {
-      animationInfo.push(`🌈 **背景渐变**: ${slide.backgroundGradient}`);
-    }
-    if (slide.textAnimations && slide.textAnimations.length > 0) {
-      const textAnimDesc = slide.textAnimations.map(t =>
-        `${t.element}: ${t.effect}${t.stagger ? ` (stagger: ${t.stagger}s)` : ''}`
-      ).join(', ');
-      animationInfo.push(`✨ **文字动画**: ${textAnimDesc}`);
-    }
-    if (slide.specialEffects && slide.specialEffects.length > 0) {
-      animationInfo.push(`💫 **特殊效果**: ${slide.specialEffects.join('、')}`);
+      styleInfo.push(`🌈 **背景渐变**: ${slide.backgroundGradient}`);
     }
 
-    if (animationInfo.length > 0) {
+    if (styleInfo.length > 0) {
       prompt += `
-**GSAP 动画配置**:
-${animationInfo.join('\n')}
+${styleInfo.join('\n')}
 `;
     }
 
@@ -723,206 +720,101 @@ ${state.collectedMaterials.join('\n\n')}
 `;
   }
 
-  // 添加技术要求
+  // 添加技术要求（简洁版）
   prompt += `## 技术要求
 
-1. **技术栈**：纯 HTML + CSS + JavaScript，使用 GSAP ScrollTrigger
+1. **技术栈**：Tailwind CSS + 纯 CSS 动画 + Lucide Icons
 
-2. **CDN 引入（必须！顺序不可变！）**:
+2. **CDN 引入**:
 \`\`\`html
-<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
-<!-- GSAP 核心 + ScrollTrigger（必须！）-->
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-<!-- Lenis 平滑滚动（必须！）-->
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.0.45/dist/lenis.min.js"></script>
-<!-- ECharts 数据可视化 -->
+<script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 \`\`\`
 
-3. **⚠️ GSAP + Lenis 初始化（顺序严格不可变！否则滚动失效！）**:
-\`\`\`javascript
-// 【第1步】必须先注册 GSAP 插件！
-gsap.registerPlugin(ScrollTrigger);
-
-// 【第2步】再初始化 Lenis
-const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, wheelMultiplier: 1 });
-
-// 【第3步】连接 Lenis 与 ScrollTrigger
-lenis.on('scroll', ScrollTrigger.update);
-gsap.ticker.add((time) => lenis.raf(time * 1000));
-gsap.ticker.lagSmoothing(0);
-
-// 【第4步】启动 RAF 循环（必须！）
-function raf(time) {
-  lenis.raf(time);
-  requestAnimationFrame(raf);
-}
-requestAnimationFrame(raf);
-
-// 以上代码必须放在所有动画代码之前！
-\`\`\`
-
-4. **全局样式（必须完整添加！）**:
+3. **全局样式**:
 \`\`\`css
-/* 基础重置 */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* 基础 */
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, sans-serif;
   background: #0f172a;
   color: #f8fafc;
-  overflow-x: hidden;
 }
 
-/* Section 全屏 */
-section {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 5vh 8vw;
-  position: relative;
-  overflow: hidden;
+/* 入场动画 */
+.fade-up {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-/* 毛玻璃效果 */
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+/* 延迟 */
+.delay-100 { transition-delay: 0.1s; }
+.delay-200 { transition-delay: 0.2s; }
+
+/* 悬浮 */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
 }
 
 /* 渐变文字 */
 .gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* 发光效果 */
-.glow {
-  box-shadow: 0 0 60px rgba(102, 126, 234, 0.4);
-}
-
-/* 流动渐变背景 */
-@keyframes gradient-flow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-.flowing-bg {
-  background: linear-gradient(-45deg, #0f172a, #1e293b, #0066ff20, #8b5cf620);
-  background-size: 400% 400%;
-  animation: gradient-flow 15s ease infinite;
-}
-
-/* 悬停效果 */
-.hover-lift {
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease;
-}
-.hover-lift:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-/* 图片容器 */
-.img-container {
-  overflow: hidden;
-  border-radius: 12px;
-}
-.img-container img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.img-container:hover img {
-  transform: scale(1.05);
-}
-
-/* 响应式 */
-@media (max-width: 768px) {
-  section { padding: 4vh 5vw; }
-  h1 { font-size: 2.5rem !important; }
-  h2 { font-size: 1.8rem !important; }
 }
 \`\`\`
 
-5. **必须实现的动画效果**:
-   - ✅ 标题逐字入场（stagger: 0.05）
-   - ✅ 图片视差滚动（y: "-30%"）
-   - ✅ 元素滚动入场（opacity + y 动画）
-   - ✅ Pin 固定效果（关键 section）
-   - ✅ 数字计数动画（snap: { textContent: 1 }）
-   - ✅ 卡片错落入场（stagger）
-   - ✅ 进度指示器
-
-6. **动画代码模板**:
+4. **JavaScript（简洁高效）**:
 \`\`\`javascript
-// Hero 标题入场
-gsap.from(".hero-title span", {
-  y: 100, opacity: 0, stagger: 0.05, duration: 1,
-  ease: "power4.out", delay: 0.5
-});
-
-// 滚动触发入场
-gsap.utils.toArray(".fade-in").forEach(el => {
-  gsap.from(el, {
-    scrollTrigger: { trigger: el, start: "top 85%", toggleActions: "play none none reverse" },
-    y: 60, opacity: 0, duration: 1, ease: "power3.out"
+// Intersection Observer 入场动画
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
   });
-});
+}, { threshold: 0.1 });
 
-// 图片视差
-gsap.utils.toArray(".parallax-img").forEach(img => {
-  gsap.to(img, {
-    scrollTrigger: { trigger: img.parentElement, start: "top bottom", end: "bottom top", scrub: true },
-    y: "-20%", ease: "none"
-  });
-});
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 
-// 数字计数
-gsap.utils.toArray(".counter").forEach(el => {
-  gsap.from(el, {
-    scrollTrigger: { trigger: el, start: "top 80%" },
-    textContent: 0, duration: 2, snap: { textContent: 1 }, ease: "power1.inOut"
-  });
-});
+// Lucide 图标
+lucide.createIcons();
 \`\`\`
 
-7. **布局原则**:
-   - 每个 section 高度 100vh
-   - 内容居中，左右留白 8vw
-   - 标题：4-6rem，副标题：1.5-2rem
-   - 段落最大宽度：60ch
-   - 图片最大高度：60vh
-   - 卡片网格：grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+5. **设计规范**:
+   - 深色主题：bg-slate-900, bg-slate-800
+   - 圆角卡片：rounded-xl
+   - 毛玻璃：backdrop-blur-md bg-white/5
+   - 适当留白：py-16 px-8
+   - 响应式：md:grid-cols-2 lg:grid-cols-3
 
-8. **特殊效果**: ${specialEffects.length > 0 ? specialEffects.join('、') : '视差滚动、文字动画、卡片入场、数字计数'}
-
-9. **额外要求**: ${additionalRequirements.length > 0 ? additionalRequirements.join('；') : '动画丝滑流畅，60fps，无卡顿'}
+6. **交互效果**:
+   - ✅ 滚动入场动画（fade-up）
+   - ✅ 卡片悬浮效果（hover-lift）
+   - ✅ 链接悬浮变色
+   - ✅ 图片悬浮放大
 
 ## 输出格式
 
 直接输出完整的 HTML 代码，从 <!DOCTYPE html> 开始，到 </html> 结束。
 不要任何解释，不要 markdown 代码块。
 
-**⚠️ 图片占位符说明**：
-- 代码中的 {{IMAGE_0}}、{{IMAGE_1}} 等占位符会在后续被替换为真实的 AI 生成图片 URL
-- 请确保正确使用这些占位符
+**⚠️ 图片占位符**：{{IMAGE_0}}、{{IMAGE_1}} 等会被替换为真实图片 URL
 
-**⚠️ 核心要求（必须严格遵守！）**：
-1. **必须使用 GSAP ScrollTrigger** - 这是实现动效的核心
-2. **每个 section 都要有动画** - 入场、视差、或交互效果
-3. **丝滑流畅** - 使用 scrub、ease、stagger 让动画更自然
-4. **深色高端风格** - 深色背景 + 渐变 + 毛玻璃
-5. **响应式设计** - 移动端也要好看`;
+**⚠️ 核心要求**：
+1. **简洁流畅** - 不要复杂动效，追求性能
+2. **深色高端** - 专业研究风格
+3. **可点击引用** - 参考来源都要有链接
+4. **响应式** - 移动端友好`;
 
   return prompt;
 }

@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
         // 修改模式参数
         modification,
         previousHtml,
+        conversationHistory,  // 多轮对话历史
         // 图片分辨率
         imageResolution = '1k'
       } = body as {
@@ -65,26 +66,18 @@ export async function POST(request: NextRequest) {
         userPrompt?: string;
         modification?: string;
         previousHtml?: string;
+        conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
         imageResolution?: '1k' | '2k' | '4k';
       };
 
-      // 验证：有图片 或 有用户提示词（无图片模式）
-      const hasImages = images && Array.isArray(images) && images.length > 0;
-      const hasUserPrompt = userPrompt && typeof userPrompt === 'string' && userPrompt.trim().length > 0;
-
-      if (!hasImages && !hasUserPrompt) {
-        await sendEvent({ type: 'error', error: '请提供参考图片或输入主题描述' });
-        await writer.close();
-        return;
-      }
-
       // 构建图片信息
-      const imageInfos: ImageInfo[] = images.map((url, i) => ({
+      const imageInfos: ImageInfo[] = (images || []).map((url, i) => ({
         url,
         prompt: prompts?.[i] || undefined
       }));
 
       // ========== 修改模式：跳过 Claude Agent 和图片生成 ==========
+      // 修改模式不需要验证图片/主题，只需要 previousHtml 和 modification
       if (modification && previousHtml) {
         console.log('[Presentation API] Modification mode: Skipping Agent and image generation...');
 
@@ -98,7 +91,8 @@ export async function POST(request: NextRequest) {
           previousHtml,
           modification,
           imageInfos,
-          sendEvent
+          sendEvent,
+          conversationHistory  // 传递对话历史
         );
 
         await sendEvent({
@@ -112,6 +106,16 @@ export async function POST(request: NextRequest) {
       }
 
       // ========== 正常模式：三阶段生成 ==========
+      // 验证：有图片 或 有用户提示词（无图片模式）
+      const hasImages = images && Array.isArray(images) && images.length > 0;
+      const hasUserPrompt = userPrompt && typeof userPrompt === 'string' && userPrompt.trim().length > 0;
+
+      if (!hasImages && !hasUserPrompt) {
+        await sendEvent({ type: 'error', error: '请提供参考图片或输入主题描述' });
+        await writer.close();
+        return;
+      }
+
       console.log('[Presentation API] Starting three-phase generation...');
       console.log('[Presentation API] Mode:', hasImages ? 'With images' : 'No images (deep research)');
       console.log('[Presentation API] Reference images count:', images.length);
