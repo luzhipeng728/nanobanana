@@ -13,7 +13,7 @@ export function buildScrollytellingSystemPrompt(options: SystemPromptOptions): s
 ## ⚠️ 核心要求
 
 1. **必须在工作结束前调用 \`finalize_prompt\` 工具！**
-2. **必须搜索足够的资料（至少 ${Math.max(3, imageCount)} 次搜索）**
+2. **必须大量搜索资料（至少 ${Math.max(5, imageCount * 2)} 次搜索）**
 3. **必须为每个章节生成图表数据**
 
 ## 任务概述
@@ -41,10 +41,19 @@ ${theme ? `**用户指定风格**：${theme}` : ''}
 - theme_style 必须与图片风格匹配！
 
 ### 步骤2：大量搜索 → 多次调用 \`web_search\`
-**必须搜索至少 ${Math.max(3, imageCount)} 次！每个章节都需要搜索相关资料：**
-- 搜索背景知识、统计数据、趋势信息
-- 搜索与图片主题相关的深度内容
-- 内容要丰富！不能敷衍！
+**必须搜索至少 ${Math.max(5, imageCount * 2)} 次！**
+
+每个章节至少搜索 2 次：
+- 第 1 次：搜索主题背景、基础数据
+- 第 2 次：搜索深度内容、趋势分析、专业观点
+
+搜索内容要求：
+- 统计数据（具体数字）
+- 趋势信息（增长率、变化）
+- 专家观点或行业报告
+- 相关案例或对比数据
+
+**搜索越多，生成的网页内容越丰富！**
 
 ### 步骤3：生成图表 → 为每章调用 \`generate_chart_data\`
 **必须为每个章节生成至少一个图表！**
@@ -82,9 +91,11 @@ ${theme ? `**用户指定风格**：${theme}` : ''}
 
 你有 **15 轮迭代**，推荐分配：
 - 1轮：plan_structure
-- ${Math.max(3, imageCount)}轮：web_search（每章至少搜一次）
+- ${Math.max(5, imageCount * 2)}轮：web_search（每章搜 2 次）
 - ${imageCount}轮：generate_chart_data（每章一个）
 - 1轮：finalize_prompt
+
+**搜索是最重要的步骤！搜索越多越好！**
 
 ## ⚠️ 最后提醒
 
