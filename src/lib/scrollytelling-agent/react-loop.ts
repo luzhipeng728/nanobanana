@@ -26,6 +26,10 @@ function getAnthropicClient(): Anthropic {
 
 // 安全解析 JSON
 function safeParseJSON(text: string): Record<string, any> | null {
+  if (!text || text.trim() === '') {
+    return {};
+  }
+
   // 第1层：直接解析
   try {
     return JSON.parse(text);
@@ -33,7 +37,22 @@ function safeParseJSON(text: string): Record<string, any> | null {
     // 继续
   }
 
-  // 第2层：提取 JSON 对象
+  // 第2层：尝试修复常见问题后解析
+  try {
+    let fixed = text
+      .replace(/,\s*([}\]])/g, '$1')  // 移除尾部多余逗号
+      .replace(/'/g, '"')              // 修复单引号
+      .replace(/\n/g, '\\n')           // 转义换行
+      .replace(/\r/g, '\\r')           // 转义回车
+      .replace(/\t/g, '\\t')           // 转义制表符
+      .replace(/[\x00-\x1F\x7F]/g, '') // 移除控制字符
+      .trim();
+    return JSON.parse(fixed);
+  } catch {
+    // 继续
+  }
+
+  // 第3层：提取 JSON 对象
   const jsonMatches = text.match(/\{[\s\S]*\}/g);
   if (jsonMatches) {
     for (const jsonStr of jsonMatches) {
@@ -45,17 +64,9 @@ function safeParseJSON(text: string): Record<string, any> | null {
     }
   }
 
-  // 第3层：修复常见问题
-  try {
-    const fixed = text
-      .replace(/,\s*([}\]])/g, '$1')  // 移除尾部多余逗号
-      .replace(/'/g, '"');             // 修复单引号
-    return JSON.parse(fixed);
-  } catch {
-    // 放弃
-  }
-
-  return null;
+  // 第4层：返回空对象（避免完全失败）
+  console.warn('[Scrollytelling Agent] Failed to parse JSON, returning empty object:', text.slice(0, 100));
+  return {};
 }
 
 // 心跳保活间隔（30秒发送一次心跳，防止 SSE 断开）
@@ -158,7 +169,7 @@ export async function runScrollytellingAgent(
         let currentToolId = '';
         let currentToolName = '';
         let currentToolInput = '';
-        const toolCalls: Array<{ id: string; name: string; input: any }> = [];
+        const toolCalls: Array<{ id: string; name: string; input: any; parseError?: string }> = [];
 
         // 流式处理事件
         for await (const event of stream) {
@@ -191,11 +202,21 @@ export async function runScrollytellingAgent(
             // 内容块结束
             if (currentToolName && currentToolId) {
               // 解析工具输入
-              const input = safeParseJSON(currentToolInput) || {};
+              let input: Record<string, any> = {};
+              let parseError: string | null = null;
+
+              try {
+                input = safeParseJSON(currentToolInput) || {};
+              } catch (e) {
+                parseError = e instanceof Error ? e.message : '解析错误';
+                console.error(`[Scrollytelling Agent] Failed to parse tool input for ${currentToolName}:`, currentToolInput.slice(0, 200));
+              }
+
               toolCalls.push({
                 id: currentToolId,
                 name: currentToolName,
-                input
+                input,
+                parseError: parseError || undefined // 记录解析错误
               });
               currentToolId = '';
               currentToolName = '';
@@ -245,21 +266,38 @@ export async function runScrollytellingAgent(
           const toolStart = Date.now();
           console.log(`[Scrollytelling Agent] Executing tool: ${toolCall.name}`);
 
-          // 发送动作事件
-          await sendEvent({
-            type: 'action',
-            iteration: state.iteration,
-            tool: toolCall.name,
-            input: toolCall.input
-          });
+          let result: { success: boolean; data?: any; error?: string };
 
-          // 执行工具
-          const result = await executeToolCall(
-            toolCall.name,
-            toolCall.input,
-            state,
-            sendEvent
-          );
+          // 检查是否有解析错误
+          if ((toolCall as any).parseError) {
+            console.error(`[Scrollytelling Agent] Tool ${toolCall.name} has parse error:`, (toolCall as any).parseError);
+            result = {
+              success: false,
+              error: `工具参数格式错误: ${(toolCall as any).parseError}。请重新调用此工具，确保 JSON 格式正确。`
+            };
+
+            await sendEvent({
+              type: 'thought',
+              iteration: state.iteration,
+              content: `⚠️ ${toolCall.name} 参数格式错误，正在等待重试...`
+            });
+          } else {
+            // 发送动作事件
+            await sendEvent({
+              type: 'action',
+              iteration: state.iteration,
+              tool: toolCall.name,
+              input: toolCall.input
+            });
+
+            // 执行工具
+            result = await executeToolCall(
+              toolCall.name,
+              toolCall.input,
+              state,
+              sendEvent
+            );
+          }
 
           const toolDuration = Math.round((Date.now() - toolStart) / 1000);
           console.log(`[Scrollytelling Agent] Tool ${toolCall.name} completed in ${toolDuration}s, success: ${result.success}`);
@@ -299,9 +337,29 @@ export async function runScrollytellingAgent(
 
       } catch (error) {
         console.error('[Scrollytelling Agent] Error in iteration:', error);
+        const errorMessage = error instanceof Error ? error.message : '未知错误';
+
+        // 如果还有迭代机会，尝试继续
+        if (state.iteration < state.maxIterations - 1) {
+          console.log('[Scrollytelling Agent] Error occurred, attempting to continue...');
+          await sendEvent({
+            type: 'thought',
+            iteration: state.iteration,
+            content: `⚠️ 遇到错误: ${errorMessage}，正在重试...`
+          });
+
+          // 添加错误信息让 Claude 知道并继续
+          messages.push({
+            role: 'user',
+            content: `上一次操作遇到错误: ${errorMessage}。请继续你的工作。如果你已经完成了所有准备工作，请调用 finalize_prompt 工具。`
+          });
+
+          continue; // 继续下一轮迭代
+        }
+
         await sendEvent({
           type: 'error',
-          error: error instanceof Error ? error.message : '未知错误'
+          error: errorMessage
         });
         break;
       }
