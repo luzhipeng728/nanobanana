@@ -74,8 +74,8 @@ function safeParseJSON(text: string): Record<string, any> | null {
   return {};
 }
 
-// 心跳保活间隔
-const HEARTBEAT_INTERVAL = 30000;
+// 心跳保活间隔 - 15 秒，防止 SSE 连接超时
+const HEARTBEAT_INTERVAL = 15000;
 
 // ============================================
 // 并发图片生成
@@ -468,48 +468,85 @@ export async function runScrollytellingAgent(
         let currentToolInput = '';
         const toolCalls: Array<{ id: string; name: string; input: any; parseError?: string }> = [];
 
-        for await (const event of stream) {
-          if (event.type === 'content_block_start') {
-            if (event.content_block.type === 'tool_use') {
-              currentToolId = event.content_block.id;
-              currentToolName = event.content_block.name;
-              currentToolInput = '';
+        // 流式处理中的心跳机制 - 每 10 秒发送一次心跳
+        let lastEventTime = Date.now();
+        const streamHeartbeatInterval = 10000;
+        let streamHeartbeatTimer: NodeJS.Timeout | null = setInterval(async () => {
+          const elapsed = Math.round((Date.now() - lastEventTime) / 1000);
+          if (elapsed >= 8) {
+            try {
+              await sendEvent({
+                type: 'thought',
+                iteration: state.iteration,
+                content: `🔄 Claude 正在分析中... (${elapsed}s)`
+              });
+            } catch {
+              // 忽略发送错误
             }
-          } else if (event.type === 'content_block_delta') {
-            if (event.delta.type === 'text_delta') {
-              assistantThinking += event.delta.text;
-              if (event.delta.text.length > 0) {
+          }
+        }, streamHeartbeatInterval);
+
+        const clearStreamHeartbeat = () => {
+          if (streamHeartbeatTimer) {
+            clearInterval(streamHeartbeatTimer);
+            streamHeartbeatTimer = null;
+          }
+        };
+
+        try {
+          for await (const event of stream) {
+            lastEventTime = Date.now(); // 更新最后事件时间
+
+            if (event.type === 'content_block_start') {
+              if (event.content_block.type === 'tool_use') {
+                currentToolId = event.content_block.id;
+                currentToolName = event.content_block.name;
+                currentToolInput = '';
+                // 工具调用开始时发送通知
                 await sendEvent({
                   type: 'thought',
                   iteration: state.iteration,
-                  content: event.delta.text
+                  content: `🔧 准备调用工具: ${currentToolName}`
                 });
               }
-            } else if (event.delta.type === 'input_json_delta') {
-              currentToolInput += event.delta.partial_json;
-            }
-          } else if (event.type === 'content_block_stop') {
-            if (currentToolName && currentToolId) {
-              let input: Record<string, any> = {};
-              let parseError: string | null = null;
-
-              try {
-                input = safeParseJSON(currentToolInput) || {};
-              } catch (e) {
-                parseError = e instanceof Error ? e.message : '解析错误';
+            } else if (event.type === 'content_block_delta') {
+              if (event.delta.type === 'text_delta') {
+                assistantThinking += event.delta.text;
+                if (event.delta.text.length > 0) {
+                  await sendEvent({
+                    type: 'thought',
+                    iteration: state.iteration,
+                    content: event.delta.text
+                  });
+                }
+              } else if (event.delta.type === 'input_json_delta') {
+                currentToolInput += event.delta.partial_json;
               }
+            } else if (event.type === 'content_block_stop') {
+              if (currentToolName && currentToolId) {
+                let input: Record<string, any> = {};
+                let parseError: string | null = null;
 
-              toolCalls.push({
-                id: currentToolId,
-                name: currentToolName,
-                input,
-                parseError: parseError || undefined
-              });
-              currentToolId = '';
-              currentToolName = '';
-              currentToolInput = '';
+                try {
+                  input = safeParseJSON(currentToolInput) || {};
+                } catch (e) {
+                  parseError = e instanceof Error ? e.message : '解析错误';
+                }
+
+                toolCalls.push({
+                  id: currentToolId,
+                  name: currentToolName,
+                  input,
+                  parseError: parseError || undefined
+                });
+                currentToolId = '';
+                currentToolName = '';
+                currentToolInput = '';
+              }
             }
           }
+        } finally {
+          clearStreamHeartbeat();
         }
 
         const finalMessage = await stream.finalMessage();
@@ -974,13 +1011,14 @@ html { scroll-behavior: smooth; }
 不要任何解释，不要 markdown 代码块。
 所有 CSS 和 JS 内联在 HTML 中。`;
 
-  // 心跳
+  // 心跳 - 每 10 秒检查一次，如果超过 8 秒没有收到数据则发送心跳
   let lastChunkTime = Date.now();
   let heartbeatTimer: NodeJS.Timeout | null = null;
+  const geminiHeartbeatInterval = 10000;
 
   const startHeartbeat = () => {
     heartbeatTimer = setInterval(async () => {
-      if (Date.now() - lastChunkTime > 10000) {
+      if (Date.now() - lastChunkTime > 8000) {
         const elapsed = Math.round((Date.now() - startTime) / 1000);
         try {
           await sendEvent({
@@ -990,7 +1028,7 @@ html { scroll-behavior: smooth; }
           });
         } catch { }
       }
-    }, HEARTBEAT_INTERVAL);
+    }, geminiHeartbeatInterval);
   };
 
   const stopHeartbeat = () => {

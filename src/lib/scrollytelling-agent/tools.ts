@@ -14,19 +14,22 @@ export interface ScrollytellingTool {
 export const SCROLLYTELLING_TOOLS: ScrollytellingTool[] = [
   {
     name: 'deep_research',
-    description: `深度研究工具 - 当用户没有提供参考图片时必须首先调用！
+    description: `深度研究工具 - 使用 HyprLab sonar-deep-research (medium 级别)
 
 ⚠️ 使用场景：
-- 用户只提供了文字描述/主题，没有上传图片
-- 需要深入了解主题背景、行业知识、设计灵感
+- 当用户没有提供参考图片时，必须首先调用此工具！
+- 用户只提供了文字描述/主题，需要深入了解背景
 
 功能：
-1. 对用户主题进行全面深度研究
-2. 收集相关数据、趋势、案例
-3. 分析最佳设计方向和视觉风格
-4. 返回研究摘要和设计建议
+1. 使用 Perplexity sonar-deep-research 模型进行深度网络研究
+2. 自动搜索并整合多个来源的信息
+3. 提供结构化的研究报告和设计建议
+4. 返回引用来源列表
 
-⚠️ 注意：此操作耗时较长（约 30-60 秒），会返回研究时长。`,
+⚠️ 重要提示：
+- 此操作使用 medium 级别，预计耗时 3-7 分钟
+- 会返回引用来源数量和研究耗时
+- 完成后请调用 plan_structure 规划网站结构`,
     parameters: {
       type: 'object',
       properties: {

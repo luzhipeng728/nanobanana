@@ -24,7 +24,7 @@ export function buildScrollytellingSystemPrompt(options: SystemPromptOptions): s
 用户只提供了文字描述，没有参考图片。**必须先进行深度研究！**
 
 ### ⚠️ 必须遵循的流程：
-1. **首先调用 \`deep_research\`** - 对主题进行深度研究（约 30-60 秒）
+1. **首先调用 \`deep_research\`** - 使用 HyprLab sonar-deep-research 进行深度研究（预计 3-7 分钟）
 2. 基于研究结果，调用 \`plan_structure\` 规划网站结构
 3. 调用 \`web_search\` 搜索更多补充资料
 4. 调用 \`finalize_prompt\` 完成
