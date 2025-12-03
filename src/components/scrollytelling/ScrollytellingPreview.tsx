@@ -87,6 +87,10 @@ export default function ScrollytellingPreview({
   const [agentLogs, setAgentLogs] = useState<AgentLogItem[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
+  // 当前思考内容（用于合并连续的思考 chunks）
+  const [currentThinking, setCurrentThinking] = useState<string>("");
+  const lastEventTypeRef = useRef<string>("");
+
   // 自由指令输入
   const [customPrompt, setCustomPrompt] = useState(initialTheme);
 
@@ -244,8 +248,27 @@ export default function ScrollytellingPreview({
     }
   }, [isComplete, jsErrors, isAutoFixing, autoFixAttempts]);
 
+  // 完成当前思考（将累积的思考内容添加到日志）
+  const finalizeCurrentThinking = useCallback(() => {
+    setCurrentThinking(prev => {
+      if (prev.trim()) {
+        // 将累积的思考内容添加到日志（截取前300字符）
+        const content = prev.trim();
+        const displayContent = content.length > 300 ? content.slice(0, 300) + '...' : content;
+        addLog('thought', displayContent);
+      }
+      return "";
+    });
+  }, [addLog]);
+
   // 处理 SSE 事件
   const handleStreamEvent = useCallback((event: StreamEvent) => {
+    // 如果从 thought 切换到其他类型，先完成当前思考
+    if (event.type !== 'thought' && lastEventTypeRef.current === 'thought') {
+      finalizeCurrentThinking();
+    }
+    lastEventTypeRef.current = event.type;
+
     switch (event.type) {
       case 'start':
         addLog('thought', event.message || '开始处理...');
@@ -262,8 +285,9 @@ export default function ScrollytellingPreview({
         break;
 
       case 'thought':
+        // 累积思考内容，不立即添加日志
         if (event.content) {
-          addLog('thought', event.content.slice(0, 300) + (event.content.length > 300 ? '...' : ''));
+          setCurrentThinking(prev => prev + event.content);
         }
         break;
 
@@ -286,7 +310,10 @@ export default function ScrollytellingPreview({
         break;
 
       case 'observation':
-        // 工具执行完成
+        // 工具执行完成，显示耗时
+        if (event.result?.duration) {
+          addLog('observation', `⏱️ 耗时 ${event.result.duration}`);
+        }
         break;
 
       case 'image_analysis':
@@ -336,7 +363,7 @@ export default function ScrollytellingPreview({
         setError(event.error || '未知错误');
         break;
     }
-  }, [addLog, updateStepStatus, images.length]);
+  }, [addLog, updateStepStatus, images.length, finalizeCurrentThinking]);
 
   // 重置工作流程
   const resetWorkflow = useCallback(() => {
@@ -358,6 +385,8 @@ export default function ScrollytellingPreview({
     setCurrentPhase(null);
     setPhaseMessage("");
     setAgentLogs([]);
+    setCurrentThinking("");
+    lastEventTypeRef.current = "";
     resetWorkflow();
 
     // 取消之前的请求
@@ -766,6 +795,20 @@ export default function ScrollytellingPreview({
                     );
                   })
                 )}
+
+                {/* 当前正在输入的思考内容（实时显示） */}
+                {currentThinking && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg border bg-purple-500/10 border-purple-500/20 animate-pulse">
+                    <div className="text-purple-400">
+                      <Brain className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm text-neutral-300 flex-1">
+                      {currentThinking.length > 300 ? currentThinking.slice(-300) + '...' : currentThinking}
+                      <span className="inline-block w-2 h-4 bg-purple-400 ml-1 animate-pulse" />
+                    </span>
+                  </div>
+                )}
+
                 <div ref={logsEndRef} />
               </div>
             </div>

@@ -98,7 +98,7 @@ export async function runScrollytellingAgent(
   // 初始化状态
   const state: ScrollytellingAgentState = {
     iteration: 0,
-    maxIterations: 5,
+    maxIterations: 15, // 增加到 15 次迭代
     isComplete: false,
     images,
     collectedMaterials: []
@@ -213,13 +213,29 @@ export async function runScrollytellingAgent(
           content: finalMessage.content
         });
 
-        // 如果没有工具调用，检查是否完成
+        // 如果没有工具调用，提醒 Claude 调用 finalize_prompt
         if (toolCalls.length === 0) {
-          if (finalMessage.stop_reason === 'end_turn') {
-            console.log('[Scrollytelling Agent] No tool calls and end_turn, ending');
+          console.log('[Scrollytelling Agent] No tool calls in this iteration');
+
+          // 如果还有迭代机会，提醒 Claude 必须调用 finalize_prompt
+          if (state.iteration < state.maxIterations) {
+            // 添加提醒消息
+            messages.push({
+              role: 'user',
+              content: '⚠️ 你没有调用任何工具！请记住：你必须调用 `finalize_prompt` 工具来完成任务。如果你已经完成了规划和搜索，请立即调用 `finalize_prompt`。'
+            });
+
+            await sendEvent({
+              type: 'thought',
+              iteration: state.iteration,
+              content: '⚠️ 提醒 Claude 调用 finalize_prompt...'
+            });
+
+            continue; // 继续下一轮迭代
+          } else {
+            console.log('[Scrollytelling Agent] Max iterations reached without completion');
             break;
           }
-          continue;
         }
 
         // 执行工具调用
@@ -227,6 +243,7 @@ export async function runScrollytellingAgent(
 
         for (const toolCall of toolCalls) {
           const toolStart = Date.now();
+          console.log(`[Scrollytelling Agent] Executing tool: ${toolCall.name}`);
 
           // 发送动作事件
           await sendEvent({
@@ -245,6 +262,7 @@ export async function runScrollytellingAgent(
           );
 
           const toolDuration = Math.round((Date.now() - toolStart) / 1000);
+          console.log(`[Scrollytelling Agent] Tool ${toolCall.name} completed in ${toolDuration}s, success: ${result.success}`);
 
           // 发送观察事件（包含耗时）
           await sendEvent({
@@ -294,14 +312,23 @@ export async function runScrollytellingAgent(
 
     // 检查是否成功完成
     if (!state.isComplete || !state.finalPrompt) {
-      console.error('[Scrollytelling Agent] Agent did not complete successfully');
-
-      // 发送总耗时
       const totalDuration = Math.round((Date.now() - startTime) / 1000);
+
+      console.error('[Scrollytelling Agent] Agent did not complete successfully');
+      console.error('[Scrollytelling Agent] State:', {
+        isComplete: state.isComplete,
+        hasFinalPrompt: !!state.finalPrompt,
+        iteration: state.iteration,
+        maxIterations: state.maxIterations,
+        hasStructurePlan: !!state.structurePlan,
+        materialsCount: state.collectedMaterials.length
+      });
+
+      // 发送详细错误信息
       await sendEvent({
         type: 'thought',
         iteration: state.iteration,
-        content: `⚠️ Agent 未能完成，总耗时 ${totalDuration} 秒`
+        content: `⚠️ Agent 未能完成（迭代 ${state.iteration}/${state.maxIterations}），总耗时 ${totalDuration} 秒。请检查是否调用了 finalize_prompt。`
       });
 
       return null;

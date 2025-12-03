@@ -29,78 +29,39 @@ type ToolHandler = (
   sendEvent: (event: ScrollytellingStreamEvent) => Promise<void>
 ) => Promise<ToolResult>;
 
-// 1. 分析图片
+// 1. 分析图片 - 优化版：直接使用图片提示词，无需调用 Vision API
 export const handleAnalyzeImages: ToolHandler = async (params, state, sendEvent) => {
   const { focus_areas = ['主题', '元素', '色调', '情感'] } = params;
-  const anthropic = getAnthropicClient();
 
   const analysisResults: string[] = [];
 
+  // 直接使用图片的提示词作为分析结果，无需调用 Vision API
   for (let i = 0; i < state.images.length; i++) {
     const image = state.images[i];
 
-    try {
-      // 使用 Claude Vision 分析图片
-      const response = await anthropic.messages.create({
-        model: process.env.CLAUDE_LIGHT_MODEL || 'claude-sonnet-4-5-20250929',
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: {
-                  type: 'url',
-                  url: image.url
-                }
-              },
-              {
-                type: 'text',
-                text: `请分析这张图片，关注以下方面：${focus_areas.join('、')}。
+    // 使用用户提供的提示词作为分析基础
+    const analysis = image.prompt
+      ? `用户描述：${image.prompt}\n关注方向：${focus_areas.join('、')}`
+      : `图片 ${i + 1}（无描述）\n关注方向：${focus_areas.join('、')}`;
 
-${image.prompt ? `用户描述：${image.prompt}` : ''}
+    // 更新状态
+    state.images[i].analysis = analysis;
+    analysisResults.push(`【图片${i + 1}】\n${analysis}`);
 
-请提供：
-1. 图片主题和核心内容
-2. 关键视觉元素
-3. 色调和情感基调
-4. 适合的数据可视化方向（如果相关的话）
-5. 建议搜索的关键词（用于扩展内容）
-
-以简洁的方式回答，方便后续整合。`
-              }
-            ]
-          }
-        ]
-      });
-
-      const analysis = response.content[0].type === 'text'
-        ? response.content[0].text
-        : '';
-
-      // 更新状态
-      state.images[i].analysis = analysis;
-      analysisResults.push(`【图片${i + 1}】\n${analysis}`);
-
-      // 发送事件
-      await sendEvent({
-        type: 'image_analysis',
-        index: i,
-        analysis: analysis.slice(0, 200) + '...'
-      });
-
-    } catch (error) {
-      console.error(`[Scrollytelling Agent] Image analysis error for image ${i}:`, error);
-      analysisResults.push(`【图片${i + 1}】分析失败`);
-    }
+    // 发送事件
+    await sendEvent({
+      type: 'image_analysis',
+      index: i,
+      analysis: analysis.slice(0, 200) + (analysis.length > 200 ? '...' : '')
+    });
   }
 
   return {
     success: true,
     data: {
       analysisCount: analysisResults.length,
-      analyses: analysisResults
+      analyses: analysisResults,
+      note: '已使用图片提示词作为分析基础，无需额外 Vision API 调用'
     }
   };
 };
