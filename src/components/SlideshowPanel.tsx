@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { 
-  Film, Loader2, Check, Video, Share2, Play, Download, X, Mic2 
+import {
+  Film, Loader2, Check, Video, Share2, Play, Download, X, Mic2, Globe, Sparkles
 } from "lucide-react";
 
 interface SlideshowPanelProps {
@@ -29,6 +29,13 @@ interface SlideshowPanelProps {
   onPublish: () => void;
   onExit: () => void;
   onClearSelections: () => void;
+  // 新增：一镜到底网页生成
+  enableScrollytelling: boolean;
+  setEnableScrollytelling: (enable: boolean) => void;
+  scrollytellingTheme: string;
+  setScrollytellingTheme: (theme: string) => void;
+  onGenerateScrollytelling: () => void;
+  scrollytellingGenerating: boolean;
 }
 
 const NARRATION_SPEAKERS = [
@@ -70,6 +77,13 @@ export const SlideshowPanel = React.memo(({
   onPublish,
   onExit,
   onClearSelections,
+  // 新增
+  enableScrollytelling,
+  setEnableScrollytelling,
+  scrollytellingTheme,
+  setScrollytellingTheme,
+  onGenerateScrollytelling,
+  scrollytellingGenerating,
 }: SlideshowPanelProps) => {
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-4 min-w-[420px] max-w-[480px] animate-slide-up">
@@ -208,29 +222,86 @@ export const SlideshowPanel = React.memo(({
             className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-transparent text-sm focus:ring-2 focus:ring-green-500 outline-none transition-shadow"
           />
 
-          {/* 生成讲解视频勾选框 */}
-          <label className="flex items-center gap-2 cursor-pointer group select-none">
-            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-              enableNarration
-                ? 'bg-purple-500 border-purple-500'
-                : 'border-neutral-300 dark:border-neutral-600 group-hover:border-purple-400'
+          {/* 生成模式选择 */}
+          <div className="flex gap-2">
+            {/* 生成讲解视频选项 */}
+            <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+              enableNarration && !enableScrollytelling
+                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                : 'border-neutral-200 dark:border-neutral-700 hover:border-purple-300 dark:hover:border-purple-700'
             }`}>
-              {enableNarration && <Check className="w-3.5 h-3.5 text-white" />}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Video className="w-4 h-4 text-purple-500" />
-              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">生成讲解视频</span>
-            </div>
-            <input
-              type="checkbox"
-              checked={enableNarration}
-              onChange={(e) => setEnableNarration(e.target.checked)}
-              className="sr-only"
-            />
-          </label>
+              <input
+                type="radio"
+                name="generateMode"
+                checked={enableNarration && !enableScrollytelling}
+                onChange={() => {
+                  setEnableNarration(true);
+                  setEnableScrollytelling(false);
+                }}
+                className="sr-only"
+              />
+              <Video className={`w-5 h-5 ${enableNarration && !enableScrollytelling ? 'text-purple-500' : 'text-neutral-400'}`} />
+              <div className="flex flex-col">
+                <span className={`text-sm font-medium ${enableNarration && !enableScrollytelling ? 'text-purple-700 dark:text-purple-300' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                  讲解视频
+                </span>
+                <span className="text-[10px] text-neutral-400">AI 配音</span>
+              </div>
+            </label>
+
+            {/* 生成一镜到底网页选项 */}
+            <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+              enableScrollytelling
+                ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20'
+                : 'border-neutral-200 dark:border-neutral-700 hover:border-cyan-300 dark:hover:border-cyan-700'
+            }`}>
+              <input
+                type="radio"
+                name="generateMode"
+                checked={enableScrollytelling}
+                onChange={() => {
+                  setEnableScrollytelling(true);
+                  setEnableNarration(false);
+                }}
+                className="sr-only"
+              />
+              <Globe className={`w-5 h-5 ${enableScrollytelling ? 'text-cyan-500' : 'text-neutral-400'}`} />
+              <div className="flex flex-col">
+                <span className={`text-sm font-medium ${enableScrollytelling ? 'text-cyan-700 dark:text-cyan-300' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                  一镜到底
+                </span>
+                <span className="text-[10px] text-neutral-400">沉浸网页</span>
+              </div>
+            </label>
+
+            {/* 仅发布选项 */}
+            <label className={`flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+              !enableNarration && !enableScrollytelling
+                ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                : 'border-neutral-200 dark:border-neutral-700 hover:border-green-300 dark:hover:border-green-700'
+            }`}>
+              <input
+                type="radio"
+                name="generateMode"
+                checked={!enableNarration && !enableScrollytelling}
+                onChange={() => {
+                  setEnableNarration(false);
+                  setEnableScrollytelling(false);
+                }}
+                className="sr-only"
+              />
+              <Share2 className={`w-5 h-5 ${!enableNarration && !enableScrollytelling ? 'text-green-500' : 'text-neutral-400'}`} />
+              <div className="flex flex-col">
+                <span className={`text-sm font-medium ${!enableNarration && !enableScrollytelling ? 'text-green-700 dark:text-green-300' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                  仅发布
+                </span>
+                <span className="text-[10px] text-neutral-400">幻灯片</span>
+              </div>
+            </label>
+          </div>
 
           {/* 讲解视频配置区 */}
-          {enableNarration && (
+          {enableNarration && !enableScrollytelling && (
             <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl space-y-3 border border-purple-200 dark:border-purple-800 animate-fade-in">
               {/* 发音人选择 */}
               <div className="space-y-1">
@@ -308,33 +379,85 @@ export const SlideshowPanel = React.memo(({
             </div>
           )}
 
+          {/* 一镜到底网页配置区 */}
+          {enableScrollytelling && (
+            <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-xl space-y-3 border border-cyan-200 dark:border-cyan-800 animate-fade-in">
+              <div className="flex items-center gap-2 text-xs text-cyan-600 dark:text-cyan-400">
+                <Sparkles className="w-4 h-4" />
+                <span>AI 将分析图片内容，自动生成沉浸式滚动网页</span>
+              </div>
+
+              {/* 主题/风格输入 */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  主题风格 <span className="text-neutral-400">(选填，AI会自动判断)</span>
+                </label>
+                <input
+                  type="text"
+                  value={scrollytellingTheme}
+                  onChange={(e) => setScrollytellingTheme(e.target.value)}
+                  placeholder="如：科技感、优雅艺术、活泼消费品..."
+                  className="w-full px-3 py-2 rounded-lg border border-cyan-200 dark:border-cyan-700 bg-white dark:bg-neutral-800 text-sm focus:ring-2 focus:ring-cyan-500 outline-none placeholder:text-neutral-400"
+                />
+              </div>
+
+              <div className="text-[10px] text-neutral-400 space-y-1">
+                <p>• 使用 GSAP + Lenis 实现平滑滚动动画</p>
+                <p>• 每张图片将成为一个独立的"分镜"场景</p>
+                <p>• 支持视差、淡入淡出、缩放等效果</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <button
-              onClick={onPublish}
-              disabled={isPublishing || slideshowSelections.size === 0 || !slideshowTitle.trim()}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-medium transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none ${
-                enableNarration
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 hover:shadow-purple-500/30'
-                  : 'bg-green-500 hover:bg-green-600 hover:shadow-green-500/30'
-              }`}
-            >
-              {isPublishing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  发布中...
-                </>
-              ) : enableNarration ? (
-                <>
-                  <Video className="w-4 h-4" />
-                  发布并生成视频
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-4 h-4" />
-                  发布
-                </>
-              )}
-            </button>
+            {enableScrollytelling ? (
+              // 一镜到底网页生成按钮
+              <button
+                onClick={onGenerateScrollytelling}
+                disabled={scrollytellingGenerating || slideshowSelections.size === 0}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-medium transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 hover:shadow-cyan-500/30"
+              >
+                {scrollytellingGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    生成中...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-4 h-4" />
+                    生成一镜到底网页
+                  </>
+                )}
+              </button>
+            ) : (
+              // 原有的发布按钮
+              <button
+                onClick={onPublish}
+                disabled={isPublishing || slideshowSelections.size === 0 || !slideshowTitle.trim()}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-medium transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none ${
+                  enableNarration
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 hover:shadow-purple-500/30'
+                    : 'bg-green-500 hover:bg-green-600 hover:shadow-green-500/30'
+                }`}
+              >
+                {isPublishing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    发布中...
+                  </>
+                ) : enableNarration ? (
+                  <>
+                    <Video className="w-4 h-4" />
+                    发布并生成视频
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-4 h-4" />
+                    发布
+                  </>
+                )}
+              </button>
+            )}
             <button
               onClick={onClearSelections}
               className="px-4 py-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-xl text-sm font-medium hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"

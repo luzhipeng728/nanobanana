@@ -50,6 +50,7 @@ import PageViewCounter from "./PageViewCounter";
 import { SlideshowPanel } from "./SlideshowPanel";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { AuthModal } from "./AuthModal";
+import ScrollytellingPreview from "./scrollytelling/ScrollytellingPreview";
 
 const nodeTypes = {
   imageGen: ImageGenNode as any,
@@ -124,6 +125,14 @@ export default function InfiniteCanvas() {
     error?: string;
   } | null>(null);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+
+  // 一镜到底相关状态
+  const [enableScrollytelling, setEnableScrollytelling] = useState(false);
+  const [scrollytellingTheme, setScrollytellingTheme] = useState("");
+  const [scrollytellingGenerating, setScrollytellingGenerating] = useState(false);
+  const [showScrollytellingPreview, setShowScrollytellingPreview] = useState(false);
+  const [scrollytellingImages, setScrollytellingImages] = useState<string[]>([]);
+  const [scrollytellingPrompts, setScrollytellingPrompts] = useState<string[]>([]);
 
   // Image Upload Placement State
   const [isPlacingImage, setIsPlacingImage] = useState(false);
@@ -908,7 +917,48 @@ export default function InfiniteCanvas() {
     setVideoGenerating(false);
     setVideoProgress(null);
     setGeneratedVideoUrl(null);
+    // 重置一镜到底状态
+    setEnableScrollytelling(false);
+    setScrollytellingTheme("");
+    setScrollytellingGenerating(false);
   }, []);
+
+  // 生成一镜到底网页
+  const handleGenerateScrollytelling = useCallback(() => {
+    if (slideshowSelections.size === 0) {
+      alert("请至少选择一张图片");
+      return;
+    }
+
+    // 按顺序收集选中图片的 URL 和 prompt
+    const orderedNodeIds = Array.from(slideshowSelections.entries())
+      .sort((a, b) => a[1] - b[1])
+      .map(([nodeId]) => nodeId);
+
+    const imageUrls: string[] = [];
+    const imagePrompts: string[] = [];
+    const currentNodes = nodesRef.current;
+
+    for (const nodeId of orderedNodeIds) {
+      const node = currentNodes.find(n => n.id === nodeId);
+      if (node && node.data?.imageUrl && typeof node.data.imageUrl === 'string') {
+        imageUrls.push(node.data.imageUrl as string);
+        // 收集图片的 prompt 描述
+        imagePrompts.push((node.data.prompt as string) || '');
+      }
+    }
+
+    if (imageUrls.length === 0) {
+      alert("选中的节点没有有效的图片");
+      return;
+    }
+
+    // 设置图片、prompts 并打开预览
+    setScrollytellingImages(imageUrls);
+    setScrollytellingPrompts(imagePrompts);
+    setShowScrollytellingPreview(true);
+    setScrollytellingGenerating(true);
+  }, [slideshowSelections]);
 
   const publishSlideshow = useCallback(async () => {
     if (slideshowSelections.size === 0) {
@@ -1138,6 +1188,13 @@ export default function InfiniteCanvas() {
           onPublish={publishSlideshow}
           onExit={exitSlideshowMode}
           onClearSelections={() => setSlideshowSelections(new Map())}
+          // 一镜到底相关 props
+          enableScrollytelling={enableScrollytelling}
+          setEnableScrollytelling={setEnableScrollytelling}
+          scrollytellingTheme={scrollytellingTheme}
+          setScrollytellingTheme={setScrollytellingTheme}
+          onGenerateScrollytelling={handleGenerateScrollytelling}
+          scrollytellingGenerating={scrollytellingGenerating}
         />
       )}
 
@@ -1320,6 +1377,19 @@ export default function InfiniteCanvas() {
           </div>
         </div>
       )}
+
+      {/* 一镜到底网页预览 */}
+      <ScrollytellingPreview
+        isOpen={showScrollytellingPreview}
+        onClose={() => {
+          setShowScrollytellingPreview(false);
+          setScrollytellingGenerating(false);
+        }}
+        images={scrollytellingImages}
+        prompts={scrollytellingPrompts}
+        title={slideshowTitle}
+        initialTheme={scrollytellingTheme}
+      />
 
       {/* 右下角访问计数 */}
       <div className="fixed bottom-4 right-4 bg-white/80 dark:bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-neutral-200/50 dark:border-white/10 z-50">

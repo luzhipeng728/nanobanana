@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, PlayCircle, Clock, Search, Sparkles, Image as ImageIcon, Loader2, Eye, Heart } from "lucide-react";
+import { ArrowLeft, PlayCircle, Clock, Search, Sparkles, Image as ImageIcon, Loader2, Eye, Heart, Globe, Film } from "lucide-react";
 import PageViewCounter from "@/components/PageViewCounter";
 import { cn } from "@/lib/utils";
 
@@ -20,83 +20,91 @@ function getCoverUrl(url: string): string {
   return url;
 }
 
-interface SlideItem {
+interface GalleryItem {
   id: string;
   title: string;
   cover: string | null;
-  imageCount: number;
+  type: 'slideshow' | 'scrollytelling';
+  imageCount?: number;
   createdAt: string;
-  needsCover?: boolean;
   videoUrl?: string | null;
-  views?: number;
-  likes?: number;
+  htmlUrl?: string | null;
+  views: number;
+  likes: number;
 }
 
 interface GalleryClientProps {
-  initialSlides: SlideItem[];
+  initialSlides: GalleryItem[];
 }
 
 type SortType = 'featured' | 'latest' | 'popular';
+type FilterType = 'all' | 'slideshow' | 'scrollytelling';
 
 export default function GalleryClient({ initialSlides }: GalleryClientProps) {
-  const [slides, setSlides] = useState<SlideItem[]>(initialSlides);
+  const [slides, setSlides] = useState<GalleryItem[]>(initialSlides);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [currentSort, setCurrentSort] = useState<SortType>('latest');
+  const [currentFilter, setCurrentFilter] = useState<FilterType>('all');
+  const [counts, setCounts] = useState({ slideshow: 0, scrollytelling: 0 });
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  // 切换排序
-  const handleSortChange = async (sort: SortType) => {
-    if (sort === currentSort || loading) return;
-    
-    setCurrentSort(sort);
+  // 加载数据
+  const loadData = async (sort: SortType, filter: FilterType, pageNum: number, append = false) => {
     setLoading(true);
-    setPage(1);
-    setSlides([]); // 清空列表
-    setHasMore(true);
-
     try {
-      // 重新加载第一页
-      const res = await fetch(`/api/slides?page=1&limit=20&sort=${sort}`);
+      const res = await fetch(`/api/slides?page=${pageNum}&limit=20&sort=${sort}&type=${filter}`);
       const data = await res.json();
 
       if (data.items && data.items.length > 0) {
-        setSlides(data.items);
-        setHasMore(1 < data.totalPages);
+        if (append) {
+          setSlides((prev) => [...prev, ...data.items]);
+        } else {
+          setSlides(data.items);
+        }
+        setHasMore(pageNum < data.totalPages);
+        if (data.counts) {
+          setCounts(data.counts);
+        }
       } else {
+        if (!append) setSlides([]);
         setHasMore(false);
       }
     } catch (error) {
-      console.error("Failed to change sort:", error);
+      console.error("Failed to load data:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  // 切换排序
+  const handleSortChange = async (sort: SortType) => {
+    if (sort === currentSort || loading) return;
+    setCurrentSort(sort);
+    setPage(1);
+    setSlides([]);
+    setHasMore(true);
+    await loadData(sort, currentFilter, 1);
+  };
+
+  // 切换筛选
+  const handleFilterChange = async (filter: FilterType) => {
+    if (filter === currentFilter || loading) return;
+    setCurrentFilter(filter);
+    setPage(1);
+    setSlides([]);
+    setHasMore(true);
+    await loadData(currentSort, filter, 1);
+  };
+
   // 加载更多
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
-
-    setLoading(true);
-    try {
-      const nextPage = page + 1;
-      const res = await fetch(`/api/slides?page=${nextPage}&limit=20&sort=${currentSort}`);
-      const data = await res.json();
-
-      if (data.items && data.items.length > 0) {
-        setSlides((prev) => [...prev, ...data.items]);
-        setPage(nextPage);
-        setHasMore(nextPage < data.totalPages);
-      } else {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error("Failed to load more slides:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [loading, hasMore, page, currentSort]);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    await loadData(currentSort, currentFilter, nextPage, true);
+  }, [loading, hasMore, page, currentSort, currentFilter]);
 
   // Intersection Observer for Infinite Scroll
   useEffect(() => {
@@ -131,7 +139,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
     if (days === 0) return "今天";
     if (days === 1) return "昨天";
     if (days < 7) return `${days}天前`;
-    
+
     return date.toLocaleDateString("zh-CN", {
       year: "numeric",
       month: "numeric",
@@ -146,6 +154,14 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
       return (num / 10000).toFixed(1) + 'w';
     }
     return num;
+  };
+
+  // 获取项目链接
+  const getItemLink = (item: GalleryItem) => {
+    if (item.type === 'scrollytelling') {
+      return `/scrollytelling/${item.id}`;
+    }
+    return `/slides/${item.id}`;
   };
 
   return (
@@ -163,53 +179,88 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                 <span className="text-[14px] font-medium">返回画布</span>
               </Link>
             </div>
-            
+
             <div className="hidden md:flex items-center gap-6">
-               <nav className="flex gap-1 bg-neutral-100/50 dark:bg-neutral-800/50 p-1 rounded-full border border-neutral-200/50 dark:border-white/5">
-                 <button 
-                   onClick={() => handleSortChange('featured')}
-                   className={cn(
-                     "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200",
-                     currentSort === 'featured' 
-                       ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm" 
-                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
-                   )}
-                 >
-                   精选推荐
-                 </button>
-                 <button 
-                   onClick={() => handleSortChange('latest')}
-                   className={cn(
-                     "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200",
-                     currentSort === 'latest' 
-                       ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm" 
-                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
-                   )}
-                 >
-                   最新发布
-                 </button>
-                 <button 
-                   onClick={() => handleSortChange('popular')}
-                   className={cn(
-                     "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200",
-                     currentSort === 'popular' 
-                       ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm" 
-                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
-                   )}
-                 >
-                   热门榜单
-                 </button>
-               </nav>
-               <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700"></div>
-               <div className="flex items-center gap-2 text-neutral-400 bg-neutral-100/50 dark:bg-neutral-800/50 px-3 py-1.5 rounded-full border border-transparent focus-within:border-blue-500/30 focus-within:bg-white dark:focus-within:bg-black transition-all w-48">
-                 <Search className="w-4 h-4" />
-                 <input 
-                    type="text" 
-                    placeholder="搜索灵感..." 
-                    className="bg-transparent border-none outline-none text-[13px] w-full placeholder:text-neutral-400 text-neutral-900 dark:text-white"
-                    disabled
-                 />
-               </div>
+              {/* 排序切换 */}
+              <nav className="flex gap-1 bg-neutral-100/50 dark:bg-neutral-800/50 p-1 rounded-full border border-neutral-200/50 dark:border-white/5">
+                <button
+                  onClick={() => handleSortChange('featured')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200",
+                    currentSort === 'featured'
+                      ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm"
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                  )}
+                >
+                  精选推荐
+                </button>
+                <button
+                  onClick={() => handleSortChange('latest')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200",
+                    currentSort === 'latest'
+                      ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm"
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                  )}
+                >
+                  最新发布
+                </button>
+                <button
+                  onClick={() => handleSortChange('popular')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200",
+                    currentSort === 'popular'
+                      ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm"
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                  )}
+                >
+                  热门榜单
+                </button>
+              </nav>
+
+              <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700"></div>
+
+              {/* 类型筛选 */}
+              <nav className="flex gap-1 bg-neutral-100/50 dark:bg-neutral-800/50 p-1 rounded-full border border-neutral-200/50 dark:border-white/5">
+                <button
+                  onClick={() => handleFilterChange('all')}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 flex items-center gap-1.5",
+                    currentFilter === 'all'
+                      ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm"
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                  )}
+                >
+                  全部
+                  <span className="text-[10px] opacity-60">({counts.slideshow + counts.scrollytelling})</span>
+                </button>
+                <button
+                  onClick={() => handleFilterChange('slideshow')}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 flex items-center gap-1.5",
+                    currentFilter === 'slideshow'
+                      ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm"
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                  )}
+                >
+                  <Film className="w-3.5 h-3.5" />
+                  幻灯片
+                  <span className="text-[10px] opacity-60">({counts.slideshow})</span>
+                </button>
+                <button
+                  onClick={() => handleFilterChange('scrollytelling')}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 flex items-center gap-1.5",
+                    currentFilter === 'scrollytelling'
+                      ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm"
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                  )}
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  一镜到底
+                  <span className="text-[10px] opacity-60">({counts.scrollytelling})</span>
+                </button>
+              </nav>
             </div>
           </div>
         </div>
@@ -217,22 +268,22 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
 
       {/* Hero Section */}
       <div className="relative pt-20 pb-16 px-6 text-center bg-white dark:bg-black border-b border-neutral-100 dark:border-neutral-900 overflow-hidden">
-         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-purple-100/50 to-transparent dark:from-purple-900/20 blur-3xl pointer-events-none" />
-         
-         <div className="relative z-10 max-w-4xl mx-auto">
-           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 border border-purple-100 dark:border-purple-800 mb-6 animate-fade-in">
-             <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-             <span className="text-xs font-bold text-purple-700 dark:text-purple-300 tracking-wide uppercase">NanoBanana 创意社区</span>
-           </div>
-           
-           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white mb-6 leading-tight">
-             发现无限创意灵感
-           </h2>
-           <p className="text-lg text-neutral-500 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed font-light">
-             探索由社区创作者生成的精彩幻灯片作品。<br className="hidden sm:block"/>
-             从商业演示到创意故事，每一个像素都源于 AI 的想象力。
-           </p>
-         </div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-purple-100/50 to-transparent dark:from-purple-900/20 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 border border-purple-100 dark:border-purple-800 mb-6 animate-fade-in">
+            <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <span className="text-xs font-bold text-purple-700 dark:text-purple-300 tracking-wide uppercase">NanoBanana 创意社区</span>
+          </div>
+
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white mb-6 leading-tight">
+            发现无限创意灵感
+          </h2>
+          <p className="text-lg text-neutral-500 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed font-light">
+            探索由社区创作者生成的精彩作品。<br className="hidden sm:block" />
+            从精美幻灯片到沉浸式一镜到底网页，每一个像素都源于 AI 的想象力。
+          </p>
+        </div>
       </div>
 
       {/* Gallery Grid */}
@@ -260,8 +311,8 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8">
               {slides.map((slide) => (
                 <Link
-                  key={slide.id}
-                  href={`/slides/${slide.id}`}
+                  key={`${slide.type}-${slide.id}`}
+                  href={getItemLink(slide)}
                   className="group flex flex-col gap-0 bg-white dark:bg-[#111] rounded-[24px] overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_-12px_rgba(255,255,255,0.05)] border border-neutral-200/60 dark:border-neutral-800"
                 >
                   {/* Card Image Container */}
@@ -274,19 +325,50 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                       />
                     ) : (
                       <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-50 dark:bg-neutral-900 p-8 text-center">
-                         <div className="max-w-[80%] space-y-3">
-                            <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto">
+                        <div className="max-w-[80%] space-y-3">
+                          <div className={cn(
+                            "w-12 h-12 rounded-xl flex items-center justify-center mx-auto",
+                            slide.type === 'scrollytelling'
+                              ? "bg-cyan-100 dark:bg-cyan-900/30"
+                              : "bg-purple-100 dark:bg-purple-900/30"
+                          )}>
+                            {slide.type === 'scrollytelling' ? (
+                              <Globe className="w-6 h-6 text-cyan-500" />
+                            ) : (
                               <Sparkles className="w-6 h-6 text-purple-500" />
-                            </div>
-                            <h3 className="text-lg font-bold text-neutral-400 dark:text-neutral-600 leading-tight line-clamp-2">
-                              {slide.title}
-                            </h3>
-                         </div>
+                            )}
+                          </div>
+                          <h3 className="text-lg font-bold text-neutral-400 dark:text-neutral-600 leading-tight line-clamp-2">
+                            {slide.title}
+                          </h3>
+                        </div>
                       </div>
                     )}
 
-                    {/* Video Tag */}
-                    {slide.videoUrl && (
+                    {/* Type Tag */}
+                    <div className="absolute top-4 left-4">
+                      <span className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md rounded-full border shadow-sm",
+                        slide.type === 'scrollytelling'
+                          ? "bg-cyan-500/70 border-cyan-400/30"
+                          : "bg-purple-500/70 border-purple-400/30"
+                      )}>
+                        {slide.type === 'scrollytelling' ? (
+                          <>
+                            <Globe className="w-3 h-3" />
+                            网页
+                          </>
+                        ) : (
+                          <>
+                            <Film className="w-3 h-3" />
+                            幻灯片
+                          </>
+                        )}
+                      </span>
+                    </div>
+
+                    {/* Video Tag (for slideshow with video) */}
+                    {slide.type === 'slideshow' && slide.videoUrl && (
                       <div className="absolute top-4 right-4">
                         <span className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white bg-black/60 backdrop-blur-md rounded-full border border-white/10 shadow-sm">
                           <PlayCircle className="w-3 h-3 fill-current" />
@@ -294,23 +376,37 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                         </span>
                       </div>
                     )}
-                    
+
                     {/* Hover Overlay */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100 bg-black/10">
-                       <div className="flex items-center justify-center w-16 h-16 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-xl text-neutral-900 dark:text-white shadow-2xl scale-90 group-hover:scale-100 transition-transform duration-300">
+                      <div className={cn(
+                        "flex items-center justify-center w-16 h-16 rounded-full backdrop-blur-xl shadow-2xl scale-90 group-hover:scale-100 transition-transform duration-300",
+                        slide.type === 'scrollytelling'
+                          ? "bg-cyan-500/90 text-white"
+                          : "bg-white/90 dark:bg-black/80 text-neutral-900 dark:text-white"
+                      )}>
+                        {slide.type === 'scrollytelling' ? (
+                          <Globe className="w-8 h-8" />
+                        ) : (
                           <PlayCircle className="w-8 h-8 fill-current opacity-90" />
-                       </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* Card Info Content */}
                   <div className="flex flex-col justify-between flex-1 p-5 pb-6">
                     <div className="space-y-2.5">
-                      <h3 className="text-[17px] font-bold text-neutral-900 dark:text-white leading-snug line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                      <h3 className={cn(
+                        "text-[17px] font-bold text-neutral-900 dark:text-white leading-snug line-clamp-2 transition-colors",
+                        slide.type === 'scrollytelling'
+                          ? "group-hover:text-cyan-600 dark:group-hover:text-cyan-400"
+                          : "group-hover:text-purple-600 dark:group-hover:text-purple-400"
+                      )}>
                         {slide.title}
                       </h3>
                     </div>
-                    
+
                     <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-[12px] font-medium text-neutral-400 dark:text-neutral-500">
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1" title="浏览量">
@@ -323,10 +419,12 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-1">
-                          <ImageIcon className="w-3.5 h-3.5" />
-                          {slide.imageCount}页
-                        </span>
+                        {slide.imageCount && (
+                          <span className="flex items-center gap-1">
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            {slide.imageCount}页
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
                           {formatDate(slide.createdAt)}
@@ -340,8 +438,8 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
 
             {/* Infinite Scroll Loader */}
             {hasMore && (
-              <div 
-                ref={observerTarget} 
+              <div
+                ref={observerTarget}
                 className="flex items-center justify-center mt-20 mb-12 h-20"
               >
                 {loading && (
@@ -352,7 +450,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                 )}
               </div>
             )}
-            
+
             {!hasMore && slides.length > 0 && (
               <div className="text-center mt-20 mb-12 text-neutral-400 dark:text-neutral-600 text-sm">
                 已经到底啦 ~

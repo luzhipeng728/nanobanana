@@ -38,6 +38,7 @@ async function getInitialSlides() {
         id: s.id,
         title: s.title,
         cover: s.cover || images[0] || null, // 优先使用专属封面
+        type: 'slideshow' as const, // 类型标识
         imageCount: images.length,
         createdAt: s.createdAt.toISOString(),
         needsCover: !s.cover, // 没有专属封面就需要生成

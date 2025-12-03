@@ -271,3 +271,38 @@ model TTSTask {
   @@index([status])
   @@index([deletedAt])
 }
+
+// 一镜到底沉浸式网页
+model Scrollytelling {
+  id        String   @id @default(uuid())   // 同时作为分享链接的 slug
+  title     String                          // 网页标题
+  htmlUrl   String   @db.Text               // HTML 文件在 R2 的 URL
+  images    String   @db.LongText           // JSON 数组：使用的图片 URL
+  theme     String?                         // 主题风格描述
+  cover     String?                         // 封面图 URL（第一张图片）
+  userId    String?                         // 创建者（可选）
+  createdAt DateTime @default(now())
+
+  // 统计数据
+  views     Int      @default(0)            // 浏览次数
+  likes     Int      @default(0)            // 点赞次数
+
+  scrollytellingLikes ScrollytellingLike[]  // 点赞记录
+
+  @@index([userId])
+  @@index([views])
+  @@index([likes])
+  @@index([createdAt])
+}
+
+// Scrollytelling 点赞记录
+model ScrollytellingLike {
+  id               String         @id @default(uuid())
+  scrollytellingId String
+  scrollytelling   Scrollytelling @relation(fields: [scrollytellingId], references: [id])
+  userIdentifier   String         // 用户标识（浏览器生成的 UUID）
+  createdAt        DateTime       @default(now())
+
+  @@unique([scrollytellingId, userIdentifier])
+  @@index([userIdentifier])
+}
