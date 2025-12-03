@@ -741,22 +741,27 @@ ${state.collectedMaterials.join('\n\n')}
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 \`\`\`
 
-3. **GSAP + Lenis 初始化（⚠️ 必须！）**:
+3. **⚠️ GSAP + Lenis 初始化（顺序严格不可变！否则滚动失效！）**:
 \`\`\`javascript
-// 注册 GSAP 插件
+// 【第1步】必须先注册 GSAP 插件！
 gsap.registerPlugin(ScrollTrigger);
 
-// 初始化 Lenis 平滑滚动（必须！）
-const lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
+// 【第2步】再初始化 Lenis
+const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, wheelMultiplier: 1 });
+
+// 【第3步】连接 Lenis 与 ScrollTrigger
 lenis.on('scroll', ScrollTrigger.update);
 gsap.ticker.add((time) => lenis.raf(time * 1000));
 gsap.ticker.lagSmoothing(0);
 
+// 【第4步】启动 RAF 循环（必须！）
 function raf(time) {
   lenis.raf(time);
   requestAnimationFrame(raf);
 }
 requestAnimationFrame(raf);
+
+// 以上代码必须放在所有动画代码之前！
 \`\`\`
 
 4. **全局样式（必须完整添加！）**:

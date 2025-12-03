@@ -995,26 +995,44 @@ export async function generateHtmlWithGemini(
 </head>
 \`\`\`
 
-**在 \`<script>\` 初始化中必须包含：**
+**⚠️ 在 \`</body>\` 前的 \`<script>\` 中必须包含（顺序严格！）：**
+
 \`\`\`javascript
-// 注册 GSAP 插件
+// ============================================
+// ⚠️ 初始化顺序严格不可变！否则滚动失效！
+// ============================================
+
+// 【第1步】必须先注册 GSAP 插件！
 gsap.registerPlugin(ScrollTrigger);
 
-// 初始化 Lenis 平滑滚动（必须！）
+// 【第2步】再初始化 Lenis 平滑滚动
 const lenis = new Lenis({
   lerp: 0.1,
-  smoothWheel: true
+  smoothWheel: true,
+  wheelMultiplier: 1
 });
+
+// 【第3步】连接 Lenis 与 ScrollTrigger
 lenis.on('scroll', ScrollTrigger.update);
 gsap.ticker.add((time) => lenis.raf(time * 1000));
 gsap.ticker.lagSmoothing(0);
 
+// 【第4步】启动 RAF 循环
 function raf(time) {
   lenis.raf(time);
   requestAnimationFrame(raf);
 }
 requestAnimationFrame(raf);
+
+// ============================================
+// 以上初始化代码必须放在所有动画代码之前！
+// ============================================
 \`\`\`
+
+**❌ 常见错误（会导致滚动失效）：**
+- Lenis 初始化在 gsap.registerPlugin 之前
+- 缺少 requestAnimationFrame 循环
+- 把初始化代码放在动画代码之后
 
 ## 🎬 必须使用的 GSAP 动效
 
