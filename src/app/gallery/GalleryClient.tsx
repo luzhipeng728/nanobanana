@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, PlayCircle, Clock, ChevronRight, Search, Sparkles, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, PlayCircle, Clock, Search, Sparkles, Image as ImageIcon, Loader2 } from "lucide-react";
 import PageViewCounter from "@/components/PageViewCounter";
 import { cn } from "@/lib/utils";
 
@@ -40,9 +40,10 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   // 加载更多
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
 
     setLoading(true);
@@ -63,7 +64,30 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading, hasMore, page]);
+
+  // Intersection Observer for Infinite Scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" } // 提前 100px 触发
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [loadMore, hasMore, loading]);
 
   // 格式化日期 - 更人性化的中文格式
   const formatDate = (dateStr: string) => {
@@ -245,26 +269,24 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
               ))}
             </div>
 
-            {/* Load More */}
+            {/* Infinite Scroll Loader */}
             {hasMore && (
-              <div className="text-center mt-20 mb-12">
-                <button
-                  onClick={loadMore}
-                  disabled={loading}
-                  className="group relative inline-flex items-center justify-center px-8 py-3.5 text-[14px] font-semibold text-white transition-all duration-200 bg-neutral-900 dark:bg-white dark:text-black rounded-full hover:bg-neutral-800 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      正在加载精彩内容...
-                    </>
-                  ) : (
-                    <>
-                      浏览更多作品
-                      <ChevronRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
-                    </>
-                  )}
-                </button>
+              <div 
+                ref={observerTarget} 
+                className="flex items-center justify-center mt-20 mb-12 h-20"
+              >
+                {loading && (
+                  <div className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="text-sm font-medium">加载更多精彩...</span>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {!hasMore && slides.length > 0 && (
+              <div className="text-center mt-20 mb-12 text-neutral-400 dark:text-neutral-600 text-sm">
+                已经到底啦 ~
               </div>
             )}
           </>
