@@ -966,9 +966,55 @@ export async function generateHtmlWithGemini(
 ## 🎯 核心技术栈
 
 - **GSAP 3.x + ScrollTrigger** - 核心动画引擎
+- **Lenis** - 平滑滚动
 - **CSS3 动画** - 辅助效果
 - **ECharts** - 数据可视化（必须用于展示研究数据）
 - **原生 JavaScript** - 交互逻辑
+
+## ⚠️ 必须包含的 CDN（缺一不可！）
+
+在 \`<head>\` 中必须包含以下 CDN 脚本，**顺序不可变**：
+
+\`\`\`html
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>研究报告</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- GSAP 核心 + ScrollTrigger（必须！）-->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <!-- Lenis 平滑滚动（必须！）-->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.0.45/dist/lenis.min.js"></script>
+  <!-- ECharts 数据可视化 -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <style>
+    /* 你的 CSS 样式 */
+  </style>
+</head>
+\`\`\`
+
+**在 \`<script>\` 初始化中必须包含：**
+\`\`\`javascript
+// 注册 GSAP 插件
+gsap.registerPlugin(ScrollTrigger);
+
+// 初始化 Lenis 平滑滚动（必须！）
+const lenis = new Lenis({
+  lerp: 0.1,
+  smoothWheel: true
+});
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.add((time) => lenis.raf(time * 1000));
+gsap.ticker.lagSmoothing(0);
+
+function raf(time) {
+  lenis.raf(time);
+  requestAnimationFrame(raf);
+}
+requestAnimationFrame(raf);
+\`\`\`
 
 ## 🎬 必须使用的 GSAP 动效
 

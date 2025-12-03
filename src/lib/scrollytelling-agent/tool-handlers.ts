@@ -728,29 +728,35 @@ ${state.collectedMaterials.join('\n\n')}
 
 1. **技术栈**：纯 HTML + CSS + JavaScript，使用 GSAP ScrollTrigger
 
-2. **CDN 引入（必须！）**:
+2. **CDN 引入（必须！顺序不可变！）**:
 \`\`\`html
-<!-- GSAP 核心 + ScrollTrigger -->
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
-<!-- ECharts（如需图表） -->
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-<!-- 平滑滚动（可选但推荐） -->
+<!-- GSAP 核心 + ScrollTrigger（必须！）-->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<!-- Lenis 平滑滚动（必须！）-->
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.0.45/dist/lenis.min.js"></script>
+<!-- ECharts 数据可视化 -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 \`\`\`
 
-3. **GSAP 初始化（⚠️ 必须！）**:
+3. **GSAP + Lenis 初始化（⚠️ 必须！）**:
 \`\`\`javascript
-// 注册插件
+// 注册 GSAP 插件
 gsap.registerPlugin(ScrollTrigger);
 
-// 可选：平滑滚动
+// 初始化 Lenis 平滑滚动（必须！）
 const lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
 lenis.on('scroll', ScrollTrigger.update);
 gsap.ticker.add((time) => lenis.raf(time * 1000));
 gsap.ticker.lagSmoothing(0);
+
+function raf(time) {
+  lenis.raf(time);
+  requestAnimationFrame(raf);
+}
+requestAnimationFrame(raf);
 \`\`\`
 
 4. **全局样式（必须完整添加！）**:
