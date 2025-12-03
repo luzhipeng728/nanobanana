@@ -14,12 +14,13 @@ export interface ScrollytellingTool {
 export const SCROLLYTELLING_TOOLS: ScrollytellingTool[] = [
   {
     name: 'plan_structure',
-    description: `规划演示文稿的整体结构，包括幻灯片划分、叙事线索、AI 生图提示词等。
+    description: `规划演示文稿的整体结构，包括幻灯片划分、叙事线索、AI 生图提示词和高级动画效果。
 
 ⚠️ 重要：
 1. 用户提供的图片仅作参考，不直接展示
 2. 每张幻灯片需要的图片都由 AI 生成
 3. 必须为每张需要图片的幻灯片编写详细的生图提示词
+4. 必须使用 reveal.js 高级动画特性（auto-animate、fragments、transitions）
 
 这是第一步，基于参考图片分析主题和风格。`,
     parameters: {
@@ -33,6 +34,11 @@ export const SCROLLYTELLING_TOOLS: ScrollytellingTool[] = [
           type: 'string',
           description: '叙事方式，如：时间线、对比展示、渐进深入、问题解答等'
         },
+        global_transition: {
+          type: 'string',
+          enum: ['none', 'fade', 'slide', 'convex', 'concave', 'zoom'],
+          description: '全局默认过渡效果'
+        },
         slides: {
           type: 'array',
           description: '幻灯片规划列表',
@@ -43,9 +49,13 @@ export const SCROLLYTELLING_TOOLS: ScrollytellingTool[] = [
                 type: 'string',
                 description: '幻灯片标题'
               },
+              subtitle: {
+                type: 'string',
+                description: '副标题（可选）'
+              },
               layout: {
                 type: 'string',
-                enum: ['title', 'content', 'image-left', 'image-right', 'full-image', 'two-column', 'data'],
+                enum: ['title', 'content', 'image-left', 'image-right', 'full-image', 'two-column', 'data', 'comparison'],
                 description: '布局类型'
               },
               key_points: {
@@ -67,26 +77,67 @@ export const SCROLLYTELLING_TOOLS: ScrollytellingTool[] = [
                 enum: ['line', 'bar', 'pie', 'gauge', 'radar', 'none'],
                 description: '图表类型，如果不需要图表填 none'
               },
+              // reveal.js 高级动画配置
+              auto_animate: {
+                type: 'boolean',
+                description: '是否与下一张幻灯片使用 auto-animate 动画（元素会自动平滑过渡）'
+              },
+              transition: {
+                type: 'string',
+                enum: ['none', 'fade', 'slide', 'convex', 'concave', 'zoom', 'slide-in fade-out', 'fade-in slide-out', 'convex-in concave-out'],
+                description: '此幻灯片的过渡效果（覆盖全局设置）'
+              },
+              transition_speed: {
+                type: 'string',
+                enum: ['default', 'fast', 'slow'],
+                description: '过渡速度'
+              },
+              background_color: {
+                type: 'string',
+                description: '背景颜色，如 #1e293b'
+              },
+              background_gradient: {
+                type: 'string',
+                description: '背景渐变，如 linear-gradient(to bottom, #283048, #859398)'
+              },
+              fragments: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    element: {
+                      type: 'string',
+                      description: '元素描述（如：标题、列表项、图片）'
+                    },
+                    effect: {
+                      type: 'string',
+                      enum: ['fade-in', 'fade-out', 'fade-up', 'fade-down', 'fade-left', 'fade-right', 'grow', 'shrink', 'strike', 'highlight-red', 'highlight-green', 'highlight-blue', 'highlight-current-blue', 'fade-in-then-out', 'fade-in-then-semi-out', 'current-visible', 'blur'],
+                      description: 'Fragment 动画效果'
+                    },
+                    order: {
+                      type: 'number',
+                      description: '显示顺序（data-fragment-index）'
+                    }
+                  }
+                },
+                description: 'Fragment 动画配置，用于逐步揭示内容'
+              },
               animations: {
                 type: 'array',
                 items: { type: 'string' },
-                description: '动画效果，如：fade-in, zoom, slide-up, count-up 等'
+                description: '其他动画效果，如：count-up, progress-bar, typewriter 等'
               }
             },
             required: ['title', 'layout', 'key_points']
           }
         },
-        transitions: {
-          type: 'string',
-          description: '幻灯片转场效果，如：slide, fade, convex, zoom 等'
-        },
         interaction_preferences: {
           type: 'array',
           items: { type: 'string' },
-          description: '期望的交互类型，如：tabs、timeline、cards、charts、counters、progress-bars 等'
+          description: '期望的交互类型，如：tabs、timeline、cards、charts、counters、progress-bars、r-stack 等'
         }
       },
-      required: ['theme_style', 'narrative_approach', 'slides']
+      required: ['theme_style', 'narrative_approach', 'slides', 'global_transition']
     }
   },
   {

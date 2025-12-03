@@ -17,11 +17,20 @@ export interface SlideImageConfig {
   status?: 'pending' | 'processing' | 'completed' | 'failed';
 }
 
+// Fragment 动画配置
+export interface FragmentConfig {
+  element: string;          // 元素描述
+  effect: 'fade-in' | 'fade-out' | 'fade-up' | 'fade-down' | 'fade-left' | 'fade-right' |
+          'grow' | 'shrink' | 'strike' | 'highlight-red' | 'highlight-green' | 'highlight-blue' |
+          'highlight-current-blue' | 'fade-in-then-out' | 'fade-in-then-semi-out' | 'current-visible' | 'blur';
+  order?: number;           // 显示顺序
+}
+
 // 幻灯片结构（替代原来的章节）
 export interface SlidePlan {
   title: string;
   subtitle?: string;
-  layout: 'title' | 'content' | 'image-left' | 'image-right' | 'full-image' | 'two-column' | 'data';
+  layout: 'title' | 'content' | 'image-left' | 'image-right' | 'full-image' | 'two-column' | 'data' | 'comparison';
   imageConfig?: SlideImageConfig;  // 需要 AI 生成的图片配置
   keyPoints: string[];      // 关键数据点
   chartType?: 'line' | 'bar' | 'pie' | 'gauge' | 'radar';  // 推荐的图表类型
@@ -29,7 +38,16 @@ export interface SlidePlan {
   searchQuery?: string;     // 需要搜索的查询
   searchResults?: string;   // 搜索结果
   content?: string;         // 补充内容
-  animations?: string[];    // 动画效果
+
+  // reveal.js 高级动画配置
+  autoAnimate?: boolean;    // 是否使用 auto-animate
+  transition?: 'none' | 'fade' | 'slide' | 'convex' | 'concave' | 'zoom' |
+               'slide-in fade-out' | 'fade-in slide-out' | 'convex-in concave-out';
+  transitionSpeed?: 'default' | 'fast' | 'slow';
+  backgroundColor?: string;    // 背景颜色
+  backgroundGradient?: string; // 背景渐变
+  fragments?: FragmentConfig[];  // Fragment 动画配置
+  animations?: string[];    // 其他动画效果
 }
 
 // 演示文稿结构规划
@@ -39,7 +57,8 @@ export interface PresentationPlan {
   slides: SlidePlan[];      // 幻灯片列表
   overallNarrative: string; // 整体叙事线索
   interactionTypes: string[]; // 交互类型
-  transitions: string;      // 转场效果
+  globalTransition: 'none' | 'fade' | 'slide' | 'convex' | 'concave' | 'zoom';  // 全局过渡效果
+  transitions: string;      // 转场效果（向后兼容）
 }
 
 // 兼容旧接口（映射到新结构）
