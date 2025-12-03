@@ -201,8 +201,28 @@ model Slideshow {
   speaker     String?                        // 使用的发音人
   transition  String?                        // 转场效果
   videoStatus String?                        // 视频生成状态: generating, completed, failed
+  
+  // 统计数据
+  views       Int      @default(0)           // 浏览次数
+  likes       Int      @default(0)           // 点赞次数
+  
+  slideshowLikes SlideshowLike[]             // 点赞记录
 
   @@index([userId])
+  @@index([views])  // 方便热门排序
+  @@index([likes])  // 方便精选排序
+}
+
+// 点赞记录（防止重复点赞）
+model SlideshowLike {
+  id            String    @id @default(uuid())
+  slideshowId   String
+  slideshow     Slideshow @relation(fields: [slideshowId], references: [id])
+  userIdentifier String   // 用户标识（浏览器生成的 UUID）
+  createdAt     DateTime  @default(now())
+
+  @@unique([slideshowId, userIdentifier]) // 确保用户对同一幻灯片只能点赞一次
+  @@index([userIdentifier])
 }
 
 // SuperAgent 多轮对话

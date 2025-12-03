@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, PlayCircle, Clock, Search, Sparkles, Image as ImageIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, PlayCircle, Clock, Search, Sparkles, Image as ImageIcon, Loader2, Eye, Heart } from "lucide-react";
 import PageViewCounter from "@/components/PageViewCounter";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,6 @@ function getCoverUrl(url: string): string {
     try {
       const urlObj = new URL(url);
       const path = urlObj.pathname;
-      // 稍微加大图片尺寸以保证视网膜屏清晰度
       return `https://doubao.luzhipeng.com/cdn-cgi/image/format=auto,width=800,quality=90${path}`;
     } catch {
       return url;
@@ -29,18 +28,51 @@ interface SlideItem {
   createdAt: string;
   needsCover?: boolean;
   videoUrl?: string | null;
+  views?: number;
+  likes?: number;
 }
 
 interface GalleryClientProps {
   initialSlides: SlideItem[];
 }
 
+type SortType = 'featured' | 'latest' | 'popular';
+
 export default function GalleryClient({ initialSlides }: GalleryClientProps) {
   const [slides, setSlides] = useState<SlideItem[]>(initialSlides);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [currentSort, setCurrentSort] = useState<SortType>('latest');
   const observerTarget = useRef<HTMLDivElement>(null);
+
+  // 切换排序
+  const handleSortChange = async (sort: SortType) => {
+    if (sort === currentSort || loading) return;
+    
+    setCurrentSort(sort);
+    setLoading(true);
+    setPage(1);
+    setSlides([]); // 清空列表
+    setHasMore(true);
+
+    try {
+      // 重新加载第一页
+      const res = await fetch(`/api/slides?page=1&limit=20&sort=${sort}`);
+      const data = await res.json();
+
+      if (data.items && data.items.length > 0) {
+        setSlides(data.items);
+        setHasMore(1 < data.totalPages);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Failed to change sort:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 加载更多
   const loadMore = useCallback(async () => {
@@ -49,7 +81,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
     setLoading(true);
     try {
       const nextPage = page + 1;
-      const res = await fetch(`/api/slides?page=${nextPage}&limit=20`);
+      const res = await fetch(`/api/slides?page=${nextPage}&limit=20&sort=${currentSort}`);
       const data = await res.json();
 
       if (data.items && data.items.length > 0) {
@@ -64,7 +96,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, page]);
+  }, [loading, hasMore, page, currentSort]);
 
   // Intersection Observer for Infinite Scroll
   useEffect(() => {
@@ -74,7 +106,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
           loadMore();
         }
       },
-      { threshold: 0.1, rootMargin: "100px" } // 提前 100px 触发
+      { threshold: 0.1, rootMargin: "100px" }
     );
 
     const currentTarget = observerTarget.current;
@@ -89,7 +121,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
     };
   }, [loadMore, hasMore, loading]);
 
-  // 格式化日期 - 更人性化的中文格式
+  // 格式化日期
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -107,9 +139,18 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
     });
   };
 
+  // 格式化数字
+  const formatNumber = (num?: number) => {
+    if (!num) return 0;
+    if (num >= 10000) {
+      return (num / 10000).toFixed(1) + 'w';
+    }
+    return num;
+  };
+
   return (
     <div className="min-h-screen bg-[#f8f9fa] dark:bg-[#050505] font-sans text-neutral-900 dark:text-neutral-100">
-      {/* Header - 极简磨砂风格 */}
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-neutral-200/60 dark:border-white/5 supports-[backdrop-filter]:bg-white/60">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -124,10 +165,40 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
             </div>
             
             <div className="hidden md:flex items-center gap-6">
-               <nav className="flex gap-6 text-[14px] font-medium text-neutral-500 dark:text-neutral-400">
-                 <span className="text-neutral-900 dark:text-white cursor-pointer">精选推荐</span>
-                 <span className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer">最新发布</span>
-                 <span className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer">热门榜单</span>
+               <nav className="flex gap-1 bg-neutral-100/50 dark:bg-neutral-800/50 p-1 rounded-full border border-neutral-200/50 dark:border-white/5">
+                 <button 
+                   onClick={() => handleSortChange('featured')}
+                   className={cn(
+                     "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200",
+                     currentSort === 'featured' 
+                       ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm" 
+                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                   )}
+                 >
+                   精选推荐
+                 </button>
+                 <button 
+                   onClick={() => handleSortChange('latest')}
+                   className={cn(
+                     "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200",
+                     currentSort === 'latest' 
+                       ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm" 
+                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                   )}
+                 >
+                   最新发布
+                 </button>
+                 <button 
+                   onClick={() => handleSortChange('popular')}
+                   className={cn(
+                     "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200",
+                     currentSort === 'popular' 
+                       ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm" 
+                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                   )}
+                 >
+                   热门榜单
+                 </button>
                </nav>
                <div className="w-px h-4 bg-neutral-300 dark:bg-neutral-700"></div>
                <div className="flex items-center gap-2 text-neutral-400 bg-neutral-100/50 dark:bg-neutral-800/50 px-3 py-1.5 rounded-full border border-transparent focus-within:border-blue-500/30 focus-within:bg-white dark:focus-within:bg-black transition-all w-48">
@@ -144,9 +215,8 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
         </div>
       </header>
 
-      {/* Hero Section - 更具设计感的中文排版 */}
+      {/* Hero Section */}
       <div className="relative pt-20 pb-16 px-6 text-center bg-white dark:bg-black border-b border-neutral-100 dark:border-neutral-900 overflow-hidden">
-         {/* 装饰性光晕 */}
          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-purple-100/50 to-transparent dark:from-purple-900/20 blur-3xl pointer-events-none" />
          
          <div className="relative z-10 max-w-4xl mx-auto">
@@ -167,7 +237,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
 
       {/* Gallery Grid */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {slides.length === 0 ? (
+        {slides.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <div className="w-24 h-24 bg-neutral-100 dark:bg-neutral-900 rounded-[2rem] flex items-center justify-center mb-8 shadow-inner">
               <ImageIcon className="w-10 h-10 text-neutral-300 dark:text-neutral-600" />
@@ -203,7 +273,6 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (
-                      // Placeholder
                       <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-50 dark:bg-neutral-900 p-8 text-center">
                          <div className="max-w-[80%] space-y-3">
                             <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto">
@@ -226,7 +295,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                       </div>
                     )}
                     
-                    {/* Hover Overlay for Play Button */}
+                    {/* Hover Overlay */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100 bg-black/10">
                        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-xl text-neutral-900 dark:text-white shadow-2xl scale-90 group-hover:scale-100 transition-transform duration-300">
                           <PlayCircle className="w-8 h-8 fill-current opacity-90" />
@@ -234,24 +303,24 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                     </div>
                   </div>
 
-                  {/* Card Info Content - 纯白背景，留白充足 */}
+                  {/* Card Info Content */}
                   <div className="flex flex-col justify-between flex-1 p-5 pb-6">
                     <div className="space-y-2.5">
                       <h3 className="text-[17px] font-bold text-neutral-900 dark:text-white leading-snug line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                         {slide.title}
                       </h3>
-                      <p className="text-[13px] text-neutral-500 dark:text-neutral-400 line-clamp-2 h-[2.5em] leading-relaxed hidden">
-                        {/* 预留给描述文本 */}
-                        这是一个精彩的幻灯片作品...
-                      </p>
                     </div>
                     
                     <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-[12px] font-medium text-neutral-400 dark:text-neutral-500">
-                      <div className="flex items-center gap-2">
-                         <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-[9px] text-white font-bold">
-                           NB
-                         </div>
-                         <span>NanoBanana</span>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1" title="浏览量">
+                          <Eye className="w-3.5 h-3.5" />
+                          {formatNumber(slide.views)}
+                        </span>
+                        <span className="flex items-center gap-1" title="点赞数">
+                          <Heart className="w-3.5 h-3.5" />
+                          {formatNumber(slide.likes)}
+                        </span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1">
@@ -293,7 +362,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
         )}
       </main>
 
-      {/* Footer Visitor Counter */}
+      {/* Footer */}
       <div className="fixed bottom-6 right-6 z-50 pointer-events-none">
         <div className="px-4 py-2 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-full border border-neutral-200/80 dark:border-white/10 shadow-xl shadow-black/5 flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>

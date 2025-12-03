@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Calendar, Images, Loader2, ZoomIn, ZoomOut, RotateCcw, ArrowLeft, Home, PlayCircle, ImageIcon, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Images, Loader2, ZoomIn, ZoomOut, RotateCcw, ArrowLeft, Home, PlayCircle, ImageIcon, X, Eye, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { v4 as uuidv4 } from 'uuid';
 
 interface SlideshowViewerProps {
   slideshowId: string;
@@ -71,6 +72,12 @@ export default function SlideshowViewer({
   const thumbnailContainerRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
+  // 统计状态
+  const [views, setViews] = useState(0);
+  const [likes, setLikes] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
+
   // 视频模式状态
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -96,6 +103,78 @@ export default function SlideshowViewer({
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const positionStartRef = useRef({ x: 0, y: 0 });
+
+  // 获取用户标识
+  const getUserIdentifier = () => {
+    let id = localStorage.getItem('slideshow_user_id');
+    if (!id) {
+      id = uuidv4();
+      localStorage.setItem('slideshow_user_id', id);
+    }
+    return id;
+  };
+
+  // 初始化统计数据
+  useEffect(() => {
+    const userId = getUserIdentifier();
+
+    // 记录浏览量
+    fetch(`/api/slides/${slideshowId}/view`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setViews(data.views);
+      })
+      .catch(console.error);
+
+    // 检查点赞状态
+    fetch(`/api/slides/${slideshowId}/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userIdentifier: userId, action: 'check' })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setIsLiked(data.liked);
+          setLikes(data.likes);
+        }
+      })
+      .catch(console.error);
+  }, [slideshowId]);
+
+  // 处理点赞
+  const handleLike = async () => {
+    if (likeLoading) return;
+    setLikeLoading(true);
+    const userId = getUserIdentifier();
+    const action = isLiked ? 'unlike' : 'like';
+
+    try {
+      // 乐观更新
+      setIsLiked(!isLiked);
+      setLikes(prev => isLiked ? prev - 1 : prev + 1);
+
+      const res = await fetch(`/api/slides/${slideshowId}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIdentifier: userId, action })
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        // 以服务器返回为准
+        setIsLiked(data.liked);
+        setLikes(data.likes);
+      }
+    } catch (error) {
+      console.error("Like failed:", error);
+      // 回滚
+      setIsLiked(isLiked);
+      setLikes(likes);
+    } finally {
+      setLikeLoading(false);
+    }
+  };
 
   // 重置缩放和位置
   const resetTransform = useCallback(() => {
@@ -408,21 +487,41 @@ export default function SlideshowViewer({
               <h1 className="text-base font-bold text-white">
                 {title}
               </h1>
-              <div className="flex items-center gap-1.5 text-xs text-neutral-400">
-                <Calendar className="w-3 h-3" />
-                <span>{formattedDate}</span>
-                <span className="mx-1">·</span>
-                <span>{images.length} 张图片</span>
+              <div className="flex items-center gap-3 text-xs text-neutral-400">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  <span>{formattedDate}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Eye className="w-3 h-3" />
+                  <span>{views} 次浏览</span>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* 点赞按钮 */}
+            <button
+              onClick={handleLike}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all border",
+                isLiked 
+                  ? "bg-pink-500/20 text-pink-400 border-pink-500/50" 
+                  : "bg-white/10 text-white/70 border-white/10 hover:bg-white/20 hover:text-white"
+              )}
+            >
+              <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
+              <span className="text-sm font-medium">{likes}</span>
+            </button>
+
+            <div className="w-px h-6 bg-white/10 mx-1" />
+
             {/* 生成解说视频按钮 - 仅当没有视频且不在生成中时显示 */}
             {!videoUrl && videoStatus !== 'generating' && (
               <button
                 onClick={() => setShowGenerateModal(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-300 hover:from-orange-500/30 hover:to-amber-500/30 transition-all"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-300 hover:from-orange-500/30 hover:to-amber-500/30 transition-all border border-orange-500/20"
               >
                 <PlayCircle className="w-4 h-4" />
                 <span className="text-sm font-medium">生成解说</span>
@@ -431,7 +530,7 @@ export default function SlideshowViewer({
 
             {/* 生成中状态 */}
             {videoStatus === 'generating' && !videoUrl && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/20 text-yellow-300">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/20">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-sm font-medium">生成中...</span>
               </div>
@@ -442,10 +541,10 @@ export default function SlideshowViewer({
               <button
                 onClick={() => setShowVideo(!showVideo)}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all",
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border",
                   showVideo
-                    ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
-                    : "bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30"
+                    ? "bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30"
+                    : "bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border-purple-500/30 hover:from-purple-500/30 hover:to-pink-500/30"
                 )}
               >
                 {showVideo ? (
@@ -557,8 +656,6 @@ export default function SlideshowViewer({
                 </button>
               </>
             )}
-
-            {/* 加载指示器 - 只在模糊图也没加载时显示 */}
 
             {/* 加载失败提示 */}
             {imageError && (

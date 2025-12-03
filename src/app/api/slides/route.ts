@@ -8,12 +8,21 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const sort = searchParams.get("sort") || "latest"; // latest, popular, featured
     const skip = (page - 1) * limit;
 
-    // 获取幻灯片列表（按创建时间倒序）
+    let orderBy: any = { createdAt: "desc" };
+
+    if (sort === "popular") {
+      orderBy = { views: "desc" };
+    } else if (sort === "featured") {
+      orderBy = { likes: "desc" };
+    }
+
+    // 获取幻灯片列表
     const [slideshows, total] = await Promise.all([
       prisma.slideshow.findMany({
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: limit,
         select: {
@@ -23,6 +32,8 @@ export async function GET(request: NextRequest) {
           cover: true,
           createdAt: true,
           videoUrl: true,
+          views: true,
+          likes: true,
         },
       }),
       prisma.slideshow.count(),
@@ -39,6 +50,8 @@ export async function GET(request: NextRequest) {
         createdAt: s.createdAt,
         needsCover: !s.cover, // 没有专属封面就需要生成
         videoUrl: s.videoUrl, // 视频 URL
+        views: s.views,
+        likes: s.likes,
       };
     });
 
