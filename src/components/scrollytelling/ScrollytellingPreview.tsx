@@ -1,8 +1,48 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Loader2, AlertCircle, Download, ExternalLink, RefreshCw, Code, Copy, Check, Send, Upload, Sparkles } from "lucide-react";
+import { X, Loader2, AlertCircle, Download, ExternalLink, RefreshCw, Code, Copy, Check, Send, Upload, Sparkles, Brain, Search, BarChart3, FileCode, Image, Layout, FileText, CheckCircle2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// 流事件类型
+interface StreamEvent {
+  type: string;
+  message?: string;
+  phase?: 'preparation' | 'generation';
+  iteration?: number;
+  chunk?: string;
+  content?: string;
+  tool?: string;
+  input?: any;
+  result?: any;
+  index?: number;
+  analysis?: string;
+  plan?: any;
+  query?: string;
+  chapter?: number;
+  summary?: string;
+  chartType?: string;
+  promptLength?: number;
+  htmlLength?: number;
+  error?: string;
+}
+
+// Agent 活动日志项
+interface AgentLogItem {
+  type: 'thought' | 'action' | 'observation' | 'image' | 'search' | 'chart' | 'prompt' | 'structure';
+  content: string;
+  timestamp: number;
+  step?: number;
+}
+
+// 工作流程步骤
+interface WorkflowStep {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  status: 'pending' | 'active' | 'completed';
+}
 
 interface ScrollytellingPreviewProps {
   isOpen: boolean;
@@ -26,11 +66,36 @@ export default function ScrollytellingPreview({
   const [error, setError] = useState<string | null>(null);
   const [jsErrors, setJsErrors] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
-  const [showCode, setShowCode] = useState(true); // 默认显示代码（生成中）
+  const [showCode, setShowCode] = useState(true);
   const [copied, setCopied] = useState(false);
+
+  // 当前阶段
+  const [currentPhase, setCurrentPhase] = useState<'preparation' | 'generation' | null>(null);
+  const [phaseMessage, setPhaseMessage] = useState<string>("");
+
+  // 工作流程步骤
+  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([
+    { id: 'analyze', name: '分析图片', description: '理解图片内容和主题', icon: <Image className="w-4 h-4" />, status: 'pending' },
+    { id: 'plan', name: '规划结构', description: '设计网页章节和布局', icon: <Layout className="w-4 h-4" />, status: 'pending' },
+    { id: 'search', name: '搜索资料', description: '查找相关数据和信息', icon: <Search className="w-4 h-4" />, status: 'pending' },
+    { id: 'chart', name: '生成图表', description: '创建数据可视化配置', icon: <BarChart3 className="w-4 h-4" />, status: 'pending' },
+    { id: 'prompt', name: '整合提示词', description: '汇总所有材料', icon: <FileText className="w-4 h-4" />, status: 'pending' },
+    { id: 'generate', name: '生成 HTML', description: 'Gemini 流式输出代码', icon: <Code className="w-4 h-4" />, status: 'pending' },
+  ]);
+
+  // Agent 活动日志
+  const [agentLogs, setAgentLogs] = useState<AgentLogItem[]>([]);
+  const logsEndRef = useRef<HTMLDivElement>(null);
 
   // 自由指令输入
   const [customPrompt, setCustomPrompt] = useState(initialTheme);
+
+  // 同步 initialTheme 到 customPrompt（当组件打开时）
+  useEffect(() => {
+    if (isOpen && initialTheme) {
+      setCustomPrompt(initialTheme);
+    }
+  }, [isOpen, initialTheme]);
 
   // 发布状态
   const [isPublishing, setIsPublishing] = useState(false);
@@ -45,6 +110,36 @@ export default function ScrollytellingPreview({
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastRenderTimeRef = useRef<number>(0);
   const pendingContentRef = useRef<string>("");
+
+  // 更新工作流程步骤状态
+  const updateStepStatus = useCallback((stepId: string, status: WorkflowStep['status']) => {
+    setWorkflowSteps(prev => prev.map(step => {
+      if (step.id === stepId) {
+        return { ...step, status };
+      }
+      // 如果当前步骤变为 active，之前的步骤都应该是 completed
+      if (status === 'active') {
+        const stepIndex = prev.findIndex(s => s.id === stepId);
+        const currentIndex = prev.findIndex(s => s.id === step.id);
+        if (currentIndex < stepIndex && step.status !== 'completed') {
+          return { ...step, status: 'completed' };
+        }
+      }
+      return step;
+    }));
+  }, []);
+
+  // 自动滚动到日志底部
+  useEffect(() => {
+    if (logsEndRef.current && currentPhase === 'preparation') {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [agentLogs, currentPhase]);
+
+  // 添加日志
+  const addLog = useCallback((type: AgentLogItem['type'], content: string, step?: number) => {
+    setAgentLogs(prev => [...prev, { type, content, timestamp: Date.now(), step }]);
+  }, []);
 
   // 渲染 HTML 到 iframe
   const renderToIframe = useCallback((html: string, forceComplete = false) => {
@@ -74,16 +169,14 @@ export default function ScrollytellingPreview({
     }
   }, [renderToIframe]);
 
-  // 生成完成后渲染到 iframe（确保 iframe 已挂载）
+  // 生成完成后渲染到 iframe
   useEffect(() => {
     if (!isComplete || !htmlContent || isGenerating) return;
 
-    // 延迟渲染，确保 iframe 已挂载到 DOM
     const timer = setTimeout(() => {
       if (iframeRef.current) {
         renderToIframe(htmlContent, true);
       } else {
-        // 如果 iframe 还没准备好，再等一下
         setTimeout(() => {
           if (iframeRef.current) {
             renderToIframe(htmlContent, true);
@@ -104,7 +197,6 @@ export default function ScrollytellingPreview({
       try {
         const iframeWindow = iframe.contentWindow;
         if (iframeWindow) {
-          // 注入错误监听器
           const script = iframeWindow.document.createElement('script');
           script.textContent = `
             window.onerror = function(msg, url, line) {
@@ -119,10 +211,8 @@ export default function ScrollytellingPreview({
       }
     };
 
-    // iframe 加载完成后检查错误
     iframe.addEventListener('load', checkForErrors);
 
-    // 监听来自 iframe 的错误消息
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'iframe-error') {
         setJsErrors(prev => [...prev, `${event.data.message} (line ${event.data.line})`]);
@@ -139,24 +229,119 @@ export default function ScrollytellingPreview({
   // 自动修复错误
   useEffect(() => {
     if (isComplete && jsErrors.length > 0 && !isAutoFixing && autoFixAttempts < MAX_AUTO_FIX_ATTEMPTS) {
-      // 有错误，尝试自动修复
       const autoFix = async () => {
         setIsAutoFixing(true);
         setAutoFixAttempts(prev => prev + 1);
 
-        // 构建修复指令
         const fixPrompt = `请修复以下 JavaScript 错误：\n${jsErrors.join('\n')}\n\n保持原有设计和功能不变，只修复错误。`;
 
-        // 重新生成
         await startGeneration(fixPrompt);
         setIsAutoFixing(false);
       };
 
-      // 延迟 1 秒执行，让用户看到错误信息
       const timer = setTimeout(autoFix, 1000);
       return () => clearTimeout(timer);
     }
   }, [isComplete, jsErrors, isAutoFixing, autoFixAttempts]);
+
+  // 处理 SSE 事件
+  const handleStreamEvent = useCallback((event: StreamEvent) => {
+    switch (event.type) {
+      case 'start':
+        addLog('thought', event.message || '开始处理...');
+        break;
+
+      case 'phase':
+        setCurrentPhase(event.phase || null);
+        setPhaseMessage(event.message || '');
+        if (event.phase === 'generation') {
+          updateStepStatus('prompt', 'completed');
+          updateStepStatus('generate', 'active');
+          addLog('prompt', '✅ 准备工作完成，开始生成 HTML...');
+        }
+        break;
+
+      case 'thought':
+        if (event.content) {
+          addLog('thought', event.content.slice(0, 300) + (event.content.length > 300 ? '...' : ''));
+        }
+        break;
+
+      case 'action':
+        if (event.tool) {
+          const toolMapping: Record<string, { step: string; name: string }> = {
+            'analyze_images': { step: 'analyze', name: '🔍 分析图片' },
+            'plan_structure': { step: 'plan', name: '📋 规划结构' },
+            'web_search': { step: 'search', name: '🌐 搜索资料' },
+            'generate_chart_data': { step: 'chart', name: '📊 生成图表数据' },
+            'finalize_prompt': { step: 'prompt', name: '✨ 整合提示词' }
+          };
+
+          const mapping = toolMapping[event.tool];
+          if (mapping) {
+            updateStepStatus(mapping.step, 'active');
+            addLog('action', mapping.name);
+          }
+        }
+        break;
+
+      case 'observation':
+        // 工具执行完成
+        break;
+
+      case 'image_analysis':
+        addLog('image', `📸 图片 ${(event.index || 0) + 1} 分析完成`);
+        if (event.index === images.length - 1) {
+          updateStepStatus('analyze', 'completed');
+        }
+        break;
+
+      case 'structure_planned':
+        updateStepStatus('plan', 'completed');
+        if (event.plan) {
+          addLog('structure', `✅ 结构规划完成：${event.plan.chapters?.length || 0} 个章节，${event.plan.theme || '自动'} 风格`);
+        }
+        break;
+
+      case 'search_start':
+        addLog('search', `🔎 搜索: ${event.query}`);
+        break;
+
+      case 'search_result':
+        addLog('search', `✅ 搜索完成${event.chapter !== undefined && event.chapter >= 0 ? ` (章节 ${event.chapter + 1})` : ''}`);
+        break;
+
+      case 'data_generated':
+        addLog('chart', `📊 图表数据生成 (${event.chartType || '未知类型'})`);
+        break;
+
+      case 'prompt_ready':
+        updateStepStatus('chart', 'completed');
+        addLog('prompt', `✅ 提示词准备完成 (${event.promptLength || 0} 字符)`);
+        break;
+
+      case 'html_chunk':
+        if (event.chunk) {
+          setHtmlContent(prev => prev + event.chunk);
+        }
+        break;
+
+      case 'complete':
+        updateStepStatus('generate', 'completed');
+        setIsComplete(true);
+        setShowCode(false);
+        break;
+
+      case 'error':
+        setError(event.error || '未知错误');
+        break;
+    }
+  }, [addLog, updateStepStatus, images.length]);
+
+  // 重置工作流程
+  const resetWorkflow = useCallback(() => {
+    setWorkflowSteps(prev => prev.map(step => ({ ...step, status: 'pending' as const })));
+  }, []);
 
   // 开始生成
   const startGeneration = useCallback(async (additionalPrompt?: string) => {
@@ -169,7 +354,11 @@ export default function ScrollytellingPreview({
     setIsComplete(false);
     setIsGenerating(true);
     setPublishedUrl(null);
-    setShowCode(true); // 生成中显示代码
+    setShowCode(true);
+    setCurrentPhase(null);
+    setPhaseMessage("");
+    setAgentLogs([]);
+    resetWorkflow();
 
     // 取消之前的请求
     if (abortControllerRef.current) {
@@ -198,31 +387,46 @@ export default function ScrollytellingPreview({
       }
 
       const decoder = new TextDecoder();
-      let fullContent = "";
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        fullContent += chunk;
-        setHtmlContent(fullContent);
-        throttledRender(fullContent);
+        buffer += decoder.decode(value, { stream: true });
+
+        // 解析 SSE 事件
+        const lines = buffer.split('\n');
+        buffer = '';
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+
+          // 如果这是最后一行且不完整，保存到 buffer
+          if (i === lines.length - 1 && !line.endsWith('\n')) {
+            buffer = line;
+            continue;
+          }
+
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const event = JSON.parse(trimmed.slice(6)) as StreamEvent;
+              handleStreamEvent(event);
+            } catch {
+              // 忽略解析错误
+            }
+          }
+        }
       }
 
       // 最终渲染
-      setHtmlContent(fullContent);
-      renderToIframe(fullContent, true);
-      setIsComplete(true);
-      setShowCode(false); // 生成完成后切换到预览
-
-      // 检查是否有错误注释
-      if (fullContent.includes("<!-- Error:")) {
-        const errorMatch = fullContent.match(/<!-- Error: (.+?) -->/);
-        if (errorMatch) {
-          setError(errorMatch[1]);
-        }
+      if (htmlContent) {
+        renderToIframe(htmlContent, true);
       }
+
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
         return;
@@ -231,12 +435,12 @@ export default function ScrollytellingPreview({
     } finally {
       setIsGenerating(false);
     }
-  }, [images, customPrompt, throttledRender, renderToIframe]);
+  }, [images, prompts, customPrompt, handleStreamEvent, renderToIframe, resetWorkflow]);
 
   // 打开时自动开始生成
   useEffect(() => {
     if (isOpen && images.length > 0) {
-      setAutoFixAttempts(0); // 重置自动修复计数
+      setAutoFixAttempts(0);
       startGeneration();
     }
 
@@ -308,6 +512,21 @@ export default function ScrollytellingPreview({
     startGeneration();
   };
 
+  // 获取日志图标和颜色
+  const getLogStyle = (type: AgentLogItem['type']) => {
+    switch (type) {
+      case 'thought': return { icon: <Brain className="w-4 h-4" />, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' };
+      case 'action': return { icon: <Sparkles className="w-4 h-4" />, color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/20' };
+      case 'observation': return { icon: <FileCode className="w-4 h-4" />, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' };
+      case 'image': return { icon: <Image className="w-4 h-4" />, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
+      case 'search': return { icon: <Search className="w-4 h-4" />, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' };
+      case 'chart': return { icon: <BarChart3 className="w-4 h-4" />, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' };
+      case 'prompt': return { icon: <FileText className="w-4 h-4" />, color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20' };
+      case 'structure': return { icon: <Layout className="w-4 h-4" />, color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' };
+      default: return { icon: <Brain className="w-4 h-4" />, color: 'text-neutral-400', bg: 'bg-neutral-500/10 border-neutral-500/20' };
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -319,7 +538,11 @@ export default function ScrollytellingPreview({
           {isGenerating && (
             <div className="flex items-center gap-2 text-cyan-400 text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>{isAutoFixing ? "自动修复中..." : "生成中..."}</span>
+              <span>
+                {currentPhase === 'preparation' ? 'Claude 分析中...' :
+                 currentPhase === 'generation' ? 'Gemini 生成中...' :
+                 isAutoFixing ? '自动修复中...' : '处理中...'}
+              </span>
             </div>
           )}
           {isComplete && !error && jsErrors.length === 0 && (
@@ -425,15 +648,147 @@ export default function ScrollytellingPreview({
 
       {/* 主内容区 */}
       <div className="flex-1 flex overflow-hidden">
-        {/* 生成中：全屏显示代码 */}
-        {isGenerating && !isComplete ? (
+        {/* 阶段1: Claude Agent 准备阶段 */}
+        {isGenerating && currentPhase === 'preparation' ? (
+          <div className="flex-1 bg-neutral-950 flex">
+            {/* 左侧：工作流程步骤指示器 */}
+            <div className="w-64 border-r border-neutral-800 p-4 flex flex-col">
+              <div className="flex items-center gap-2 mb-4">
+                <Brain className="w-5 h-5 text-purple-400" />
+                <span className="text-white font-medium">工作流程</span>
+              </div>
+
+              <div className="space-y-1">
+                {workflowSteps.map((step, index) => (
+                  <div key={step.id} className="relative">
+                    {/* 连接线 */}
+                    {index < workflowSteps.length - 1 && (
+                      <div className={cn(
+                        "absolute left-[11px] top-8 w-0.5 h-6",
+                        step.status === 'completed' ? "bg-green-500" : "bg-neutral-700"
+                      )} />
+                    )}
+
+                    <div className={cn(
+                      "flex items-start gap-3 p-2 rounded-lg transition-all",
+                      step.status === 'active' && "bg-cyan-500/10",
+                      step.status === 'completed' && "opacity-70"
+                    )}>
+                      {/* 状态图标 */}
+                      <div className={cn(
+                        "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center",
+                        step.status === 'pending' && "bg-neutral-800 text-neutral-500",
+                        step.status === 'active' && "bg-cyan-500 text-white animate-pulse",
+                        step.status === 'completed' && "bg-green-500 text-white"
+                      )}>
+                        {step.status === 'completed' ? (
+                          <CheckCircle2 className="w-4 h-4" />
+                        ) : step.status === 'active' ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Circle className="w-3 h-3" />
+                        )}
+                      </div>
+
+                      {/* 步骤信息 */}
+                      <div className="flex-1 min-w-0">
+                        <div className={cn(
+                          "text-sm font-medium",
+                          step.status === 'active' ? "text-cyan-400" :
+                          step.status === 'completed' ? "text-green-400" : "text-neutral-400"
+                        )}>
+                          {step.name}
+                        </div>
+                        <div className="text-xs text-neutral-500 truncate">
+                          {step.description}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 进度提示 */}
+              <div className="mt-auto pt-4 border-t border-neutral-800">
+                <div className="text-xs text-neutral-500">
+                  {workflowSteps.filter(s => s.status === 'completed').length} / {workflowSteps.length} 步骤完成
+                </div>
+                <div className="mt-2 h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-500 to-green-500 transition-all duration-500"
+                    style={{
+                      width: `${(workflowSteps.filter(s => s.status === 'completed').length / workflowSteps.length) * 100}%`
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 右侧：实时日志 */}
+            <div className="flex-1 flex flex-col">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
+                <div className="flex items-center gap-2">
+                  <span className="text-neutral-400 text-sm">实时日志</span>
+                  <span className="text-neutral-600 text-xs">({agentLogs.length} 条)</span>
+                </div>
+                <div className="flex items-center gap-2 text-cyan-400 text-xs">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>处理中...</span>
+                </div>
+              </div>
+
+              {/* 日志列表 */}
+              <div className="flex-1 overflow-auto p-4 space-y-2">
+                {agentLogs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-neutral-500">
+                    <Loader2 className="w-8 h-8 animate-spin mb-3" />
+                    <span>正在启动 Claude Agent...</span>
+                  </div>
+                ) : (
+                  agentLogs.map((log, index) => {
+                    const style = getLogStyle(log.type);
+                    return (
+                      <div
+                        key={index}
+                        className={cn(
+                          "flex items-start gap-3 p-3 rounded-lg border animate-in fade-in slide-in-from-bottom-2 duration-300",
+                          style.bg
+                        )}
+                      >
+                        <div className={style.color}>
+                          {style.icon}
+                        </div>
+                        <span className="text-sm text-neutral-300 flex-1">{log.content}</span>
+                        <span className="text-xs text-neutral-600">
+                          {new Date(log.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={logsEndRef} />
+              </div>
+            </div>
+          </div>
+        ) : isGenerating && currentPhase === 'generation' && !htmlContent ? (
+          // 阶段2开始但还没有内容 - 显示等待状态
+          <div className="flex-1 bg-neutral-950 flex flex-col items-center justify-center">
+            <div className="flex items-center gap-3 text-cyan-400">
+              <Loader2 className="w-8 h-8 animate-spin" />
+              <span className="text-xl">Gemini 正在生成 HTML...</span>
+            </div>
+            <p className="text-neutral-500 mt-3">即将开始流式输出代码</p>
+          </div>
+        ) : isGenerating || (currentPhase === 'generation' && !isComplete) ? (
+          // 阶段2: Gemini 生成阶段 - 显示代码
           <div className="flex-1 bg-neutral-950 flex flex-col">
             <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-800">
               <div className="flex items-center gap-3">
+                <Code className="w-4 h-4 text-cyan-400" />
                 <span className="text-neutral-400 text-sm">HTML 源代码</span>
                 <div className="flex items-center gap-2 text-cyan-400 text-xs">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>流式生成中...</span>
+                  <span>Gemini 流式生成中...</span>
                 </div>
               </div>
               <button
@@ -455,7 +810,7 @@ export default function ScrollytellingPreview({
               </button>
             </div>
             <pre className="flex-1 overflow-auto p-4 text-sm text-neutral-300 font-mono whitespace-pre-wrap">
-              <code>{htmlContent || "// AI 正在分析图片并生成网页代码...\n// 这可能需要 30-60 秒"}</code>
+              <code>{htmlContent || "// Gemini 正在生成 HTML 代码..."}</code>
             </pre>
           </div>
         ) : (
@@ -590,7 +945,7 @@ export default function ScrollytellingPreview({
             </button>
           </div>
           <p className="text-xs text-neutral-500 mt-2 max-w-4xl mx-auto">
-            提示：输入任何指令来调整网页效果，按 Enter 或点击生成按钮重新生成
+            提示：Claude 会先分析图片、搜索资料、规划结构，然后 Gemini 生成最终 HTML
           </p>
         </div>
       </div>
