@@ -925,12 +925,21 @@ export default function InfiniteCanvas() {
 
   // 生成一镜到底网页
   const handleGenerateScrollytelling = useCallback(() => {
+    // 无图片模式：需要标题作为用户提示词
     if (slideshowSelections.size === 0) {
-      alert("请至少选择一张图片");
+      if (!slideshowTitle.trim()) {
+        alert("无图片模式下请输入主题描述");
+        return;
+      }
+      // 无图片模式：直接打开预览，使用标题作为 userPrompt
+      setScrollytellingImages([]);
+      setScrollytellingPrompts([]);
+      setShowScrollytellingPreview(true);
+      setScrollytellingGenerating(true);
       return;
     }
 
-    // 按顺序收集选中图片的 URL 和 prompt
+    // 有图片模式：按顺序收集选中图片的 URL 和 prompt
     const orderedNodeIds = Array.from(slideshowSelections.entries())
       .sort((a, b) => a[1] - b[1])
       .map(([nodeId]) => nodeId);
@@ -949,7 +958,15 @@ export default function InfiniteCanvas() {
     }
 
     if (imageUrls.length === 0) {
-      alert("选中的节点没有有效的图片");
+      // 选中的节点没有有效图片，但可以走无图片模式
+      if (!slideshowTitle.trim()) {
+        alert("选中的节点没有有效图片，请输入主题描述以使用无图片模式");
+        return;
+      }
+      setScrollytellingImages([]);
+      setScrollytellingPrompts([]);
+      setShowScrollytellingPreview(true);
+      setScrollytellingGenerating(true);
       return;
     }
 
@@ -958,7 +975,7 @@ export default function InfiniteCanvas() {
     setScrollytellingPrompts(imagePrompts);
     setShowScrollytellingPreview(true);
     setScrollytellingGenerating(true);
-  }, [slideshowSelections]);
+  }, [slideshowSelections, slideshowTitle]);
 
   const publishSlideshow = useCallback(async () => {
     if (slideshowSelections.size === 0) {

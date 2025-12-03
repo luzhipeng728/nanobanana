@@ -49,25 +49,31 @@ export async function POST(request: NextRequest) {
     try {
       const body = await request.json();
       const {
-        images,
+        images = [],
         prompts,
         theme,
+        userPrompt,  // 无图片模式的用户提示词
         // 修改模式参数
         modification,
         previousHtml,
         // 图片分辨率
         imageResolution = '1k'
       } = body as {
-        images: string[];
+        images?: string[];
         prompts?: string[];
         theme?: string;
+        userPrompt?: string;
         modification?: string;
         previousHtml?: string;
         imageResolution?: '1k' | '2k' | '4k';
       };
 
-      if (!images || !Array.isArray(images) || images.length === 0) {
-        await sendEvent({ type: 'error', error: '请提供至少一张参考图片' });
+      // 验证：有图片 或 有用户提示词（无图片模式）
+      const hasImages = images && Array.isArray(images) && images.length > 0;
+      const hasUserPrompt = userPrompt && typeof userPrompt === 'string' && userPrompt.trim().length > 0;
+
+      if (!hasImages && !hasUserPrompt) {
+        await sendEvent({ type: 'error', error: '请提供参考图片或输入主题描述' });
         await writer.close();
         return;
       }
@@ -107,15 +113,18 @@ export async function POST(request: NextRequest) {
 
       // ========== 正常模式：三阶段生成 ==========
       console.log('[Presentation API] Starting three-phase generation...');
+      console.log('[Presentation API] Mode:', hasImages ? 'With images' : 'No images (deep research)');
       console.log('[Presentation API] Reference images count:', images.length);
       console.log('[Presentation API] Theme:', theme || 'auto');
+      console.log('[Presentation API] User prompt:', userPrompt || '(none)');
       console.log('[Presentation API] Image resolution:', imageResolution);
 
       // Agent 配置
       const agentConfig: ScrollytellingAgentConfig = {
         theme,
+        userPrompt: userPrompt || undefined,  // 无图片模式的用户提示词
         enableSearch: true,
-        maxSearchQueries: images.length * 2,
+        maxSearchQueries: hasImages ? images.length * 2 : 8,  // 无图片模式需要更多搜索
         imageResolution
       };
 

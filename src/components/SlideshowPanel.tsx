@@ -414,7 +414,7 @@ export const SlideshowPanel = React.memo(({
               // 一镜到底网页生成按钮
               <button
                 onClick={onGenerateScrollytelling}
-                disabled={scrollytellingGenerating || slideshowSelections.size === 0}
+                disabled={scrollytellingGenerating || (slideshowSelections.size === 0 && !slideshowTitle.trim())}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-medium transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 hover:shadow-cyan-500/30"
               >
                 {scrollytellingGenerating ? (

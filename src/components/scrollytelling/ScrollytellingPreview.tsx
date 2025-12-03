@@ -85,15 +85,35 @@ export default function ScrollytellingPreview({
     current: ''
   });
 
-  // 工作流程步骤
-  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([
-    { id: 'plan', name: '规划幻灯片', description: '分析主题、设计结构', icon: <Layout className="w-4 h-4" />, status: 'pending' },
-    { id: 'search', name: '搜索资料', description: '查找相关数据和信息', icon: <Search className="w-4 h-4" />, status: 'pending' },
-    { id: 'chart', name: '生成图表', description: '创建数据可视化配置', icon: <BarChart3 className="w-4 h-4" />, status: 'pending' },
-    { id: 'prompt', name: '整合提示词', description: '汇总所有材料', icon: <FileText className="w-4 h-4" />, status: 'pending' },
-    { id: 'image_gen', name: '生成图片', description: '并发生成 AI 图片', icon: <Image className="w-4 h-4" />, status: 'pending' },
-    { id: 'generate', name: '生成 HTML', description: 'Gemini 生成 reveal.js', icon: <Code className="w-4 h-4" />, status: 'pending' },
-  ]);
+  // 判断是否有图片
+  const hasImages = images && images.length > 0;
+
+  // 工作流程步骤（根据是否有图片动态调整）
+  const getInitialWorkflowSteps = useCallback((): WorkflowStep[] => {
+    if (hasImages) {
+      return [
+        { id: 'plan', name: '规划网站', description: '分析图片、设计结构', icon: <Layout className="w-4 h-4" />, status: 'pending' },
+        { id: 'search', name: '搜索资料', description: '查找相关数据和信息', icon: <Search className="w-4 h-4" />, status: 'pending' },
+        { id: 'chart', name: '生成图表', description: '创建数据可视化配置', icon: <BarChart3 className="w-4 h-4" />, status: 'pending' },
+        { id: 'prompt', name: '整合提示词', description: '汇总所有材料', icon: <FileText className="w-4 h-4" />, status: 'pending' },
+        { id: 'image_gen', name: '生成图片', description: '并发生成 AI 图片', icon: <Image className="w-4 h-4" />, status: 'pending' },
+        { id: 'generate', name: '生成 HTML', description: 'Gemini 生成动效网站', icon: <Code className="w-4 h-4" />, status: 'pending' },
+      ];
+    } else {
+      // 无图片模式：添加深度研究步骤
+      return [
+        { id: 'research', name: '深度研究', description: '深入研究主题（约30-60秒）', icon: <Brain className="w-4 h-4" />, status: 'pending' },
+        { id: 'plan', name: '规划网站', description: '设计网站结构', icon: <Layout className="w-4 h-4" />, status: 'pending' },
+        { id: 'search', name: '搜索资料', description: '查找补充数据和信息', icon: <Search className="w-4 h-4" />, status: 'pending' },
+        { id: 'chart', name: '生成图表', description: '创建数据可视化配置', icon: <BarChart3 className="w-4 h-4" />, status: 'pending' },
+        { id: 'prompt', name: '整合提示词', description: '汇总所有材料', icon: <FileText className="w-4 h-4" />, status: 'pending' },
+        { id: 'image_gen', name: '生成图片', description: '并发生成 AI 图片', icon: <Image className="w-4 h-4" />, status: 'pending' },
+        { id: 'generate', name: '生成 HTML', description: 'Gemini 生成动效网站', icon: <Code className="w-4 h-4" />, status: 'pending' },
+      ];
+    }
+  }, [hasImages]);
+
+  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>(getInitialWorkflowSteps);
 
   // Agent 活动日志
   const [agentLogs, setAgentLogs] = useState<AgentLogItem[]>([]);
@@ -314,7 +334,8 @@ export default function ScrollytellingPreview({
       case 'action':
         if (event.tool) {
           const toolMapping: Record<string, { step: string; name: string }> = {
-            'plan_structure': { step: 'plan', name: '📋 规划幻灯片结构' },
+            'deep_research': { step: 'research', name: '🔬 深度研究主题' },
+            'plan_structure': { step: 'plan', name: '📋 规划网站结构' },
             'web_search': { step: 'search', name: '🌐 搜索资料' },
             'generate_chart_data': { step: 'chart', name: '📊 生成图表数据' },
             'finalize_prompt': { step: 'prompt', name: '✨ 整合提示词' }
@@ -417,13 +438,14 @@ export default function ScrollytellingPreview({
 
   // 重置工作流程
   const resetWorkflow = useCallback(() => {
-    setWorkflowSteps(prev => prev.map(step => ({ ...step, status: 'pending' as const })));
+    setWorkflowSteps(getInitialWorkflowSteps());
     setImageGenProgress({ total: 0, completed: 0, current: '' });
-  }, []);
+  }, [getInitialWorkflowSteps]);
 
   // 开始生成
   const startGeneration = useCallback(async (additionalPrompt?: string) => {
-    if (images.length === 0) return;
+    // 无图片模式需要 title 作为 userPrompt
+    if (!hasImages && !title?.trim()) return;
 
     // 重置状态
     setHtmlContent("");
@@ -449,11 +471,20 @@ export default function ScrollytellingPreview({
     // 组合主题和额外指令
     const theme = [customPrompt, additionalPrompt].filter(Boolean).join('\n\n');
 
+    // 无图片模式：使用 title 作为 userPrompt
+    const hasImages = images && images.length > 0;
+    const userPrompt = !hasImages ? title : undefined;
+
     try {
       const response = await fetch("/api/scrollytelling", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ images, prompts, theme: theme || undefined }),
+        body: JSON.stringify({
+          images,
+          prompts,
+          theme: theme || undefined,
+          userPrompt,  // 无图片模式的用户提示词
+        }),
         signal: abortControllerRef.current.signal,
       });
 
@@ -515,11 +546,13 @@ export default function ScrollytellingPreview({
     } finally {
       setIsGenerating(false);
     }
-  }, [images, prompts, customPrompt, handleStreamEvent, renderToIframe, resetWorkflow]);
+  }, [images, prompts, customPrompt, handleStreamEvent, renderToIframe, resetWorkflow, hasImages, title]);
 
   // 打开时自动开始生成
   useEffect(() => {
-    if (isOpen && images.length > 0) {
+    // 有图片模式 或 无图片但有标题
+    const canStart = isOpen && (images.length > 0 || title?.trim());
+    if (canStart) {
       setAutoFixAttempts(0);
       startGeneration();
     }
@@ -529,7 +562,7 @@ export default function ScrollytellingPreview({
         abortControllerRef.current.abort();
       }
     };
-  }, [isOpen]);
+  }, [isOpen, title]);
 
   // 发布到 R2
   const handlePublish = async () => {

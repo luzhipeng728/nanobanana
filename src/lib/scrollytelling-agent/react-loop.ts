@@ -257,8 +257,8 @@ async function generateAllImages(
 // 快速图片分析（使用 fast 2.5 模型）
 // ============================================
 
-// 快速审图模型 - 使用 Claude 3.5 Haiku 或用户配置的快速模型
-const FAST_VISION_MODEL = process.env.FAST_VISION_MODEL || 'claude-3-5-haiku-latest';
+// 快速审图模型 - 使用 Claude Haiku 4.5 或用户配置的快速模型
+const FAST_VISION_MODEL = process.env.FAST_VISION_MODEL || 'claude-haiku-4-5-20251001';
 
 // 使用快速模型分析参考图片
 async function analyzeImagesWithFastModel(
