@@ -3,27 +3,48 @@
 import { memo, useState, useCallback } from "react";
 import { NodeProps, useReactFlow } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
-import { Loader2, Wand2, Music as MusicIcon, Sparkles, ArrowRight } from "lucide-react";
-import { BaseNode } from "./BaseNode";
+import { Loader2, Music as MusicIcon, Sparkles, ArrowRight } from "lucide-react";
+import { GeneratorNodeLayout } from "./GeneratorNodeLayout";
 import { NodeTextarea, NodeButton, NodeLabel, NodeInput } from "@/components/ui/NodeUI";
+import { useTaskGeneration } from "@/hooks/useTaskGeneration";
 
-type MusicGenNodeData = {
-  prompt: string;
-  lyrics?: string;
-  numberOfSongs: number;
-  isGenerating: boolean;
-};
-
-const MusicGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
+const MusicGenNode = ({ data, id, selected }: NodeProps<any>) => {
   const { addMusicNode } = useCanvas();
   const { getNode } = useReactFlow();
 
   const [prompt, setPrompt] = useState(data.prompt || "");
   const [lyrics, setLyrics] = useState(data.lyrics || "");
   const [numberOfSongs, setNumberOfSongs] = useState(data.numberOfSongs || 2);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
-  const [isExtendingLyrics, setIsExtendingLyrics] = useState(false);
+
+  // Main Generation Hook
+  const { isGenerating, generate } = useTaskGeneration<{ taskId: string }>({
+    onSuccess: (result) => {
+      console.log(`Created music task: ${result.taskId}`);
+      const currentNode = getNode(id);
+      if (currentNode) {
+        addMusicNode(
+          result.taskId,
+          prompt,
+          { x: currentNode.position.x + 350, y: currentNode.position.y }
+        );
+      }
+    }
+  });
+
+  // Helper hooks for sub-tasks (Lyrics)
+  const { isGenerating: isGeneratingLyrics, generate: generateLyrics } = useTaskGeneration<{ lyrics: string }>({
+    onSuccess: (res) => {
+      setLyrics(res.lyrics || "");
+      data.lyrics = res.lyrics || "";
+    }
+  });
+
+  const { isGenerating: isExtendingLyrics, generate: extendLyrics } = useTaskGeneration<{ lyrics: string }>({
+    onSuccess: (res) => {
+      setLyrics(res.lyrics || "");
+      data.lyrics = res.lyrics || "";
+    }
+  });
 
   const handlePromptChange = (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPrompt(evt.target.value);
@@ -35,110 +56,51 @@ const MusicGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     data.lyrics = evt.target.value;
   };
 
-  const onGenerateLyrics = async () => {
+  const onGenerateLyrics = () => {
     if (!prompt) {
       alert("Please enter a prompt first");
       return;
     }
-    setIsGeneratingLyrics(true);
-    try {
-      const response = await fetch("/api/lyrics/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate lyrics");
-      }
-
-      const result = await response.json();
-      setLyrics(result.lyrics || "");
-      data.lyrics = result.lyrics || "";
-    } catch (error) {
-      console.error("Failed to generate lyrics", error);
-      alert("Failed to generate lyrics");
-    } finally {
-      setIsGeneratingLyrics(false);
-    }
+    generateLyrics({
+      apiPath: "/api/lyrics/generate",
+      body: { prompt }
+    });
   };
 
-  const onExtendLyrics = async () => {
+  const onExtendLyrics = () => {
     if (!lyrics) {
       alert("Please enter or generate lyrics first");
       return;
     }
-    setIsExtendingLyrics(true);
-    try {
-      const response = await fetch("/api/lyrics/extend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lyrics }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to extend lyrics");
-      }
-
-      const result = await response.json();
-      setLyrics(result.lyrics || "");
-      data.lyrics = result.lyrics || "";
-    } catch (error) {
-      console.error("Failed to extend lyrics", error);
-      alert("Failed to extend lyrics");
-    } finally {
-      setIsExtendingLyrics(false);
-    }
+    extendLyrics({
+      apiPath: "/api/lyrics/extend",
+      body: { lyrics }
+    });
   };
 
-  const onGenerate = async () => {
+  const onGenerate = () => {
     if (!prompt) return;
-    setIsGenerating(true);
-    try {
-      // 创建音乐生成任务
-      const response = await fetch("/api/generate-music", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt,
-          lyrics: lyrics || undefined,
-          numberOfSongs,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create music task");
+    generate({
+      apiPath: "/api/generate-music",
+      body: {
+        prompt,
+        lyrics: lyrics || undefined,
+        numberOfSongs,
       }
-
-      const { taskId } = await response.json();
-      console.log(`Created music task: ${taskId}`);
-
-      // 立即创建一个 Music 节点，传入 taskId
-      const currentNode = getNode(id);
-      if (currentNode) {
-        addMusicNode(
-          taskId,
-          prompt,
-          { x: currentNode.position.x + 350, y: currentNode.position.y }
-        );
-      }
-    } catch (error) {
-      console.error("Failed to create music task", error);
-      alert("Failed to create music task");
-    } finally {
-      setIsGenerating(false);
-    }
+    });
   };
 
   return (
-    <BaseNode
+    <GeneratorNodeLayout
       title="Music Generator"
       icon={MusicIcon}
       color="green"
       selected={selected}
-      className="w-[320px]"
+      isGenerating={isGenerating}
+      onGenerate={onGenerate}
+      generateButtonText="Generate Music"
+      generateButtonDisabled={!prompt}
     >
-
       <div className="space-y-4">
         <div className="space-y-1">
           <NodeLabel>Prompt</NodeLabel>
@@ -203,19 +165,8 @@ const MusicGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
             }}
           />
         </div>
-
-        <div className="pt-2">
-          <NodeButton
-            onClick={onGenerate}
-            disabled={isGenerating || !prompt}
-            className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white"
-          >
-            {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Generate Music"}
-          </NodeButton>
-        </div>
       </div>
-
-    </BaseNode>
+    </GeneratorNodeLayout>
   );
 };
 

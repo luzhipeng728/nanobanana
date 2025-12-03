@@ -11,11 +11,7 @@ import {
   Connection,
   Edge,
   Node,
-  ReactFlowProvider,
   BackgroundVariant,
-  getConnectedEdges,
-  getIncomers,
-  NodeTypes,
 } from "@xyflow/react";
 import ImageGenNode from "./nodes/ImageGenNode";
 import ImageNode from "./nodes/ImageNode";
@@ -32,7 +28,6 @@ import SpriteNode from "./nodes/SpriteNode";
 import SuperAgentNode from "./nodes/SuperAgentNode";
 import TTSGenNode from "./nodes/TTSGenNode";
 import TTSNode from "./nodes/TTSNode";
-// WebsiteGenNode 和 WebsitePreviewNode 已隐藏
 import ImageModal from "./ImageModal";
 import NodeToolbar from "./NodeToolbar";
 import PromptPanel from "./PromptPanel";
@@ -43,11 +38,18 @@ import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
 import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
-import { Save, FolderOpen, User as UserIcon, LogOut, Wand2, Brain, Trash2, Smile, GalleryHorizontalEnd, GalleryVerticalEnd, Image as ImageIcon, X, MousePointer2, Hand, LayoutGrid, Ghost, Sparkles, Share2, Loader2, Video, Mic2, Check, Film, Download, Play, Import } from "lucide-react";
+import { 
+  Wand2, Image as ImageIcon, X, MousePointer2, Import, Loader2 
+} from "lucide-react";
 import exampleImages from "@/data/example-images.json";
 import Gallery from "./Gallery";
 import ModelCapabilityTip from "./ModelCapabilityTip";
 import PageViewCounter from "./PageViewCounter";
+
+// New Components
+import { SlideshowPanel } from "./SlideshowPanel";
+import { CanvasToolbar } from "./CanvasToolbar";
+import { AuthModal } from "./AuthModal";
 
 const nodeTypes = {
   imageGen: ImageGenNode as any,
@@ -65,29 +67,9 @@ const nodeTypes = {
   superAgent: SuperAgentNode as any,
   ttsGen: TTSGenNode as any,
   tts: TTSNode as any,
-  // websiteGen 和 websitePreview 已隐藏
 };
 
 const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
-
-// 讲解视频发音人列表
-const NARRATION_SPEAKERS = [
-  { key: 'zh_female_vivi', name: 'Vivi', gender: '女', lang: '中/英' },
-  { key: 'zh_male_ruyayichen', name: '儒雅逸辰', gender: '男', lang: '中文' },
-  { key: 'zh_female_xiaohe', name: '小何', gender: '女', lang: '中文' },
-  { key: 'zh_male_yunzhou', name: '云舟', gender: '男', lang: '中文' },
-  { key: 'zh_male_dayi', name: '大壹', gender: '男', lang: '中文' },
-  { key: 'zh_female_cancan', name: '知性灿灿', gender: '女', lang: '中文' },
-];
-
-// 转场效果列表
-const TRANSITIONS = [
-  { key: 'fade', name: '优雅淡入淡出', desc: '平滑过渡' },
-  { key: 'slideleft', name: '向左滑动', desc: '动感切换' },
-  { key: 'slideright', name: '向右滑动', desc: '动感切换' },
-  { key: 'dissolve', name: '溶解效果', desc: '柔和过渡' },
-  { key: 'none', name: '直接切换', desc: '无转场' },
-];
 
 // Start with empty canvas - users will drag nodes from toolbar
 const initialNodes: Node[] = [];
@@ -101,10 +83,7 @@ export default function InfiniteCanvas() {
 
   // User & Canvas State
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authError, setAuthError] = useState("");
-  const [authLoading, setAuthLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [currentCanvasId, setCurrentCanvasId] = useState<string | null>(null);
   const [savedCanvases, setSavedCanvases] = useState<any[]>([]);
@@ -165,7 +144,7 @@ export default function InfiniteCanvas() {
   // Drag and drop handlers for adding nodes
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
-  // Load canvas from localStorage on mount, or show examples for first visit
+  // Load canvas from localStorage on mount
   useEffect(() => {
     try {
       const savedCanvas = localStorage.getItem(LOCALSTORAGE_KEY);
@@ -178,7 +157,6 @@ export default function InfiniteCanvas() {
           console.log("✅ Loaded canvas from localStorage:", savedNodes.length, "nodes");
         }
       }
-      // 不再自动加载示例图片，用户可以通过按钮手动导入
     } catch (error) {
       console.error("Failed to load canvas from localStorage:", error);
     } finally {
@@ -188,16 +166,15 @@ export default function InfiniteCanvas() {
 
   // Load example images manually
   const loadExampleImages = useCallback(() => {
-    // 如果画布不为空，提示用户
     if (nodes.length > 0) {
       if (!confirm("当前画布有内容，导入示例图片将覆盖现有内容。是否继续？")) {
         return;
       }
     }
 
-    const COLS = 9;  // 9 columns (27 images / 3 rows)
-    const NODE_WIDTH = 420;  // Image node width
-    const NODE_HEIGHT = 260; // Estimated height (16:9 aspect)
+    const COLS = 9;
+    const NODE_WIDTH = 420;
+    const NODE_HEIGHT = 260;
     const GAP_X = 40;
     const GAP_Y = 60;
     const START_X = 50;
@@ -223,19 +200,16 @@ export default function InfiniteCanvas() {
           prompt: img.prompt,
           timestamp: new Date().toLocaleString(),
           isLoading: false,
-          label: `${img.category} - ${img.title}`,  // 显示分类和标题
+          label: `${img.category} - ${img.title}`,
         },
       };
     });
 
     setNodes(exampleNodes);
-    console.log(`✅ Loaded ${exampleNodes.length} example images`);
 
-    // 延迟执行 fitView 以确保节点已渲染
     setTimeout(() => {
       if (reactFlowInstance) {
         reactFlowInstance.fitView({ padding: 0.1 });
-        console.log("📐 Centered view on example images");
       }
     }, 100);
   }, [setNodes, nodes.length, reactFlowInstance]);
@@ -244,9 +218,7 @@ export default function InfiniteCanvas() {
   const importSlideshow = useCallback(async () => {
     if (!importInput.trim()) return;
 
-    // 从输入中提取 ID（支持完整 URL 或纯 ID）
     let slideshowId = importInput.trim();
-    // 匹配 /slides/xxx 或 slides/xxx 格式
     const urlMatch = slideshowId.match(/\/slides\/([a-zA-Z0-9-]+)/);
     if (urlMatch) {
       slideshowId = urlMatch[1];
@@ -268,13 +240,11 @@ export default function InfiniteCanvas() {
         throw new Error("幻灯片没有图片");
       }
 
-      // 计算布局位置
-      const COLS = Math.min(images.length, 5); // 最多5列
+      const COLS = Math.min(images.length, 5);
       const NODE_WIDTH = 400;
       const NODE_HEIGHT = 300;
       const GAP_X = 40;
       const GAP_Y = 60;
-      // 在现有节点右侧添加，或者从左上角开始
       const existingMaxX = nodes.length > 0
         ? Math.max(...nodes.map(n => (n.position?.x || 0) + 500))
         : 50;
@@ -299,7 +269,7 @@ export default function InfiniteCanvas() {
           },
           data: {
             imageUrl: url,
-            prompt,  // 使用对应的 prompt
+            prompt,
             timestamp: new Date().toLocaleString(),
             isLoading: false,
             label: prompt ? `${prompt.slice(0, 20)}...` : `${data.title} #${index + 1}`,
@@ -308,13 +278,9 @@ export default function InfiniteCanvas() {
       });
 
       setNodes((nds) => [...nds, ...newNodes]);
-      console.log(`✅ Imported ${newNodes.length} images from slideshow: ${data.title}`);
-
-      // 关闭弹窗并清空输入
       setIsImportModalOpen(false);
       setImportInput("");
 
-      // 延迟执行 fitView
       setTimeout(() => {
         if (reactFlowInstance) {
           reactFlowInstance.fitView({ padding: 0.1 });
@@ -327,29 +293,25 @@ export default function InfiniteCanvas() {
     }
   }, [importInput, nodes, setNodes, reactFlowInstance]);
 
-  // Auto-save canvas to localStorage with debounce to prevent lag during dragging
+  // Auto-save
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isCanvasLoaded) return; // Don't save during initial load
+    if (!isCanvasLoaded) return;
 
-    // Clear previous timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Debounce: wait 500ms after last change before saving
     saveTimeoutRef.current = setTimeout(() => {
       try {
         const canvasData = JSON.stringify({ nodes, edges });
         localStorage.setItem(LOCALSTORAGE_KEY, canvasData);
-        console.log("💾 Auto-saved canvas to localStorage:", nodes.length, "nodes", edges.length, "edges");
       } catch (error) {
         console.error("Failed to save canvas to localStorage:", error);
       }
     }, 500);
 
-    // Cleanup timeout on unmount
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -357,7 +319,7 @@ export default function InfiniteCanvas() {
     };
   }, [nodes, edges, isCanvasLoaded]);
 
-  // Check for existing session on mount
+  // Check Session
   useEffect(() => {
     checkSession();
   }, []);
@@ -381,92 +343,6 @@ export default function InfiniteCanvas() {
     [setEdges]
   );
 
-
-  const addGeneratorNode = useCallback(() => {
-    const newNode: Node = {
-      id: `gen-${Date.now()}`,
-      type: "imageGen",
-      position: {
-        x: Math.random() * 400 + 100,
-        y: Math.random() * 400 + 100,
-      },
-      data: { prompt: "" },
-    };
-    setNodes((nds) => nds.concat(newNode));
-  }, [setNodes]);
-
-  const addAgentNode = useCallback(() => {
-    const newNode: Node = {
-      id: `agent-${Date.now()}`,
-      type: "agent",
-      position: {
-        x: Math.random() * 400 + 100,
-        y: Math.random() * 400 + 100,
-      },
-      data: {
-        userRequest: "",
-        status: "idle",
-        prompts: [],
-        progress: 0,
-      },
-    };
-    setNodes((nds) => nds.concat(newNode));
-  }, [setNodes]);
-
-  const addStickerGenNode = useCallback(() => {
-    const newNode: Node = {
-      id: `stickerGen-${Date.now()}`,
-      type: "stickerGen",
-      position: {
-        x: Math.random() * 400 + 100,
-        y: Math.random() * 400 + 100,
-      },
-      style: {
-        width: 340,
-      },
-      data: {
-        animationPrompt: "",
-        model: "nano-banana",
-        imageSize: "512x512",
-      },
-    };
-    setNodes((nds) => nds.concat(newNode));
-  }, [setNodes]);
-
-  // Sprite 动画节点 (gif-creator 风格)
-  const addSpriteNode = useCallback(() => {
-    const newNode: Node = {
-      id: `sprite-${Date.now()}`,
-      type: "sprite",
-      position: {
-        x: Math.random() * 400 + 100,
-        y: Math.random() * 400 + 100,
-      },
-      style: {
-        width: 360,
-      },
-      data: {},
-    };
-    setNodes((nds) => nds.concat(newNode));
-  }, [setNodes]);
-
-  // 超级智能体节点 (提示词专家)
-  const addSuperAgentNode = useCallback(() => {
-    const newNode: Node = {
-      id: `superAgent-${Date.now()}`,
-      type: "superAgent",
-      position: {
-        x: Math.random() * 400 + 100,
-        y: Math.random() * 400 + 100,
-      },
-      style: {
-        width: 450,
-      },
-      data: {},
-    };
-    setNodes((nds) => nds.concat(newNode));
-  }, [setNodes]);
-
   // 存储待放置图片的位置
   const pendingImagePositionRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -477,27 +353,23 @@ export default function InfiniteCanvas() {
       return;
     }
 
-    // Check file type
     if (!file.type.startsWith('image/')) {
       alert('请上传图片文件');
       setIsPlacingImage(false);
       return;
     }
 
-    // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       alert('图片大小不能超过 10MB');
       setIsPlacingImage(false);
       return;
     }
 
-    // 使用已确定的位置，如果没有则随机
     const position = pendingImagePositionRef.current || {
       x: Math.random() * 500 + 100,
       y: Math.random() * 500 + 100,
     };
 
-    // 先创建一个 loading 状态的节点（正方形占位，图片加载后会自动调整比例）
     const nodeId = `image-${Date.now()}`;
     const newNode: Node = {
       id: nodeId,
@@ -512,23 +384,20 @@ export default function InfiniteCanvas() {
         prompt: `上传中: ${file.name}`,
         timestamp: new Date().toLocaleString(),
         isLoading: true,
-        label: "上传",  // 上传的图片标签
+        label: "上传",
       },
     };
     setNodes((nds) => nds.concat(newNode));
 
-    // 重置状态
     setIsPlacingImage(false);
     pendingImagePositionRef.current = null;
 
     try {
-      // Upload to R2
       const formData = new FormData();
       formData.append('file', file);
 
       const imageUrl = await uploadImageToR2(formData);
 
-      // 上传成功，更新节点显示图片
       setNodes((nds) =>
         nds.map((node) =>
           node.id === nodeId
@@ -546,7 +415,6 @@ export default function InfiniteCanvas() {
       );
     } catch (error) {
       console.error('Failed to upload image:', error);
-      // 上传失败，更新节点显示错误
       setNodes((nds) =>
         nds.map((node) =>
           node.id === nodeId
@@ -564,16 +432,13 @@ export default function InfiniteCanvas() {
       );
     }
 
-    // Reset input
     event.target.value = '';
   }, [setNodes]);
 
-  // 处理工具栏上传按钮点击 - 进入放置模式
   const handleToolbarImageUploadClick = useCallback(() => {
     setIsPlacingImage(true);
   }, []);
 
-  // 处理画布点击 - 在放置模式下确定位置并打开文件选择或放置画廊图片或创建节点
   const handleCanvasClick = useCallback((event: React.MouseEvent) => {
     if (!reactFlowInstance) return;
 
@@ -643,7 +508,6 @@ export default function InfiniteCanvas() {
     }
   }, [isPlacingImage, pendingGalleryImage, pendingNodeType, reactFlowInstance, setNodes]);
 
-  // 取消放置模式
   const cancelPlacingImage = useCallback(() => {
     setIsPlacingImage(false);
     setPendingGalleryImage(null);
@@ -651,7 +515,6 @@ export default function InfiniteCanvas() {
     pendingImagePositionRef.current = null;
   }, []);
 
-  // 从画廊添加图片 - 进入放置模式
   const handleGalleryImageClick = useCallback((imageUrl: string, prompt: string) => {
     setPendingGalleryImage({ url: imageUrl, prompt });
   }, []);
@@ -717,41 +580,29 @@ export default function InfiniteCanvas() {
     [reactFlowInstance, setNodes]
   );
 
-  const handleAuth = async () => {
-    if (!username.trim() || !password.trim()) {
-      setAuthError("请填写用户名和密码");
-      return;
-    }
-
-    setAuthError("");
-    setAuthLoading(true);
-
-    try {
-      const result = authMode === "register"
-        ? await registerUser(username.trim(), password)
-        : await loginUser(username.trim(), password);
-
-      if (result.success && result.user) {
-        setUserId(result.user.id);
-        setUsername(result.user.username);
-        setPassword("");
-        setIsUserModalOpen(false);
-        loadUserCanvases(result.user.id);
-      } else {
-        setAuthError(result.error || "操作失败，请重试");
-      }
-    } catch (error) {
-      setAuthError("操作失败，请重试");
-      console.error(error);
-    } finally {
-      setAuthLoading(false);
+  // Auth handlers
+  const handleLogin = async (password: string) => {
+    const result = await loginUser(username.trim(), password);
+    if (result.success && result.user) {
+      setUserId(result.user.id);
+      setUsername(result.user.username);
+      setIsUserModalOpen(false);
+      loadUserCanvases(result.user.id);
+    } else {
+      setAuthError(result.error || "登录失败");
     }
   };
 
-  // 切换登录/注册模式时清空错误
-  const toggleAuthMode = () => {
-    setAuthMode(authMode === "login" ? "register" : "login");
-    setAuthError("");
+  const handleRegister = async (password: string) => {
+    const result = await registerUser(username.trim(), password);
+      if (result.success && result.user) {
+        setUserId(result.user.id);
+        setUsername(result.user.username);
+        setIsUserModalOpen(false);
+        loadUserCanvases(result.user.id);
+      } else {
+      setAuthError(result.error || "注册失败");
+    }
   };
 
   const handleLogout = async () => {
@@ -793,23 +644,19 @@ export default function InfiniteCanvas() {
       setNodes(loadedNodes);
       setEdges(loadedEdges);
       setCurrentCanvasId(canvas.id);
-      // Also update localStorage
       localStorage.setItem(LOCALSTORAGE_KEY, canvas.data);
     }
   };
 
-  // Clear local cache
   const clearLocalCache = useCallback(() => {
     if (confirm("确定要清空画布缓存吗？这将删除所有节点。")) {
       localStorage.removeItem(LOCALSTORAGE_KEY);
       setNodes([]);
       setEdges([]);
       setCurrentCanvasId(null);
-      console.log("🗑️ Cleared local cache");
     }
-  }, [setNodes]);
+  }, [setNodes, setEdges]);
 
-  // Delete selected nodes
   const deleteSelectedNodes = useCallback((skipConfirm = false) => {
     const selectedNodes = nodes.filter(node => node.selected);
     if (selectedNodes.length === 0) {
@@ -819,9 +666,7 @@ export default function InfiniteCanvas() {
     const doDelete = () => {
       const selectedIds = new Set(selectedNodes.map(n => n.id));
       setNodes(nds => nds.filter(n => !selectedIds.has(n.id)));
-      // 同时删除相关的边
       setEdges(eds => eds.filter((e: Edge) => !selectedIds.has(e.source) && !selectedIds.has(e.target)));
-      console.log(`🗑️ Deleted ${selectedNodes.length} nodes`);
     };
 
     if (skipConfirm || confirm(`确定要删除选中的 ${selectedNodes.length} 个节点吗？`)) {
@@ -829,20 +674,16 @@ export default function InfiniteCanvas() {
     }
   }, [nodes, setNodes, setEdges]);
 
-  // Keyboard shortcut: Delete key to delete selected nodes
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Delete or Backspace to delete selected nodes (when not typing in an input)
       if ((e.key === "Delete" || e.key === "Backspace") && selectionMode) {
         const target = e.target as HTMLElement;
-        // Don't trigger if user is typing in an input or textarea
         if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
           return;
         }
         e.preventDefault();
-        deleteSelectedNodes(true);  // Skip confirmation for keyboard shortcut
+        deleteSelectedNodes(true); 
       }
-      // Press Escape to exit selection mode
       if (e.key === "Escape" && selectionMode) {
         setSelectionMode(false);
       }
@@ -852,7 +693,7 @@ export default function InfiniteCanvas() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectionMode, deleteSelectedNodes]);
 
-  // Add image node programmatically - 初始尺寸为默认占位，图片加载后会自动调整
+  // Helper functions for Context
   const addImageNode = useCallback((
     imageUrl: string | undefined,
     prompt: string,
@@ -863,34 +704,31 @@ export default function InfiniteCanvas() {
       config: any;
       referenceImages?: string[];
     },
-    label?: string  // 左上角标签（场景名称）
+    label?: string
   ): string => {
     const nodeId = `image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-    // 默认占位尺寸（正方形），图片加载后会根据实际比例自动调整
     const newNode: Node = {
       id: nodeId,
       type: "image",
       position,
       style: {
-        width: 400,  // 默认宽度
-        height: 400, // 默认高度（正方形占位）
+        width: 400,
+        height: 400,
       },
       data: {
         imageUrl,
         prompt,
         timestamp: new Date().toLocaleString(),
-        isLoading: !imageUrl, // loading 状态
-        taskId, // 存储任务 ID
-        generationConfig, // 存储生图配置，用于重新生成
-        label, // 左上角标签
+        isLoading: !imageUrl,
+        taskId,
+        generationConfig,
+        label,
       },
     };
     setNodes((nds) => nds.concat(newNode));
     return nodeId;
   }, [setNodes]);
 
-  // Update image node with generated image
   const updateImageNode = useCallback((nodeId: string, imageUrl: string) => {
     setNodes((nds) =>
       nds.map((node) =>
@@ -908,10 +746,8 @@ export default function InfiniteCanvas() {
     );
   }, [setNodes]);
 
-  // Add music node programmatically
   const addMusicNode = useCallback((taskId: string, prompt: string, position: { x: number; y: number }): string => {
     const nodeId = `music-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
     const newNode: Node = {
       id: nodeId,
       type: "music",
@@ -926,7 +762,6 @@ export default function InfiniteCanvas() {
     return nodeId;
   }, [setNodes]);
 
-  // Add video node programmatically
   const addVideoNode = useCallback((
     taskId: string,
     prompt: string,
@@ -934,7 +769,6 @@ export default function InfiniteCanvas() {
     options?: { apiSource?: "sora" | "veo"; model?: string }
   ): string => {
     const nodeId = `video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
     const newNode: Node = {
       id: nodeId,
       type: "video",
@@ -955,10 +789,8 @@ export default function InfiniteCanvas() {
     return nodeId;
   }, [setNodes]);
 
-  // Add sticker node programmatically
   const addStickerNode = useCallback((taskId: string, animationType: string, position: { x: number; y: number }): string => {
     const nodeId = `sticker-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
     const newNode: Node = {
       id: nodeId,
       type: "sticker",
@@ -977,10 +809,8 @@ export default function InfiniteCanvas() {
     return nodeId;
   }, [setNodes]);
 
-  // Add TTS node programmatically (task-based)
   const addTTSNode = useCallback((taskId: string, text: string, position: { x: number; y: number }): string => {
     const nodeId = `tts-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
     const newNode: Node = {
       id: nodeId,
       type: "tts",
@@ -988,18 +818,16 @@ export default function InfiniteCanvas() {
       data: {
         taskId,
         text,
-        isLoading: true,  // 初始为 loading 状态
+        isLoading: true,
       },
     };
     setNodes((nds) => nds.concat(newNode));
     return nodeId;
   }, [setNodes]);
 
-  // Use refs to avoid re-creating callbacks on every render
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
 
-  // Keep refs in sync
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
@@ -1008,40 +836,28 @@ export default function InfiniteCanvas() {
     edgesRef.current = edges;
   }, [edges]);
 
-  // Get connected image nodes for a given node - uses refs to avoid dependency on nodes/edges
   const getConnectedImageNodes = useCallback((nodeId: string): Node[] => {
     const currentNodes = nodesRef.current;
     const currentEdges = edgesRef.current;
-
     const node = currentNodes.find(n => n.id === nodeId);
     if (!node) return [];
-
-    // Get all edges connected to this node (incoming edges)
     const connectedEdges = currentEdges.filter((edge: Edge) => edge.target === nodeId);
-
-    // Get all source nodes from connected edges
-    const sourceNodes = connectedEdges
+    return connectedEdges
       .map((edge: Edge) => currentNodes.find(n => n.id === edge.source))
       .filter((n): n is Node => n !== undefined && n.type === 'image');
+  }, []);
 
-    return sourceNodes;
-  }, []); // No dependencies - uses refs
-
-  // Get a single node by ID - uses refs to avoid dependency on nodes
   const getNode = useCallback((nodeId: string) => {
     return nodesRef.current.find(n => n.id === nodeId);
-  }, []); // No dependencies - uses refs
+  }, []);
 
-  // Open image modal
   const openImageModal = useCallback((imageUrl: string, prompt?: string) => {
     setModalImageUrl(imageUrl);
     setModalPrompt(prompt);
     setIsImageModalOpen(true);
   }, []);
 
-  // Handle node selection change - show prompt panel for image nodes
   const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Node[] }) => {
-    // 只有当选中单个 image 节点时才显示提示词面板
     if (selectedNodes.length === 1 && selectedNodes[0].type === 'image') {
       const node = selectedNodes[0];
       const prompt = node.data?.prompt as string | undefined;
@@ -1051,26 +867,21 @@ export default function InfiniteCanvas() {
         return;
       }
     }
-    // 其他情况隐藏面板
     setSelectedImagePrompt(null);
   }, []);
 
-  // Toggle slideshow selection for a node
   const toggleSlideshowSelection = useCallback((nodeId: string) => {
     setSlideshowSelections(prev => {
       const newMap = new Map(prev);
       if (newMap.has(nodeId)) {
-        // Remove this node and re-order remaining selections
         const removedOrder = newMap.get(nodeId)!;
         newMap.delete(nodeId);
-        // Re-order: decrease order for items after the removed one
         newMap.forEach((order, id) => {
           if (order > removedOrder) {
             newMap.set(id, order - 1);
           }
         });
       } else {
-        // Add with next order number
         const nextOrder = newMap.size + 1;
         newMap.set(nodeId, nextOrder);
       }
@@ -1078,7 +889,6 @@ export default function InfiniteCanvas() {
     });
   }, []);
 
-  // Enter slideshow mode
   const enterSlideshowMode = useCallback(() => {
     setSlideshowMode(true);
     setSlideshowSelections(new Map());
@@ -1086,13 +896,11 @@ export default function InfiniteCanvas() {
     setPublishedUrl(null);
   }, []);
 
-  // Exit slideshow mode
   const exitSlideshowMode = useCallback(() => {
     setSlideshowMode(false);
     setSlideshowSelections(new Map());
     setSlideshowTitle("");
     setPublishedUrl(null);
-    // 重置讲解视频状态
     setEnableNarration(false);
     setNarrationSpeaker("zh_female_vivi");
     setNarrationTransition("fade");
@@ -1102,7 +910,6 @@ export default function InfiniteCanvas() {
     setGeneratedVideoUrl(null);
   }, []);
 
-  // Publish slideshow
   const publishSlideshow = useCallback(async () => {
     if (slideshowSelections.size === 0) {
       alert("请至少选择一张图片");
@@ -1115,7 +922,6 @@ export default function InfiniteCanvas() {
 
     setIsPublishing(true);
     try {
-      // Get image URLs and prompts in order
       const orderedNodeIds = Array.from(slideshowSelections.entries())
         .sort((a, b) => a[1] - b[1])
         .map(([nodeId]) => nodeId);
@@ -1137,7 +943,6 @@ export default function InfiniteCanvas() {
         return;
       }
 
-      // Call API to create slideshow
       const response = await fetch("/api/slideshow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1152,14 +957,12 @@ export default function InfiniteCanvas() {
       if (result.success) {
         setPublishedUrl(result.url);
 
-        // 如果勾选了生成讲解视频，开始 SSE 流式生成
         if (enableNarration) {
           setIsPublishing(false);
           setVideoGenerating(true);
           setVideoProgress({ percent: 0, steps: [] });
 
           try {
-            console.log(`[Video] Sending params: speaker=${narrationSpeaker}, speed=${narrationSpeed}, transition=${narrationTransition}`);
             const videoResponse = await fetch("/api/slideshow/generate-video", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1236,11 +1039,9 @@ export default function InfiniteCanvas() {
     }
   }, [slideshowSelections, slideshowTitle, enableNarration, narrationSpeaker, narrationTransition, narrationStyle, narrationSpeed]);
 
-  // Getter functions that use refs - stable references, no re-renders on node changes
   const getNodes = useCallback(() => nodesRef.current, []);
   const getEdges = useCallback(() => edgesRef.current, []);
 
-  // Canvas context value - no longer depends on nodes/edges directly
   const canvasContextValue = useMemo(() => ({
     addImageNode,
     updateImageNode,
@@ -1249,12 +1050,11 @@ export default function InfiniteCanvas() {
     addStickerNode,
     addTTSNode,
     getConnectedImageNodes,
-    getSelectedImageNodes: () => [], // Remove selected functionality
+    getSelectedImageNodes: () => [],
     getNode,
     openImageModal,
-    getNodes,  // Use getter instead of direct value
-    getEdges,  // Use getter instead of direct value
-    // Slideshow mode
+    getNodes,
+    getEdges,
     slideshowMode,
     slideshowSelections,
     toggleSlideshowSelection,
@@ -1262,137 +1062,23 @@ export default function InfiniteCanvas() {
 
   return (
     <div className="w-full h-screen relative bg-neutral-50 dark:bg-black">
-      {/* Toolbar - Ultra Transparent Glass */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 p-2 rounded-full bg-white/[0.02] dark:bg-white/[0.02] backdrop-blur-[2px] border border-neutral-200/50 dark:border-white/10 shadow-[0_0_0_1px_rgba(0,0,0,0.02)]">
-        <button
-          onClick={handleSave}
-          className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
-          title="Save Canvas to Cloud"
-        >
-          <Save className="w-5 h-5 text-neutral-700 dark:text-neutral-200" />
-        </button>
-        <div className="relative group">
-          <button className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors" title="Load Canvas from Cloud">
-            <FolderOpen className="w-5 h-5 text-neutral-700 dark:text-neutral-200" />
-          </button>
-          {/* Dropdown for history - Glass style */}
-          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-48 bg-white/80 dark:bg-black/60 backdrop-blur-[20px] backdrop-saturate-[180%] rounded-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] border border-white/20 dark:border-white/10 hidden group-hover:block max-h-60 overflow-y-auto">
-            {savedCanvases.length === 0 ? (
-              <div className="p-3 text-xs text-neutral-500 dark:text-neutral-400 text-center">No saved canvases</div>
-            ) : (
-              savedCanvases.map(c => (
-                <div
-                  key={c.id}
-                  onClick={() => loadCanvas(c.id)}
-                  className="p-2 hover:bg-white/50 dark:hover:bg-white/10 cursor-pointer text-xs truncate border-b border-white/10 last:border-0 text-neutral-700 dark:text-neutral-200"
-                >
-                  {c.name}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-        <button
-          onClick={() => setIsGalleryOpen(true)}
-          className="p-2 rounded-full hover:bg-purple-500/20 transition-colors text-purple-600 dark:text-purple-400"
-          title="创意画廊"
-        >
-          <GalleryHorizontalEnd className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => setSelectionMode(!selectionMode)}
-          className={`p-2 rounded-full transition-colors ${
-            selectionMode
-              ? "bg-blue-500/20 text-blue-600 dark:text-blue-400"
-              : "hover:bg-white/30 dark:hover:bg-white/10 text-neutral-700 dark:text-neutral-200"
-          }`}
-          title={selectionMode ? "当前：选择模式（点击切换到手掌模式）" : "当前：手掌模式（点击切换到选择模式）"}
-        >
-          {selectionMode ? (
-            <MousePointer2 className="w-5 h-5" />
-          ) : (
-            <Hand className="w-5 h-5" />
-          )}
-        </button>
-        {selectionMode && (
-          <button
-            onClick={() => deleteSelectedNodes(false)}
-            className="p-2 rounded-full hover:bg-red-500/20 transition-colors text-red-600 dark:text-red-400"
-            title="删除选中节点"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
-        )}
-        <button
-          onClick={loadExampleImages}
-          className="p-2 rounded-full hover:bg-blue-500/20 transition-colors text-blue-600 dark:text-blue-400"
-          title="导入示例图片 (27张)"
-        >
-          <LayoutGrid className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => setIsImportModalOpen(true)}
-          className="p-2 rounded-full hover:bg-orange-500/20 transition-colors text-orange-600 dark:text-orange-400"
-          title="导入幻灯片素材"
-        >
-          <Import className="w-5 h-5" />
-        </button>
-        <button
-          onClick={enterSlideshowMode}
-          className="p-2 rounded-full hover:bg-green-500/20 transition-colors text-green-600 dark:text-green-400"
-          title="发布幻灯片"
-        >
-          <Share2 className="w-5 h-5" />
-        </button>
-        <a
-          href="/gallery"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-purple-500/30 text-white"
-          title="查看作品画廊"
-        >
-          <GalleryVerticalEnd className="w-4 h-4" />
-          <span className="text-xs font-medium">画廊</span>
-        </a>
-        <button
-          onClick={clearLocalCache}
-          className="p-2 rounded-full hover:bg-red-500/20 transition-colors text-red-600 dark:text-red-400"
-          title="清空画布"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
-        <div className="w-px bg-white/20 dark:bg-white/10 my-1" />
-        {userId ? (
-          <div className="relative group">
-            <button className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors flex items-center gap-2">
-              <UserIcon className="w-5 h-5 text-neutral-700 dark:text-neutral-200" />
-              <span className="text-xs font-medium text-neutral-700 dark:text-neutral-200">{username}</span>
-            </button>
-            {/* User dropdown - Glass style */}
-            <div className="absolute top-full mt-2 right-0 w-48 bg-white/80 dark:bg-black/60 backdrop-blur-[20px] backdrop-saturate-[180%] rounded-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] border border-white/20 dark:border-white/10 hidden group-hover:block">
-              <div className="p-3 border-b border-white/10">
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Logged in as</p>
-                <p className="text-sm font-medium truncate text-neutral-800 dark:text-neutral-100">{username}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="w-full p-3 hover:bg-red-500/10 text-left text-sm flex items-center gap-2 text-red-600 dark:text-red-400 rounded-b-xl"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsUserModalOpen(true)}
-            className="p-2 rounded-full hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
-            title="Login"
-          >
-            <UserIcon className="w-5 h-5 text-neutral-700 dark:text-neutral-200" />
-          </button>
-        )}
-      </div>
+      <CanvasToolbar
+        userId={userId}
+        username={username}
+        savedCanvases={savedCanvases}
+        selectionMode={selectionMode}
+        onSave={handleSave}
+        onLoadCanvas={loadCanvas}
+        onOpenGallery={() => setIsGalleryOpen(true)}
+        onToggleSelectionMode={() => setSelectionMode(!selectionMode)}
+        onDeleteSelected={() => deleteSelectedNodes(false)}
+        onLoadExamples={loadExampleImages}
+        onOpenImportModal={() => setIsImportModalOpen(true)}
+        onEnterSlideshow={enterSlideshowMode}
+        onClearCache={clearLocalCache}
+        onLogout={handleLogout}
+        onOpenAuth={() => setIsUserModalOpen(true)}
+      />
 
       {/* Model Capability Tip */}
       <ModelCapabilityTip />
@@ -1415,7 +1101,7 @@ export default function InfiniteCanvas() {
 
       {/* Selection Mode Indicator */}
       {selectionMode && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-blue-500/90 backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-blue-500/90 backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg animate-slide-up">
           <MousePointer2 className="w-4 h-4" />
           <span className="text-sm font-medium">选择模式：拖动框选节点，按 Delete 删除</span>
           <button
@@ -1430,291 +1116,40 @@ export default function InfiniteCanvas() {
 
       {/* Slideshow Mode Panel */}
       {slideshowMode && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white dark:bg-neutral-900 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-4 min-w-[420px] max-w-[480px]">
-          {/* 视频生成进度状态 */}
-          {videoGenerating && videoProgress ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2">
-                <Film className="w-5 h-5 text-purple-600 animate-pulse" />
-                <span className="font-semibold text-neutral-800 dark:text-neutral-100">生成讲解视频中...</span>
-              </div>
-
-              {/* 进度条 */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-neutral-500">
-                  <span>进度</span>
-                  <span>{videoProgress.percent}%</span>
-                </div>
-                <div className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
-                    style={{ width: `${videoProgress.percent}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* 步骤列表 */}
-              <div className="max-h-48 overflow-y-auto space-y-1.5">
-                {videoProgress.steps.map((step, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs">
-                    {step.status === 'done' ? (
-                      <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                    ) : step.status === 'generating' ? (
-                      <Loader2 className="w-3.5 h-3.5 text-purple-500 animate-spin flex-shrink-0" />
-                    ) : (
-                      <div className="w-3.5 h-3.5 rounded-full border border-neutral-300 dark:border-neutral-600 flex-shrink-0" />
-                    )}
-                    <span className={step.status === 'done' ? 'text-neutral-500' : step.status === 'generating' ? 'text-purple-600 font-medium' : 'text-neutral-400'}>
-                      {step.step === 'narration' ? `第 ${step.index + 1} 张：生成文案` :
-                       step.step === 'tts' ? `第 ${step.index + 1} 张：语音合成` :
-                       step.step === 'video' ? '合成视频' : step.step}
-                      {step.status === 'generating' && '...'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {videoProgress.error && (
-                <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-600">
-                  {videoProgress.error}
-                </div>
-              )}
-            </div>
-          ) : publishedUrl || generatedVideoUrl ? (
-            // 发布成功状态
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex items-center gap-2 text-green-600">
-                {generatedVideoUrl ? <Video className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
-                <span className="font-semibold">{generatedVideoUrl ? '视频生成完成！' : '发布成功！'}</span>
-              </div>
-
-              {generatedVideoUrl && (
-                <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
-                  <video src={generatedVideoUrl} controls className="w-full h-full" />
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 w-full">
-                <input
-                  type="text"
-                  value={`${window.location.origin}${publishedUrl}`}
-                  readOnly
-                  className="flex-1 px-3 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-sm font-mono"
-                />
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}${publishedUrl}`);
-                    alert("链接已复制！");
-                  }}
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
-                >
-                  复制链接
-                </button>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => publishedUrl && window.open(publishedUrl, "_blank")}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
-                >
-                  <Play className="w-4 h-4" />
-                  打开预览
-                </button>
-                {generatedVideoUrl && (
-                  <a
-                    href={generatedVideoUrl}
-                    download
-                    className="flex items-center gap-1.5 px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
-                    下载视频
-                  </a>
-                )}
-                <button
-                  onClick={exitSlideshowMode}
-                  className="px-4 py-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-lg text-sm font-medium hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
-                >
-                  完成
-                </button>
-              </div>
-            </div>
-          ) : (
-            // 选择和编辑状态
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Share2 className="w-5 h-5 text-green-600" />
-                  <span className="font-semibold text-neutral-800 dark:text-neutral-100">发布幻灯片</span>
-                </div>
-                <button
-                  onClick={exitSlideshowMode}
-                  className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
-                  title="取消"
-                >
-                  <X className="w-4 h-4 text-neutral-500" />
-                </button>
-              </div>
-
-              <div className="text-sm text-neutral-500">
-                点击图片节点选择并排序，已选择 <span className="font-bold text-green-600">{slideshowSelections.size}</span> 张图片
-              </div>
-
-              <input
-                type="text"
-                value={slideshowTitle}
-                onChange={(e) => setSlideshowTitle(e.target.value)}
-                placeholder="输入幻灯片标题..."
-                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-transparent text-sm focus:ring-2 focus:ring-green-500 outline-none"
-              />
-
-              {/* 生成讲解视频勾选框 */}
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                  enableNarration
-                    ? 'bg-purple-500 border-purple-500'
-                    : 'border-neutral-300 dark:border-neutral-600 group-hover:border-purple-400'
-                }`}>
-                  {enableNarration && <Check className="w-3.5 h-3.5 text-white" />}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Video className="w-4 h-4 text-purple-500" />
-                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">生成讲解视频</span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={enableNarration}
-                  onChange={(e) => setEnableNarration(e.target.checked)}
-                  className="sr-only"
-                />
-              </label>
-
-              {/* 讲解视频配置区 */}
-              {enableNarration && (
-                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl space-y-3 border border-purple-200 dark:border-purple-800">
-                  {/* 发音人选择 */}
-                  <div className="space-y-1">
-                    <label className="flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                      <Mic2 className="w-3.5 h-3.5" />
-                      发音人
-                    </label>
-                    <select
-                      value={narrationSpeaker}
-                      onChange={(e) => setNarrationSpeaker(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-neutral-800 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                    >
-                      {NARRATION_SPEAKERS.map(s => (
-                        <option key={s.key} value={s.key}>
-                          {s.name} ({s.gender} · {s.lang})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 语速选择 */}
-                  <div className="space-y-1">
-                    <label className="flex items-center justify-between text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                      <span>语速</span>
-                      <span className="text-purple-500">{narrationSpeed.toFixed(1)}x</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="0.5"
-                      max="2.0"
-                      step="0.1"
-                      value={narrationSpeed}
-                      onChange={(e) => setNarrationSpeed(parseFloat(e.target.value))}
-                      className="w-full h-2 bg-purple-200 dark:bg-purple-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                    />
-                    <div className="flex justify-between text-[10px] text-neutral-400">
-                      <span>慢 0.5x</span>
-                      <span>正常 1.0x</span>
-                      <span>快 2.0x</span>
-                    </div>
-                  </div>
-
-                  {/* 转场效果选择 */}
-                  <div className="space-y-1">
-                    <label className="flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                      <Film className="w-3.5 h-3.5" />
-                      转场效果
-                    </label>
-                    <select
-                      value={narrationTransition}
-                      onChange={(e) => setNarrationTransition(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-neutral-800 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                    >
-                      {TRANSITIONS.map(t => (
-                        <option key={t.key} value={t.key}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 讲解风格 */}
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                      讲解风格 <span className="text-neutral-400">(选填)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={narrationStyle}
-                      onChange={(e) => setNarrationStyle(e.target.value)}
-                      placeholder="如：轻松活泼 / 专业解说 / 故事感..."
-                      className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-neutral-800 text-sm focus:ring-2 focus:ring-purple-500 outline-none placeholder:text-neutral-400"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  onClick={publishSlideshow}
-                  disabled={isPublishing || slideshowSelections.size === 0 || !slideshowTitle.trim()}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    enableNarration
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
-                      : 'bg-green-500 hover:bg-green-600'
-                  }`}
-                >
-                  {isPublishing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      发布中...
-                    </>
-                  ) : enableNarration ? (
-                    <>
-                      <Video className="w-4 h-4" />
-                      发布并生成视频
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="w-4 h-4" />
-                      发布
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => setSlideshowSelections(new Map())}
-                  className="px-4 py-2.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-xl text-sm font-medium hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                >
-                  清空选择
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <SlideshowPanel
+          videoGenerating={videoGenerating}
+          videoProgress={videoProgress}
+          publishedUrl={publishedUrl}
+          generatedVideoUrl={generatedVideoUrl}
+          slideshowSelections={slideshowSelections}
+          slideshowTitle={slideshowTitle}
+          setSlideshowTitle={setSlideshowTitle}
+          enableNarration={enableNarration}
+          setEnableNarration={setEnableNarration}
+          narrationSpeaker={narrationSpeaker}
+          setNarrationSpeaker={setNarrationSpeaker}
+          narrationSpeed={narrationSpeed}
+          setNarrationSpeed={setNarrationSpeed}
+          narrationTransition={narrationTransition}
+          setNarrationTransition={setNarrationTransition}
+          narrationStyle={narrationStyle}
+          setNarrationStyle={setNarrationStyle}
+          isPublishing={isPublishing}
+          onPublish={publishSlideshow}
+          onExit={exitSlideshowMode}
+          onClearSelections={() => setSlideshowSelections(new Map())}
+        />
       )}
 
-      {/* Placement Mode Overlay - 图片/画廊图片/节点类型放置 */}
+      {/* Placement Mode Overlay */}
       {(isPlacingImage || pendingGalleryImage || pendingNodeType) && (
         <div
           className="absolute inset-0 z-20 cursor-crosshair"
           onClick={handleCanvasClick}
         >
-          {/* Top hint bar */}
           <div className={`absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 ${
             pendingNodeType ? 'bg-blue-500/90' : pendingGalleryImage ? 'bg-purple-500/90' : 'bg-cyan-500/90'
-          } backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg`}>
+          } backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg animate-fade-in`}>
             {pendingNodeType ? (
               <Wand2 className="w-4 h-4" />
             ) : (
@@ -1759,21 +1194,17 @@ export default function InfiniteCanvas() {
               minZoom={0.1}
               maxZoom={4}
               className="bg-neutral-50 dark:bg-black"
-              // 性能优化配置
-              // 注意：不能开启 onlyRenderVisibleElements，否则节点离开视口时会卸载，导致轮询状态丢失
               onlyRenderVisibleElements={false}
-              nodesFocusable={false}            // 禁用节点焦点，减少事件监听
-              edgesFocusable={false}            // 禁用边焦点
-              elevateNodesOnSelect={false}      // 选中时不提升 z-index，避免重排
-              nodeDragThreshold={5}             // 拖动阈值，减少误触发
-              // 框选模式配置
-              selectionOnDrag={selectionMode}   // 框选模式下拖动为选择
-              panOnDrag={!selectionMode}        // 普通模式下拖动为平移
-              // 触摸设备优化 - 双指始终可缩放
-              zoomOnPinch={true}                // 双指捏合缩放
-              panOnScroll={false}               // 滚轮不用于平移（PC端滚轮应该是缩放）
-              zoomOnScroll={!isTouchDevice}     // PC端滚轮缩放，触摸设备禁用
-              preventScrolling={true}           // 阻止页面滚动
+              nodesFocusable={false}
+              edgesFocusable={false}
+              elevateNodesOnSelect={false}
+              nodeDragThreshold={5}
+              selectionOnDrag={selectionMode}
+              panOnDrag={!selectionMode}
+              zoomOnPinch={true}
+              panOnScroll={false}
+              zoomOnScroll={!isTouchDevice}
+              preventScrolling={true}
             >
               <Controls />
               <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
@@ -1782,74 +1213,28 @@ export default function InfiniteCanvas() {
         </AudioProvider>
       </TouchContextMenuProvider>
 
-      {/* Login/Register Modal */}
-      {isUserModalOpen && !userId && !isLoading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-neutral-900 p-8 rounded-xl shadow-2xl w-96 border border-neutral-200 dark:border-neutral-800">
-            <h2 className="text-2xl font-bold mb-2">
-              {authMode === "login" ? "登录 NanoBanana" : "注册 NanoBanana"}
-            </h2>
-            <p className="text-sm text-neutral-500 mb-6">
-              {authMode === "login" ? "欢迎回来！请输入账号密码登录" : "创建新账号开始你的创作之旅"}
-            </p>
-
-            {/* 错误提示 */}
-            {authError && (
-              <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
-                {authError}
-              </div>
-            )}
-
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="用户名"
-              className="w-full p-3 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-transparent mb-3 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-              autoFocus
-              disabled={authLoading}
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAuth()}
-              placeholder="密码"
-              className="w-full p-3 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-transparent mb-4 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-              disabled={authLoading}
-            />
-            <button
-              onClick={handleAuth}
-              disabled={authLoading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {authLoading ? "处理中..." : (authMode === "login" ? "登录" : "注册")}
-            </button>
-
-            <div className="mt-4 text-center">
-              <button
-                onClick={toggleAuthMode}
-                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                disabled={authLoading}
-              >
-                {authMode === "login" ? "没有账号？点击注册" : "已有账号？点击登录"}
-              </button>
-            </div>
-
-            {authMode === "register" && (
-              <p className="text-xs text-neutral-400 mt-4 text-center">
-                用户名 2-20 字符，密码至少 6 位
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      <AuthModal
+        isOpen={isUserModalOpen && !userId && !isLoading}
+        onClose={() => setIsUserModalOpen(false)}
+        userId={userId}
+        username={username}
+        setUsername={setUsername}
+        onLogin={handleLogin}
+        onRegister={handleRegister}
+        onLogout={handleLogout}
+        isLoading={isLoading || false}
+        authError={authError}
+        setAuthError={setAuthError}
+      />
 
       {/* Loading State */}
       {isLoading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-neutral-900 p-6 rounded-xl shadow-2xl">
-            <p className="text-sm text-neutral-500">Loading...</p>
+          <div className="bg-white dark:bg-neutral-900 p-6 rounded-xl shadow-2xl animate-pulse">
+            <p className="text-sm text-neutral-500 flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Loading Canvas...
+            </p>
           </div>
         </div>
       )}
@@ -1880,7 +1265,7 @@ export default function InfiniteCanvas() {
 
       {/* 导入幻灯片弹窗 */}
       {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 w-[400px] shadow-2xl border border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100">
@@ -1943,4 +1328,3 @@ export default function InfiniteCanvas() {
     </div>
   );
 }
-

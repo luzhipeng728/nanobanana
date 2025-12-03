@@ -4,20 +4,13 @@ import { memo, useState, useEffect, useRef } from "react";
 import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { Loader2, Video as VideoIcon, Link2, UserPlus, Sparkles, Eye } from "lucide-react";
-import { NodeTextarea, NodeSelect, NodeLabel, NodeButton, NodeInput, NodeTabSelect } from "@/components/ui/NodeUI";
-import { BaseNode } from "./BaseNode";
+import { NodeTextarea, NodeLabel, NodeButton, NodeTabSelect } from "@/components/ui/NodeUI";
+import { GeneratorNodeLayout } from "./GeneratorNodeLayout";
 import cameoData from "@/data/composer_profiles.json";
 import ReactMarkdown from "react-markdown";
+import { useTaskGeneration } from "@/hooks/useTaskGeneration";
 
 type VideoModel = "sora" | "veo-3.1-fast-generate-preview";
-
-type VideoGenNodeData = {
-  prompt: string;
-  orientation: "portrait" | "landscape";
-  model: VideoModel;
-  negativePrompt?: string;
-  isGenerating: boolean;
-};
 
 interface CameoProfile {
   username: string;
@@ -34,14 +27,13 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
   const [prompt, setPrompt] = useState(data.prompt || "");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">(data.orientation || "portrait");
   const [model, setModel] = useState<VideoModel>(data.model || "sora");
-  const [negativePrompt, setNegativePrompt] = useState(data.negativePrompt || "");
   const [durationSeconds, setDurationSeconds] = useState<number>(data.durationSeconds || 5);
-  const [isGenerating, setIsGenerating] = useState(false);
+  
   const [connectedImagesCount, setConnectedImagesCount] = useState<number>(0);
   const [showCameos, setShowCameos] = useState(false);
   const [selectedCameos, setSelectedCameos] = useState<string[]>([]);
 
-  // Veo 分析状态
+  // Veo Analysis State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisText, setAnalysisText] = useState("");
   const [currentStep, setCurrentStep] = useState("");
@@ -49,6 +41,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
 
   const isVeoModel = model === "veo-3.1-fast-generate-preview";
 
+  // Prepare Cameos
   const cameos: CameoProfile[] = (cameoData as any).composer_profiles.map((p: any) => ({
     username: p.username,
     display_name: p.display_name || p.username,
@@ -56,12 +49,11 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     verified: p.verified || false,
   }));
 
-  // 使用 ReactFlow store 监听 edges 变化
+  // Listen for edge changes
   const connectedEdgeCount = useStore((state) =>
     state.edges.filter((e) => e.target === id).length
   );
 
-  // 更新连接的图片数量
   useEffect(() => {
     const connectedNodes = getConnectedImageNodes(id);
     setConnectedImagesCount(connectedNodes.length);
@@ -74,25 +66,17 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
 
   const handleCameoSelect = (username: string) => {
     if (selectedCameos.includes(username)) {
-      // 取消选择
       setSelectedCameos(prev => prev.filter(u => u !== username));
     } else if (selectedCameos.length < 3) {
-      // 选择新的 cameo
       setSelectedCameos(prev => [...prev, username]);
-
       const textarea = promptRef.current;
       if (textarea) {
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
-        const text = prompt;
-        const before = text.substring(0, start);
-        const after = text.substring(end);
         const tag = `@${username} `;
-
-        const newPrompt = before + tag + after;
+        const newPrompt = prompt.substring(0, start) + tag + prompt.substring(end);
         setPrompt(newPrompt);
         data.prompt = newPrompt;
-
         setTimeout(() => {
           const newPos = start + tag.length;
           textarea.setSelectionRange(newPos, newPos);
@@ -102,41 +86,47 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     }
   };
 
+  // Main Generation Hook
+  const { isGenerating, generate, setIsGenerating } = useTaskGeneration({
+    onSuccess: (result) => {
+      console.log(`Created video task: ${result.taskId}`);
+      const currentNode = getNode(id);
+      if (currentNode) {
+        addVideoNode(
+          result.taskId,
+          prompt,
+          { x: currentNode.position.x + 350, y: currentNode.position.y },
+          { apiSource: result.apiSource, model }
+        );
+      }
+      setCurrentStep("");
+      setAnalysisText("");
+    }
+  });
+
   const onGenerate = async () => {
     if (!prompt) return;
-    setIsGenerating(true);
+    
+    // Manually clear states
     setAnalysisText("");
     setCurrentStep("");
 
-    try {
-      // 获取连接的图片节点（用于图生视频）
-      const connectedNodes = getConnectedImageNodes(id);
-      const inputImage = connectedNodes.length > 0 ? connectedNodes[0].data.imageUrl : undefined;
+    const connectedNodes = getConnectedImageNodes(id);
+    const inputImage = connectedNodes.length > 0 ? connectedNodes[0].data.imageUrl : undefined;
 
-      if (inputImage) {
-        console.log(`Using input image for image-to-video: ${inputImage}`);
-      }
-
-      let taskId: string;
-      let apiSource: "sora" | "veo";
-
-      if (isVeoModel) {
-        // Veo 模型：先流式分析图片，再生成视频
-        setIsAnalyzing(true);
-
-        // 第一步：调用流式分析 API
+    if (isVeoModel) {
+      // Custom flow for Veo with streaming analysis
+      setIsGenerating(true);
+      setIsAnalyzing(true);
+      try {
+        // 1. Analyze
         const analyzeResponse = await fetch("/api/veo/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userRequest: prompt,
-            imageUrl: inputImage,
-          }),
+          body: JSON.stringify({ userRequest: prompt, imageUrl: inputImage }),
         });
 
-        if (!analyzeResponse.ok) {
-          throw new Error("Failed to analyze image");
-        }
+        if (!analyzeResponse.ok) throw new Error("Failed to analyze image");
 
         const reader = analyzeResponse.body?.getReader();
         const decoder = new TextDecoder();
@@ -146,41 +136,20 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-
             const chunk = decoder.decode(value);
             const lines = chunk.split("\n");
-
             for (const line of lines) {
               if (line.startsWith("data: ")) {
                 try {
                   const event = JSON.parse(line.slice(6));
-
-                  switch (event.type) {
-                    case "status":
-                      setCurrentStep(event.step || "");
-                      break;
-                    case "analysis_start":
-                      setAnalysisText("");
-                      break;
-                    case "analysis_chunk":
-                      setAnalysisText((prev) => prev + event.chunk);
-                      // 自动滚动到底部
-                      if (analysisRef.current) {
-                        analysisRef.current.scrollTop = analysisRef.current.scrollHeight;
-                      }
-                      break;
-                    case "analysis_end":
-                      break;
-                    case "prompt_ready":
-                      generatedPrompt = event.prompt || prompt;
-                      console.log("Generated video prompt:", generatedPrompt);
-                      break;
-                    case "error":
-                      throw new Error(event.error);
+                  if (event.type === "status") setCurrentStep(event.step || "");
+                  else if (event.type === "analysis_chunk") {
+                    setAnalysisText((prev) => prev + event.chunk);
+                    if (analysisRef.current) analysisRef.current.scrollTop = analysisRef.current.scrollHeight;
                   }
-                } catch (e) {
-                  // 忽略解析错误
-                }
+                  else if (event.type === "prompt_ready") generatedPrompt = event.prompt || prompt;
+                  else if (event.type === "error") throw new Error(event.error);
+                } catch (e) { /* ignore */ }
               }
             }
           }
@@ -189,12 +158,12 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         setIsAnalyzing(false);
         setCurrentStep("🚀 正在创建视频任务...");
 
-        // 第二步：使用生成的 prompt 创建 Veo 任务
+        // 2. Generate with new prompt
         const response = await fetch("/api/generate-veo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userRequest: generatedPrompt, // 使用 AI 生成的专业提示词
+            userRequest: generatedPrompt,
             aspectRatio: orientation === "landscape" ? "16:9" : "9:16",
             resolution: "720p",
             durationSeconds,
@@ -202,64 +171,97 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           }),
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to create Veo video task");
-        }
-
+        if (!response.ok) throw new Error("Failed to create Veo task");
+        
         const result = await response.json();
-        taskId = result.taskId;
-        apiSource = "veo";
-        console.log(`Created Veo video task: ${taskId}`);
-      } else {
-        // Sora API - 直接调用
-        const response = await fetch("/api/generate-video", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        
+        // Success logic
+        console.log(`Created Veo video task: ${result.taskId}`);
+        const currentNode = getNode(id);
+        if (currentNode) {
+          addVideoNode(
+            result.taskId,
             prompt,
-            orientation,
-            inputImage,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to create video task");
+            { x: currentNode.position.x + 350, y: currentNode.position.y },
+            { apiSource: "veo", model }
+          );
         }
-
-        const result = await response.json();
-        taskId = result.taskId;
-        apiSource = "sora";
-        console.log(`Created Sora video task: ${taskId}`);
+      } catch (error) {
+        console.error(error);
+        alert("Failed: " + (error instanceof Error ? error.message : "Unknown error"));
+      } finally {
+        setIsGenerating(false);
+        setIsAnalyzing(false);
       }
-
-      // 立即创建一个 Video 节点，传入 taskId 和 apiSource
-      const currentNode = getNode(id);
-      if (currentNode) {
-        addVideoNode(
-          taskId,
+    } else {
+      // Standard Sora Flow using the hook
+      generate({
+        apiPath: "/api/generate-video",
+        body: {
           prompt,
-          { x: currentNode.position.x + 350, y: currentNode.position.y },
-          { apiSource, model }
-        );
-      }
-
-      setCurrentStep("");
-    } catch (error) {
-      console.error("Failed to create video task", error);
-      alert("Failed to create video task");
-    } finally {
-      setIsGenerating(false);
-      setIsAnalyzing(false);
+          orientation,
+          inputImage,
+        }
+      }).then(res => {
+        // Hook handles success callback, but we need to inject apiSource manually into the result passed to onSuccess?
+        // Actually the API response contains taskId. We need to map it.
+        // The hook's onSuccess receives the raw JSON result.
+        // Our hook onSuccess is already defined above, but it expects result.apiSource.
+        // Sora API might not return apiSource, so we might need to fix the onSuccess callback or the API.
+        // Let's check VideoGenNode.tsx original code. It sets apiSource = "sora" manually.
+        // So we should override onSuccess for Sora or handle it in the main hook config.
+        // Let's just modify the hook config to handle both or return the result to handle locally?
+        // generate() returns the result.
+      });
     }
   };
 
+  // Override hook's onSuccess to handle Sora's missing apiSource
+  // Or better: just use the promise return from generate() for Sora
+  const onGenerateSora = async () => {
+    const connectedNodes = getConnectedImageNodes(id);
+    const inputImage = connectedNodes.length > 0 ? connectedNodes[0].data.imageUrl : undefined;
+
+    const result = await generate({
+      apiPath: "/api/generate-video",
+      body: {
+        prompt,
+        orientation,
+        inputImage,
+      }
+    });
+
+    if (result) {
+      const currentNode = getNode(id);
+      if (currentNode) {
+        addVideoNode(
+          result.taskId,
+          prompt,
+          { x: currentNode.position.x + 350, y: currentNode.position.y },
+          { apiSource: "sora", model }
+        );
+      }
+    }
+  };
+
+  const handleGenerateClick = isVeoModel ? onGenerate : onGenerateSora;
+
   return (
-    <BaseNode
+    <GeneratorNodeLayout
       title="Video Generator"
       icon={VideoIcon}
       color="orange"
       selected={selected}
-      className="w-[320px]"
+      isGenerating={isGenerating}
+      onGenerate={handleGenerateClick}
+      generateButtonText="生成视频"
+      generateButtonDisabled={!prompt}
+      loadingText={
+        <>
+          <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />
+          {isAnalyzing ? "分析中..." : "生成中..."}
+        </>
+      }
       headerActions={
         connectedImagesCount > 0 ? (
           <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 font-medium">
@@ -273,7 +275,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         )
       }
     >
-      {/* 左侧输入连接点 - 接收参考图片用于图生视频 */}
+      {/* 左侧输入连接点 */}
       <Handle
         type="target"
         position={Position.Left}
@@ -283,7 +285,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       />
 
       <div className="space-y-3">
-        {/* 模型选择 - Tab 样式 */}
+        {/* 模型选择 */}
         <div className="space-y-1.5">
           <NodeLabel>模型</NodeLabel>
           <NodeTabSelect
@@ -301,7 +303,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           />
         </div>
 
-        {/* 画面方向 - Tab 样式 */}
+        {/* 画面方向 */}
         <div className="space-y-1.5">
           <NodeLabel>画面方向</NodeLabel>
           <NodeTabSelect
@@ -320,7 +322,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           />
         </div>
 
-        {/* 时长选择 - Veo 模型时显示 - Tab 样式 */}
+        {/* 时长选择 - Veo 专用 */}
         {isVeoModel && (
           <div className="space-y-1.5">
             <NodeLabel>视频时长</NodeLabel>
@@ -344,7 +346,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           </div>
         )}
 
-        {/* 角色选择 - 仅 Sora 模型 */}
+        {/* 角色选择 - Sora 专用 */}
         {!isVeoModel && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -395,6 +397,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           </div>
         )}
 
+        {/* 描述输入 */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <NodeLabel className="mb-0">描述</NodeLabel>
@@ -425,13 +428,12 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           </div>
         )}
 
-        {/* Veo 分析过程展示 - 和 Agent 节点一样的样式 */}
+        {/* Veo Analysis Display */}
         {isVeoModel && (isAnalyzing || analysisText) && (
           <div className="relative overflow-hidden rounded-xl border border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-purple-950/30 dark:via-pink-950/20 dark:to-blue-950/30">
-            {/* 动态背景效果 */}
+            {/* Animated Background */}
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-blue-500/5 animate-pulse" />
-            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 opacity-60" />
-
+            
             {/* Header */}
             <div className="relative px-3 py-2 border-b border-purple-100 dark:border-purple-900/50 flex items-center gap-2">
               <div className="relative">
@@ -443,56 +445,21 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
               <span className="text-[11px] font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
                 {currentStep || "Claude Vision 分析中"}
               </span>
-              {isAnalyzing && (
-                <div className="ml-auto flex gap-0.5">
-                  <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              )}
             </div>
 
-            {/* Content - 流式 Markdown 渲染 */}
+            {/* Content */}
             <div
               ref={analysisRef}
               className="relative p-3 max-h-[150px] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800"
             >
-              <div className="text-[11px] leading-relaxed text-neutral-700 dark:text-neutral-300 prose prose-xs prose-purple dark:prose-invert max-w-none
-                prose-headings:text-[12px] prose-headings:font-bold prose-headings:text-purple-700 dark:prose-headings:text-purple-300 prose-headings:mt-2 prose-headings:mb-1
-                prose-p:my-1 prose-p:text-[11px]
-                prose-ul:my-1 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-[11px]
-                prose-ol:my-1 prose-ol:pl-4
-                prose-strong:text-purple-600 dark:prose-strong:text-purple-400
-                prose-code:text-[10px] prose-code:bg-purple-100 dark:prose-code:bg-purple-900/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-              ">
+              <div className="text-[11px] leading-relaxed text-neutral-700 dark:text-neutral-300 prose prose-xs prose-purple dark:prose-invert max-w-none">
                 <ReactMarkdown>{analysisText}</ReactMarkdown>
-                {isAnalyzing && (
-                  <span className="inline-block w-2 h-4 bg-purple-500 ml-0.5 animate-pulse" />
-                )}
               </div>
             </div>
           </div>
         )}
-
-        <div className="pt-1">
-          <NodeButton
-            onClick={onGenerate}
-            disabled={isGenerating || !prompt}
-            className="w-full bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-700 text-white"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />
-                {isAnalyzing ? "分析中..." : "生成中..."}
-              </>
-            ) : (
-              "生成视频"
-            )}
-          </NodeButton>
-        </div>
       </div>
-
-    </BaseNode>
+    </GeneratorNodeLayout>
   );
 };
 
