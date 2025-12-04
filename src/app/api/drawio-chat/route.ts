@@ -3,7 +3,7 @@
 // 支持 Gemini 和 Anthropic 模型
 // 支持深度研究（DeepResearch）作为 AI 工具
 
-import { streamText, convertToModelMessages, generateObject } from 'ai';
+import { streamText, convertToModelMessages, generateText, jsonSchema } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { z } from 'zod';
@@ -13,11 +13,27 @@ import {
   formatResearchForImagePrompt,
 } from '@/lib/super-agent/hyprlab-research';
 
-// 意图提取的 Schema
-const IntentSchema = z.object({
-  researchQuery: z.string().describe("The topic or question to research. Extract only the factual research topic, without any diagram/visualization requirements."),
-  diagramRequirements: z.string().describe("How the user wants the information displayed (e.g., flowchart, mind map, timeline, etc.). If not specified, default to 'comprehensive diagram'."),
-});
+// 意图提取函数 - 从文本中解析 JSON
+function parseIntentFromText(text: string): { researchQuery: string; diagramRequirements: string } {
+  try {
+    // 尝试提取 JSON 块
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        researchQuery: parsed.researchQuery || parsed.research_query || text,
+        diagramRequirements: parsed.diagramRequirements || parsed.diagram_requirements || 'comprehensive diagram',
+      };
+    }
+  } catch (e) {
+    console.log('[DrawIO Chat] Failed to parse intent JSON, using fallback');
+  }
+  // 如果解析失败，返回原始文本作为研究查询
+  return {
+    researchQuery: text,
+    diagramRequirements: 'comprehensive diagram',
+  };
+}
 
 export const maxDuration = 600; // 增加到 10 分钟支持深度研究
 
@@ -146,7 +162,7 @@ const ANTHROPIC_BETA_HEADERS = {
   'anthropic-beta': 'fine-grained-tool-streaming-2025-05-14',
 };
 
-// 构建工具列表函数 - 复用于深度研究和普通模式
+// 构建工具列表函数 - 使用 jsonSchema 避免 custom 格式问题
 function buildTools(): Record<string, any> {
   return {
     display_diagram: {
@@ -185,8 +201,15 @@ Notes:
 - For AWS diagrams, use **AWS 2025 icons**.
 - For animated connectors, add "flowAnimation=1" to edge style.
 `,
-      parameters: z.object({
-        xml: z.string().describe("XML string to be displayed on draw.io")
+      parameters: jsonSchema({
+        type: 'object',
+        properties: {
+          xml: {
+            type: 'string',
+            description: 'XML string to be displayed on draw.io'
+          }
+        },
+        required: ['xml']
       })
     },
     edit_diagram: {
@@ -196,11 +219,29 @@ IMPORTANT: Keep edits concise:
 - Break large changes into multiple smaller edits
 - Each search must contain complete lines (never truncate mid-line)
 - First match only - be specific enough to target the right element`,
-      parameters: z.object({
-        edits: z.array(z.object({
-          search: z.string().describe("Exact lines to search for (including whitespace and indentation)"),
-          replace: z.string().describe("Replacement lines")
-        })).describe("Array of search/replace pairs to apply sequentially")
+      parameters: jsonSchema({
+        type: 'object',
+        properties: {
+          edits: {
+            type: 'array',
+            description: 'Array of search/replace pairs to apply sequentially',
+            items: {
+              type: 'object',
+              properties: {
+                search: {
+                  type: 'string',
+                  description: 'Exact lines to search for (including whitespace and indentation)'
+                },
+                replace: {
+                  type: 'string',
+                  description: 'Replacement lines'
+                }
+              },
+              required: ['search', 'replace']
+            }
+          }
+        },
+        required: ['edits']
       })
     },
   };
@@ -309,19 +350,23 @@ ${lastMessageText}
       console.log('[DrawIO Chat] Deep research enabled, extracting intent...');
 
       try {
-        // 第一层：意图提取 - 使用轻量 AI 提取研究主题和图表要求
-        const { object: intent } = await generateObject({
+        // 第一层：意图提取 - 使用 generateText 避免工具格式问题
+        const { text: intentText } = await generateText({
           model: model,
-          schema: IntentSchema,
-          prompt: `Analyze the following user request and extract two parts:
-1. The factual topic to research (what information to gather)
-2. The diagram/visualization requirements (how to display it)
+          prompt: `Analyze the following user request and extract two parts. Return ONLY a JSON object, no other text.
 
 User request: "${lastMessageText}"
+
+Return JSON format:
+{
+  "researchQuery": "the factual topic to research (what information to gather)",
+  "diagramRequirements": "how the user wants the information displayed (e.g., flowchart, mind map, timeline)"
+}
 
 Be precise - separate the "what to research" from "how to display".`,
         });
 
+        const intent = parseIntentFromText(intentText);
         console.log(`[DrawIO Chat] Intent extracted:`, intent);
         diagramRequirements = intent.diagramRequirements;
 
