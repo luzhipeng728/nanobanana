@@ -11,7 +11,6 @@ import {
   callHyprLabDeepResearch,
   parseHyprLabResponse,
   formatResearchForImagePrompt,
-  type ReasoningEffort,
 } from '@/lib/super-agent/hyprlab-research';
 
 export const maxDuration = 600; // 增加到 10 分钟支持深度研究
@@ -136,23 +135,6 @@ Common styles:
 - Text: fontSize=14, fontStyle=1 (bold), align=center/left/right
 `;
 
-// 深度研究增强提示词 - 强制使用
-const DEEP_RESEARCH_PROMPT = `
----Tool3---
-tool name: deep_research
-description: Perform deep web research on a topic to gather comprehensive, up-to-date information from the web.
-parameters: {
-  query: string (the topic to research)
-}
----End of Tool3---
-
-**MANDATORY**: User has enabled deep research mode. You MUST:
-1. Call the deep_research tool FIRST with the user's query before doing anything else
-2. Wait for the research results
-3. Use the research results to create an accurate, informative diagram
-DO NOT skip the research step. This is a user requirement.
-`;
-
 // Beta headers for fine-grained tool streaming (Anthropic)
 const ANTHROPIC_BETA_HEADERS = {
   'anthropic-beta': 'fine-grained-tool-streaming-2025-05-14',
@@ -194,7 +176,6 @@ export async function POST(req: Request) {
       xml,
       modelId: requestModelId,
       enableDeepResearch = false,
-      reasoningEffort = 'low' as ReasoningEffort,
     } = await req.json();
 
     // 使用请求中的模型ID，默认使用 Claude
@@ -255,10 +236,42 @@ ${lastMessageText}
     // Create model
     const { model, isGemini } = createModel(modelId);
 
-    // 构建系统提示词 - 如果启用深度研究则添加研究工具说明
-    const systemPrompt = enableDeepResearch
-      ? BASE_SYSTEM_PROMPT + DEEP_RESEARCH_PROMPT
-      : BASE_SYSTEM_PROMPT;
+    // 如果启用深度研究，先执行研究获取结果
+    let researchContext = '';
+    if (enableDeepResearch && lastMessageText) {
+      console.log('[DrawIO Chat] Deep research enabled, executing research...');
+      try {
+        const response = await callHyprLabDeepResearch(lastMessageText, {
+          reasoningEffort: 'low',
+          onProgress: async (event) => {
+            if (event.type === 'progress') {
+              console.log(`[DrawIO Chat] Research progress: ${event.elapsedSeconds}s elapsed`);
+            }
+          },
+        });
+
+        const rawResponse = 'response' in response ? response.response : response;
+        const parsed = parseHyprLabResponse(rawResponse);
+        const formattedResult = formatResearchForImagePrompt(parsed);
+
+        console.log(`[DrawIO Chat] Deep research completed: ${parsed.citations.length} citations`);
+        researchContext = `
+## Research Results
+The following research was conducted on the user's topic. Use this information to create an accurate, informative diagram:
+
+${formattedResult}
+
+---
+Now create a diagram based on the above research and the user's request.
+`;
+      } catch (error) {
+        console.error('[DrawIO Chat] Deep research failed:', error);
+        researchContext = '\n[Research failed, proceed with general knowledge]\n';
+      }
+    }
+
+    // 构建系统提示词
+    const systemPrompt = BASE_SYSTEM_PROMPT + researchContext;
 
     // 构建工具列表
     const tools: Record<string, any> = {
@@ -319,56 +332,7 @@ IMPORTANT: Keep edits concise:
       },
     };
 
-    // 如果启用深度研究，添加研究工具
-    // 注意：不使用 execute，避免 AI SDK 发送 custom 格式工具
-    // 研究执行将通过 onToolResult 回调处理
-    if (enableDeepResearch) {
-      console.log('[DrawIO Chat] Deep research tool enabled (mandatory)');
-      tools.deep_research = {
-        description: `Perform deep web research on a topic. Returns structured research results with citations. You MUST call this tool first when deep research mode is enabled.`,
-        parameters: z.object({
-          query: z.string().describe("The topic or question to research")
-        }),
-      };
-    }
-
-    // 定义深度研究执行函数
-    const executeDeepResearch = async (query: string) => {
-      console.log(`[DrawIO Chat] Executing deep_research tool: "${query}"`);
-
-      try {
-        const response = await callHyprLabDeepResearch(query, {
-          reasoningEffort: 'low', // 固定使用 low，快速研究
-          // 心跳回调 - 记录日志
-          onProgress: async (event) => {
-            if (event.type === 'progress') {
-              console.log(`[DrawIO Chat] Research progress: ${event.elapsedSeconds}s elapsed`);
-            }
-          },
-        });
-
-        // 解析研究结果
-        const rawResponse = 'response' in response ? response.response : response;
-        const parsed = parseHyprLabResponse(rawResponse);
-        const formattedResult = formatResearchForImagePrompt(parsed);
-
-        console.log(`[DrawIO Chat] Deep research completed: ${parsed.citations.length} citations`);
-
-        return {
-          success: true,
-          result: formattedResult,
-          citations: parsed.citations.length,
-          summary: `研究完成，获得 ${parsed.citations.length} 个引用来源`,
-        };
-      } catch (error) {
-        console.error('[DrawIO Chat] Deep research failed:', error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Research failed',
-          result: '',
-        };
-      }
-    };
+    // 深度研究已在前置步骤执行，不再需要作为工具
 
     // Build streamText options
     // Note: When thinking is enabled, temperature must not be set for Claude
@@ -379,17 +343,7 @@ IMPORTANT: Keep edits concise:
         ...enhancedMessages,
       ],
       tools,
-      maxSteps: enableDeepResearch ? 5 : 3, // 允许多步骤：研究 -> 生成图表
-      // 为没有 execute 的工具提供结果
-      experimental_toolResultProviders: enableDeepResearch ? {
-        deep_research: async ({ toolCall }: { toolCall: { toolCallId: string; args: { query: string } } }) => {
-          const result = await executeDeepResearch(toolCall.args.query);
-          return {
-            toolCallId: toolCall.toolCallId,
-            result: JSON.stringify(result),
-          };
-        },
-      } : undefined,
+      maxSteps: 3,
     };
 
     // Add thinking (chain of thought) for both models
