@@ -3,7 +3,7 @@
 // 支持 Gemini 和 Anthropic 模型
 // 支持深度研究（DeepResearch）作为 AI 工具
 
-import { streamText, convertToModelMessages } from 'ai';
+import { streamText, convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { z } from 'zod';
@@ -140,6 +140,66 @@ const ANTHROPIC_BETA_HEADERS = {
   'anthropic-beta': 'fine-grained-tool-streaming-2025-05-14',
 };
 
+// 构建工具列表函数 - 复用于深度研究和普通模式
+function buildTools(): Record<string, any> {
+  return {
+    display_diagram: {
+      description: `Display a diagram on draw.io. Pass the XML content inside <root> tags.
+
+VALIDATION RULES (XML will be rejected if violated):
+1. All mxCell elements must be DIRECT children of <root> - never nested
+2. Every mxCell needs a unique id
+3. Every mxCell (except id="0") needs a valid parent attribute
+4. Edge source/target must reference existing cell IDs
+5. Escape special chars in values: &lt; &gt; &amp; &quot;
+6. Always start with: <mxCell id="0"/><mxCell id="1" parent="0"/>
+
+Example with swimlanes and edges (note: all mxCells are siblings):
+<root>
+  <mxCell id="0"/>
+  <mxCell id="1" parent="0"/>
+  <mxCell id="lane1" value="Frontend" style="swimlane;" vertex="1" parent="1">
+    <mxGeometry x="40" y="40" width="200" height="200" as="geometry"/>
+  </mxCell>
+  <mxCell id="step1" value="Step 1" style="rounded=1;" vertex="1" parent="lane1">
+    <mxGeometry x="20" y="60" width="160" height="40" as="geometry"/>
+  </mxCell>
+  <mxCell id="lane2" value="Backend" style="swimlane;" vertex="1" parent="1">
+    <mxGeometry x="280" y="40" width="200" height="200" as="geometry"/>
+  </mxCell>
+  <mxCell id="step2" value="Step 2" style="rounded=1;" vertex="1" parent="lane2">
+    <mxGeometry x="20" y="60" width="160" height="40" as="geometry"/>
+  </mxCell>
+  <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;endArrow=classic;" edge="1" parent="1" source="step1" target="step2">
+    <mxGeometry relative="1" as="geometry"/>
+  </mxCell>
+</root>
+
+Notes:
+- For AWS diagrams, use **AWS 2025 icons**.
+- For animated connectors, add "flowAnimation=1" to edge style.
+`,
+      parameters: z.object({
+        xml: z.string().describe("XML string to be displayed on draw.io")
+      })
+    },
+    edit_diagram: {
+      description: `Edit specific parts of the current diagram by replacing exact line matches. Use this tool to make targeted fixes without regenerating the entire XML.
+IMPORTANT: Keep edits concise:
+- Only include the lines that are changing, plus 1-2 surrounding lines for context if needed
+- Break large changes into multiple smaller edits
+- Each search must contain complete lines (never truncate mid-line)
+- First match only - be specific enough to target the right element`,
+      parameters: z.object({
+        edits: z.array(z.object({
+          search: z.string().describe("Exact lines to search for (including whitespace and indentation)"),
+          replace: z.string().describe("Replacement lines")
+        })).describe("Array of search/replace pairs to apply sequentially")
+      })
+    },
+  };
+}
+
 // Create model based on model ID
 function createModel(modelId: string) {
   const useGemini = isGeminiModel(modelId);
@@ -236,26 +296,44 @@ ${lastMessageText}
     // Create model
     const { model, isGemini } = createModel(modelId);
 
-    // 如果启用深度研究，先执行研究获取结果
-    let researchContext = '';
+    // 如果启用深度研究，使用流式响应先发送进度再发送AI响应
     if (enableDeepResearch && lastMessageText) {
-      console.log('[DrawIO Chat] Deep research enabled, executing research...');
-      try {
-        const response = await callHyprLabDeepResearch(lastMessageText, {
-          reasoningEffort: 'low',
-          onProgress: async (event) => {
-            if (event.type === 'progress') {
-              console.log(`[DrawIO Chat] Research progress: ${event.elapsedSeconds}s elapsed`);
-            }
-          },
-        });
+      console.log('[DrawIO Chat] Deep research enabled, starting streamed response...');
 
-        const rawResponse = 'response' in response ? response.response : response;
-        const parsed = parseHyprLabResponse(rawResponse);
-        const formattedResult = formatResearchForImagePrompt(parsed);
+      const stream = createUIMessageStream({
+        execute: async ({ writer }) => {
+          // 发送研究开始消息 - 使用 text 类型显示进度
+          writer.write({ type: 'text', text: '🔬 正在启动深度研究...\n' });
 
-        console.log(`[DrawIO Chat] Deep research completed: ${parsed.citations.length} citations`);
-        researchContext = `
+          let researchContext = '';
+          try {
+            const response = await callHyprLabDeepResearch(lastMessageText, {
+              reasoningEffort: 'low',
+              onProgress: async (event) => {
+                if (event.type === 'progress') {
+                  console.log(`[DrawIO Chat] Research progress: ${event.elapsedSeconds}s elapsed`);
+                  // 发送进度更新
+                  writer.write({
+                    type: 'text',
+                    text: `🔍 研究进行中... (${event.elapsedSeconds}秒)\n`
+                  });
+                }
+              },
+            });
+
+            const rawResponse = 'response' in response ? response.response : response;
+            const parsed = parseHyprLabResponse(rawResponse);
+            const formattedResult = formatResearchForImagePrompt(parsed);
+
+            console.log(`[DrawIO Chat] Deep research completed: ${parsed.citations.length} citations`);
+
+            // 发送研究完成消息
+            writer.write({
+              type: 'text',
+              text: `✅ 研究完成，获得 ${parsed.citations.length} 个引用来源\n\n`
+            });
+
+            researchContext = `
 ## Research Results
 The following research was conducted on the user's topic. Use this information to create an accurate, informative diagram:
 
@@ -264,75 +342,74 @@ ${formattedResult}
 ---
 Now create a diagram based on the above research and the user's request.
 `;
-      } catch (error) {
-        console.error('[DrawIO Chat] Deep research failed:', error);
-        researchContext = '\n[Research failed, proceed with general knowledge]\n';
-      }
+          } catch (error) {
+            console.error('[DrawIO Chat] Deep research failed:', error);
+            writer.write({
+              type: 'text',
+              text: '❌ 研究失败，将使用通用知识继续\n\n'
+            });
+            researchContext = '\n[Research failed, proceed with general knowledge]\n';
+          }
+
+          // 构建系统提示词
+          const systemPrompt = BASE_SYSTEM_PROMPT + researchContext;
+
+          // 构建工具和流选项
+          const tools: Record<string, any> = buildTools();
+
+          const streamOptions: any = {
+            model: model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...enhancedMessages,
+            ],
+            tools,
+            maxSteps: 3,
+          };
+
+          // 添加模型特定配置
+          if (isGemini) {
+            streamOptions.maxOutputTokens = MAX_TOKENS;
+            streamOptions.temperature = 0;
+            streamOptions.providerOptions = {
+              google: {
+                thinkingConfig: {
+                  includeThoughts: true,
+                },
+              },
+            };
+          } else {
+            const thinkingBudget = 4000;
+            streamOptions.maxOutputTokens = 60000;
+            streamOptions.providerOptions = {
+              anthropic: {
+                thinking: {
+                  type: 'enabled',
+                  budgetTokens: thinkingBudget,
+                },
+              },
+            };
+          }
+
+          // 发送AI开始生成消息
+          writer.write({ type: 'text', text: '🎨 正在生成图表...\n\n' });
+
+          // 执行AI流并合并
+          const result = streamText(streamOptions);
+          result.mergeIntoUIMessageStream(writer);
+        },
+        onError: (error) => {
+          console.error('[DrawIO Chat] Stream error:', error);
+          return error instanceof Error ? error.message : 'Unknown error';
+        },
+      });
+
+      return createUIMessageStreamResponse({ stream });
     }
 
-    // 构建系统提示词
-    const systemPrompt = BASE_SYSTEM_PROMPT + researchContext;
-
-    // 构建工具列表
-    const tools: Record<string, any> = {
-      // Client-side tool that will be executed on the client
-      display_diagram: {
-        description: `Display a diagram on draw.io. Pass the XML content inside <root> tags.
-
-VALIDATION RULES (XML will be rejected if violated):
-1. All mxCell elements must be DIRECT children of <root> - never nested
-2. Every mxCell needs a unique id
-3. Every mxCell (except id="0") needs a valid parent attribute
-4. Edge source/target must reference existing cell IDs
-5. Escape special chars in values: &lt; &gt; &amp; &quot;
-6. Always start with: <mxCell id="0"/><mxCell id="1" parent="0"/>
-
-Example with swimlanes and edges (note: all mxCells are siblings):
-<root>
-  <mxCell id="0"/>
-  <mxCell id="1" parent="0"/>
-  <mxCell id="lane1" value="Frontend" style="swimlane;" vertex="1" parent="1">
-    <mxGeometry x="40" y="40" width="200" height="200" as="geometry"/>
-  </mxCell>
-  <mxCell id="step1" value="Step 1" style="rounded=1;" vertex="1" parent="lane1">
-    <mxGeometry x="20" y="60" width="160" height="40" as="geometry"/>
-  </mxCell>
-  <mxCell id="lane2" value="Backend" style="swimlane;" vertex="1" parent="1">
-    <mxGeometry x="280" y="40" width="200" height="200" as="geometry"/>
-  </mxCell>
-  <mxCell id="step2" value="Step 2" style="rounded=1;" vertex="1" parent="lane2">
-    <mxGeometry x="20" y="60" width="160" height="40" as="geometry"/>
-  </mxCell>
-  <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;endArrow=classic;" edge="1" parent="1" source="step1" target="step2">
-    <mxGeometry relative="1" as="geometry"/>
-  </mxCell>
-</root>
-
-Notes:
-- For AWS diagrams, use **AWS 2025 icons**.
-- For animated connectors, add "flowAnimation=1" to edge style.
-`,
-        parameters: z.object({
-          xml: z.string().describe("XML string to be displayed on draw.io")
-        })
-      },
-      edit_diagram: {
-        description: `Edit specific parts of the current diagram by replacing exact line matches. Use this tool to make targeted fixes without regenerating the entire XML.
-IMPORTANT: Keep edits concise:
-- Only include the lines that are changing, plus 1-2 surrounding lines for context if needed
-- Break large changes into multiple smaller edits
-- Each search must contain complete lines (never truncate mid-line)
-- First match only - be specific enough to target the right element`,
-        parameters: z.object({
-          edits: z.array(z.object({
-            search: z.string().describe("Exact lines to search for (including whitespace and indentation)"),
-            replace: z.string().describe("Replacement lines")
-          })).describe("Array of search/replace pairs to apply sequentially")
-        })
-      },
-    };
-
-    // 深度研究已在前置步骤执行，不再需要作为工具
+    // 非深度研究模式 - 直接调用AI
+    const systemPrompt = BASE_SYSTEM_PROMPT;
+    const tools = buildTools();
 
     // Build streamText options
     // Note: When thinking is enabled, temperature must not be set for Claude
