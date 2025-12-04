@@ -116,21 +116,24 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     }
   }, []);
 
-  // 当全屏状态改变后，恢复图表内容
-  useEffect(() => {
+  // DrawIoEmbed 加载完成时的回调 - 用于恢复全屏切换前的图表
+  const handleDrawioLoad = useCallback((data: any) => {
+    console.log('[ChatNode] DrawIo loaded, isFullscreenSwitching:', isFullscreenSwitchingRef.current);
+    console.log('[ChatNode] Pending restore XML:', !!pendingRestoreXmlRef.current);
+
+    // 如果正在切换全屏且有待恢复的图表
     if (isFullscreenSwitchingRef.current && pendingRestoreXmlRef.current) {
-      // 等待 DrawIoEmbed 加载完成后恢复图表
-      const timer = setTimeout(() => {
+      console.log('[ChatNode] Restoring diagram after DrawIo loaded');
+      // 延迟一点确保 iframe 完全就绪
+      setTimeout(() => {
         if (pendingRestoreXmlRef.current && drawioRef.current) {
-          console.log('[ChatNode] Restoring diagram after fullscreen switch');
           loadDiagram(pendingRestoreXmlRef.current);
           pendingRestoreXmlRef.current = null;
         }
         isFullscreenSwitchingRef.current = false;
-      }, 500);
-      return () => clearTimeout(timer);
+      }, 300);
     }
-  }, [isFullscreen, loadDiagram]);
+  }, [loadDiagram]);
 
   // 切换全屏时保存当前图表
   const handleToggleFullscreen = useCallback(async () => {
@@ -367,6 +370,7 @@ Please retry with an adjusted search pattern or use display_diagram if retries a
       )}>
         <DrawIoEmbed
           ref={drawioRef}
+          onLoad={handleDrawioLoad}
           onExport={handleDiagramExport}
           autosave={true}
           onAutoSave={(data) => {
