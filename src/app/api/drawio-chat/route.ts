@@ -319,7 +319,9 @@ IMPORTANT: Keep edits concise:
       },
     };
 
-    // 如果启用深度研究，添加研究工具（服务端执行）
+    // 如果启用深度研究，添加研究工具
+    // 注意：不使用 execute，避免 AI SDK 发送 custom 格式工具
+    // 研究执行将通过 onToolResult 回调处理
     if (enableDeepResearch) {
       console.log('[DrawIO Chat] Deep research tool enabled (mandatory)');
       tools.deep_research = {
@@ -327,44 +329,46 @@ IMPORTANT: Keep edits concise:
         parameters: z.object({
           query: z.string().describe("The topic or question to research")
         }),
-        execute: async ({ query }: { query: string }) => {
-          console.log(`[DrawIO Chat] Executing deep_research tool: "${query}"`);
-
-          try {
-            const response = await callHyprLabDeepResearch(query, {
-              reasoningEffort: 'low', // 固定使用 low，快速研究
-              // 心跳回调 - 记录日志
-              onProgress: async (event) => {
-                if (event.type === 'progress') {
-                  console.log(`[DrawIO Chat] Research progress: ${event.elapsedSeconds}s elapsed`);
-                }
-              },
-            });
-
-            // 解析研究结果
-            const rawResponse = 'response' in response ? response.response : response;
-            const parsed = parseHyprLabResponse(rawResponse);
-            const formattedResult = formatResearchForImagePrompt(parsed);
-
-            console.log(`[DrawIO Chat] Deep research completed: ${parsed.citations.length} citations`);
-
-            return {
-              success: true,
-              result: formattedResult,
-              citations: parsed.citations.length,
-              summary: `研究完成，获得 ${parsed.citations.length} 个引用来源`,
-            };
-          } catch (error) {
-            console.error('[DrawIO Chat] Deep research failed:', error);
-            return {
-              success: false,
-              error: error instanceof Error ? error.message : 'Research failed',
-              result: '',
-            };
-          }
-        },
       };
     }
+
+    // 定义深度研究执行函数
+    const executeDeepResearch = async (query: string) => {
+      console.log(`[DrawIO Chat] Executing deep_research tool: "${query}"`);
+
+      try {
+        const response = await callHyprLabDeepResearch(query, {
+          reasoningEffort: 'low', // 固定使用 low，快速研究
+          // 心跳回调 - 记录日志
+          onProgress: async (event) => {
+            if (event.type === 'progress') {
+              console.log(`[DrawIO Chat] Research progress: ${event.elapsedSeconds}s elapsed`);
+            }
+          },
+        });
+
+        // 解析研究结果
+        const rawResponse = 'response' in response ? response.response : response;
+        const parsed = parseHyprLabResponse(rawResponse);
+        const formattedResult = formatResearchForImagePrompt(parsed);
+
+        console.log(`[DrawIO Chat] Deep research completed: ${parsed.citations.length} citations`);
+
+        return {
+          success: true,
+          result: formattedResult,
+          citations: parsed.citations.length,
+          summary: `研究完成，获得 ${parsed.citations.length} 个引用来源`,
+        };
+      } catch (error) {
+        console.error('[DrawIO Chat] Deep research failed:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Research failed',
+          result: '',
+        };
+      }
+    };
 
     // Build streamText options
     // Note: When thinking is enabled, temperature must not be set for Claude
@@ -376,6 +380,16 @@ IMPORTANT: Keep edits concise:
       ],
       tools,
       maxSteps: enableDeepResearch ? 5 : 3, // 允许多步骤：研究 -> 生成图表
+      // 为没有 execute 的工具提供结果
+      experimental_toolResultProviders: enableDeepResearch ? {
+        deep_research: async ({ toolCall }: { toolCall: { toolCallId: string; args: { query: string } } }) => {
+          const result = await executeDeepResearch(toolCall.args.query);
+          return {
+            toolCallId: toolCall.toolCallId,
+            result: JSON.stringify(result),
+          };
+        },
+      } : undefined,
     };
 
     // Add thinking (chain of thought) for both models
