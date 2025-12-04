@@ -94,10 +94,17 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     ]);
   }, []);
 
-  // Load diagram into draw.io
+  // Load diagram into draw.io and auto-export to save data
   const loadDiagram = useCallback((xml: string) => {
     if (drawioRef.current) {
       drawioRef.current.load({ xml });
+      // Auto-export after loading to update node data (for connected nodes to access)
+      // Use a short delay to ensure the diagram is fully loaded
+      setTimeout(() => {
+        if (drawioRef.current) {
+          drawioRef.current.exportDiagram({ format: "xmlsvg" });
+        }
+      }, 500);
     }
   }, []);
 
@@ -315,6 +322,13 @@ Please retry with an adjusted search pattern or use display_diagram if retries a
         <DrawIoEmbed
           ref={drawioRef}
           onExport={handleDiagramExport}
+          autosave={true}
+          onAutoSave={(data) => {
+            // Auto-save captures user modifications - trigger export to update node data
+            if (drawioRef.current) {
+              drawioRef.current.exportDiagram({ format: "xmlsvg" });
+            }
+          }}
           urlParameters={{
             spin: true,
             libraries: false,
