@@ -3,7 +3,7 @@
 // 支持 Gemini 和 Anthropic 模型
 // 支持深度研究（DeepResearch）作为 AI 工具
 
-import { streamText, convertToModelMessages, tool } from 'ai';
+import { streamText, convertToModelMessages } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { z } from 'zod';
@@ -320,15 +320,14 @@ IMPORTANT: Keep edits concise:
     };
 
     // 如果启用深度研究，添加研究工具（服务端执行）
-    // 使用 tool() 辅助函数确保 schema 格式正确
     if (enableDeepResearch) {
       console.log('[DrawIO Chat] Deep research tool enabled (mandatory)');
-      tools.deep_research = tool({
+      tools.deep_research = {
         description: `Perform deep web research on a topic. Returns structured research results with citations. You MUST call this tool first when deep research mode is enabled.`,
         parameters: z.object({
           query: z.string().describe("The topic or question to research")
         }),
-        execute: async ({ query }) => {
+        execute: async ({ query }: { query: string }) => {
           console.log(`[DrawIO Chat] Executing deep_research tool: "${query}"`);
 
           try {
@@ -364,7 +363,7 @@ IMPORTANT: Keep edits concise:
             };
           }
         },
-      });
+      };
     }
 
     // Build streamText options
