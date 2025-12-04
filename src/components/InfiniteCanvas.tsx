@@ -29,7 +29,8 @@ import SuperAgentNode from "./nodes/SuperAgentNode";
 import TTSGenNode from "./nodes/TTSGenNode";
 import TTSNode from "./nodes/TTSNode";
 import ImageModal from "./ImageModal";
-import NodeToolbar from "./NodeToolbar";
+import NodeToolbar, { type NodeType } from "./NodeToolbar";
+import CanvasContextMenu from "./CanvasContextMenu";
 import PromptPanel from "./PromptPanel";
 import { CanvasContext } from "@/contexts/CanvasContext";
 import { AudioProvider } from "@/contexts/AudioContext";
@@ -152,6 +153,21 @@ export default function InfiniteCanvas() {
 
   // Drag and drop handlers for adding nodes
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+
+  // Context menu state (右键菜单)
+  const [contextMenuPosition, setContextMenuPosition] = useState<{
+    x: number;
+    y: number;
+    flowX: number;
+    flowY: number;
+  } | null>(null);
+  const [videoUnlocked, setVideoUnlocked] = useState(false);
+
+  // 读取 video 解锁状态
+  useEffect(() => {
+    const unlocked = localStorage.getItem('nanobanana-video-unlocked') === 'true';
+    setVideoUnlocked(unlocked);
+  }, []);
 
   // Load canvas from localStorage on mount
   useEffect(() => {
@@ -536,6 +552,77 @@ export default function InfiniteCanvas() {
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  // 右键菜单处理
+  const handleContextMenu = useCallback((event: MouseEvent | React.MouseEvent) => {
+    // 阻止默认右键菜单
+    event.preventDefault();
+
+    if (!reactFlowInstance) return;
+
+    // 获取 flow 坐标
+    const position = reactFlowInstance.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+
+    setContextMenuPosition({
+      x: event.clientX,
+      y: event.clientY,
+      flowX: position.x,
+      flowY: position.y,
+    });
+  }, [reactFlowInstance]);
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenuPosition(null);
+  }, []);
+
+  // 从右键菜单添加节点
+  const handleContextMenuSelectTool = useCallback((nodeType: NodeType, position: { x: number; y: number }) => {
+    const newNode: Node = {
+      id: `${nodeType}-${Date.now()}`,
+      type: nodeType,
+      position,
+      style: nodeType === 'sprite'
+        ? { width: 360 }
+        : nodeType === 'superAgent'
+        ? { width: 450 }
+        : nodeType === 'chatAgent'
+        ? { width: 550, height: 700 }
+        : nodeType === 'chat'
+        ? { width: 1000, height: 700 }
+        : nodeType === 'ttsGen'
+        ? { width: 340 }
+        : undefined,
+      data: nodeType === 'imageGen'
+        ? { prompt: '' }
+        : nodeType === 'agent'
+        ? { userRequest: '' }
+        : nodeType === 'musicGen'
+        ? { prompt: '', lyrics: '', numberOfSongs: 2 }
+        : nodeType === 'videoGen'
+        ? { prompt: '', orientation: 'portrait' }
+        : nodeType === 'chat'
+        ? { messages: [], width: 1000, height: 700 }
+        : nodeType === 'sprite'
+        ? {}
+        : nodeType === 'superAgent'
+        ? {}
+        : nodeType === 'chatAgent'
+        ? {}
+        : nodeType === 'ttsGen'
+        ? { text: '', speaker: 'zh_female_vivi', speed: 1.0 }
+        : {},
+    };
+    setNodes((nds) => nds.concat(newNode));
+  }, [setNodes]);
+
+  // 从右键菜单上传图片
+  const handleContextMenuUploadImage = useCallback((position: { x: number; y: number }) => {
+    pendingImagePositionRef.current = position;
+    fileInputRef.current?.click();
   }, []);
 
   const onDrop = useCallback(
@@ -1265,6 +1352,8 @@ export default function InfiniteCanvas() {
               onDrop={onDrop}
               onDragOver={onDragOver}
               onSelectionChange={handleSelectionChange}
+              onPaneContextMenu={handleContextMenu}
+              onPaneClick={closeContextMenu}
               nodeTypes={nodeTypes}
               fitView
               minZoom={0.1}
@@ -1337,6 +1426,15 @@ export default function InfiniteCanvas() {
         isOpen={isGalleryOpen}
         onClose={() => setIsGalleryOpen(false)}
         onImageClick={handleGalleryImageClick}
+      />
+
+      {/* Right-click Context Menu */}
+      <CanvasContextMenu
+        position={contextMenuPosition}
+        onClose={closeContextMenu}
+        onSelectTool={handleContextMenuSelectTool}
+        onUploadImage={handleContextMenuUploadImage}
+        videoUnlocked={videoUnlocked}
       />
 
       {/* 导入幻灯片弹窗 */}

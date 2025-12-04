@@ -92,8 +92,14 @@ const uploadItem = {
   accentColor: '#06b6d4',
 };
 
+// 导出工具列表供右键菜单使用
+export const toolItems = baseItems;
+export const videoToolItem = videoItem;
+export const uploadToolItem = uploadItem;
+export type { NodeType };
+
 export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTypeSelect }: NodeToolbarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true); // 默认收起
   const isTouchDevice = useIsTouchDevice();
 
   // 彩蛋：Video 工具解锁状态

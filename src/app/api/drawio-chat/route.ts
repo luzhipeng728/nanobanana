@@ -12,7 +12,6 @@ import {
   parseHyprLabResponse,
   formatResearchForImagePrompt,
   type ReasoningEffort,
-  type ResearchProgressEvent,
 } from '@/lib/super-agent/hyprlab-research';
 
 export const maxDuration = 600; // 增加到 10 分钟支持深度研究
@@ -407,45 +406,23 @@ async function handleDeepResearchRequest(
   const stream = new TransformStream();
   const writer = stream.writable.getWriter();
 
-  // 发送 SSE 事件的辅助函数
-  const sendEvent = async (event: string, data: any) => {
-    if (isAborted) return;
-    try {
-      await writer.write(
-        encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
-      );
-    } catch (e) {
-      console.warn('[DrawIO Chat] Failed to send event:', e);
-    }
-  };
-
   // 发送文本 chunk（兼容 AI SDK 的 UI Message 格式）
+  // 使用 AI SDK 的 data stream protocol 格式
   const sendTextChunk = async (text: string) => {
     if (isAborted) return;
     try {
-      // AI SDK UI Message Stream 格式
+      // AI SDK Data Stream Protocol: text-delta format
+      // Format: 0:"text content"\n
       await writer.write(encoder.encode(`0:${JSON.stringify(text)}\n`));
     } catch (e) {
       console.warn('[DrawIO Chat] Failed to send text chunk:', e);
     }
   };
 
-  // 发送研究进度事件
-  const sendResearchProgress = async (event: ResearchProgressEvent) => {
-    await sendEvent('research_progress', event);
-  };
-
   // 后台处理
   (async () => {
     try {
       // 1. 发送研究开始通知
-      await sendEvent('research_start', {
-        topic: userQuery,
-        effort: reasoningEffort,
-        message: `🔬 开始深度研究: "${userQuery.slice(0, 50)}..."`,
-      });
-
-      // 发送一个文本消息告诉用户正在研究
       await sendTextChunk(`🔬 正在进行深度研究，请稍候...\n\n`);
 
       // 2. 调用 HyprLab 深度研究，带心跳回调
@@ -455,8 +432,7 @@ async function handleDeepResearchRequest(
         const response = await callHyprLabDeepResearch(userQuery, {
           reasoningEffort,
           onProgress: async (event) => {
-            await sendResearchProgress(event);
-            // 发送进度更新
+            // 只通过文本块发送进度更新，保持与 AI SDK 格式兼容
             if (event.type === 'progress') {
               const elapsedMinutes = (event.elapsedSeconds / 60).toFixed(1);
               const progressMsg = `⏳ 深度研究中... 已用时 ${elapsedMinutes} 分钟 (预计 ${event.estimatedMinutes.min}-${event.estimatedMinutes.max} 分钟)\n`;
@@ -476,21 +452,12 @@ async function handleDeepResearchRequest(
 
         // 发送研究完成通知
         const totalMinutes = lastProgressTime > 0 ? (lastProgressTime / 60).toFixed(1) : '0';
-        await sendEvent('research_complete', {
-          citations: parsed.citations.length,
-          searchQueries: parsed.meta.searchQueriesCount,
-          elapsedMinutes: totalMinutes,
-        });
-
         await sendTextChunk(`\n✅ 深度研究完成！用时 ${totalMinutes} 分钟，获得 ${parsed.citations.length} 个引用来源\n\n`);
         await sendTextChunk(`---\n\n📊 现在根据研究结果生成图表...\n\n`);
 
       } catch (researchError) {
         console.error('[DrawIO Chat] Deep research failed:', researchError);
-        await sendEvent('research_error', {
-          error: researchError instanceof Error ? researchError.message : '研究失败',
-        });
-        await sendTextChunk(`\n⚠️ 深度研究失败，将直接生成图表...\n\n`);
+        await sendTextChunk(`\n⚠️ 深度研究失败: ${researchError instanceof Error ? researchError.message : '未知错误'}，将直接生成图表...\n\n`);
         // 继续执行，使用空的研究结果
       }
 
@@ -611,9 +578,7 @@ ${researchResult ? '请基于上述深度研究结果，生成相关的图表来
     } catch (error) {
       console.error('[DrawIO Chat] Deep research request failed:', error);
       try {
-        await sendEvent('error', {
-          message: error instanceof Error ? error.message : 'Unknown error',
-        });
+        await sendTextChunk(`\n❌ 请求失败: ${error instanceof Error ? error.message : 'Unknown error'}\n`);
         await writer.close();
       } catch (e) {
         // 忽略关闭错误
