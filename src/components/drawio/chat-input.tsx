@@ -13,28 +13,14 @@ import {
     History,
     Download,
     Microscope,
-    ChevronDown,
 } from "lucide-react";
 import { ButtonWithTooltip } from "@/components/drawio/button-with-tooltip";
 import { FilePreviewList } from "@/components/drawio/file-preview-list";
 import { HistoryDialog } from "@/components/drawio/history-dialog";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/drawio/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-// 深度研究强度类型
+// 深度研究强度类型（保留类型以兼容）
 export type ReasoningEffort = 'low' | 'medium' | 'high';
-
-// 深度研究强度配置
-const REASONING_EFFORTS: { id: ReasoningEffort; label: string; time: string }[] = [
-    { id: 'low', label: '快速', time: '1-3分钟' },
-    { id: 'medium', label: '标准', time: '3-7分钟' },
-    { id: 'high', label: '深入', time: '7-15分钟' },
-];
 
 interface ChatInputProps {
     input: string;
@@ -248,53 +234,21 @@ export function ChatInput({
                             onDisplayChart={onDisplayChart}
                         />
 
-                        {/* 深度研究开关 */}
-                        <div className="flex items-center gap-0.5 ml-1">
-                            <ButtonWithTooltip
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onEnableDeepResearchChange(!enableDeepResearch)}
-                                tooltipContent={enableDeepResearch ? "关闭深度研究" : "开启深度研究（先搜索再生成图表）"}
-                                className={cn(
-                                    "h-8 px-2 gap-1 text-muted-foreground",
-                                    enableDeepResearch && "bg-purple-100 text-purple-700 hover:bg-purple-200 hover:text-purple-800"
-                                )}
-                            >
-                                <Microscope className="h-4 w-4" />
-                                <span className="text-xs">研究</span>
-                            </ButtonWithTooltip>
-
-                            {/* 强度选择下拉菜单 - 仅在启用时显示 */}
-                            {enableDeepResearch && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button
-                                            type="button"
-                                            className="flex items-center gap-1 px-2 py-1 h-8 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-medium transition-colors"
-                                        >
-                                            {REASONING_EFFORTS.find(e => e.id === reasoningEffort)?.label || '快速'}
-                                            <ChevronDown className="w-3 h-3" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-40">
-                                        {REASONING_EFFORTS.map((effort) => (
-                                            <DropdownMenuItem
-                                                key={effort.id}
-                                                onClick={() => onReasoningEffortChange(effort.id)}
-                                                className={cn(
-                                                    "flex flex-col items-start cursor-pointer",
-                                                    reasoningEffort === effort.id && "bg-purple-50"
-                                                )}
-                                            >
-                                                <span className="font-medium">{effort.label}</span>
-                                                <span className="text-xs text-muted-foreground">{effort.time}</span>
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                        {/* 深度研究开关 - 简化版，只有开关 */}
+                        <ButtonWithTooltip
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onEnableDeepResearchChange(!enableDeepResearch)}
+                            tooltipContent={enableDeepResearch ? "关闭深度研究" : "开启深度研究（先搜索再生成图表）"}
+                            className={cn(
+                                "h-8 px-2 gap-1 ml-1 text-muted-foreground",
+                                enableDeepResearch && "bg-purple-100 text-purple-700 hover:bg-purple-200 hover:text-purple-800"
                             )}
-                        </div>
+                        >
+                            <Microscope className="h-4 w-4" />
+                            <span className="text-xs">研究</span>
+                        </ButtonWithTooltip>
                     </div>
 
                     {/* Right actions */}
