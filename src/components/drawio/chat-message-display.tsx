@@ -242,8 +242,6 @@ export function ChatMessageDisplay({
                     return "生成图表";
                 case "edit_diagram":
                     return "编辑图表";
-                case "deep_research":
-                    return "🔬 深度研究";
                 default:
                     return name;
             }

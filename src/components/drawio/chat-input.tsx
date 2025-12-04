@@ -12,15 +12,10 @@ import {
     Image as ImageIcon,
     History,
     Download,
-    Microscope,
 } from "lucide-react";
 import { ButtonWithTooltip } from "@/components/drawio/button-with-tooltip";
 import { FilePreviewList } from "@/components/drawio/file-preview-list";
 import { HistoryDialog } from "@/components/drawio/history-dialog";
-import { cn } from "@/lib/utils";
-
-// 深度研究强度类型（保留类型以兼容）
-export type ReasoningEffort = 'low' | 'medium' | 'high';
 
 interface ChatInputProps {
     input: string;
@@ -35,11 +30,6 @@ interface ChatInputProps {
     diagramHistory?: { svg: string; xml: string }[];
     onDisplayChart?: (xml: string) => void;
     onSaveDiagram?: (filename: string) => void;
-    // 深度研究相关
-    enableDeepResearch?: boolean;
-    onEnableDeepResearchChange?: (enabled: boolean) => void;
-    reasoningEffort?: ReasoningEffort;
-    onReasoningEffortChange?: (effort: ReasoningEffort) => void;
 }
 
 export function ChatInput({
@@ -55,10 +45,6 @@ export function ChatInput({
     diagramHistory = [],
     onDisplayChart = () => {},
     onSaveDiagram = () => {},
-    enableDeepResearch = false,
-    onEnableDeepResearchChange = () => {},
-    reasoningEffort = 'low',
-    onReasoningEffortChange = () => {},
 }: ChatInputProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -233,22 +219,6 @@ export function ChatInput({
                             diagramHistory={diagramHistory}
                             onDisplayChart={onDisplayChart}
                         />
-
-                        {/* 深度研究开关 - 简化版，只有开关 */}
-                        <ButtonWithTooltip
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onEnableDeepResearchChange(!enableDeepResearch)}
-                            tooltipContent={enableDeepResearch ? "关闭深度研究" : "开启深度研究（先搜索再生成图表）"}
-                            className={cn(
-                                "h-8 px-2 gap-1 ml-1 text-muted-foreground",
-                                enableDeepResearch && "bg-purple-100 text-purple-700 hover:bg-purple-200 hover:text-purple-800"
-                            )}
-                        >
-                            <Microscope className="h-4 w-4" />
-                            <span className="text-xs">研究</span>
-                        </ButtonWithTooltip>
                     </div>
 
                     {/* Right actions */}

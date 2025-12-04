@@ -19,7 +19,7 @@ import {
 } from "@/lib/drawio-utils";
 
 // Drawio components
-import { ChatInput, ReasoningEffort } from "@/components/drawio/chat-input";
+import { ChatInput } from "@/components/drawio/chat-input";
 import { ChatMessageDisplay } from "@/components/drawio/chat-message-display";
 import { ButtonWithTooltip } from "@/components/drawio/button-with-tooltip";
 import {
@@ -69,18 +69,10 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   // Model state - default to Gemini
   const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0]);
 
-  // Deep research state
-  const [enableDeepResearch, setEnableDeepResearch] = useState(false);
-  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('low');
-
   // Set up portal container for fullscreen mode
   useEffect(() => {
     setPortalContainer(document.body);
   }, []);
-
-  // 用于保存切换全屏前的图表 XML
-  const pendingRestoreXmlRef = useRef<string | null>(null);
-  const isFullscreenSwitchingRef = useRef(false);
 
   // Fetch current diagram XML
   const fetchCurrentXML = useCallback((saveToHistory = true) => {
@@ -102,58 +94,12 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     ]);
   }, []);
 
-  // Load diagram into draw.io and auto-export to save data
+  // Load diagram into draw.io
   const loadDiagram = useCallback((xml: string) => {
     if (drawioRef.current) {
       drawioRef.current.load({ xml });
-      // Auto-export after loading to update node data (for connected nodes to access)
-      // Use a short delay to ensure the diagram is fully loaded
-      setTimeout(() => {
-        if (drawioRef.current) {
-          drawioRef.current.exportDiagram({ format: "xmlsvg" });
-        }
-      }, 500);
     }
   }, []);
-
-  // DrawIoEmbed 加载完成时的回调 - 用于恢复全屏切换前的图表
-  const handleDrawioLoad = useCallback((data: any) => {
-    console.log('[ChatNode] DrawIo loaded, isFullscreenSwitching:', isFullscreenSwitchingRef.current);
-    console.log('[ChatNode] Pending restore XML:', !!pendingRestoreXmlRef.current);
-
-    // 如果正在切换全屏且有待恢复的图表
-    if (isFullscreenSwitchingRef.current && pendingRestoreXmlRef.current) {
-      console.log('[ChatNode] Restoring diagram after DrawIo loaded');
-      // 延迟一点确保 iframe 完全就绪
-      setTimeout(() => {
-        if (pendingRestoreXmlRef.current && drawioRef.current) {
-          loadDiagram(pendingRestoreXmlRef.current);
-          pendingRestoreXmlRef.current = null;
-        }
-        isFullscreenSwitchingRef.current = false;
-      }, 300);
-    }
-  }, [loadDiagram]);
-
-  // 切换全屏时保存当前图表
-  const handleToggleFullscreen = useCallback(async () => {
-    // 先保存当前图表 XML
-    if (chartXML) {
-      pendingRestoreXmlRef.current = chartXML;
-    } else {
-      // 如果 chartXML 为空，尝试导出获取
-      try {
-        const currentXml = await fetchCurrentXML(false);
-        if (currentXml) {
-          pendingRestoreXmlRef.current = currentXml;
-        }
-      } catch (e) {
-        console.warn('[ChatNode] Failed to fetch XML before fullscreen switch:', e);
-      }
-    }
-    isFullscreenSwitchingRef.current = true;
-    setIsFullscreen(prev => !prev);
-  }, [chartXML, fetchCurrentXML]);
 
   // Clear diagram
   const clearDiagram = useCallback(() => {
@@ -328,8 +274,6 @@ Please retry with an adjusted search pattern or use display_diagram if retries a
             body: {
               xml: chartXml,
               modelId: selectedModel.id,
-              enableDeepResearch,
-              reasoningEffort: enableDeepResearch ? reasoningEffort : undefined,
             },
           }
         );
@@ -370,15 +314,7 @@ Please retry with an adjusted search pattern or use display_diagram if retries a
       )}>
         <DrawIoEmbed
           ref={drawioRef}
-          onLoad={handleDrawioLoad}
           onExport={handleDiagramExport}
-          autosave={true}
-          onAutoSave={(data) => {
-            // Auto-save captures user modifications - trigger export to update node data
-            if (drawioRef.current) {
-              drawioRef.current.exportDiagram({ format: "xmlsvg" });
-            }
-          }}
           urlParameters={{
             spin: true,
             libraries: false,
@@ -456,7 +392,7 @@ Please retry with an adjusted search pattern or use display_diagram if retries a
                   tooltipContent={fullscreen ? "退出全屏" : "全屏模式"}
                   variant="ghost"
                   size="icon"
-                  onClick={handleToggleFullscreen}
+                  onClick={() => setIsFullscreen(!fullscreen)}
                   className="hover:bg-accent"
                 >
                   {fullscreen ? (
@@ -507,10 +443,6 @@ Please retry with an adjusted search pattern or use display_diagram if retries a
               diagramHistory={diagramHistory}
               onDisplayChart={loadDiagram}
               onSaveDiagram={saveDiagramToFile}
-              enableDeepResearch={enableDeepResearch}
-              onEnableDeepResearchChange={setEnableDeepResearch}
-              reasoningEffort={reasoningEffort}
-              onReasoningEffortChange={setReasoningEffort}
             />
           </footer>
         </div>
