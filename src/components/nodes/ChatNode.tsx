@@ -1,417 +1,509 @@
 "use client";
 
-import { memo, useState, useRef, useEffect } from "react";
-import { Handle, Position, NodeProps, NodeResizer, useStore } from "@xyflow/react";
-import { MessageSquare, Send, Loader2, StopCircle, Link2, Image as ImageIcon } from "lucide-react";
-import { Streamdown } from "streamdown";
-import { NodeTextarea, NodeInput, NodeScrollArea } from "@/components/ui/NodeUI";
+import { memo, useState, useRef, useCallback, useEffect } from "react";
+import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from "@xyflow/react";
+import { PanelRightClose, PanelRightOpen, Maximize2, Minimize2, ChevronDown, Sparkles, Bot } from "lucide-react";
+import { DrawIoEmbed, DrawIoEmbedRef } from "react-drawio";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-import { useCanvas } from "@/contexts/CanvasContext";
+import { useChat, UIMessage } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import {
+  formatXML,
+  convertToLegalXml,
+  replaceNodes,
+  replaceXMLParts,
+  validateMxCellStructure,
+  extractDiagramXML,
+  getEmptyDiagramXML,
+} from "@/lib/drawio-utils";
 
-// Helper function to replace unsupported language tags
-const normalizeMarkdown = (content: string) => {
-  // Replace ```prompt with ```text to avoid Shiki errors
-  return content.replace(/```prompt\b/g, '```text');
-};
+// Drawio components
+import { ChatInput } from "@/components/drawio/chat-input";
+import { ChatMessageDisplay } from "@/components/drawio/chat-message-display";
+import { ButtonWithTooltip } from "@/components/drawio/button-with-tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/drawio/ui/dropdown-menu";
 
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-  timestamp?: string;
-};
+// 可用的模型列表
+const AVAILABLE_MODELS = [
+  { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', icon: Bot, description: '默认，Anthropic 模型' },
+  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', icon: Sparkles, description: '支持思维链' },
+];
 
 type ChatNodeData = {
-  messages?: Message[];
-  systemPrompt?: string;
+  messages?: UIMessage[];
 };
 
+// Default dimensions
+const CHAT_PANEL_WIDTH = 380;
+const MIN_EDITOR_WIDTH = 400;
+
 const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
-  const { getConnectedImageNodes } = useCanvas();
-  const [messages, setMessages] = useState<Message[]>(data.messages || []);
+  const { updateNodeData } = useReactFlow();
+
+  // Draw.io state
+  const drawioRef = useRef<DrawIoEmbedRef | null>(null);
+  const [chartXML, setChartXML] = useState<string>("");
+  const resolverRef = useRef<((value: string) => void) | null>(null);
+  const [diagramHistory, setDiagramHistory] = useState<{ svg: string; xml: string }[]>([]);
+  const expectHistoryExportRef = useRef<boolean>(false);
+  const saveResolverRef = useRef<((xml: string) => void) | null>(null);
+
+  // File upload state
+  const [files, setFiles] = useState<File[]>([]);
+
+  // Panel visibility
+  const [isChatVisible, setIsChatVisible] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+
+  // Input state
   const [input, setInput] = useState("");
-  const [systemPrompt, setSystemPrompt] = useState(data.systemPrompt || "You are a helpful AI assistant that generates image prompts. When user asks for images, wrap your prompt suggestions in ```text\n[prompt text]\n``` blocks.");
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamingContent, setStreamingContent] = useState("");
-  const [showSystemPrompt, setShowSystemPrompt] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Reference images with marker data
-  const [connectedImages, setConnectedImages] = useState<string[]>([]);
-  const [connectedImagesWithMarkers, setConnectedImagesWithMarkers] = useState<{
-    imageUrl: string;
-    markedImageUrl?: string;
-    marksCount: number;
-  }[]>([]);
+  // Model state - default to Gemini
+  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0]);
 
-  // Monitor edge changes
-  const connectedEdgeCount = useStore((state) =>
-    state.edges.filter((e) => e.target === id).length
+  // Set up portal container for fullscreen mode
+  useEffect(() => {
+    setPortalContainer(document.body);
+  }, []);
+
+  // Fetch current diagram XML
+  const fetchCurrentXML = useCallback((saveToHistory = true) => {
+    return Promise.race([
+      new Promise<string>((resolve) => {
+        if (drawioRef.current) {
+          resolverRef.current = resolve;
+          if (saveToHistory) {
+            expectHistoryExportRef.current = true;
+          }
+          drawioRef.current.exportDiagram({ format: "xmlsvg" });
+        } else {
+          resolve("");
+        }
+      }),
+      new Promise<string>((_, reject) =>
+        setTimeout(() => reject(new Error("Chart export timed out")), 10000)
+      ),
+    ]);
+  }, []);
+
+  // Load diagram into draw.io
+  const loadDiagram = useCallback((xml: string) => {
+    if (drawioRef.current) {
+      drawioRef.current.load({ xml });
+    }
+  }, []);
+
+  // Clear diagram
+  const clearDiagram = useCallback(() => {
+    const emptyDiagram = getEmptyDiagramXML();
+    loadDiagram(emptyDiagram);
+    setChartXML(emptyDiagram);
+    setDiagramHistory([]);
+  }, [loadDiagram]);
+
+  // Handle diagram export
+  const handleDiagramExport = useCallback((data: any) => {
+    try {
+      const extractedXML = extractDiagramXML(data.data);
+      setChartXML(extractedXML);
+
+      // Store XML in node data for connected nodes to access
+      updateNodeData(id, { diagramXML: extractedXML, diagramSVG: data.data });
+
+      // Save to history if this was a user-initiated export
+      if (expectHistoryExportRef.current) {
+        setDiagramHistory((prev) => [
+          ...prev,
+          { svg: data.data, xml: extractedXML },
+        ]);
+        expectHistoryExportRef.current = false;
+      }
+
+      if (resolverRef.current) {
+        resolverRef.current(extractedXML);
+        resolverRef.current = null;
+      }
+
+      // Handle save to file if requested
+      if (saveResolverRef.current) {
+        saveResolverRef.current(extractedXML);
+        saveResolverRef.current = null;
+      }
+    } catch (error) {
+      console.error("[ChatNode] Error extracting diagram XML:", error);
+      if (resolverRef.current) {
+        resolverRef.current("");
+        resolverRef.current = null;
+      }
+    }
+  }, [id, updateNodeData]);
+
+  // Save diagram to file
+  const saveDiagramToFile = useCallback((filename: string) => {
+    if (!drawioRef.current) {
+      console.warn("Draw.io editor not ready");
+      return;
+    }
+
+    drawioRef.current.exportDiagram({ format: "xmlsvg" });
+    saveResolverRef.current = (xml: string) => {
+      let fileContent = xml;
+      if (!xml.includes("<mxfile")) {
+        fileContent = `<mxfile><diagram name="Page-1" id="page-1">${xml}</diagram></mxfile>`;
+      }
+
+      const blob = new Blob([fileContent], { type: "application/xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename.endsWith(".drawio") ? filename : `${filename}.drawio`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    };
+  }, []);
+
+  // useChat hook from AI SDK - exactly like original project
+  const { messages, sendMessage, addToolResult, status, error, setMessages } =
+    useChat({
+      transport: new DefaultChatTransport({
+        api: "/api/drawio-chat",
+      }),
+      async onToolCall({ toolCall }) {
+        if (toolCall.toolName === "display_diagram") {
+          const { xml } = toolCall.input as { xml: string };
+
+          const validationError = validateMxCellStructure(xml);
+
+          if (validationError) {
+            addToolResult({
+              tool: "display_diagram",
+              toolCallId: toolCall.toolCallId,
+              output: validationError,
+            });
+          } else {
+            addToolResult({
+              tool: "display_diagram",
+              toolCallId: toolCall.toolCallId,
+              output: "Successfully displayed the diagram.",
+            });
+          }
+        } else if (toolCall.toolName === "edit_diagram") {
+          const { edits } = toolCall.input as {
+            edits: Array<{ search: string; replace: string }>;
+          };
+
+          let currentXml = "";
+          try {
+            // Fetch without saving to history
+            currentXml = await fetchCurrentXML(false);
+
+            const editedXml = replaceXMLParts(currentXml, edits);
+            loadDiagram(editedXml);
+
+            addToolResult({
+              tool: "edit_diagram",
+              toolCallId: toolCall.toolCallId,
+              output: `Successfully applied ${edits.length} edit(s) to the diagram.`,
+            });
+          } catch (error) {
+            console.error("Edit diagram failed:", error);
+
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
+
+            addToolResult({
+              tool: "edit_diagram",
+              toolCallId: toolCall.toolCallId,
+              output: `Edit failed: ${errorMessage}
+
+Current diagram XML:
+\`\`\`xml
+${currentXml}
+\`\`\`
+
+Please retry with an adjusted search pattern or use display_diagram if retries are exhausted.`,
+            });
+          }
+        }
+      },
+      onError: (error) => {
+        console.error("Chat error:", error);
+      },
+    });
+
+  // Form submit handler
+  const onFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const isProcessing = status === "streaming" || status === "submitted";
+    if (input.trim() && !isProcessing) {
+      try {
+        let chartXml = await fetchCurrentXML();
+        chartXml = formatXML(chartXml);
+
+        const parts: any[] = [{ type: "text", text: input }];
+
+        if (files.length > 0) {
+          for (const file of files) {
+            const reader = new FileReader();
+            const dataUrl = await new Promise<string>((resolve) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.readAsDataURL(file);
+            });
+
+            parts.push({
+              type: "file",
+              url: dataUrl,
+              mediaType: file.type,
+            });
+          }
+        }
+
+        sendMessage(
+          { parts },
+          {
+            body: {
+              xml: chartXml,
+              modelId: selectedModel.id,
+            },
+          }
+        );
+
+        setInput("");
+        setFiles([]);
+      } catch (error) {
+        console.error("Error fetching chart data:", error);
+      }
+    }
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setInput(e.target.value);
+  };
+
+  const handleFileChange = (newFiles: File[]) => {
+    setFiles(newFiles);
+  };
+
+  const handleClearChat = () => {
+    setMessages([]);
+    clearDiagram();
+  };
+
+  // Calculate minimum widths based on chat visibility
+  const minWidth = isChatVisible ? MIN_EDITOR_WIDTH + CHAT_PANEL_WIDTH : MIN_EDITOR_WIDTH;
+
+  // Shared content component for both normal and fullscreen modes
+  const renderContent = (fullscreen: boolean) => (
+    <>
+      {/* Draw.io Editor */}
+      <div className={cn(
+        "h-full border-r border-border/30 bg-white transition-all",
+        isChatVisible ? "flex-1" : "w-full"
+      )}>
+        <DrawIoEmbed
+          ref={drawioRef}
+          onExport={handleDiagramExport}
+          urlParameters={{
+            spin: true,
+            libraries: false,
+            saveAndExit: false,
+            noExitBtn: true,
+          }}
+        />
+      </div>
+
+      {/* Chat Panel - Collapsed */}
+      {!isChatVisible && (
+        <div className="h-full flex flex-col items-center pt-4 bg-card border-l border-border/30 w-12">
+          <ButtonWithTooltip
+            tooltipContent="显示聊天面板"
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsChatVisible(true)}
+            className="hover:bg-accent transition-colors"
+          >
+            <PanelRightOpen className="h-5 w-5 text-muted-foreground" />
+          </ButtonWithTooltip>
+          <div
+            className="text-sm font-medium text-muted-foreground mt-8 tracking-wide"
+            style={{
+              writingMode: "vertical-rl",
+              transform: "rotate(180deg)",
+            }}
+          >
+            AI 聊天
+          </div>
+        </div>
+      )}
+
+      {/* Chat Panel - Expanded */}
+      {isChatVisible && (
+        <div className={cn(
+          "h-full flex flex-col bg-card",
+          fullscreen ? "w-[450px]" : "animate-slide-in-right"
+        )} style={fullscreen ? undefined : { width: CHAT_PANEL_WIDTH }}>
+          {/* Header */}
+          <header className="px-5 py-3 border-b border-border/50 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {/* Model Selector */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-sm font-medium">
+                      <selectedModel.icon className="w-4 h-4 text-primary" />
+                      <span className="text-foreground">{selectedModel.name}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    {AVAILABLE_MODELS.map((model) => (
+                      <DropdownMenuItem
+                        key={model.id}
+                        onClick={() => setSelectedModel(model)}
+                        className={cn(
+                          "flex items-center gap-2 cursor-pointer",
+                          selectedModel.id === model.id && "bg-accent"
+                        )}
+                      >
+                        <model.icon className="w-4 h-4 text-primary" />
+                        <div className="flex flex-col">
+                          <span className="font-medium">{model.name}</span>
+                          <span className="text-xs text-muted-foreground">{model.description}</span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="flex items-center gap-1">
+                <ButtonWithTooltip
+                  tooltipContent={fullscreen ? "退出全屏" : "全屏模式"}
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsFullscreen(!fullscreen)}
+                  className="hover:bg-accent"
+                >
+                  {fullscreen ? (
+                    <Minimize2 className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <Maximize2 className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </ButtonWithTooltip>
+                {!fullscreen && (
+                  <ButtonWithTooltip
+                    tooltipContent="隐藏聊天面板"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsChatVisible(false)}
+                    className="hover:bg-accent"
+                  >
+                    <PanelRightClose className="h-5 w-5 text-muted-foreground" />
+                  </ButtonWithTooltip>
+                )}
+              </div>
+            </div>
+          </header>
+
+          {/* Messages */}
+          <main className="flex-1 overflow-hidden">
+            <ChatMessageDisplay
+              messages={messages}
+              error={error}
+              setInput={setInput}
+              setFiles={handleFileChange}
+              chartXML={chartXML}
+              onDisplayChart={loadDiagram}
+            />
+          </main>
+
+          {/* Input */}
+          <footer className="p-4 border-t border-border/50 bg-card/50 flex-shrink-0">
+            <ChatInput
+              input={input}
+              status={status}
+              onSubmit={onFormSubmit}
+              onChange={handleInputChange}
+              onClearChat={handleClearChat}
+              files={files}
+              onFileChange={handleFileChange}
+              showHistory={showHistory}
+              onToggleHistory={setShowHistory}
+              diagramHistory={diagramHistory}
+              onDisplayChart={loadDiagram}
+              onSaveDiagram={saveDiagramToFile}
+            />
+          </footer>
+        </div>
+      )}
+    </>
   );
 
-  // Get connected images with marker data
-  useEffect(() => {
-    const connectedNodes = getConnectedImageNodes(id);
+  // Fullscreen mode - render in portal
+  if (isFullscreen && portalContainer) {
+    return (
+      <>
+        {/* Placeholder in canvas */}
+        <div className="w-full h-full bg-muted/50 rounded-xl border border-dashed border-border flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <Maximize2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">全屏模式中</p>
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="text-xs text-primary hover:underline mt-1"
+            >
+              点击退出
+            </button>
+          </div>
+        </div>
+        {createPortal(
+          <div className="fixed inset-0 z-[9999] bg-background flex">
+            {renderContent(true)}
+          </div>,
+          portalContainer
+        )}
+      </>
+    );
+  }
 
-    // Extract image URLs for display
-    const imageUrls = connectedNodes
-      .map(node => node.data.imageUrl)
-      .filter((url): url is string => typeof url === 'string' && url.length > 0);
-    setConnectedImages(imageUrls);
-
-    // Extract images with marker data for API
-    const imagesWithMarkers = connectedNodes
-      .filter(node => {
-        const nodeData = node.data as { imageUrl?: string };
-        return typeof nodeData.imageUrl === 'string' && nodeData.imageUrl.length > 0;
-      })
-      .map(node => {
-        const nodeData = node.data as { imageUrl: string; markerData?: { markedImageUrl?: string; marks?: unknown[] } };
-        return {
-          imageUrl: nodeData.imageUrl,
-          markedImageUrl: nodeData.markerData?.markedImageUrl,
-          marksCount: nodeData.markerData?.marks?.length || 0,
-        };
-      });
-    setConnectedImagesWithMarkers(imagesWithMarkers);
-  }, [id, getConnectedImageNodes, connectedEdgeCount]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingContent]);
-
-  const handleSend = async () => {
-    if (!input.trim() || isStreaming) return;
-
-    const userMessage: Message = {
-      role: "user",
-      content: input,
-      timestamp: new Date().toISOString()
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsStreaming(true);
-    setStreamingContent("");
-
-    abortControllerRef.current = new AbortController();
-
-    try {
-      // Build reference images array (include marked images if available)
-      const referenceImages: string[] = [];
-      connectedImagesWithMarkers.forEach(img => {
-        referenceImages.push(img.imageUrl);
-        // Include marked image if it has markers
-        if (img.markedImageUrl && img.marksCount > 0) {
-          referenceImages.push(img.markedImageUrl);
-          console.log(`[ChatNode] Including marked image with ${img.marksCount} markers`);
-        }
-      });
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMessage],
-          systemPrompt,
-          referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
-        }),
-        signal: abortControllerRef.current.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("No reader available");
-
-      const decoder = new TextDecoder();
-      let fullContent = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        fullContent += chunk;
-        setStreamingContent(fullContent);
-      }
-
-      // Add assistant message to history
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: fullContent,
-        timestamp: new Date().toISOString()
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setStreamingContent("");
-    } catch (error: any) {
-      if (error.name !== "AbortError") {
-        console.error("Chat error:", error);
-        const errorMessage: Message = {
-          role: "assistant",
-          content: `Error: ${error.message}`,
-        };
-        setMessages((prev) => [...prev, errorMessage]);
-      }
-    } finally {
-      setIsStreaming(false);
-      abortControllerRef.current = null;
-    }
-  };
-
-  const handleStop = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setIsStreaming(false);
-    }
-  };
-
-  const handleClear = () => {
-    setMessages([]);
-    setStreamingContent("");
-  };
-
-  // Helper function to format timestamp
-  const formatTime = (timestamp?: string) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  // Helper function to check if messages should be grouped
-  const shouldGroupMessage = (currentMsg: Message, prevMsg?: Message) => {
-    if (!prevMsg) return false;
-    return prevMsg.role === currentMsg.role;
-  };
-
+  // Normal mode
   return (
-    <div className={cn(
-      "nowheel bg-white dark:bg-neutral-950 border-2 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-[500px] h-[650px] overflow-hidden flex flex-col transition-all duration-300",
-      selected ? "ring-4 ring-offset-0 ring-purple-400/40 border-purple-200 dark:border-purple-800 shadow-[0_8px_20px_-6px_rgba(168,85,247,0.15)] scale-[1.02]" : "border-neutral-200 dark:border-neutral-800 hover:shadow-lg hover:scale-[1.01]"
-    )}>
+    <div
+      className={cn(
+        "nowheel bg-card border rounded-xl shadow-soft overflow-hidden flex w-full h-full",
+        selected
+          ? "ring-4 ring-offset-0 ring-primary/40 border-primary/50 shadow-lg"
+          : "border-border/30 hover:shadow-lg"
+      )}
+    >
       <NodeResizer
         isVisible={selected}
-        minWidth={400}
-        minHeight={500}
-        lineClassName="!border-purple-400"
-        handleClassName="!w-3 !h-3 !bg-purple-500 !rounded-full"
-      />
-      <Handle
-        type="target"
-        position={Position.Top}
-        isConnectable={isConnectable}
-        className="w-3 h-3 !bg-purple-500 !border-2 !border-white dark:!border-neutral-900"
+        minWidth={minWidth}
+        minHeight={400}
+        lineClassName="!border-primary/40"
+        handleClassName="!w-3 !h-3 !bg-primary !rounded-full"
       />
 
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-purple-100 dark:border-purple-900/20 flex items-center justify-between flex-shrink-0 bg-purple-50/50 dark:bg-purple-900/20 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shadow-sm text-purple-600 dark:text-purple-300">
-            <MessageSquare className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-100 tracking-tight">AI Assistant</h3>
-            <div className="flex items-center gap-2">
-              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium">Always online</p>
-              {connectedImages.length > 0 && (
-                <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">
-                  <Link2 className="w-3 h-3" />
-                  {connectedImages.length} 张参考图
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowSystemPrompt(!showSystemPrompt)}
-            className="text-[10px] font-bold text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 px-3 py-1.5 rounded-full transition-all"
-          >
-            {showSystemPrompt ? "Hide System" : "System"}
-          </button>
-          {messages.length > 0 && (
-            <button
-              onClick={handleClear}
-              className="text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 px-3 py-1.5 rounded-full transition-all"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      </div>
+      {renderContent(false)}
 
-      {/* System Prompt (collapsible) */}
-      {showSystemPrompt && (
-        <div className="px-4 py-3 border-b border-purple-100 dark:border-purple-900/20 bg-purple-50/30 dark:bg-purple-900/10 flex-shrink-0">
-          <NodeTextarea
-            className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-neutral-900 border-2 border-purple-100 dark:border-purple-800/30 resize-none focus:ring-4 focus:ring-purple-100 dark:focus:ring-purple-900/20 focus:border-purple-300 dark:focus:border-purple-700 shadow-sm transition-all"
-            rows={3}
-            value={systemPrompt}
-            onChange={(e) => setSystemPrompt(e.target.value)}
-            placeholder="Enter system prompt..."
-          />
-        </div>
-      )}
-
-      {/* Reference images preview */}
-      {connectedImages.length > 0 && (
-        <div className="px-4 py-2 border-b border-purple-100 dark:border-purple-900/20 bg-purple-50/30 dark:bg-purple-900/10 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <ImageIcon className="w-3.5 h-3.5 text-purple-500" />
-            <span className="text-[10px] font-medium text-purple-700 dark:text-purple-300">参考图片</span>
-          </div>
-          <div className="flex gap-1 mt-1.5 overflow-x-auto pb-1">
-            {connectedImages.slice(0, 4).map((url, idx) => (
-              <img
-                key={idx}
-                src={url}
-                alt={`参考图 ${idx + 1}`}
-                className="w-10 h-10 rounded-lg object-cover border border-purple-200 dark:border-purple-700 flex-shrink-0"
-              />
-            ))}
-            {connectedImages.length > 4 && (
-              <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-800 flex items-center justify-center text-[10px] font-bold text-purple-600 dark:text-purple-300 flex-shrink-0">
-                +{connectedImages.length - 4}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Messages */}
-      <NodeScrollArea className="flex-1 overflow-y-auto overflow-x-hidden p-5 bg-white/50 dark:bg-neutral-950/50">
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-3xl bg-purple-50 dark:bg-purple-900/10 flex items-center justify-center rotate-3">
-                <MessageSquare className="w-8 h-8 text-purple-400/70 dark:text-purple-400/50" />
-              </div>
-              <h4 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-1">Start a conversation</h4>
-              <p className="text-xs text-neutral-500 dark:text-neutral-500">Send a message to begin chatting with AI</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-5">
-            {messages.map((msg, index) => {
-              const prevMsg = index > 0 ? messages[index - 1] : undefined;
-              const isGrouped = shouldGroupMessage(msg, prevMsg);
-
-              return (
-                <div
-                  key={index}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} ${isGrouped ? "mt-1" : "mt-4"}`}
-                >
-                  <div className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} max-w-[85%] min-w-0`}>
-                    {!isGrouped && msg.role === "assistant" && (
-                      <div className="flex items-center gap-2 mb-2 px-1">
-                        <div className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shadow-sm">
-                          <MessageSquare className="w-3 h-3 text-purple-600 dark:text-purple-300" />
-                        </div>
-                        <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">AI Assistant</span>
-                      </div>
-                    )}
-                    <div
-                      className={`rounded-2xl px-4 py-3 overflow-hidden w-full shadow-sm ${
-                        msg.role === "user"
-                          ? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-tr-sm"
-                          : "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border-2 border-neutral-100 dark:border-neutral-800 rounded-tl-sm"
-                      } ${isGrouped ? (msg.role === "user" ? "rounded-tr-sm" : "rounded-tl-sm") : ""}`}
-                    >
-                      {msg.role === "assistant" ? (
-                        <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none break-words whitespace-pre-wrap">
-                          <Streamdown>{normalizeMarkdown(msg.content)}</Streamdown>
-                        </div>
-                      ) : (
-                        <div className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.content}</div>
-                      )}
-                    </div>
-                    {msg.timestamp && !isGrouped && (
-                      <span className="text-[9px] text-neutral-400 dark:text-neutral-600 mt-1 px-2 font-medium">
-                        {formatTime(msg.timestamp)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Streaming Message */}
-        {isStreaming && streamingContent && (
-          <div className="flex justify-start mt-4">
-            <div className="flex flex-col items-start max-w-[85%] min-w-0">
-              <div className="flex items-center gap-2 mb-2 px-1">
-                <div className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shadow-sm">
-                  <MessageSquare className="w-3 h-3 text-purple-600 dark:text-purple-300" />
-                </div>
-                <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">AI Assistant</span>
-                <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-              </div>
-              <div className="rounded-2xl rounded-tl-sm px-4 py-3 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border-2 border-neutral-100 dark:border-neutral-800 overflow-hidden w-full shadow-sm">
-                <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none break-words whitespace-pre-wrap">
-                  <Streamdown>{normalizeMarkdown(streamingContent)}</Streamdown>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Loading indicator */}
-        {isStreaming && !streamingContent && (
-          <div className="flex justify-start mt-4">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-sm">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-500" />
-              <span className="text-xs font-medium text-neutral-500">Thinking...</span>
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </NodeScrollArea>
-
-      {/* Input */}
-      <div className="px-5 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-end gap-3 flex-shrink-0">
-        <div className="flex-1 relative group">
-          <NodeInput
-            type="text"
-            className="w-full text-sm px-4 py-3 pr-12 rounded-full bg-neutral-50 dark:bg-neutral-900 border-2 border-transparent focus:border-purple-300 dark:focus:border-purple-700 focus:ring-4 focus:ring-purple-100 dark:focus:ring-purple-900/20 transition-all placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder="Type a message..."
-            disabled={isStreaming}
-          />
-          <div className="absolute right-3 bottom-3 flex items-center gap-1 pointer-events-none">
-            <span className="text-[10px] font-bold text-neutral-300 dark:text-neutral-700">{input.length}</span>
-          </div>
-        </div>
-        {isStreaming ? (
-          <button
-            onClick={handleStop}
-            className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95 hover:-translate-y-0.5"
-            title="Stop generating"
-          >
-            <StopCircle className="w-5 h-5" />
-          </button>
-        ) : (
-          <button
-            onClick={handleSend}
-            disabled={!input.trim()}
-            className="p-3 rounded-full bg-neutral-900 dark:bg-neutral-100 hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-900 disabled:opacity-30 disabled:cursor-not-allowed disabled:bg-neutral-200 dark:disabled:bg-neutral-800 disabled:text-neutral-400 dark:disabled:text-neutral-600 transition-all shadow-md hover:shadow-lg active:scale-95 disabled:shadow-none hover:-translate-y-0.5"
-            title="Send message"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        )}
-      </div>
-
+      {/* 右侧输出连接点 - 用于连接到 Generator 提供 XML */}
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         isConnectable={isConnectable}
-        className="w-2 h-2 !bg-purple-500 !border-0"
+        className="w-4 h-4 !bg-gradient-to-r !from-purple-500 !to-pink-500 !border-2 !border-white dark:!border-neutral-900 !rounded-full transition-all duration-200 hover:!scale-125 hover:!shadow-lg hover:!shadow-purple-500/50"
+        title="拖拽连接到生成器提供图表 XML"
       />
     </div>
   );

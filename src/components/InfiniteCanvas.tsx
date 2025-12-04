@@ -560,6 +560,8 @@ export default function InfiniteCanvas() {
           ? { width: 450 }
           : type === 'chatAgent'
           ? { width: 550, height: 700 }
+          : type === 'chat'
+          ? { width: 1000, height: 700 }
           : type === 'ttsGen'
           ? { width: 340 }
           : undefined,
@@ -572,7 +574,7 @@ export default function InfiniteCanvas() {
           : type === 'videoGen'
           ? { prompt: '', orientation: 'portrait' }
           : type === 'chat'
-          ? { messages: [], systemPrompt: 'You are a helpful AI assistant that generates image prompts. When user asks for images, wrap your prompt suggestions in ```text\n[prompt text]\n``` blocks.' }
+          ? { messages: [], width: 1000, height: 700 }
           : type === 'sprite'
           ? {}
           : type === 'superAgent'
@@ -853,7 +855,7 @@ export default function InfiniteCanvas() {
     const connectedEdges = currentEdges.filter((edge: Edge) => edge.target === nodeId);
     return connectedEdges
       .map((edge: Edge) => currentNodes.find(n => n.id === edge.source))
-      .filter((n): n is Node => n !== undefined && n.type === 'image');
+      .filter((n): n is Node => n !== undefined && (n.type === 'image' || n.type === 'chat'));
   }, []);
 
   const getNode = useCallback((nodeId: string) => {

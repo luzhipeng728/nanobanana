@@ -73,7 +73,13 @@ const baseItems = [
     icon: Bot,
     accentColor: '#6366f1',
   },
-  // Chat 和 Website 节点已隐藏
+  {
+    type: 'chat' as NodeType,
+    title: 'AI Diagram',
+    description: 'AI 图表生成',
+    icon: MessageSquare,
+    accentColor: '#ec4899',
+  },
 ];
 
 const VIDEO_UNLOCK_KEY = 'nanobanana-video-unlocked';

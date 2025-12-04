@@ -19,6 +19,8 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  FileCode,
+  GitBranch,
 } from "lucide-react";
 import {
   AnimatedProgress,
@@ -53,6 +55,9 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const [hasMarkers, setHasMarkers] = useState(false); // 是否有标记
   const [useForClaude, setUseForClaude] = useState(true); // 给 Claude 理解图片
   const [useForImageGen, setUseForImageGen] = useState(true); // 给生图模型作为参考
+
+  // 图表参考相关状态
+  const [connectedDiagrams, setConnectedDiagrams] = useState<Array<{ xml: string; svg?: string }>>([]);
 
   // Claude 分析流式展示
   const [claudeAnalysis, setClaudeAnalysis] = useState<string>("");
@@ -302,14 +307,29 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     state.edges.filter((e) => e.target === id).length
   );
 
-  // 监听连接的图片节点 - 同时获取原图和标记图
+  // 监听连接的图片节点和图表节点 - 同时获取原图、标记图和图表 XML
   useEffect(() => {
     const connectedNodes = getConnectedImageNodes(id);
     const imageUrls: string[] = [];
     const markedUrls: string[] = [];
+    const diagrams: Array<{ xml: string; svg?: string }> = [];
     let foundMarkers = false;
 
     connectedNodes.forEach(node => {
+      // 处理 ChatNode (图表节点)
+      if (node.type === 'chat') {
+        const nodeData = node.data as { diagramXML?: string; diagramSVG?: string };
+        if (nodeData.diagramXML) {
+          diagrams.push({
+            xml: nodeData.diagramXML,
+            svg: nodeData.diagramSVG,
+          });
+          console.log(`[AgentNode] Found connected diagram with XML (${nodeData.diagramXML.length} chars)`);
+        }
+        return;
+      }
+
+      // 处理 ImageNode (图片节点)
       const nodeData = node.data as {
         imageUrl?: string;
         markerData?: { markedImageUrl?: string; marks?: unknown[]; arrows?: unknown[] }
@@ -333,6 +353,7 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
 
     setConnectedImages(imageUrls);
     setConnectedMarkedImages(markedUrls);
+    setConnectedDiagrams(diagrams);
     setHasMarkers(foundMarkers);
   }, [id, getConnectedImageNodes, connectedEdgeCount]); // 添加 connectedEdgeCount 作为触发器
 
@@ -592,14 +613,30 @@ Generate a CLEAN image as if the markers do not exist.
         hasMarkers,      // 是否有标记
       } : undefined;
 
+      // 准备图表参考数据 - 如果连接了 ChatNode
+      const referenceDiagrams = connectedDiagrams.length > 0 ? {
+        diagrams: connectedDiagrams.map(d => d.xml),
+      } : undefined;
+
+      // 如果有图表参考，将 XML 添加到用户请求前面
+      let enhancedUserRequest = userRequest;
+      if (referenceDiagrams) {
+        const diagramContext = connectedDiagrams.map((d, i) =>
+          `[图表 ${i + 1} XML]:\n${d.xml}`
+        ).join('\n\n');
+        enhancedUserRequest = `[参考图表信息 - 请根据以下图表结构生成相关图片]:\n${diagramContext}\n\n[用户需求]:\n${userRequest}`;
+        console.log(`[AgentNode] Enhanced request with ${connectedDiagrams.length} diagram(s)`);
+      }
+
       const response = await fetch("/api/agent/generate-prompts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userRequest,
+          userRequest: enhancedUserRequest,
           referenceImages,
+          referenceDiagrams,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -782,7 +819,7 @@ Generate a CLEAN image as if the markers do not exist.
     } finally {
       setIsRunning(false);
     }
-  }, [userRequest, selectedModel, imageSize, aspectRatio, isRunning, id, getReactFlowNode, addImageNode, updateImageNode, connectedImages, connectedMarkedImages, hasMarkers, useForClaude, useForImageGen]);
+  }, [userRequest, selectedModel, imageSize, aspectRatio, isRunning, id, getReactFlowNode, addImageNode, updateImageNode, connectedImages, connectedMarkedImages, connectedDiagrams, hasMarkers, useForClaude, useForImageGen]);
 
   const onStop = () => {
     if (abortControllerRef.current) {
@@ -802,14 +839,20 @@ Generate a CLEAN image as if the markers do not exist.
       className="w-[350px]"
       headerActions={
         <div className="flex items-center gap-1.5">
+          {connectedDiagrams.length > 0 && (
+            <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 font-medium">
+              <GitBranch className="w-3 h-3" />
+              {connectedDiagrams.length} 图表
+            </span>
+          )}
           {connectedImages.length > 0 ? (
             <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">
               <Link2 className="w-3 h-3" />
-              {connectedImages.length} 张参考图
+              {connectedImages.length} 参考图
             </span>
-          ) : (
+          ) : connectedDiagrams.length === 0 && (
             <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 font-medium opacity-60">
-              ← 可连接参考图
+              ← 可连接参考
             </span>
           )}
           {status !== "idle" && status !== "error" && (
@@ -878,6 +921,42 @@ Generate a CLEAN image as if the markers do not exist.
                 +{connectedImages.length - 4}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 图表参考预览 - 只有连接了 ChatNode 才显示 */}
+      {connectedDiagrams.length > 0 && (
+        <div className="bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-xl p-3 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-medium text-pink-700 dark:text-pink-300">
+            <FileCode className="w-3.5 h-3.5" />
+            图表参考（XML 将作为提示词的一部分）
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {connectedDiagrams.map((diagram, idx) => (
+              <div
+                key={idx}
+                className="flex-shrink-0 w-16 h-16 rounded-lg border border-pink-200 dark:border-pink-700 bg-white dark:bg-neutral-900 overflow-hidden relative"
+                title={`图表 ${idx + 1}`}
+              >
+                {diagram.svg ? (
+                  <img
+                    src={diagram.svg}
+                    alt={`图表 ${idx + 1}`}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-full p-1 overflow-hidden">
+                    <pre className="text-[5px] text-neutral-500 dark:text-neutral-400 leading-tight whitespace-pre-wrap break-all overflow-hidden">
+                      {diagram.xml.slice(0, 150)}...
+                    </pre>
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-pink-500/90 to-transparent px-1 py-0.5">
+                  <span className="text-[8px] text-white font-bold">图表 {idx + 1}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

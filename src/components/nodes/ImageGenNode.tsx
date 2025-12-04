@@ -6,7 +6,7 @@ import { rewritePrompt } from "@/app/actions/generate";
 import { createImageTask } from "@/app/actions/image-task";
 import { type GeminiImageModel, type ImageGenerationConfig, RESOLUTION_OPTIONS } from "@/types/image-gen";
 import { useCanvas } from "@/contexts/CanvasContext";
-import { Loader2, Wand2, Image as ImageIcon, Link2 } from "lucide-react";
+import { Loader2, Wand2, Image as ImageIcon, Link2, GitBranch, FileCode } from "lucide-react";
 import { NodeTextarea, NodeLabel, NodeButton, NodeTabSelect } from "@/components/ui/NodeUI";
 import { GeneratorNodeLayout } from "./GeneratorNodeLayout";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
@@ -138,9 +138,40 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     state.edges.filter((e) => e.target === id).length
   );
 
+  // Track connected diagrams separately
+  const [connectedDiagramCount, setConnectedDiagramCount] = useState(0);
+  const [connectedDiagrams, setConnectedDiagrams] = useState<Array<{ xml: string; svg?: string }>>([]);
+  const [connectedImageUrls, setConnectedImageUrls] = useState<string[]>([]);
+
   useEffect(() => {
     const connectedNodes = getConnectedImageNodes(id);
-    setConnectedImagesCount(connectedNodes.length);
+    const imageNodes = connectedNodes.filter(n => n.type === 'image');
+    const diagramNodes = connectedNodes.filter(n => n.type === 'chat');
+    setConnectedImagesCount(imageNodes.length);
+    setConnectedDiagramCount(diagramNodes.length);
+
+    // Collect image URLs for preview
+    const imageUrls: string[] = [];
+    imageNodes.forEach(node => {
+      const nodeData = node.data as { imageUrl?: string };
+      if (nodeData.imageUrl) {
+        imageUrls.push(nodeData.imageUrl);
+      }
+    });
+    setConnectedImageUrls(imageUrls);
+
+    // Collect diagram data for preview
+    const diagrams: Array<{ xml: string; svg?: string }> = [];
+    diagramNodes.forEach(node => {
+      const nodeData = node.data as { diagramXML?: string; diagramSVG?: string };
+      if (nodeData.diagramXML) {
+        diagrams.push({
+          xml: nodeData.diagramXML,
+          svg: nodeData.diagramSVG,
+        });
+      }
+    });
+    setConnectedDiagrams(diagrams);
   }, [id, getConnectedImageNodes, connectedEdgeCount]);
 
   const handlePromptChange = (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -159,16 +190,33 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
 
   const onGenerate = () => {
     if (!prompt) return;
-    
+
     generate({
       action: async () => {
-        // Get connected images logic (same as before)
+        // Get connected nodes (images and diagrams)
         const connectedNodes = getConnectedImageNodes(id);
         const referenceImages: string[] = [];
         let hasMarkers = false;
+        let diagramXML = '';
 
         connectedNodes.forEach(node => {
-          const nodeData = node.data as { imageUrl?: string; markerData?: { markedImageUrl?: string; marks?: unknown[]; arrows?: unknown[] } };
+          const nodeData = node.data as {
+            imageUrl?: string;
+            markerData?: { markedImageUrl?: string; marks?: unknown[]; arrows?: unknown[] };
+            diagramXML?: string;
+            diagramSVG?: string;
+          };
+
+          // Handle chat/diagram nodes - get XML content
+          if (node.type === 'chat' && nodeData.diagramXML) {
+            diagramXML = nodeData.diagramXML;
+            // Also use SVG as reference image if available
+            if (nodeData.diagramSVG) {
+              referenceImages.push(nodeData.diagramSVG);
+            }
+          }
+
+          // Handle image nodes
           const imageUrl = nodeData.imageUrl;
           const markerData = nodeData.markerData;
 
@@ -184,6 +232,22 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         });
 
         let finalPrompt = prompt;
+
+        // Add diagram context if connected to a diagram node
+        if (diagramXML) {
+          const diagramInstruction = `[DIAGRAM REFERENCE]
+The following is a draw.io diagram XML that describes the structure and layout you should follow.
+Generate an image that represents this diagram in the style requested by the user.
+Preserve the overall structure, flow, and relationships shown in the diagram.
+
+Diagram XML:
+${diagramXML}
+
+[USER REQUEST]
+`;
+          finalPrompt = diagramInstruction + prompt;
+        }
+
         if (hasMarkers) {
           const markerExclusionInstruction = `[CRITICAL INSTRUCTION - MUST FOLLOW]
 The reference image contains RED CIRCLES with WHITE NUMBERS (①②③...) as position markers for reference only.
@@ -197,7 +261,7 @@ Generate a CLEAN image as if the markers do not exist.
 [END OF CRITICAL INSTRUCTION]
 
 `;
-          finalPrompt = markerExclusionInstruction + prompt;
+          finalPrompt = markerExclusionInstruction + finalPrompt;
         }
 
         const config: ImageGenerationConfig = {};
@@ -237,14 +301,24 @@ Generate a CLEAN image as if the markers do not exist.
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         headerActions={
-          connectedImagesCount > 0 ? (
-            <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">
-              <Link2 className="w-3 h-3" />
-              {connectedImagesCount} 张参考图
-            </span>
+          connectedImagesCount > 0 || connectedDiagramCount > 0 ? (
+            <div className="flex items-center gap-1">
+              {connectedDiagramCount > 0 && (
+                <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 font-medium">
+                  <GitBranch className="w-3 h-3" />
+                  {connectedDiagramCount} 图表
+                </span>
+              )}
+              {connectedImagesCount > 0 && (
+                <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">
+                  <Link2 className="w-3 h-3" />
+                  {connectedImagesCount} 参考图
+                </span>
+              )}
+            </div>
           ) : (
             <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 font-medium opacity-60">
-              ← 连接参考图
+              ← 连接参考
             </span>
           )
         }
@@ -268,6 +342,63 @@ Generate a CLEAN image as if the markers do not exist.
           className="w-4 h-4 !bg-gradient-to-r !from-purple-500 !to-blue-500 !border-2 !border-white dark:!border-neutral-900 !rounded-full transition-all duration-200 hover:!scale-125 hover:!shadow-lg hover:!shadow-blue-500/50"
           title="连接图片作为参考"
         />
+
+        {/* 连接内容预览区域 */}
+        {(connectedDiagrams.length > 0 || connectedImageUrls.length > 0) && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-medium text-blue-700 dark:text-blue-300">
+              <Link2 className="w-3.5 h-3.5" />
+              已连接的参考内容
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {/* 图表预览 */}
+              {connectedDiagrams.map((diagram, idx) => (
+                <div
+                  key={`diagram-${idx}`}
+                  className="flex-shrink-0 w-16 h-16 rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-neutral-900 overflow-hidden relative group"
+                  title="连接的图表"
+                >
+                  {diagram.svg ? (
+                    // 如果有 SVG，显示图表预览
+                    <img
+                      src={diagram.svg}
+                      alt={`图表 ${idx + 1}`}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    // 否则显示 XML 代码缩略预览
+                    <div className="w-full h-full p-1 overflow-hidden">
+                      <pre className="text-[6px] text-neutral-600 dark:text-neutral-400 leading-tight whitespace-pre-wrap break-all overflow-hidden">
+                        {diagram.xml.slice(0, 200)}...
+                      </pre>
+                    </div>
+                  )}
+                  {/* 图表标识角标 */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-pink-500/90 to-transparent px-1 py-0.5">
+                    <div className="flex items-center gap-0.5">
+                      <FileCode className="w-2.5 h-2.5 text-white" />
+                      <span className="text-[8px] text-white font-bold">图表</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {/* 图片预览 */}
+              {connectedImageUrls.slice(0, 4).map((url, idx) => (
+                <img
+                  key={`image-${idx}`}
+                  src={url}
+                  alt={`参考图 ${idx + 1}`}
+                  className="flex-shrink-0 w-16 h-16 rounded-lg object-cover border border-blue-200 dark:border-blue-700"
+                />
+              ))}
+              {connectedImageUrls.length > 4 && (
+                <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-blue-100 dark:bg-blue-800 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-300">
+                  +{connectedImageUrls.length - 4}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-3">
           {/* 模型选择 */}
