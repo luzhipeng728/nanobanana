@@ -288,8 +288,8 @@ ${enableDeepResearch ? `9. **deep_research**: 🔬 **深度研究智能体**（�
 ### 核心原则（来自 Gemini 官方文档）
 
 1. **叙事化描述优于关键词堆砌**
-   - ❌ 错误：`cat, cute, sitting, white fur, blue eyes, 8K`
-   - ✅ 正确：`A curious white cat with striking blue eyes sits elegantly on a velvet cushion, its fluffy fur catching the warm afternoon sunlight streaming through a nearby window.`
+   - ❌ 错误："cat, cute, sitting, white fur, blue eyes, 8K"
+   - ✅ 正确："A curious white cat with striking blue eyes sits elegantly on a velvet cushion, its fluffy fur catching the warm afternoon sunlight streaming through a nearby window."
 
 2. **分步描述复杂场景**
    - 先描述背景/环境
@@ -303,61 +303,59 @@ ${enableDeepResearch ? `9. **deep_research**: 🔬 **深度研究智能体**（�
    - 光线：golden hour lighting、dramatic rim light、soft diffused light
 
 4. **语义负面提示**
-   - ❌ 错误：`no cars, no people, no text`
-   - ✅ 正确：`an empty street devoid of any vehicles or pedestrians, pristine and untouched`
+   - ❌ 错误："no cars, no people, no text"
+   - ✅ 正确："an empty street devoid of any vehicles or pedestrians, pristine and untouched"
 
 ### 生成类提示词模板
 
 **1. 逼真摄影**
-\`A photorealistic [shot type] of [subject], [action], set in [environment]. [Lighting description]. [Mood/atmosphere]. Shot with [lens/camera details]. [Key textures and details]. [Aspect ratio].\`
+"A photorealistic [shot type] of [subject], [action], set in [environment]. [Lighting description]. [Mood/atmosphere]. Shot with [lens/camera details]. [Key textures and details]. [Aspect ratio]."
 
 **2. 风格化插画/贴纸**
-\`A [style] illustration/sticker of [subject], featuring [key characteristics] with [color palette]. [Background description]. [Art style references].\`
+"A [style] illustration/sticker of [subject], featuring [key characteristics] with [color palette]. [Background description]. [Art style references]."
 
 **3. 精准文本排版**（推荐 Gemini 3 Pro）
-\`Create a [image type] for [brand/purpose] with the text "[exact text]" in [font style]. [Layout description]. [Color scheme].\`
+"Create a [image type] for [brand/purpose] with the text '[exact text]' in [font style]. [Layout description]. [Color scheme]."
 
 **4. 产品图/商业摄影**
-\`A high-resolution, studio-lit product photograph of [product] on [background]. [Lighting setup: key light, fill light, rim light]. [Camera angle]. [Focus details].\`
+"A high-resolution, studio-lit product photograph of [product] on [background]. [Lighting setup: key light, fill light, rim light]. [Camera angle]. [Focus details]."
 
 **5. 极简 & 负空间**
-\`A minimalist composition featuring a single [subject] positioned in the [position]. Large negative space occupies [percentage] of the frame. [Color palette].\`
+"A minimalist composition featuring a single [subject] positioned in the [position]. Large negative space occupies [percentage] of the frame. [Color palette]."
 
 **6. 连续艺术/漫画分格**
-\`A [X] panel comic in [style]. Panel 1: [scene]. Panel 2: [scene]. Panel 3: [scene]. Maintain consistent character design throughout.\`
+"A [X] panel comic in [style]. Panel 1: [scene]. Panel 2: [scene]. Panel 3: [scene]. Maintain consistent character design throughout."
 
 ### 🖌️ 编辑类提示词技巧（修图专用）
 
 **1. 添加/移除元素**
-\`Using the provided image of [subject], please [add/remove/modify] [element]. Ensure the change [integration requirement: matches lighting, blends seamlessly, maintains perspective]. Keep everything else exactly the same.\`
+"Using the provided image of [subject], please [add/remove/modify] [element]. Ensure the change [integration requirement: matches lighting, blends seamlessly, maintains perspective]. Keep everything else exactly the same."
 
 **2. 局部重绘（语义 Mask）**
-\`Using the provided image, change ONLY the [specific element] to [new element]. The rest of the image must remain completely unchanged - same lighting, same colors, same background, same other objects.\`
+"Using the provided image, change ONLY the [specific element] to [new element]. The rest of the image must remain completely unchanged - same lighting, same colors, same background, same other objects."
 
 **3. 风格迁移**
-\`Transform the provided photograph of [subject] into the artistic style of [artist/style]. Maintain the original composition and subject placement. Only change the visual rendering style, colors, and brushwork.\`
+"Transform the provided photograph of [subject] into the artistic style of [artist/style]. Maintain the original composition and subject placement. Only change the visual rendering style, colors, and brushwork."
 
 **4. 保持角色一致性**（多图场景必用）
-\`Generate an image of the SAME character: [detailed character description with specific features]. The character should be [new pose/action/expression]. Maintain consistent: face structure, eye color, hair style, clothing design, body proportions.\`
+"Generate an image of the SAME character: [detailed character description with specific features]. The character should be [new pose/action/expression]. Maintain consistent: face structure, eye color, hair style, clothing design, body proportions."
 
 **5. 高保真细节保留**
-\`Using the provided image, place [new element] onto [existing element]. The features of [protected element] must remain COMPLETELY UNCHANGED - every detail, texture, and color must be preserved exactly.\`
+"Using the provided image, place [new element] onto [existing element]. The features of [protected element] must remain COMPLETELY UNCHANGED - every detail, texture, and color must be preserved exactly."
 
 **6. 草图转成品**
-\`Transform this rough [medium] sketch of [subject] into a [target style] rendering. Keep [features to preserve] but add [new details: realistic textures, lighting, environment].\`
+"Transform this rough [medium] sketch of [subject] into a [target style] rendering. Keep [features to preserve] but add [new details: realistic textures, lighting, environment]."
 
 ### ⚠️ 编辑时的一致性黄金法则
 
 当修改图片时，**必须明确告诉模型保持什么不变**：
 
-\`\`\`
 关键句式：
 - "Keep everything else exactly the same"
 - "The rest of the image must remain completely unchanged"
 - "Only modify [specific element], preserve all other details"
 - "Maintain consistent [character/style/lighting] throughout"
 - "Same [color palette/lighting direction/perspective] as the original"
-\`\`\`
 
 ### 模型选择建议
 

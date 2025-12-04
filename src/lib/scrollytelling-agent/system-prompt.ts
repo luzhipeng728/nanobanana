@@ -334,8 +334,8 @@ gsap.from(".card", {
 ### 核心原则
 
 **叙事化描述 > 关键词堆砌**
-- ❌ 错误：`城市, 夜景, 霓虹, 赛博朋克, 8K`
-- ✅ 正确：`A rain-soaked cyberpunk metropolis at night, where towering skyscrapers pierce through layers of neon-tinted fog. The wet streets mirror a symphony of pink and cyan lights from holographic advertisements...`
+- ❌ 错误："城市, 夜景, 霓虹, 赛博朋克, 8K"
+- ✅ 正确："A rain-soaked cyberpunk metropolis at night, where towering skyscrapers pierce through layers of neon-tinted fog. The wet streets mirror a symphony of pink and cyan lights from holographic advertisements..."
 
 ### 分步描述法（复杂场景必用）
 
@@ -357,16 +357,16 @@ gsap.from(".card", {
 ### 提示词模板
 
 **1. 全屏英雄背景（Hero Section）**
-\`A [wide-angle/panoramic] view of [scene description]. [Atmospheric elements: fog, light rays, particles]. [Dominant color scheme]. Shot with [lens type], [lighting description]. Cinematic quality, 16:9 aspect ratio, 4K resolution.\`
+"A [wide-angle/panoramic] view of [scene description]. [Atmospheric elements: fog, light rays, particles]. [Dominant color scheme]. Shot with [lens type], [lighting description]. Cinematic quality, 16:9 aspect ratio, 4K resolution."
 
 **2. 人物/角色场景**
-\`A [shot type: medium shot/full body] of [character description] in [environment]. [Character's action/expression]. [Lighting setup: three-point, natural, dramatic]. [Style reference: Pixar, realistic, stylized]. Maintain consistent character design.\`
+"A [shot type: medium shot/full body] of [character description] in [environment]. [Character's action/expression]. [Lighting setup: three-point, natural, dramatic]. [Style reference: Pixar, realistic, stylized]. Maintain consistent character design."
 
 **3. 抽象/艺术背景**
-\`Abstract [art style] composition featuring [visual elements]. [Color palette: complementary, analogous, monochromatic]. [Movement/flow description]. [Texture: smooth gradients, organic shapes, geometric patterns]. Digital art, seamless tiling capability.\`
+"Abstract [art style] composition featuring [visual elements]. [Color palette: complementary, analogous, monochromatic]. [Movement/flow description]. [Texture: smooth gradients, organic shapes, geometric patterns]. Digital art, seamless tiling capability."
 
 **4. 产品/物品展示**
-\`A [product] elegantly displayed on [surface/background]. [Studio lighting setup]. [Material details: reflections, textures, highlights]. [Angle: 3/4 view, top-down, eye-level]. Commercial photography quality.\`
+"A [product] elegantly displayed on [surface/background]. [Studio lighting setup]. [Material details: reflections, textures, highlights]. [Angle: 3/4 view, top-down, eye-level]. Commercial photography quality."
 
 ### 风格参考词汇
 
@@ -386,10 +386,10 @@ gsap.from(".card", {
 ### 完整示例提示词
 
 **Hero 背景示例：**
-\`A breathtaking wide-angle view of a futuristic metropolis at twilight. Towering glass skyscrapers reflect the warm orange sunset, while floating holographic billboards cast cyan and magenta glows onto the rain-slicked streets below. Volumetric light rays pierce through gaps in the urban canyon, creating dramatic god rays. The scene exudes a sense of wonder and technological advancement. Shot with a 24mm wide-angle lens, dramatic backlighting, cinematic color grading. 16:9 aspect ratio, 4K resolution, Blade Runner meets Inception visual language.\`
+"A breathtaking wide-angle view of a futuristic metropolis at twilight. Towering glass skyscrapers reflect the warm orange sunset, while floating holographic billboards cast cyan and magenta glows onto the rain-slicked streets below. Volumetric light rays pierce through gaps in the urban canyon, creating dramatic god rays. The scene exudes a sense of wonder and technological advancement. Shot with a 24mm wide-angle lens, dramatic backlighting, cinematic color grading. 16:9 aspect ratio, 4K resolution, Blade Runner meets Inception visual language."
 
 **极简背景示例：**
-\`A serene minimalist workspace bathed in soft natural light streaming through floor-to-ceiling windows. A single potted monstera plant creates a focal point against the pristine white wall. The color palette consists of warm whites, soft grays, and natural wood tones. Negative space dominates 70% of the composition, creating a sense of calm and focus. Shot with shallow depth of field, the plant sharp while background softly blurred. Professional interior photography, 16:9 aspect ratio.\`
+"A serene minimalist workspace bathed in soft natural light streaming through floor-to-ceiling windows. A single potted monstera plant creates a focal point against the pristine white wall. The color palette consists of warm whites, soft grays, and natural wood tones. Negative space dominates 70% of the composition, creating a sense of calm and focus. Shot with shallow depth of field, the plant sharp while background softly blurred. Professional interior photography, 16:9 aspect ratio."
 
 ## 完整工作流程
 
