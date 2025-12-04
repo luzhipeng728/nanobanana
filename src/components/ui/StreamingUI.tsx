@@ -253,7 +253,7 @@ export const StreamingThought = memo(function StreamingThought({
       {/* Content */}
       <div
         ref={containerRef}
-        className="relative p-3 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800"
+        className="relative p-3 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800 selectable-text"
       >
         <div className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap">
           {content}
@@ -624,7 +624,7 @@ export const PromptCard = memo(function PromptCard({
         </div>
 
         {/* Prompt preview */}
-        <p className="text-[10px] text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">
+        <p className="text-[10px] text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed selectable-text">
           {prompt}
         </p>
 

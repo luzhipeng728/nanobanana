@@ -329,30 +329,67 @@ gsap.from(".card", {
 - 你需要为每个 section 编写详细的生图提示词
 - 生图模型是 nanobanana pro，支持各种风格
 
-## AI 生图提示词编写指南
+## AI 生图提示词编写指南（基于 Gemini 最佳实践）
 
-为每个 section 编写的生图提示词应该：
+### 核心原则
 
-1. **详细描述画面内容**
-   - 主体是什么
-   - 场景/背景
-   - 构图方式
+**叙事化描述 > 关键词堆砌**
+- ❌ 错误：`城市, 夜景, 霓虹, 赛博朋克, 8K`
+- ✅ 正确：`A rain-soaked cyberpunk metropolis at night, where towering skyscrapers pierce through layers of neon-tinted fog. The wet streets mirror a symphony of pink and cyan lights from holographic advertisements...`
 
-2. **指定视觉风格**
-   - 色调（暖色/冷色/特定颜色）
-   - 风格（写实/插画/艺术/科技感）
-   - 氛围（专业/温馨/未来感）
+### 分步描述法（复杂场景必用）
 
-3. **指定比例**（根据布局）
-   - 16:9 - 全屏背景
-   - 1:1 - 方形配图
-   - 4:3 - 传统比例
-   - 9:16 - 竖版
+1. **背景/环境**：先建立整体氛围
+2. **主体/焦点**：再描述核心内容
+3. **细节/质感**：最后添加精修细节
 
-**示例提示词：**
-- "未来城市夜景，霓虹灯倒映在雨后的街道，赛博朋克风格，蓝紫色调，16:9，电影感"
-- "极简主义工作空间，大落地窗自然光，白色和原木色调，专业商务风格，16:9"
-- "抽象流体艺术，渐变色彩从蓝到紫流动，深色背景，数字艺术风格，16:9"
+### 摄影术语控制镜头
+
+| 效果 | 术语 |
+|------|------|
+| 宽广感 | wide-angle shot, expansive view |
+| 细节特写 | macro shot, extreme close-up |
+| 电影感 | cinematic composition, 2.39:1 aspect ratio feel |
+| 景深 | shallow depth of field (f/1.4), bokeh background |
+| 光线 | golden hour lighting, dramatic rim light, soft diffused light |
+| 视角 | bird's eye view, low-angle perspective, Dutch angle |
+
+### 提示词模板
+
+**1. 全屏英雄背景（Hero Section）**
+\`A [wide-angle/panoramic] view of [scene description]. [Atmospheric elements: fog, light rays, particles]. [Dominant color scheme]. Shot with [lens type], [lighting description]. Cinematic quality, 16:9 aspect ratio, 4K resolution.\`
+
+**2. 人物/角色场景**
+\`A [shot type: medium shot/full body] of [character description] in [environment]. [Character's action/expression]. [Lighting setup: three-point, natural, dramatic]. [Style reference: Pixar, realistic, stylized]. Maintain consistent character design.\`
+
+**3. 抽象/艺术背景**
+\`Abstract [art style] composition featuring [visual elements]. [Color palette: complementary, analogous, monochromatic]. [Movement/flow description]. [Texture: smooth gradients, organic shapes, geometric patterns]. Digital art, seamless tiling capability.\`
+
+**4. 产品/物品展示**
+\`A [product] elegantly displayed on [surface/background]. [Studio lighting setup]. [Material details: reflections, textures, highlights]. [Angle: 3/4 view, top-down, eye-level]. Commercial photography quality.\`
+
+### 风格参考词汇
+
+- **科技感**：holographic, neon-lit, cyberpunk, digital matrix, tech-noir
+- **温馨感**：warm tones, soft lighting, cozy atmosphere, inviting glow
+- **专业感**：clean lines, minimalist, corporate, polished, sophisticated
+- **艺术感**：painterly, expressive brushstrokes, gallery-quality, fine art
+- **未来感**：futuristic, sleek, chrome accents, floating elements, sci-fi
+
+### 指定比例（根据布局）
+- **16:9** - 全屏背景、Hero section
+- **1:1** - 方形配图、头像
+- **4:3** - 传统比例、内容配图
+- **9:16** - 竖版、移动端全屏
+- **21:9** - 超宽电影感
+
+### 完整示例提示词
+
+**Hero 背景示例：**
+\`A breathtaking wide-angle view of a futuristic metropolis at twilight. Towering glass skyscrapers reflect the warm orange sunset, while floating holographic billboards cast cyan and magenta glows onto the rain-slicked streets below. Volumetric light rays pierce through gaps in the urban canyon, creating dramatic god rays. The scene exudes a sense of wonder and technological advancement. Shot with a 24mm wide-angle lens, dramatic backlighting, cinematic color grading. 16:9 aspect ratio, 4K resolution, Blade Runner meets Inception visual language.\`
+
+**极简背景示例：**
+\`A serene minimalist workspace bathed in soft natural light streaming through floor-to-ceiling windows. A single potted monstera plant creates a focal point against the pristine white wall. The color palette consists of warm whites, soft grays, and natural wood tones. Negative space dominates 70% of the composition, creating a sense of calm and focus. Shot with shallow depth of field, the plant sharp while background softly blurred. Professional interior photography, 16:9 aspect ratio.\`
 
 ## 完整工作流程
 

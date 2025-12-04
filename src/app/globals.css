@@ -131,6 +131,36 @@ body {
   contain: layout style;
 }
 
+/* ========================================
+   文本选择支持
+   ======================================== */
+
+/* 允许节点内文本选择 - 配合 nodrag 类使用 */
+.selectable-text {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
+}
+
+/* 悬停时显示文本光标 */
+.selectable-text:hover {
+  cursor: text;
+}
+
+/* 选中状态的文本高亮颜色 */
+.selectable-text::selection {
+  background: rgba(139, 92, 246, 0.3);
+  color: inherit;
+}
+
+/* 聊天消息区域默认允许选择 */
+.react-flow__node .chat-message-content,
+.react-flow__node .message-text {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
+}
+
 /* 拖动时禁用所有过渡效果以提升性能 */
 .react-flow__node.dragging,
 .react-flow__node.dragging * {

@@ -650,7 +650,7 @@ const ChatAgentNode = ({
                   {/* 消息气泡 */}
                   <div
                     className={cn(
-                      "rounded-2xl px-4 py-3 overflow-hidden w-full shadow-sm",
+                      "rounded-2xl px-4 py-3 overflow-hidden w-full shadow-sm selectable-text",
                       msg.role === "user"
                         ? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-tr-sm"
                         : "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border-2 border-neutral-100 dark:border-neutral-800 rounded-tl-sm"
@@ -720,7 +720,7 @@ const ChatAgentNode = ({
 
               {/* 流式文本 */}
               {streamingContent && (
-                <div className="rounded-2xl rounded-tl-sm px-4 py-3 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border-2 border-neutral-100 dark:border-neutral-800 overflow-hidden w-full shadow-sm">
+                <div className="rounded-2xl rounded-tl-sm px-4 py-3 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border-2 border-neutral-100 dark:border-neutral-800 overflow-hidden w-full shadow-sm selectable-text">
                   <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none break-words [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_pre]:my-2">
                     <Streamdown>{normalizeMarkdown(streamingContent)}</Streamdown>
                   </div>

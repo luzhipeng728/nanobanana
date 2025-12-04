@@ -1,6 +1,19 @@
-// 预设技能库 - 7个完整的提示词技能模板
+// 预设技能库 - 8个完整的提示词技能模板
+// 基于 Gemini 图片生成最佳实践优化：叙事化描述、摄影术语、分步指令
 
 import type { SkillTemplate } from '@/types/super-agent';
+
+/**
+ * Gemini 图片生成最佳实践（来自官方文档）：
+ *
+ * 1. 叙事化描述 > 关键词堆砌：用自然语言完整描述场景
+ * 2. 详细具体：描述材质、结构、元素细节（如"精灵板甲 + 银色叶纹 + 高领 + 鹰翼肩甲"）
+ * 3. 提供上下文与用途：说明图片用于什么场景
+ * 4. 分步指令：复杂场景分段描述（先背景、再前景、最后关键道具）
+ * 5. 语义负面提示：描述想要的而非"不要什么"
+ * 6. 摄影/电影术语：wide-angle shot、macro shot、low-angle perspective 等
+ * 7. 中文文字：用双引号包裹，限制 ≤200 字/张
+ */
 
 export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
 
@@ -16,7 +29,18 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
       requiredInputs: ['产品名称', '产品功能列表'],
       optionalInputs: ['用户名', '网站URL', 'slogan', '品牌颜色']
     },
-    basePrompt: `A hand holding a glowing transparent glass card in the dark, the card displays {{PRODUCT_TYPE}} interface. The card shows a logo and title "{{PRODUCT_NAME}}" {{BADGE_TEXT}}, {{USERNAME_TEXT}}{{SLOGAN_TEXT}}{{URL_TEXT}}, featuring {{FEATURE_ICONS}}. The card has beautiful gradient neon edge lighting in {{COLORS}} colors, holographic glass material effect. Photorealistic, cinematic dramatic lighting, pure black background, shallow depth of field, professional photography, ultra high quality, 8K resolution.`,
+    basePrompt: `A cinematic close-up photograph captures a human hand elegantly holding a transparent glass card that emits a soft, ethereal glow. The scene is set against a pure black background, creating dramatic contrast.
+
+CARD DESIGN:
+The card displays {{PRODUCT_TYPE}} interface with the title "{{PRODUCT_NAME}}" rendered in clean, modern typography {{BADGE_TEXT}}. {{USERNAME_TEXT}}{{SLOGAN_TEXT}}{{URL_TEXT}} The interface showcases {{FEATURE_ICONS}}, each icon designed with subtle luminosity.
+
+MATERIAL & LIGHTING:
+The card features holographic glass material with prismatic light refraction along its edges. Beautiful gradient neon edge lighting in {{COLORS}} creates a mesmerizing glow effect. The frosted glass has visible depth with internal light diffusion.
+
+PHOTOGRAPHY STYLE:
+Shot with a 50mm lens at f/1.4 for shallow depth of field, cinematic dramatic lighting from top-left, professional studio photography quality. The hand is naturally posed, skin texture visible but not distracting.
+
+Technical: Photorealistic rendering, ultra high quality, 8K resolution, ray-traced reflections.`,
     variables: [
       {
         name: 'PRODUCT_NAME',
@@ -126,7 +150,21 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
       requiredInputs: ['产品名称', '步骤列表'],
       optionalInputs: ['品牌颜色', '风格偏好']
     },
-    basePrompt: `A modern step-by-step tutorial infographic with {{STEP_COUNT}} numbered steps arranged horizontally. Each step shows a clear UI screenshot or illustration with a numbered circle badge and Chinese label below. {{STEPS_CONTENT}} Clean modern design with {{COLORS}} accent colors, dark gradient background, glassmorphism card style, soft glow effects, arrows connecting each step. All Chinese text must be exactly as specified with no other text. Professional infographic style, 8K resolution.`,
+    basePrompt: `A beautifully designed horizontal tutorial infographic that guides users through {{STEP_COUNT}} sequential steps. The composition flows naturally from left to right, inviting the viewer on a visual journey.
+
+LAYOUT STRUCTURE:
+Each step is presented as an individual glassmorphism card with a prominent numbered circle badge (1, 2, 3...) in the top-left corner. Below each illustration is a Chinese label clearly identifying the action. Elegant curved arrows with subtle gradient fills connect each step, creating visual continuity.
+
+STEP CONTENT:
+{{STEPS_CONTENT}}
+
+VISUAL DESIGN:
+The background features a sophisticated dark gradient (deep navy to charcoal) that makes the content pop. Each card has frosted glass effect with {{COLORS}} accent colors creating soft glowing edges. The icons within each step use consistent stroke weights and rounded corners for a friendly, approachable feel.
+
+TYPOGRAPHY & SPACING:
+Chinese labels are rendered in a clean sans-serif font with adequate letter-spacing for readability. Generous padding between steps (at least 40px) ensures the design breathes. The numbered badges use bold typography with contrasting background circles.
+
+Technical: Professional infographic design, 8K resolution, balanced composition with clear visual hierarchy. All Chinese text must be exactly as specified with no other text.`,
     variables: [
       {
         name: 'STEP_COUNT',
@@ -185,7 +223,25 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
       requiredInputs: ['角色描述', '故事大纲', '场景数量'],
       optionalInputs: ['场景标题', '角色台词']
     },
-    basePrompt: `A Pixar-style cinematic 3D animation scene. {{SCENE_DESCRIPTION}} The character is {{CHARACTER_DESCRIPTION}}, maintaining consistent design throughout. {{TEXT_PLACEMENT}} Pixar animation style with dramatic cinematic lighting, rich vibrant colors, expressive character emotions, epic film composition, shallow depth of field, professional animation quality. All Chinese text must be exactly as specified with no other text. 8K resolution, masterpiece quality.`,
+    basePrompt: `A breathtaking Pixar-quality 3D animated scene that captures a pivotal moment in an emotional story. The frame is composed like a cinematic still from a feature film, with every element contributing to the narrative.
+
+SCENE NARRATIVE:
+{{SCENE_DESCRIPTION}}
+
+CHARACTER DESIGN (Consistent Across All Scenes):
+{{CHARACTER_DESCRIPTION}}
+The character features exaggerated Pixar-style proportions: slightly larger head-to-body ratio, oversized expressive eyes with visible catch lights, smooth subsurface-scattered skin with subtle blush on cheeks, and meticulously detailed clothing with realistic fabric folds.
+
+CINEMATOGRAPHY:
+Shot with a virtual 35mm lens equivalent, employing the rule of thirds for character placement. Dramatic three-point lighting setup: warm key light from 45° above-left, cool fill light opposite, and soft rim light to separate character from background. Shallow depth of field (f/2.8 equivalent) blurs the background into painterly bokeh.
+
+ENVIRONMENT & ATMOSPHERE:
+The background tells its own story with environmental storytelling details. Volumetric light rays pierce through, dust particles float in the air, and color temperature shifts create emotional depth. Rich, saturated Pixar color palette with complementary color harmony.
+
+TEXT ELEMENTS:
+{{TEXT_PLACEMENT}}
+
+Technical: Pixar-quality 3D rendering, subsurface scattering on skin, ray-traced global illumination, 8K resolution masterpiece. All Chinese text must be exactly as specified with no other text.`,
     variables: [
       {
         name: 'CHARACTER_DESCRIPTION',
@@ -244,7 +300,23 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
       requiredInputs: ['PPT主题', '页面内容'],
       optionalInputs: ['风格偏好', '颜色主题']
     },
-    basePrompt: `A professional PPT slide design with {{STYLE_DESCRIPTION}}. {{SLIDE_CONTENT}} Clean modern presentation design with professional typography, balanced layout, consistent color scheme. All Chinese text must be exactly as specified with no other text. High quality presentation graphic, 16:9 aspect ratio, 4K resolution.`,
+    basePrompt: `A stunning presentation slide that commands attention and communicates with clarity. This is a single slide from a premium keynote presentation, designed to impress executives and stakeholders.
+
+VISUAL FOUNDATION:
+{{STYLE_DESCRIPTION}}
+The background uses subtle texture and gradient transitions that add depth without distraction. A consistent visual language ties together all elements.
+
+CONTENT LAYOUT:
+{{SLIDE_CONTENT}}
+The information hierarchy is crystal clear: primary message dominates, supporting details are organized in logical groupings, and visual elements reinforce the narrative.
+
+DESIGN PRINCIPLES:
+Following the golden ratio for element placement, the slide maintains ample white space (at least 30% of total area). Typography uses a maximum of two font families: a bold display font for headlines and a readable sans-serif for body text. Text sizes follow a clear hierarchy (title 48pt equivalent, subtitle 24pt, body 18pt).
+
+PROFESSIONAL POLISH:
+Subtle drop shadows create depth without looking dated. Icon sets are consistent in style (outlined or filled, not mixed). Color accents draw attention to key data points. Alignment is pixel-perfect with invisible grid structure.
+
+Technical: High-fidelity presentation graphic, 16:9 aspect ratio, 4K resolution, print-ready quality. All Chinese text must be exactly as specified with no other text.`,
     variables: [
       {
         name: 'STYLE_DESCRIPTION',
@@ -296,7 +368,26 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
       requiredInputs: ['架构层级', '各层组件'],
       optionalInputs: ['颜色主题', '连接关系']
     },
-    basePrompt: `A professional {{LAYER_COUNT}}-layer technical architecture diagram with dark gradient background. {{LAYERS_CONTENT}} Each layer is a wide rounded rectangle with colored left border and contains component boxes inside. Vertical arrows connect layers from top to bottom. All boxes have generous padding and clear readable Chinese text. Clean modern tech style with glassmorphism effects, glowing borders, professional diagram aesthetic. All Chinese text must be exactly as specified with no other text. 8K resolution.`,
+    basePrompt: `A sophisticated {{LAYER_COUNT}}-layer technical architecture diagram that clearly communicates system design to both technical and non-technical stakeholders. The diagram tells the story of how data flows through the system.
+
+BACKGROUND & CANVAS:
+A deep gradient background transitioning from dark navy (#0f172a) at the top to charcoal (#1e293b) at the bottom, providing excellent contrast for the diagram elements. Subtle grid lines at 10% opacity suggest precision and engineering rigor.
+
+LAYER STRUCTURE:
+{{LAYERS_CONTENT}}
+
+Each layer is represented as a wide rounded rectangle (border-radius: 12px) with a distinctive colored left border (4px width) that acts as a visual identifier. Layer titles appear in bold at the top-left of each container. Components within each layer are arranged horizontally with consistent spacing (24px gaps).
+
+COMPONENT DESIGN:
+Individual component boxes feature glassmorphism styling: frosted glass background (rgba(255,255,255,0.1)), subtle backdrop blur, and thin glowing borders matching the layer color. Each box has generous internal padding (16px) ensuring Chinese text remains clearly readable.
+
+CONNECTIONS & DATA FLOW:
+Vertical arrows with gradient fills connect layers from top to bottom, indicating data flow direction. Arrow heads are subtle but clear. Optional horizontal lines within layers show inter-component communication.
+
+VISUAL HIERARCHY:
+From top (user-facing) to bottom (infrastructure), colors shift from warm (orange, red) to cool (blue, purple), intuitively mapping to the abstraction levels. Icon badges (optional) in each component box reinforce meaning.
+
+Technical: Modern tech documentation style, 8K resolution, balanced symmetry, professional aesthetic. All Chinese text must be exactly as specified with no other text.`,
     variables: [
       {
         name: 'LAYER_COUNT',
@@ -347,7 +438,35 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
       requiredInputs: ['目的地', '天数', '每日行程'],
       optionalInputs: ['预算', '偏好']
     },
-    basePrompt: `A beautiful travel itinerary visualization with {{DAY_COUNT}} day cards arranged horizontally. Dark gradient background with subtle glow effects. {{HEADER_TEXT}} Each day card has dark background with colored top border gradient, containing a timeline with time and activity icons. {{DAYS_CONTENT}} {{SUMMARY_BAR}} Modern glassmorphism card style, clean typography, travel icons, professional infographic design. All Chinese text must be exactly as specified with no other text. 8K resolution.`,
+    basePrompt: `An elegant travel itinerary visualization that transforms trip planning into an inspiring visual experience. The design evokes wanderlust while maintaining practical utility.
+
+OVERALL COMPOSITION:
+{{DAY_COUNT}} day cards arranged horizontally across the canvas, creating a timeline narrative of the journey. The layout suggests progression from Day 1 to the final day, with subtle connecting elements between cards.
+
+BACKGROUND ATMOSPHERE:
+A rich dark gradient background (deep purple-blue #1a1a2e transitioning to midnight #16213e) with subtle ambient glow effects. Delicate travel-themed patterns at very low opacity (5-10%): compass roses, dotted flight paths, or landmark silhouettes create atmosphere without distraction.
+
+HEADER SECTION:
+{{HEADER_TEXT}}
+The destination name appears in elegant serif typography, complemented by decorative elements that hint at the location's character.
+
+DAY CARDS:
+Each day card features:
+- Colored top border gradient (Day 1: warm orange, Day 2: coral red, Day 3: teal, etc.) creating a rainbow progression
+- Dark glassmorphism body (frosted glass effect with subtle blur)
+- Day header in bold with a themed subtitle (e.g., "Day 1 · 初见姑苏")
+- Timeline layout with time markers on the left, activity descriptions on the right
+- Small travel icons (location pins, cameras, food utensils, museums) beside each activity
+{{DAYS_CONTENT}}
+
+SUMMARY FOOTER:
+{{SUMMARY_BAR}}
+Key trip statistics displayed in a unified bar: total budget, accommodation count, highlighted attractions, with appropriate icons.
+
+VISUAL POLISH:
+Consistent icon style throughout, subtle drop shadows for depth, hover-state-ready design. Typography hierarchy: day number (bold, 24pt), day subtitle (medium, 16pt), timeline items (regular, 14pt).
+
+Technical: Premium travel infographic quality, 8K resolution, social-media-ready aspect ratio. All Chinese text must be exactly as specified with no other text.`,
     variables: [
       {
         name: 'DAY_COUNT',
@@ -414,32 +533,35 @@ export const SKILL_LIBRARY: Record<string, SkillTemplate> = {
       requiredInputs: ['新闻标题', '新闻内容列表'],
       optionalInputs: ['日期', '主题']
     },
-    basePrompt: `A futuristic tech news dashboard with cyberpunk-inspired design. Dark background with holographic elements and data visualization aesthetics.
+    basePrompt: `A cutting-edge tech news dashboard that feels like stepping into a Bloomberg terminal crossed with a Blade Runner command center. The design communicates authority, urgency, and technological sophistication.
 
-BACKGROUND:
-Deep space black (#0a0a0f) with subtle animated-style circuit board patterns, floating holographic particles, and soft blue/purple gradient glows. Matrix-style falling data streams at 5% opacity on edges.
+ATMOSPHERIC FOUNDATION:
+The canvas is set on a deep space black (#0a0a0f) base, gradually transitioning to dark navy (#0f172a) at the edges. Subtle visual effects add life without distraction: matrix-style data streams cascade at 5% opacity along the far edges, holographic particles drift slowly across the scene, and circuit board patterns emerge faintly in the lower corners. A gentle blue-purple gradient glow emanates from behind the content area, suggesting hidden computational power.
 
-HEADER SECTION (top 12%):
-Left side: Bold Chinese title "{{MAIN_TITLE}}" in large white text with cyan (#00f0ff) glow effect, futuristic sans-serif font.
-Right side: Date "{{DATE_SUBTITLE}}" displayed in a holographic badge style with thin cyan border and slight glow.
-Below: A horizontal scanning line effect in cyan, pulsing from left to right.
+HEADER SECTION (Top 12% of canvas):
+On the left, the Chinese title "{{MAIN_TITLE}}" commands attention in bold white typography (48pt equivalent) with a cyan (#00f0ff) outer glow that suggests energy and immediacy. The font is futuristic sans-serif, clean yet distinctive.
+On the right, the date "{{DATE_SUBTITLE}}" sits within a holographic pill badge - semi-transparent background with thin cyan border and soft luminescence. Below the header, a horizontal scanning line in cyan (2px height) pulses subtly from left to right, mimicking real-time data feeds.
 
-MAIN CONTENT - 6 NEWS CARDS in 2x3 grid layout:
-
+MAIN CONTENT - 6 NEWS CARDS IN ASYMMETRIC 2×3 GRID:
 {{NEWS_CARDS}}
 
-DESIGN ELEMENTS:
-- Each card has glassmorphism effect (frosted glass, semi-transparent)
-- Cards have thin glowing borders (cyan #00f0ff or purple #a855f7)
-- Subtle holographic shimmer overlay on cards
-- Small animated-style data visualization icons for each category
-- Floating geometric shapes (hexagons, triangles) as decorative elements
-- Depth layers with soft shadows and light blooms
+CARD DESIGN SYSTEM:
+Each card embodies glassmorphism principles: frosted glass effect with backdrop blur (20px), semi-transparent background (rgba(255,255,255,0.05)), and thin glowing borders in category-specific colors. Cards cast subtle shadows that suggest depth without heaviness.
 
-VISUAL STYLE:
-Cyberpunk meets Bloomberg terminal aesthetic. Color palette: deep black (#0a0a0f), cyan glow (#00f0ff), purple accent (#a855f7), electric blue (#3b82f6), emerald (#10b981), amber (#f59e0b), rose (#f43f5e). Holographic effects, glass morphism, neon accents. Professional yet futuristic - suitable for tech/AI news. Premium quality with attention to typography and spacing.
+Category color coding creates instant visual hierarchy:
+- 突发/Breaking: Rose red (#f43f5e) - urgent, attention-grabbing
+- 产品/Product: Purple (#a855f7) - innovative, premium
+- 投资/Investment: Amber (#f59e0b) - financial, opportunity
+- 商业/Business: Emerald (#10b981) - growth, success
+- 科技/Tech: Electric blue (#3b82f6) - cutting-edge, digital
+- 安全/Safety: Rose (#f43f5e) - warning, important
 
-All Chinese text must be exactly as specified with no other text. Ultra high quality, 8K resolution, cinematic lighting.`,
+Each card contains: holographic category icon (top-left), colored category badge pill, bold headline in white, two-line description in soft gray, and a stats bar at the bottom showing relevant metrics with emoji indicators.
+
+DECORATIVE ELEMENTS:
+Floating translucent hexagons and triangles drift in the corners, suggesting data nodes in a network. Small data visualization patterns (line graphs, bar charts) appear at 5% opacity within card backgrounds. Lens flare from top creates sense of light source. Particle dust floats throughout.
+
+Technical: Cyberpunk-meets-Bloomberg aesthetic, ultra high quality, 8K resolution, cinematic lighting with depth of field on background elements. All Chinese text must be exactly as specified with no other text.`,
     variables: [
       {
         name: 'MAIN_TITLE',
@@ -553,7 +675,36 @@ All Chinese text must be exactly as specified with no other text. Ultra high qua
       requiredInputs: ['收入', '支出明细'],
       optionalInputs: ['时间范围', '分析建议']
     },
-    basePrompt: `A beautiful financial dashboard visualization with dark gradient background. {{TITLE_TEXT}} The dashboard contains: {{CHARTS_CONTENT}} Modern glassmorphism card style, clean data visualization, professional financial infographic design with green for income and red/orange for expenses. All Chinese text must be exactly as specified with no other text. 8K resolution.`,
+    basePrompt: `A sophisticated personal finance dashboard that transforms mundane budgeting into an insightful visual experience. The design balances data density with aesthetic elegance, making financial health easy to understand at a glance.
+
+VISUAL FOUNDATION:
+A calming dark gradient background transitions from deep slate (#0f172a) to charcoal (#1e293b), providing a professional canvas that reduces eye strain while highlighting the data. Subtle grid patterns at 5% opacity suggest precision and financial rigor.
+
+HEADER BANNER:
+{{TITLE_TEXT}}
+The month and year appear in clean, confident typography, possibly with a subtle icon (calendar or wallet) beside it.
+
+DASHBOARD LAYOUT:
+{{CHARTS_CONTENT}}
+
+The dashboard is organized into logical zones:
+- Summary Cards (top): Key metrics in glassmorphism cards - total income (green accent #10b981), total expenses (warm orange #f97316), and net balance (highlighted based on positive/negative)
+- Main Visualization (center): A beautifully rendered donut/pie chart with smooth gradients, showing expense breakdown by category. Each segment has a distinct color from a harmonious palette.
+- Category Legend (beside chart): Clean list with color swatches, category names in Chinese, amounts, and percentages
+- Trend Area (optional): Small sparkline or bar chart showing month-over-month comparison
+
+COLOR SEMANTICS:
+Income/positive values use variations of green (#10b981, #34d399)
+Expenses use a warm, non-alarming palette: soft blue (#3b82f6) for essential expenses, purple (#8b5cf6) for discretionary, orange (#f97316) for variable costs
+Red (#ef4444) reserved only for budget overruns or warnings
+
+CHART DESIGN:
+Pie/donut charts feature subtle shadows creating 3D lift, smooth color gradients within segments, and generous spacing between slices. Data labels are positioned for clarity - either in legend or with leader lines. Numbers are formatted with thousand separators and ¥ symbol.
+
+GLASSMORPHISM CARDS:
+Each data card has frosted glass effect (backdrop-blur: 20px), thin white border at 10% opacity, subtle inner glow, and rounded corners (12px). Cards cast soft shadows to create hierarchy.
+
+Technical: Premium financial dashboard aesthetic, 8K resolution, professional data visualization standards. All Chinese text must be exactly as specified with no other text.`,
     variables: [
       {
         name: 'TITLE_TEXT',

@@ -355,7 +355,7 @@ export function ChatMessageDisplay({
                                     {/* Text content in bubble - 文本在思维链之后 */}
                                     {message.parts?.some((part: any) => part.type === "text" || part.type === "file") && (
                                         <div
-                                            className={`px-4 py-3 text-sm leading-relaxed ${
+                                            className={`px-4 py-3 text-sm leading-relaxed selectable-text ${
                                                 message.role === "user"
                                                     ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md shadow-sm"
                                                     : "bg-muted/60 text-foreground rounded-2xl rounded-bl-md"

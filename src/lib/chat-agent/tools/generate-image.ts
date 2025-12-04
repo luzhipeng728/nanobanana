@@ -86,15 +86,18 @@ export const generateImageTool: ChatAgentTool = {
   description: `根据文字描述生成图片（使用 Gemini 3 Pro 模型）。
 
 功能：
-- 支持各种风格：写实、动漫、艺术等
-- 支持参考图：可以基于上传的图片生成相似风格
+- 支持多种风格：realistic（逼真）、anime（动漫）、artistic（艺术）、photo（专业摄影）、cinematic（电影感）、cyberpunk（赛博朋克）、watercolor（水彩）、3d（3D渲染）、minimalist（极简）
+- 支持参考图：基于上传的图片生成相似风格
 - 支持多种比例：auto（自动）、1:1、16:9、9:16、4:3、3:4、3:2、2:3
 - 支持多种分辨率：1k(1024px)、2k(2048px)、4k(4096px)
 
-使用提示：
-- 提供详细的图片描述会获得更好的效果
-- 如果用户上传了参考图，可以通过 referenceImageUrl 参数传递
-- 分辨率默认为 2k，需要高清图片时可选择 4k`,
+提示词最佳实践（来自 Gemini 官方）：
+- 用完整句子描述场景，而非堆砌关键词
+- 描述光线、材质、氛围等细节
+- 使用摄影术语：shallow depth of field、golden hour、wide-angle shot 等
+- 修图时明确说明"保持其它不变"
+
+分辨率：默认 2k，高清场景可选 4k`,
 
   schema: generateImageSchema,
 
@@ -119,16 +122,31 @@ export const generateImageTool: ChatAgentTool = {
 
     callbacks.onProgress('准备生成图片...');
 
-    // 构建提示词（根据风格调整）
+    // 构建提示词（根据风格调整）- 基于 Gemini 最佳实践
+    // 叙事化描述优于关键词堆砌，使用摄影术语控制镜头效果
     let enhancedPrompt = prompt;
     if (style) {
       const styleMap: Record<string, string> = {
-        realistic: 'photorealistic, highly detailed, 8k resolution',
-        anime: 'anime style, vibrant colors, detailed illustration',
-        artistic: 'artistic, creative, unique style',
-        photo: 'photograph, professional photography, high quality',
+        // 逼真摄影 - 强调光线、镜头、材质
+        realistic: 'Photorealistic rendering with meticulous attention to detail. Shot with professional-grade camera, shallow depth of field (f/2.8), natural lighting with soft shadows. Visible textures on surfaces, ray-traced reflections, 8K resolution.',
+        // 动漫风格 - 强调色彩、线条、表现力
+        anime: 'Japanese anime art style with expressive character design, large emotive eyes with detailed catch lights. Vibrant saturated color palette, clean linework with subtle gradients. Studio quality cel-shading, dynamic composition.',
+        // 艺术风格 - 强调创意、独特性
+        artistic: 'Artistic interpretation with creative visual expression. Unique stylistic approach blending traditional and digital techniques. Thoughtful composition with intentional color harmony, gallery-quality aesthetic.',
+        // 专业摄影 - 强调商业级质量
+        photo: 'Professional studio photography with three-point lighting setup: key light from 45° above-left, fill light opposite, subtle rim light for subject separation. Shot on full-frame sensor with prime lens, tack-sharp focus, color-graded for commercial use.',
+        // 新增：电影感
+        cinematic: 'Cinematic wide-angle shot with dramatic film lighting. Anamorphic lens flare, teal and orange color grading, atmospheric haze. 2.39:1 aspect ratio feel, movie poster quality, IMAX-worthy visual impact.',
+        // 新增：赛博朋克
+        cyberpunk: 'Cyberpunk aesthetic with neon-drenched atmosphere. Holographic elements, rain-slicked surfaces reflecting pink and cyan lights. Blade Runner meets Ghost in the Shell visual language, futuristic dystopian mood.',
+        // 新增：水彩画
+        watercolor: 'Delicate watercolor painting style with visible paper texture. Soft color bleeds and wet-on-wet techniques, organic brush strokes. Artistic imperfection in edges, traditional medium authenticity.',
+        // 新增：3D渲染
+        '3d': 'High-quality 3D rendered scene with global illumination. Smooth subsurface scattering on organic materials, physically-based rendering (PBR). Clean geometry, Pixar-quality attention to detail.',
+        // 新增：极简主义
+        minimalist: 'Minimalist composition with abundant negative space. Single focal point, restrained color palette (2-3 colors maximum). Swiss design influence, clean typography if text present, zen-like simplicity.',
       };
-      enhancedPrompt = `${prompt}, ${styleMap[style] || ''}`;
+      enhancedPrompt = `${prompt}. ${styleMap[style] || ''}`;
     }
 
     // 确定参考图（优先使用参数，否则使用上下文中的第一张图）
