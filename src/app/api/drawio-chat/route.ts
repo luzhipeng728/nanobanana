@@ -3,7 +3,7 @@
 // 支持 Gemini 和 Anthropic 模型
 // 支持深度研究（DeepResearch）作为 AI 工具
 
-import { streamText, convertToModelMessages, generateText, jsonSchema } from 'ai';
+import { streamText, convertToModelMessages, generateText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { z } from 'zod';
@@ -162,7 +162,7 @@ const ANTHROPIC_BETA_HEADERS = {
   'anthropic-beta': 'fine-grained-tool-streaming-2025-05-14',
 };
 
-// 构建工具列表函数 - 使用 jsonSchema 避免 custom 格式问题
+// 构建工具列表函数 - 使用 Zod schema 和 execute 函数避免 custom 格式问题
 function buildTools(): Record<string, any> {
   return {
     display_diagram: {
@@ -201,16 +201,14 @@ Notes:
 - For AWS diagrams, use **AWS 2025 icons**.
 - For animated connectors, add "flowAnimation=1" to edge style.
 `,
-      parameters: jsonSchema({
-        type: 'object',
-        properties: {
-          xml: {
-            type: 'string',
-            description: 'XML string to be displayed on draw.io'
-          }
-        },
-        required: ['xml']
-      })
+      parameters: z.object({
+        xml: z.string().describe('XML string to be displayed on draw.io')
+      }),
+      // 添加 execute 函数，让 AI SDK 将其作为正常工具发送（而非 custom 格式）
+      execute: async ({ xml }: { xml: string }) => {
+        // 工具结果返回给前端处理
+        return { success: true, xml };
+      }
     },
     edit_diagram: {
       description: `Edit specific parts of the current diagram by replacing exact line matches. Use this tool to make targeted fixes without regenerating the entire XML.
@@ -219,30 +217,16 @@ IMPORTANT: Keep edits concise:
 - Break large changes into multiple smaller edits
 - Each search must contain complete lines (never truncate mid-line)
 - First match only - be specific enough to target the right element`,
-      parameters: jsonSchema({
-        type: 'object',
-        properties: {
-          edits: {
-            type: 'array',
-            description: 'Array of search/replace pairs to apply sequentially',
-            items: {
-              type: 'object',
-              properties: {
-                search: {
-                  type: 'string',
-                  description: 'Exact lines to search for (including whitespace and indentation)'
-                },
-                replace: {
-                  type: 'string',
-                  description: 'Replacement lines'
-                }
-              },
-              required: ['search', 'replace']
-            }
-          }
-        },
-        required: ['edits']
-      })
+      parameters: z.object({
+        edits: z.array(z.object({
+          search: z.string().describe('Exact lines to search for (including whitespace and indentation)'),
+          replace: z.string().describe('Replacement lines')
+        })).describe('Array of search/replace pairs to apply sequentially')
+      }),
+      // 添加 execute 函数
+      execute: async ({ edits }: { edits: Array<{ search: string; replace: string }> }) => {
+        return { success: true, edits };
+      }
     },
   };
 }
@@ -343,17 +327,30 @@ ${lastMessageText}
     // Create model
     const { model, isGemini } = createModel(modelId);
 
-    // 如果启用深度研究，使用两层处理：意图提取 + 研究
-    let researchContext = '';
-    let diagramRequirements = '';
+    // 如果启用深度研究，使用流式响应显示进度
     if (enableDeepResearch && lastMessageText) {
-      console.log('[DrawIO Chat] Deep research enabled, extracting intent...');
+      console.log('[DrawIO Chat] Deep research enabled, starting with progress stream...');
 
-      try {
-        // 第一层：意图提取 - 使用 generateText 避免工具格式问题
-        const { text: intentText } = await generateText({
-          model: model,
-          prompt: `Analyze the following user request and extract two parts. Return ONLY a JSON object, no other text.
+      // 创建自定义流来发送进度和AI响应
+      const encoder = new TextEncoder();
+
+      // Data Stream Protocol 格式的文本块
+      const formatTextChunk = (text: string) => {
+        // 格式: 0:"escaped text"\n
+        const escaped = JSON.stringify(text);
+        return `0:${escaped}\n`;
+      };
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            // 发送意图提取进度
+            controller.enqueue(encoder.encode(formatTextChunk('🔬 正在分析您的请求...\n')));
+
+            // 第一层：意图提取
+            const { text: intentText } = await generateText({
+              model: model,
+              prompt: `Analyze the following user request and extract two parts. Return ONLY a JSON object, no other text.
 
 User request: "${lastMessageText}"
 
@@ -364,50 +361,112 @@ Return JSON format:
 }
 
 Be precise - separate the "what to research" from "how to display".`,
-        });
+            });
 
-        const intent = parseIntentFromText(intentText);
-        console.log(`[DrawIO Chat] Intent extracted:`, intent);
-        diagramRequirements = intent.diagramRequirements;
+            const intent = parseIntentFromText(intentText);
+            console.log(`[DrawIO Chat] Intent extracted:`, intent);
 
-        // 第二层：深度研究 - 只发送研究主题
-        console.log(`[DrawIO Chat] Executing research on: "${intent.researchQuery}"`);
-        const response = await callHyprLabDeepResearch(intent.researchQuery, {
-          reasoningEffort: 'low',
-          onProgress: async (event) => {
-            if (event.type === 'progress') {
-              console.log(`[DrawIO Chat] Research progress: ${event.elapsedSeconds}s elapsed`);
-            }
-          },
-        });
+            controller.enqueue(encoder.encode(formatTextChunk(`📋 研究主题: ${intent.researchQuery}\n`)));
+            controller.enqueue(encoder.encode(formatTextChunk(`🎯 展示方式: ${intent.diagramRequirements}\n\n`)));
+            controller.enqueue(encoder.encode(formatTextChunk('🔍 正在进行深度研究...\n')));
 
-        const rawResponse = 'response' in response ? response.response : response;
-        const parsed = parseHyprLabResponse(rawResponse);
-        const formattedResult = formatResearchForImagePrompt(parsed);
+            // 第二层：深度研究
+            let lastProgressTime = 0;
+            const response = await callHyprLabDeepResearch(intent.researchQuery, {
+              reasoningEffort: 'low',
+              onProgress: async (event) => {
+                if (event.type === 'progress') {
+                  const elapsed = event.elapsedSeconds;
+                  // 每10秒发送一次进度更新
+                  if (elapsed - lastProgressTime >= 10) {
+                    lastProgressTime = elapsed;
+                    controller.enqueue(encoder.encode(formatTextChunk(`⏱️ 研究进行中... (${elapsed}秒)\n`)));
+                  }
+                }
+              },
+            });
 
-        console.log(`[DrawIO Chat] Deep research completed: ${parsed.citations.length} citations`);
+            const rawResponse = 'response' in response ? response.response : response;
+            const parsed = parseHyprLabResponse(rawResponse);
+            const formattedResult = formatResearchForImagePrompt(parsed);
 
-        // 构建研究上下文，包含用户的图表要求
-        researchContext = `
+            console.log(`[DrawIO Chat] Deep research completed: ${parsed.citations.length} citations`);
+
+            controller.enqueue(encoder.encode(formatTextChunk(`✅ 研究完成! 获得 ${parsed.citations.length} 个引用来源\n\n`)));
+            controller.enqueue(encoder.encode(formatTextChunk('🎨 正在生成图表...\n\n')));
+
+            // 构建研究上下文
+            const researchContext = `
 ## Research Results
 The following research was conducted on "${intent.researchQuery}":
 
 ${formattedResult}
 
 ## User's Diagram Requirements
-The user wants the information displayed as: ${diagramRequirements}
+The user wants the information displayed as: ${intent.diagramRequirements}
 
 ---
 Create a diagram based on the research results above, following the user's visualization requirements.
 `;
-      } catch (error) {
-        console.error('[DrawIO Chat] Deep research failed:', error);
-        researchContext = '\n[Research failed, proceed with general knowledge]\n';
-      }
+
+            // 构建系统提示词和工具
+            const systemPrompt = BASE_SYSTEM_PROMPT + researchContext;
+            const tools = buildTools();
+
+            const streamOptions: any = {
+              model: model,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                ...enhancedMessages,
+              ],
+              tools,
+              maxSteps: 3,
+            };
+
+            // 添加模型特定配置
+            if (isGemini) {
+              streamOptions.maxOutputTokens = MAX_TOKENS;
+              streamOptions.temperature = 0;
+              streamOptions.providerOptions = {
+                google: { thinkingConfig: { includeThoughts: true } },
+              };
+            } else {
+              streamOptions.maxOutputTokens = 60000;
+              streamOptions.providerOptions = {
+                anthropic: { thinking: { type: 'enabled', budgetTokens: 4000 } },
+              };
+            }
+
+            // 执行AI流并转发
+            const aiResult = streamText(streamOptions);
+            const aiStream = aiResult.toUIMessageStream();
+            const reader = aiStream.getReader();
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              controller.enqueue(value);
+            }
+
+            controller.close();
+          } catch (error) {
+            console.error('[DrawIO Chat] Deep research stream error:', error);
+            controller.enqueue(encoder.encode(formatTextChunk('❌ 研究失败: ' + (error instanceof Error ? error.message : 'Unknown error') + '\n')));
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'X-Vercel-AI-Data-Stream': 'v1',
+        },
+      });
     }
 
-    // 构建系统提示词（包含研究结果如果有）
-    const systemPrompt = BASE_SYSTEM_PROMPT + researchContext;
+    // 非深度研究模式 - 直接调用AI
+    const systemPrompt = BASE_SYSTEM_PROMPT;
     const tools = buildTools();
 
     // Build streamText options
