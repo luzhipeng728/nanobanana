@@ -19,7 +19,7 @@ import {
 } from "@/lib/drawio-utils";
 
 // Drawio components
-import { ChatInput } from "@/components/drawio/chat-input";
+import { ChatInput, ReasoningEffort } from "@/components/drawio/chat-input";
 import { ChatMessageDisplay } from "@/components/drawio/chat-message-display";
 import { ButtonWithTooltip } from "@/components/drawio/button-with-tooltip";
 import {
@@ -69,10 +69,18 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   // Model state - default to Gemini
   const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0]);
 
+  // Deep research state
+  const [enableDeepResearch, setEnableDeepResearch] = useState(false);
+  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('low');
+
   // Set up portal container for fullscreen mode
   useEffect(() => {
     setPortalContainer(document.body);
   }, []);
+
+  // 用于保存切换全屏前的图表 XML
+  const pendingRestoreXmlRef = useRef<string | null>(null);
+  const isFullscreenSwitchingRef = useRef(false);
 
   // Fetch current diagram XML
   const fetchCurrentXML = useCallback((saveToHistory = true) => {
@@ -107,6 +115,42 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       }, 500);
     }
   }, []);
+
+  // 当全屏状态改变后，恢复图表内容
+  useEffect(() => {
+    if (isFullscreenSwitchingRef.current && pendingRestoreXmlRef.current) {
+      // 等待 DrawIoEmbed 加载完成后恢复图表
+      const timer = setTimeout(() => {
+        if (pendingRestoreXmlRef.current && drawioRef.current) {
+          console.log('[ChatNode] Restoring diagram after fullscreen switch');
+          loadDiagram(pendingRestoreXmlRef.current);
+          pendingRestoreXmlRef.current = null;
+        }
+        isFullscreenSwitchingRef.current = false;
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isFullscreen, loadDiagram]);
+
+  // 切换全屏时保存当前图表
+  const handleToggleFullscreen = useCallback(async () => {
+    // 先保存当前图表 XML
+    if (chartXML) {
+      pendingRestoreXmlRef.current = chartXML;
+    } else {
+      // 如果 chartXML 为空，尝试导出获取
+      try {
+        const currentXml = await fetchCurrentXML(false);
+        if (currentXml) {
+          pendingRestoreXmlRef.current = currentXml;
+        }
+      } catch (e) {
+        console.warn('[ChatNode] Failed to fetch XML before fullscreen switch:', e);
+      }
+    }
+    isFullscreenSwitchingRef.current = true;
+    setIsFullscreen(prev => !prev);
+  }, [chartXML, fetchCurrentXML]);
 
   // Clear diagram
   const clearDiagram = useCallback(() => {
@@ -281,6 +325,8 @@ Please retry with an adjusted search pattern or use display_diagram if retries a
             body: {
               xml: chartXml,
               modelId: selectedModel.id,
+              enableDeepResearch,
+              reasoningEffort: enableDeepResearch ? reasoningEffort : undefined,
             },
           }
         );
@@ -406,7 +452,7 @@ Please retry with an adjusted search pattern or use display_diagram if retries a
                   tooltipContent={fullscreen ? "退出全屏" : "全屏模式"}
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsFullscreen(!fullscreen)}
+                  onClick={handleToggleFullscreen}
                   className="hover:bg-accent"
                 >
                   {fullscreen ? (
@@ -457,6 +503,10 @@ Please retry with an adjusted search pattern or use display_diagram if retries a
               diagramHistory={diagramHistory}
               onDisplayChart={loadDiagram}
               onSaveDiagram={saveDiagramToFile}
+              enableDeepResearch={enableDeepResearch}
+              onEnableDeepResearchChange={setEnableDeepResearch}
+              reasoningEffort={reasoningEffort}
+              onReasoningEffortChange={setReasoningEffort}
             />
           </footer>
         </div>

@@ -1,13 +1,21 @@
 // Draw.io AI Chat API - 使用 AI SDK
 // 完整复刻自 next-ai-draw-io 项目
 // 支持 Gemini 和 Anthropic 模型
+// 支持深度研究（DeepResearch）功能
 
 import { streamText, convertToModelMessages } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { z } from 'zod';
+import {
+  callHyprLabDeepResearch,
+  parseHyprLabResponse,
+  formatResearchForImagePrompt,
+  type ReasoningEffort,
+  type ResearchProgressEvent,
+} from '@/lib/super-agent/hyprlab-research';
 
-export const maxDuration = 300;
+export const maxDuration = 600; // 增加到 10 分钟支持深度研究
 
 // 模型配置
 const GEMINI_BASE_URL = process.env.SCROLLYTELLING_API_BASE_URL || '';
@@ -171,7 +179,13 @@ function createModel(modelId: string) {
 
 export async function POST(req: Request) {
   try {
-    const { messages, xml, modelId: requestModelId } = await req.json();
+    const {
+      messages,
+      xml,
+      modelId: requestModelId,
+      enableDeepResearch = false,
+      reasoningEffort = 'low' as ReasoningEffort,
+    } = await req.json();
 
     // 使用请求中的模型ID，默认使用 Claude
     const modelId = requestModelId || DEFAULT_ANTHROPIC_MODEL;
@@ -184,6 +198,19 @@ export async function POST(req: Request) {
 
     // Extract file parts (images) from the last message
     const fileParts = lastMessage.parts?.filter((part: any) => part.type === 'file') || [];
+
+    // 如果启用深度研究，使用自定义 SSE 流处理
+    if (enableDeepResearch) {
+      console.log('[DrawIO Chat] Deep research enabled, effort:', reasoningEffort);
+      return handleDeepResearchRequest(
+        lastMessageText,
+        xml,
+        fileParts,
+        messages,
+        modelId,
+        reasoningEffort
+      );
+    }
 
     const formattedTextContent = `
 Current diagram XML:
@@ -360,4 +387,245 @@ IMPORTANT: Keep edits concise:
       { status: 500 }
     );
   }
+}
+
+/**
+ * 处理深度研究请求
+ * 使用自定义 SSE 流来支持心跳机制，防止长时间操作超时
+ */
+async function handleDeepResearchRequest(
+  userQuery: string,
+  xml: string,
+  fileParts: any[],
+  messages: any[],
+  modelId: string,
+  reasoningEffort: ReasoningEffort
+): Promise<Response> {
+  const encoder = new TextEncoder();
+  let isAborted = false;
+
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
+
+  // 发送 SSE 事件的辅助函数
+  const sendEvent = async (event: string, data: any) => {
+    if (isAborted) return;
+    try {
+      await writer.write(
+        encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+      );
+    } catch (e) {
+      console.warn('[DrawIO Chat] Failed to send event:', e);
+    }
+  };
+
+  // 发送文本 chunk（兼容 AI SDK 的 UI Message 格式）
+  const sendTextChunk = async (text: string) => {
+    if (isAborted) return;
+    try {
+      // AI SDK UI Message Stream 格式
+      await writer.write(encoder.encode(`0:${JSON.stringify(text)}\n`));
+    } catch (e) {
+      console.warn('[DrawIO Chat] Failed to send text chunk:', e);
+    }
+  };
+
+  // 发送研究进度事件
+  const sendResearchProgress = async (event: ResearchProgressEvent) => {
+    await sendEvent('research_progress', event);
+  };
+
+  // 后台处理
+  (async () => {
+    try {
+      // 1. 发送研究开始通知
+      await sendEvent('research_start', {
+        topic: userQuery,
+        effort: reasoningEffort,
+        message: `🔬 开始深度研究: "${userQuery.slice(0, 50)}..."`,
+      });
+
+      // 发送一个文本消息告诉用户正在研究
+      await sendTextChunk(`🔬 正在进行深度研究，请稍候...\n\n`);
+
+      // 2. 调用 HyprLab 深度研究，带心跳回调
+      let researchResult: string = '';
+      let lastProgressTime = 0;
+      try {
+        const response = await callHyprLabDeepResearch(userQuery, {
+          reasoningEffort,
+          onProgress: async (event) => {
+            await sendResearchProgress(event);
+            // 发送进度更新
+            if (event.type === 'progress') {
+              const elapsedMinutes = (event.elapsedSeconds / 60).toFixed(1);
+              const progressMsg = `⏳ 深度研究中... 已用时 ${elapsedMinutes} 分钟 (预计 ${event.estimatedMinutes.min}-${event.estimatedMinutes.max} 分钟)\n`;
+              await sendTextChunk(progressMsg);
+              lastProgressTime = event.elapsedSeconds;
+            } else if (event.type === 'start') {
+              const startMsg = `🔬 开始深度研究，预计需要 ${event.estimatedMinutes.min}-${event.estimatedMinutes.max} 分钟...\n`;
+              await sendTextChunk(startMsg);
+            }
+          },
+        });
+
+        // 解析研究结果
+        const rawResponse = 'response' in response ? response.response : response;
+        const parsed = parseHyprLabResponse(rawResponse);
+        researchResult = formatResearchForImagePrompt(parsed);
+
+        // 发送研究完成通知
+        const totalMinutes = lastProgressTime > 0 ? (lastProgressTime / 60).toFixed(1) : '0';
+        await sendEvent('research_complete', {
+          citations: parsed.citations.length,
+          searchQueries: parsed.meta.searchQueriesCount,
+          elapsedMinutes: totalMinutes,
+        });
+
+        await sendTextChunk(`\n✅ 深度研究完成！用时 ${totalMinutes} 分钟，获得 ${parsed.citations.length} 个引用来源\n\n`);
+        await sendTextChunk(`---\n\n📊 现在根据研究结果生成图表...\n\n`);
+
+      } catch (researchError) {
+        console.error('[DrawIO Chat] Deep research failed:', researchError);
+        await sendEvent('research_error', {
+          error: researchError instanceof Error ? researchError.message : '研究失败',
+        });
+        await sendTextChunk(`\n⚠️ 深度研究失败，将直接生成图表...\n\n`);
+        // 继续执行，使用空的研究结果
+      }
+
+      // 3. 构建包含研究结果的提示词
+      const formattedTextContent = `
+${researchResult ? `[深度研究结果]:
+${researchResult}
+
+---
+
+` : ''}Current diagram XML:
+"""xml
+${xml || ''}
+"""
+User input:
+"""md
+${userQuery}
+"""
+
+${researchResult ? '请基于上述深度研究结果，生成相关的图表来可视化这些信息。' : ''}`;
+
+      // 4. 准备消息
+      const modelMessages = convertToModelMessages(messages);
+      let enhancedMessages = modelMessages.filter((msg: any) =>
+        msg.content && Array.isArray(msg.content) && msg.content.length > 0
+      );
+
+      if (enhancedMessages.length >= 1) {
+        const lastModelMessage = enhancedMessages[enhancedMessages.length - 1];
+        if (lastModelMessage.role === 'user') {
+          const contentParts: any[] = [
+            { type: 'text', text: formattedTextContent }
+          ];
+
+          for (const filePart of fileParts) {
+            contentParts.push({
+              type: 'image',
+              image: filePart.url,
+              mimeType: filePart.mediaType
+            });
+          }
+
+          enhancedMessages = [
+            ...enhancedMessages.slice(0, -1),
+            { ...lastModelMessage, content: contentParts }
+          ];
+        }
+      }
+
+      // 5. 调用 AI 生成图表
+      const { model, isGemini } = createModel(modelId);
+
+      const streamOptions: any = {
+        model: model,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...enhancedMessages,
+        ],
+        tools: {
+          display_diagram: {
+            description: `Display a diagram on draw.io. Pass the XML content inside <root> tags.`,
+            inputSchema: z.object({
+              xml: z.string().describe("XML string to be displayed on draw.io")
+            })
+          },
+          edit_diagram: {
+            description: `Edit specific parts of the current diagram by replacing exact line matches.`,
+            inputSchema: z.object({
+              edits: z.array(z.object({
+                search: z.string().describe("Exact lines to search for"),
+                replace: z.string().describe("Replacement lines")
+              })).describe("Array of search/replace pairs to apply sequentially")
+            })
+          },
+        },
+      };
+
+      // 配置模型选项
+      if (isGemini) {
+        streamOptions.maxOutputTokens = MAX_TOKENS;
+        streamOptions.temperature = 0;
+        streamOptions.providerOptions = {
+          google: {
+            thinkingConfig: { includeThoughts: true },
+          },
+        };
+      } else {
+        streamOptions.maxOutputTokens = 60000;
+        streamOptions.providerOptions = {
+          anthropic: {
+            thinking: { type: 'enabled', budgetTokens: 4000 },
+          },
+        };
+      }
+
+      // 6. 流式传输 AI 响应
+      const result = streamText(streamOptions);
+
+      // 将 AI SDK 的流转发到我们的 SSE 流
+      const uiStream = result.toUIMessageStream();
+      const reader = uiStream.getReader();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (isAborted) break;
+
+        try {
+          await writer.write(value);
+        } catch (e) {
+          console.warn('[DrawIO Chat] Failed to forward AI stream:', e);
+          break;
+        }
+      }
+
+      await writer.close();
+
+    } catch (error) {
+      console.error('[DrawIO Chat] Deep research request failed:', error);
+      try {
+        await sendEvent('error', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+        });
+        await writer.close();
+      } catch (e) {
+        // 忽略关闭错误
+      }
+    }
+  })();
+
+  return new Response(stream.readable, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
 }
