@@ -151,33 +151,61 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
     // 根据方向选择分辨率
     const size = task.orientation === "portrait" ? "720x1280" : "1280x720";
 
-    // 构建请求体 - OpenAI 官方格式
-    const requestBody: Record<string, any> = {
-      model: "sora-2",
-      prompt: task.prompt,
-      size: size,
-      seconds: durationSeconds, // 支持 "4", "8", "12" 秒
-    };
-
-    // 如果有输入图片，添加 input_reference (图生视频)
-    if (task.inputImage) {
-      console.log(`[VideoTask ${taskId}] Image-to-video mode with input: ${task.inputImage}`);
-      // 注意：官方 API 使用 multipart/form-data 上传图片
-      // 这里我们假设 API 代理支持 URL 引用方式
-      requestBody.input_reference = task.inputImage;
-    }
-
-    console.log(`[VideoTask ${taskId}] Request body:`, JSON.stringify(requestBody, null, 2));
-
     // Step 1: 创建视频生成任务
-    const createResponse = await fetch(`${soraApiBaseUrl}/v1/videos`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${soraApiToken}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
+    let createResponse: Response;
+
+    if (task.inputImage) {
+      // 图生视频模式 - 使用 multipart/form-data 上传图片
+      console.log(`[VideoTask ${taskId}] Image-to-video mode with input: ${task.inputImage}`);
+
+      // 下载图片
+      const imageResponse = await fetch(task.inputImage);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to download input image: ${imageResponse.status}`);
+      }
+      const imageBuffer = await imageResponse.arrayBuffer();
+      const imageBlob = new Blob([imageBuffer], { type: "image/png" });
+
+      console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(imageBuffer.byteLength / 1024).toFixed(1)} KB`);
+
+      // 构建 multipart/form-data
+      const formData = new FormData();
+      formData.append("model", "sora-2");
+      formData.append("prompt", task.prompt);
+      formData.append("size", size);
+      formData.append("seconds", durationSeconds);
+      formData.append("input_reference", imageBlob, "input.png");
+
+      console.log(`[VideoTask ${taskId}] Sending multipart/form-data request...`);
+
+      createResponse = await fetch(`${soraApiBaseUrl}/v1/videos`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${soraApiToken}`,
+          // 注意：不要设置 Content-Type，让 fetch 自动设置 boundary
+        },
+        body: formData,
+      });
+    } else {
+      // 文生视频模式 - 使用 JSON
+      const requestBody = {
+        model: "sora-2",
+        prompt: task.prompt,
+        size: size,
+        seconds: durationSeconds, // 支持 "4", "8", "12" 秒
+      };
+
+      console.log(`[VideoTask ${taskId}] Request body:`, JSON.stringify(requestBody, null, 2));
+
+      createResponse = await fetch(`${soraApiBaseUrl}/v1/videos`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${soraApiToken}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+    }
 
     if (!createResponse.ok) {
       const errorText = await createResponse.text();
