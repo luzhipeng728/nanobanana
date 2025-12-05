@@ -3,9 +3,7 @@
 import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
 import { uploadVideoFromUrl } from "./storage";
-import fs from "fs";
-import os from "os";
-import path from "path";
+import sharp from "sharp";
 
 const prisma = new PrismaClient();
 
@@ -146,10 +144,18 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
     // 获取 API 配置
     const soraApiBaseUrl = process.env.SORA_API_BASE_URL || "https://api.openai.com";
     const soraApiToken = process.env.SORA_API_TOKEN;
+    const soraApiType = process.env.SORA_API_TYPE || "openai"; // "azure" or "openai"
 
     if (!soraApiToken) {
       throw new Error("Sora API token not configured");
     }
+
+    // 根据 API 类型选择认证头
+    const authHeader = soraApiType === "azure"
+      ? { "api-key": soraApiToken }
+      : { Authorization: `Bearer ${soraApiToken}` };
+
+    console.log(`[VideoTask ${taskId}] Using API type: ${soraApiType}, base URL: ${soraApiBaseUrl}`);
 
     // 根据方向选择分辨率
     const size = task.orientation === "portrait" ? "720x1280" : "1280x720";
@@ -167,32 +173,33 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
         throw new Error(`Failed to download input image: ${imageResponse.status}`);
       }
       const imageArrayBuffer = await imageResponse.arrayBuffer();
-      const imageBuffer = Buffer.from(imageArrayBuffer);
+      let imageBuffer = Buffer.from(imageArrayBuffer);
 
-      // 根据 URL 或响应头确定 MIME 类型
-      let mimeType = imageResponse.headers.get("content-type") || "image/png";
-      // 确保是支持的格式
-      if (!["image/jpeg", "image/png", "image/webp"].includes(mimeType)) {
-        // 根据 URL 扩展名判断
-        const url = task.inputImage.toLowerCase();
-        if (url.includes(".jpg") || url.includes(".jpeg")) {
-          mimeType = "image/jpeg";
-        } else if (url.includes(".webp")) {
-          mimeType = "image/webp";
-        } else {
-          mimeType = "image/png"; // 默认 PNG
-        }
+      console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(imageBuffer.length / 1024).toFixed(1)} KB`);
+
+      // 解析目标尺寸
+      const [targetWidth, targetHeight] = size.split("x").map(Number);
+
+      // 使用 sharp 调整图片尺寸（Azure API 要求图片尺寸与 size 匹配）
+      const sharpImage = sharp(imageBuffer);
+      const metadata = await sharpImage.metadata();
+      console.log(`[VideoTask ${taskId}] Original image: ${metadata.width}x${metadata.height}, target: ${targetWidth}x${targetHeight}`);
+
+      if (metadata.width !== targetWidth || metadata.height !== targetHeight) {
+        console.log(`[VideoTask ${taskId}] Resizing image to ${targetWidth}x${targetHeight}...`);
+        imageBuffer = await sharpImage
+          .resize(targetWidth, targetHeight, {
+            fit: "cover", // 裁剪以填充目标尺寸
+            position: "center",
+          })
+          .png() // 统一转为 PNG
+          .toBuffer();
+        console.log(`[VideoTask ${taskId}] Resized image size: ${(imageBuffer.length / 1024).toFixed(1)} KB`);
       }
 
-      // 确定文件扩展名
-      const extMap: Record<string, string> = {
-        "image/jpeg": "jpg",
-        "image/png": "png",
-        "image/webp": "webp",
-      };
-      const ext = extMap[mimeType] || "png";
-
-      console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(imageBuffer.length / 1024).toFixed(1)} KB, type: ${mimeType}`);
+      // 使用 PNG 格式（sharp 已转换）
+      const mimeType = "image/png";
+      const ext = "png";
 
       // 手动构建 multipart/form-data 边界（完全控制 Content-Type）
       const boundary = `----WebKitFormBoundary${Date.now().toString(16)}`;
@@ -250,7 +257,7 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
         method: "POST",
         headers: {
           "Content-Type": `multipart/form-data; boundary=${boundary}`,
-          Authorization: `Bearer ${soraApiToken}`,
+          ...authHeader,
         },
         body: body,
       });
@@ -269,7 +276,7 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${soraApiToken}`,
+          ...authHeader,
         },
         body: JSON.stringify(requestBody),
       });
@@ -304,9 +311,7 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
 
       const statusResponse = await fetch(`${soraApiBaseUrl}/v1/videos/${soraVideoId}`, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${soraApiToken}`,
-        },
+        headers: authHeader,
       });
 
       if (!statusResponse.ok) {
@@ -345,9 +350,7 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
 
     const contentResponse = await fetch(`${soraApiBaseUrl}/v1/videos/${soraVideoId}/content`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${soraApiToken}`,
-      },
+      headers: authHeader,
     });
 
     if (!contentResponse.ok) {
