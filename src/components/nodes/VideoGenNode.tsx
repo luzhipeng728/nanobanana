@@ -227,6 +227,12 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     const connectedNodes = getConnectedImageNodes(id);
     const inputImage = connectedNodes.length > 0 ? connectedNodes[0].data.imageUrl : undefined;
 
+    // 调试日志
+    console.log("[Sora] onGenerateSora called");
+    console.log("[Sora] connectedNodes:", connectedNodes.length);
+    console.log("[Sora] inputImage:", inputImage ? String(inputImage).substring(0, 50) + "..." : "undefined");
+    console.log("[Sora] useAiEnhance:", useAiEnhance);
+
     // 将数字时长转换为字符串（Sora 2 API 要求字符串格式）
     const durationStr = String(durationSeconds) as "4" | "8" | "12";
 
@@ -236,8 +242,9 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
 
     let finalPrompt = prompt;
 
-    // 如果启用 AI 增强，先进行图片分析
-    if (useAiEnhance && inputImage) {
+    // 如果启用 AI 增强，先进行 AI 分析（有图片分析图片，无图片优化提示词）
+    if (useAiEnhance) {
+      console.log("[Sora] Starting AI analysis...", inputImage ? "with image" : "text only");
       setIsGenerating(true);
       setIsAnalyzing(true);
 
@@ -482,7 +489,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
                 <Sparkles className="w-2.5 h-2.5" />
                 AI 优化
               </span>
-            ) : connectedImagesCount > 0 ? (
+            ) : (
               <button
                 type="button"
                 onClick={() => setUseAiEnhance(!useAiEnhance)}
@@ -493,9 +500,9 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
                 }`}
               >
                 <Wand2 className="w-2.5 h-2.5" />
-                AI 分镜 {useAiEnhance ? "开" : "关"}
+                AI {connectedImagesCount > 0 ? "分镜" : "优化"} {useAiEnhance ? "开" : "关"}
               </button>
-            ) : null}
+            )}
           </div>
           <NodeTextarea
             ref={promptRef}
@@ -509,6 +516,33 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
             }
           />
         </div>
+
+        {/* 快捷提示词 - 图生视频模式 */}
+        {connectedImagesCount > 0 && !isVeoModel && (
+          <div className="space-y-1.5">
+            <NodeLabel className="text-[10px] text-neutral-500">快捷提示</NodeLabel>
+            <div className="flex flex-wrap gap-1">
+              {[
+                { label: "🎬 分镜转写实", text: "这是一个分镜故事板，请转化为写实风格的电影视频，人物要真实自然，有流畅的动作" },
+                { label: "🗣️ 带对白", text: "分镜图中有对白文字，请让人物自然地说话，嘴唇动作配合表情" },
+                { label: "✨ 动态场景", text: "让画面中的元素都动起来：头发飘动、衣服摆动、光影变化、环境粒子" },
+                { label: "🎭 情绪表演", text: "注重人物的表情变化和情绪演绎，从细微的眼神到明显的情绪转变" },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => {
+                    setPrompt(item.text);
+                    data.prompt = item.text;
+                  }}
+                  className="text-[9px] px-2 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {connectedImagesCount > 0 && (
           <div className="text-[10px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-3 py-2 rounded-md border border-orange-100 dark:border-orange-900/30 flex items-center gap-2">
