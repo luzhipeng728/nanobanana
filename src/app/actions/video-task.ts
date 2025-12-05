@@ -3,6 +3,7 @@
 import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
 import { uploadVideoFromUrl } from "./storage";
+import FormData from "form-data";
 
 const prisma = new PrismaClient();
 
@@ -155,7 +156,7 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
     let createResponse: Response;
 
     if (task.inputImage) {
-      // 图生视频模式 - 使用 multipart/form-data 上传图片
+      // 图生视频模式 - 使用 form-data 包正确处理 multipart/form-data
       console.log(`[VideoTask ${taskId}] Image-to-video mode with input: ${task.inputImage}`);
 
       // 下载图片
@@ -163,7 +164,8 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
       if (!imageResponse.ok) {
         throw new Error(`Failed to download input image: ${imageResponse.status}`);
       }
-      const imageBuffer = await imageResponse.arrayBuffer();
+      const imageArrayBuffer = await imageResponse.arrayBuffer();
+      const imageBuffer = Buffer.from(imageArrayBuffer);
 
       // 根据 URL 或响应头确定 MIME 类型
       let mimeType = imageResponse.headers.get("content-type") || "image/png";
@@ -188,28 +190,29 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
       };
       const ext = extMap[mimeType] || "png";
 
-      // 使用 File 对象（Node.js 20+ 支持）确保 MIME 类型正确传递
-      const imageFile = new File([imageBuffer], `input.${ext}`, { type: mimeType });
+      console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(imageBuffer.length / 1024).toFixed(1)} KB, type: ${mimeType}`);
 
-      console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(imageBuffer.byteLength / 1024).toFixed(1)} KB, type: ${mimeType}`);
-
-      // 构建 multipart/form-data
+      // 使用 form-data 包构建 multipart/form-data
       const formData = new FormData();
       formData.append("model", "sora-2");
       formData.append("prompt", task.prompt);
       formData.append("size", size);
       formData.append("seconds", durationSeconds);
-      formData.append("input_reference", imageFile);
+      formData.append("input_reference", imageBuffer, {
+        filename: `input.${ext}`,
+        contentType: mimeType,
+      });
 
       console.log(`[VideoTask ${taskId}] Sending multipart/form-data request...`);
 
+      // 使用 form-data 的 getHeaders() 获取正确的 Content-Type（包含 boundary）
+      const headers = formData.getHeaders();
+      headers["Authorization"] = `Bearer ${soraApiToken}`;
+
       createResponse = await fetch(`${soraApiBaseUrl}/v1/videos`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${soraApiToken}`,
-          // 注意：不要设置 Content-Type，让 fetch 自动设置 boundary
-        },
-        body: formData,
+        headers: headers,
+        body: formData.getBuffer(),
       });
     } else {
       // 文生视频模式 - 使用 JSON
