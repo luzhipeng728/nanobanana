@@ -5,6 +5,9 @@ import { cookies } from "next/headers";
 import { uploadVideoFromUrl } from "./storage";
 import FormData from "form-data";
 import axios from "axios";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
 const prisma = new PrismaClient();
 
@@ -157,7 +160,7 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
     let createResponse: Response;
 
     if (task.inputImage) {
-      // 图生视频模式 - 使用 form-data 包正确处理 multipart/form-data
+      // 图生视频模式 - 使用临时文件 + fs.createReadStream（官方推荐方式）
       console.log(`[VideoTask ${taskId}] Image-to-video mode with input: ${task.inputImage}`);
 
       // 下载图片
@@ -193,21 +196,27 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
 
       console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(imageBuffer.length / 1024).toFixed(1)} KB, type: ${mimeType}`);
 
-      // 使用 form-data 包构建 multipart/form-data
-      const formData = new FormData();
-      formData.append("model", "sora-2");
-      formData.append("prompt", task.prompt);
-      formData.append("size", size);
-      formData.append("seconds", durationSeconds);
-      formData.append("input_reference", imageBuffer, {
-        filename: `input.${ext}`,
-        contentType: mimeType,
-      });
+      // 写入临时文件（这是解决 MIME 类型问题的关键）
+      const tempDir = os.tmpdir();
+      const tempFilePath = path.join(tempDir, `sora-input-${taskId}.${ext}`);
+      fs.writeFileSync(tempFilePath, imageBuffer);
+      console.log(`[VideoTask ${taskId}] Wrote temp file: ${tempFilePath}`);
 
-      console.log(`[VideoTask ${taskId}] Sending multipart/form-data request via axios...`);
-
-      // 使用 axios 发送 form-data（对 multipart 支持更好）
       try {
+        // 使用 form-data + fs.createReadStream（官方推荐方式）
+        const formData = new FormData();
+        formData.append("model", "sora-2");
+        formData.append("prompt", task.prompt);
+        formData.append("size", size);
+        formData.append("seconds", durationSeconds);
+        formData.append("input_reference", fs.createReadStream(tempFilePath), {
+          filename: `input.${ext}`,
+          contentType: mimeType,
+          knownLength: imageBuffer.length,
+        });
+
+        console.log(`[VideoTask ${taskId}] Sending multipart/form-data request via axios (with fs.createReadStream)...`);
+
         const axiosResponse = await axios.post(
           `${soraApiBaseUrl}/v1/videos`,
           formData,
@@ -234,6 +243,14 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
           status: errorStatus,
           headers: { "Content-Type": "application/json" },
         });
+      } finally {
+        // 清理临时文件
+        try {
+          fs.unlinkSync(tempFilePath);
+          console.log(`[VideoTask ${taskId}] Cleaned up temp file: ${tempFilePath}`);
+        } catch {
+          // 忽略清理错误
+        }
       }
     } else {
       // 文生视频模式 - 使用 JSON
