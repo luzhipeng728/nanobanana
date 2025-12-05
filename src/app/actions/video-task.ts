@@ -151,7 +151,7 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
     }
 
     // 根据 API 类型选择认证头
-    const authHeader = soraApiType === "azure"
+    const authHeader: Record<string, string> = soraApiType === "azure"
       ? { "api-key": soraApiToken }
       : { Authorization: `Bearer ${soraApiToken}` };
 
