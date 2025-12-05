@@ -3,7 +3,7 @@
 import { memo, useState, useEffect, useRef } from "react";
 import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
-import { Loader2, Video as VideoIcon, Link2, UserPlus, Sparkles, Eye } from "lucide-react";
+import { Loader2, Video as VideoIcon, Link2, UserPlus, Sparkles, Eye, Wand2 } from "lucide-react";
 import { NodeTextarea, NodeLabel, NodeButton, NodeTabSelect } from "@/components/ui/NodeUI";
 import { GeneratorNodeLayout } from "./GeneratorNodeLayout";
 import cameoData from "@/data/composer_profiles.json";
@@ -34,11 +34,14 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
   const [showCameos, setShowCameos] = useState(false);
   const [selectedCameos, setSelectedCameos] = useState<string[]>([]);
 
-  // Veo Analysis State
+  // AI Analysis State (for both Sora and Veo)
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisText, setAnalysisText] = useState("");
   const [currentStep, setCurrentStep] = useState("");
   const analysisRef = useRef<HTMLDivElement>(null);
+
+  // Sora AI Enhancement toggle
+  const [useAiEnhance, setUseAiEnhance] = useState(true);
 
   const isVeoModel = model === "veo-3.1-fast-generate-preview";
 
@@ -219,7 +222,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     }
   };
 
-  // Sora 视频生成 - 只调用 generate()，由 hook 的 onSuccess 处理 addVideoNode
+  // Sora 视频生成 - 支持 AI 增强分析
   const onGenerateSora = async () => {
     const connectedNodes = getConnectedImageNodes(id);
     const inputImage = connectedNodes.length > 0 ? connectedNodes[0].data.imageUrl : undefined;
@@ -227,11 +230,82 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     // 将数字时长转换为字符串（Sora 2 API 要求字符串格式）
     const durationStr = String(durationSeconds) as "4" | "8" | "12";
 
-    // generate() 成功后会自动触发 onSuccess 回调，不需要在这里再调用 addVideoNode
+    // 清理状态
+    setAnalysisText("");
+    setCurrentStep("");
+
+    let finalPrompt = prompt;
+
+    // 如果启用 AI 增强，先进行图片分析
+    if (useAiEnhance && inputImage) {
+      setIsGenerating(true);
+      setIsAnalyzing(true);
+
+      try {
+        const analyzeResponse = await fetch("/api/sora/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userRequest: prompt,
+            imageUrl: inputImage,
+            durationSeconds: parseInt(durationStr),
+          }),
+        });
+
+        if (!analyzeResponse.ok) {
+          throw new Error("分析请求失败");
+        }
+
+        const reader = analyzeResponse.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value);
+            const lines = chunk.split("\n");
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                try {
+                  const event = JSON.parse(line.slice(6));
+                  if (event.type === "status") {
+                    setCurrentStep(event.step || "");
+                  } else if (event.type === "analysis_chunk") {
+                    setAnalysisText((prev) => prev + event.chunk);
+                    if (analysisRef.current) {
+                      analysisRef.current.scrollTop = analysisRef.current.scrollHeight;
+                    }
+                  } else if (event.type === "prompt_ready") {
+                    finalPrompt = event.prompt || prompt;
+                    console.log("[Sora AI] Generated prompt:", finalPrompt.substring(0, 100) + "...");
+                  } else if (event.type === "error") {
+                    throw new Error(event.error);
+                  }
+                } catch (e) {
+                  // ignore parse errors
+                }
+              }
+            }
+          }
+        }
+
+        setIsAnalyzing(false);
+        setCurrentStep("🚀 正在创建视频任务...");
+      } catch (error) {
+        console.error("[Sora AI] Analysis error:", error);
+        setIsAnalyzing(false);
+        setIsGenerating(false);
+        alert("AI 分析失败: " + (error instanceof Error ? error.message : "未知错误"));
+        return;
+      }
+    }
+
+    // generate() 成功后会自动触发 onSuccess 回调
     await generate({
       apiPath: "/api/generate-video",
       body: {
-        prompt,
+        prompt: finalPrompt,
         orientation,
         inputImage,
         durationSeconds: durationStr,
@@ -403,12 +477,25 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <NodeLabel className="mb-0">描述</NodeLabel>
-            {isVeoModel && (
+            {isVeoModel ? (
               <span className="text-[9px] flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">
                 <Sparkles className="w-2.5 h-2.5" />
                 AI 优化
               </span>
-            )}
+            ) : connectedImagesCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setUseAiEnhance(!useAiEnhance)}
+                className={`text-[9px] flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium transition-all ${
+                  useAiEnhance
+                    ? "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400"
+                }`}
+              >
+                <Wand2 className="w-2.5 h-2.5" />
+                AI 分镜 {useAiEnhance ? "开" : "关"}
+              </button>
+            ) : null}
           </div>
           <NodeTextarea
             ref={promptRef}
@@ -430,31 +517,57 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           </div>
         )}
 
-        {/* Veo Analysis Display */}
-        {isVeoModel && (isAnalyzing || analysisText) && (
-          <div className="relative overflow-hidden rounded-xl border border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-purple-950/30 dark:via-pink-950/20 dark:to-blue-950/30">
+        {/* AI Analysis Display - 支持 Veo 和 Sora */}
+        {(isAnalyzing || analysisText) && (
+          <div className={`relative overflow-hidden rounded-xl border ${
+            isVeoModel
+              ? "border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-purple-950/30 dark:via-pink-950/20 dark:to-blue-950/30"
+              : "border-orange-200 dark:border-orange-800 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/20 dark:to-yellow-950/30"
+          }`}>
             {/* Animated Background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-blue-500/5 animate-pulse" />
-            
+            <div className={`absolute inset-0 ${
+              isVeoModel
+                ? "bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-blue-500/5"
+                : "bg-gradient-to-r from-orange-500/5 via-amber-500/5 to-yellow-500/5"
+            } animate-pulse`} />
+
             {/* Header */}
-            <div className="relative px-3 py-2 border-b border-purple-100 dark:border-purple-900/50 flex items-center gap-2">
+            <div className={`relative px-3 py-2 border-b ${
+              isVeoModel
+                ? "border-purple-100 dark:border-purple-900/50"
+                : "border-orange-100 dark:border-orange-900/50"
+            } flex items-center gap-2`}>
               <div className="relative">
-                <Eye className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <Eye className={`w-4 h-4 ${
+                  isVeoModel
+                    ? "text-purple-600 dark:text-purple-400"
+                    : "text-orange-600 dark:text-orange-400"
+                }`} />
                 {isAnalyzing && (
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 )}
               </div>
-              <span className="text-[11px] font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-                {currentStep || "Claude Vision 分析中"}
+              <span className={`text-[11px] font-bold bg-clip-text text-transparent ${
+                isVeoModel
+                  ? "bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600"
+                  : "bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600"
+              }`}>
+                {currentStep || (isVeoModel ? "Claude Vision 分析中" : "AI 分镜分析中")}
               </span>
             </div>
 
             {/* Content */}
             <div
               ref={analysisRef}
-              className="relative p-3 max-h-[150px] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800"
+              className={`relative p-3 max-h-[150px] overflow-y-auto scrollbar-thin ${
+                isVeoModel
+                  ? "scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800"
+                  : "scrollbar-thumb-orange-200 dark:scrollbar-thumb-orange-800"
+              }`}
             >
-              <div className="text-[11px] leading-relaxed text-neutral-700 dark:text-neutral-300 prose prose-xs prose-purple dark:prose-invert max-w-none">
+              <div className={`text-[11px] leading-relaxed text-neutral-700 dark:text-neutral-300 prose prose-xs ${
+                isVeoModel ? "prose-purple" : "prose-orange"
+              } dark:prose-invert max-w-none`}>
                 <ReactMarkdown>{analysisText}</ReactMarkdown>
               </div>
             </div>
