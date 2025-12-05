@@ -209,10 +209,13 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
       const headers = formData.getHeaders();
       headers["Authorization"] = `Bearer ${soraApiToken}`;
 
+      // 将 Buffer 转换为 Uint8Array 以兼容 fetch body 类型
+      const bodyBuffer = formData.getBuffer();
+
       createResponse = await fetch(`${soraApiBaseUrl}/v1/videos`, {
         method: "POST",
         headers: headers,
-        body: formData.getBuffer(),
+        body: new Uint8Array(bodyBuffer),
       });
     } else {
       // 文生视频模式 - 使用 JSON
