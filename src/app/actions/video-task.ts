@@ -188,7 +188,8 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
       };
       const ext = extMap[mimeType] || "png";
 
-      const imageBlob = new Blob([imageBuffer], { type: mimeType });
+      // 使用 File 对象（Node.js 20+ 支持）确保 MIME 类型正确传递
+      const imageFile = new File([imageBuffer], `input.${ext}`, { type: mimeType });
 
       console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(imageBuffer.byteLength / 1024).toFixed(1)} KB, type: ${mimeType}`);
 
@@ -198,7 +199,7 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
       formData.append("prompt", task.prompt);
       formData.append("size", size);
       formData.append("seconds", durationSeconds);
-      formData.append("input_reference", imageBlob, `input.${ext}`);
+      formData.append("input_reference", imageFile);
 
       console.log(`[VideoTask ${taskId}] Sending multipart/form-data request...`);
 
