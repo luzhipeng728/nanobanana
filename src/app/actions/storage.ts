@@ -130,6 +130,33 @@ export async function uploadVideoFromUrl(videoUrl: string): Promise<string> {
 }
 
 /**
+ * 直接上传视频 Buffer 到 R2
+ */
+export async function uploadVideoBuffer(buffer: Buffer, fileName: string): Promise<string> {
+  console.log(`[R2] Uploading video buffer, size: ${(buffer.length / 1024 / 1024).toFixed(2)} MB, fileName: ${fileName}`);
+
+  try {
+    const key = `nanobanana/videos/${fileName}`;
+
+    const command = new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: "video/mp4",
+    });
+
+    await r2Client.send(command);
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+
+    console.log(`[R2] Video uploaded successfully: ${publicUrl}`);
+    return publicUrl;
+  } catch (error) {
+    console.error("[R2] Error uploading video buffer:", error);
+    throw new Error("Failed to upload video buffer to R2");
+  }
+}
+
+/**
  * 从 Base64 上传视频到 R2
  */
 export async function uploadVideoFromBase64(base64Data: string, mimeType: string = "video/mp4"): Promise<string> {

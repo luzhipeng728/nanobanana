@@ -18,6 +18,9 @@ async function getCurrentUserId(): Promise<string | null> {
 
 export type VideoTaskStatus = "pending" | "processing" | "completed" | "failed";
 
+// OpenAI Sora 2 官方 API 状态映射
+type SoraApiStatus = "queued" | "in_progress" | "completed" | "failed";
+
 export interface VideoTaskResult {
   id: string;
   status: VideoTaskStatus;
@@ -32,13 +35,38 @@ export interface VideoTaskResult {
   completedAt?: Date;
 }
 
+// Sora API 响应类型
+interface SoraVideoResponse {
+  id: string;
+  object: string;
+  model: string;
+  status: SoraApiStatus;
+  progress?: number;
+  created_at: number;
+  seconds: string;
+  size: string;
+  error?: {
+    message: string;
+    type: string;
+    code: string;
+  };
+}
+
+// Sora 2 API 支持的视频时长选项
+export type SoraDuration = "4" | "8" | "12";
+
 /**
  * 创建视频生成任务
+ * @param prompt 视频描述
+ * @param orientation 画面方向
+ * @param inputImage 可选的输入图片 URL（图生视频）
+ * @param durationSeconds 视频时长，支持 "4", "8", "12" 秒
  */
 export async function createVideoTask(
   prompt: string,
   orientation: "portrait" | "landscape" = "portrait",
-  inputImage?: string
+  inputImage?: string,
+  durationSeconds: SoraDuration = "8"
 ): Promise<{ taskId: string }> {
   const userId = await getCurrentUserId();
 
@@ -53,7 +81,7 @@ export async function createVideoTask(
   });
 
   // 异步处理任务（不等待）
-  processVideoTask(task.id).catch((error) => {
+  processVideoTask(task.id, durationSeconds).catch((error) => {
     console.error(`Error processing video task ${task.id}:`, error);
   });
 
@@ -89,13 +117,14 @@ export async function getVideoTaskStatus(taskId: string): Promise<VideoTaskResul
 
 /**
  * 处理视频生成任务（后台执行）
+ * 使用 OpenAI Sora 2 官方 API 格式
  */
-async function processVideoTask(taskId: string): Promise<void> {
+async function processVideoTask(taskId: string, durationSeconds: SoraDuration = "8"): Promise<void> {
   try {
     // 更新状态为 processing
     await prisma.videoTask.update({
       where: { id: taskId },
-      data: { status: "processing", progress: 10, updatedAt: new Date() },
+      data: { status: "processing", progress: 5, updatedAt: new Date() },
     });
 
     // 获取任务详情
@@ -107,242 +136,188 @@ async function processVideoTask(taskId: string): Promise<void> {
       throw new Error("Task not found");
     }
 
-    console.log(`[VideoTask ${taskId}] Starting video generation...`);
+    console.log(`[VideoTask ${taskId}] Starting video generation (Official Sora 2 API)...`);
     console.log(`[VideoTask ${taskId}] Prompt: ${task.prompt.substring(0, 50)}...`);
     console.log(`[VideoTask ${taskId}] Orientation: ${task.orientation}`);
-    if (task.inputImage) {
-      console.log(`[VideoTask ${taskId}] Input image: ${task.inputImage}`);
-    }
 
-    // 调用 Sora API 生成视频
-    const soraApiUrl = process.env.SORA_API_URL;
+    // 获取 API 配置
+    const soraApiBaseUrl = process.env.SORA_API_BASE_URL || "https://api.openai.com";
     const soraApiToken = process.env.SORA_API_TOKEN;
 
-    if (!soraApiUrl || !soraApiToken) {
-      throw new Error("Sora API credentials not configured");
+    if (!soraApiToken) {
+      throw new Error("Sora API token not configured");
     }
 
-    // 选择模型
-    const model = task.orientation === "portrait"
-      ? "sora_video2-portrait"
-      : "sora_video2-landscape";
+    // 根据方向选择分辨率
+    const size = task.orientation === "portrait" ? "720x1280" : "1280x720";
 
-    // 构建消息 - 完全按照原项目格式
-    let messages: any[];
+    // 构建请求体 - OpenAI 官方格式
+    const requestBody: Record<string, any> = {
+      model: "sora-2",
+      prompt: task.prompt,
+      size: size,
+      seconds: durationSeconds, // 支持 "4", "8", "12" 秒
+    };
+
+    // 如果有输入图片，添加 input_reference (图生视频)
     if (task.inputImage) {
-      // 图生视频模式
-      console.log(`[VideoTask ${taskId}] image-to-video mode`);
-      messages = [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: task.prompt },
-            { type: "image_url", image_url: { url: task.inputImage } },
-          ],
+      console.log(`[VideoTask ${taskId}] Image-to-video mode with input: ${task.inputImage}`);
+      // 注意：官方 API 使用 multipart/form-data 上传图片
+      // 这里我们假设 API 代理支持 URL 引用方式
+      requestBody.input_reference = task.inputImage;
+    }
+
+    console.log(`[VideoTask ${taskId}] Request body:`, JSON.stringify(requestBody, null, 2));
+
+    // Step 1: 创建视频生成任务
+    const createResponse = await fetch(`${soraApiBaseUrl}/v1/videos`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${soraApiToken}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!createResponse.ok) {
+      const errorText = await createResponse.text();
+      console.error(`[VideoTask ${taskId}] Create video failed:`, errorText);
+      throw new Error(`Sora API error: ${createResponse.status} - ${errorText}`);
+    }
+
+    const createResult: SoraVideoResponse = await createResponse.json();
+    const soraVideoId = createResult.id;
+
+    console.log(`[VideoTask ${taskId}] Video job created: ${soraVideoId}, status: ${createResult.status}`);
+
+    // 更新进度
+    await prisma.videoTask.update({
+      where: { id: taskId },
+      data: { progress: 10, updatedAt: new Date() },
+    });
+
+    // Step 2: 轮询任务状态
+    const maxPollAttempts = 180; // 最多轮询 30 分钟 (180 * 10秒)
+    const pollInterval = 10000; // 10 秒
+    let pollCount = 0;
+    let videoCompleted = false;
+
+    while (pollCount < maxPollAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      pollCount++;
+
+      const statusResponse = await fetch(`${soraApiBaseUrl}/v1/videos/${soraVideoId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${soraApiToken}`,
         },
-      ];
-    } else {
-      // 文生视频模式
-      console.log(`[VideoTask ${taskId}] text-to-video mode`);
-      messages = [{ role: "user", content: task.prompt }];
-    }
+      });
 
-    // 调用 Sora API，带重试逻辑
-    const maxRetries = 5;
-    let retries = 0;
-    let response: Response | null = null;
-    let videoUrl: string | null = null;
-    let videoCreated = false;
+      if (!statusResponse.ok) {
+        console.error(`[VideoTask ${taskId}] Status check failed: ${statusResponse.status}`);
+        continue; // 继续轮询
+      }
 
-    // 重试循环 - 完全按照原项目逻辑
-    while (retries < maxRetries) {
-      try {
-        console.log(`[VideoTask ${taskId}] API attempt ${retries + 1}/${maxRetries}...`);
+      const statusResult: SoraVideoResponse = await statusResponse.json();
+      console.log(`[VideoTask ${taskId}] Poll #${pollCount}: status=${statusResult.status}, progress=${statusResult.progress || 0}`);
 
-        response = await fetch(soraApiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${soraApiToken}`,
-          },
-          body: JSON.stringify({
-            messages,
-            model,
-            stream: true,
-          }),
-        });
+      // 更新进度 (10-90 之间)
+      const progress = Math.min(90, 10 + (statusResult.progress || 0) * 0.8);
+      await prisma.videoTask.update({
+        where: { id: taskId },
+        data: { progress: Math.round(progress), updatedAt: new Date() },
+      });
 
-        console.log(`[VideoTask ${taskId}] API response status: ${response.status}`);
-
-        // Retry on non-200 responses
-        if (!response.ok && retries < maxRetries - 1) {
-          retries++;
-          console.log(`[VideoTask ${taskId}] API returned ${response.status}, retrying... (${retries}/${maxRetries})`);
-          await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
-          continue;
-        }
-
-        // Exit retry loop (either success or max retries reached)
+      if (statusResult.status === "completed") {
+        videoCompleted = true;
+        console.log(`[VideoTask ${taskId}] ✅ Video generation completed!`);
         break;
-      } catch (fetchError: any) {
-        console.error(`[VideoTask ${taskId}] Fetch error:`, fetchError.message);
-        if (retries < maxRetries - 1) {
-          retries++;
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          continue;
-        }
-        throw fetchError;
+      }
+
+      if (statusResult.status === "failed") {
+        const errorMsg = statusResult.error?.message || "Video generation failed";
+        throw new Error(errorMsg);
       }
     }
 
-    if (!response || !response.ok) {
-      const errorText = response ? await response.text() : "No response";
-      throw new Error(`Sora API error: ${response?.status || "unknown"} - ${errorText}`);
+    if (!videoCompleted) {
+      throw new Error("Video generation timed out (30 minutes)");
     }
 
-    if (!response.body) {
-      throw new Error("No response body from API");
+    // Step 3: 下载视频内容
+    console.log(`[VideoTask ${taskId}] Downloading video content...`);
+
+    const contentResponse = await fetch(`${soraApiBaseUrl}/v1/videos/${soraVideoId}/content`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${soraApiToken}`,
+      },
+    });
+
+    if (!contentResponse.ok) {
+      throw new Error(`Failed to download video: ${contentResponse.status}`);
     }
 
-    // Process streaming response - 使用 ReadableStream 的标准 API
-    console.log(`[VideoTask ${taskId}] Starting to read stream...`);
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
+    // 获取视频 URL 或直接处理二进制流
+    let videoUrl: string;
+    const contentType = contentResponse.headers.get("content-type");
 
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
+    if (contentType?.includes("application/json")) {
+      // API 返回 JSON 包含 URL
+      const contentData = await contentResponse.json();
+      videoUrl = contentData.url || contentData.download_url;
+      console.log(`[VideoTask ${taskId}] Video URL from JSON: ${videoUrl}`);
+    } else if (contentType?.includes("video/") || contentType?.includes("application/octet-stream")) {
+      // API 直接返回视频二进制流，需要上传到 R2
+      console.log(`[VideoTask ${taskId}] Received video stream directly, uploading to R2...`);
 
-        if (done) {
-          console.log(`[VideoTask ${taskId}] Stream ended`);
-          break;
-        }
+      // 获取视频数据
+      const videoBuffer = await contentResponse.arrayBuffer();
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+      // 生成唯一文件名
+      const fileName = `sora-${soraVideoId}-${Date.now()}.mp4`;
 
-        for (const line of lines) {
-          if (!line.trim() || line.trim() === "data: [DONE]") {
-            continue;
-          }
+      // 直接上传 Buffer 到 R2
+      const { uploadVideoBuffer } = await import("./storage");
+      videoUrl = await uploadVideoBuffer(Buffer.from(videoBuffer), fileName);
 
-          if (line.startsWith("data: ")) {
-            try {
-              const jsonData = line.slice(6);
-              const data = JSON.parse(jsonData);
-
-              if (data.choices && data.choices[0]?.delta?.content) {
-                const content = data.choices[0].delta.content;
-
-                // Log all content for debugging
-                console.log(`[VideoTask ${taskId}] Content chunk:`, content);
-                console.log(`[VideoTask ${taskId}] Content length: ${content.length}, has ✅: ${content.includes("✅")}, has 视频生成成功: ${content.includes("视频生成成功")}`);
-
-                // Extract progress from content
-                const progressMatch = content.match(/进度[：:]\s*(\d+(?:\.\d+)?)\s*%/);
-                if (progressMatch) {
-                  const progress = Math.round(parseFloat(progressMatch[1]));
-                  console.log(`[VideoTask ${taskId}] Progress: ${progress}%`);
-                  await prisma.videoTask.update({
-                    where: { id: taskId },
-                    data: { progress, updatedAt: new Date() },
-                  });
-                }
-
-                // Extract video URL from completion message - try multiple patterns
-                console.log(`[VideoTask ${taskId}] Attempting URL extraction...`);
-                const urlMatch1 = content.match(/\[点击这里\]\((https?:\/\/[^\)]+)\)/);
-                const urlMatch2 = content.match(/https?:\/\/[^\s\)]+\.mp4/);
-                console.log(`[VideoTask ${taskId}] URL Match 1 (Markdown link):`, urlMatch1 ? `Found - [1]=${urlMatch1[1]}` : "Not found");
-                console.log(`[VideoTask ${taskId}] URL Match 2 (.mp4):`, urlMatch2 ? `Found - [0]=${urlMatch2[0]}` : "Not found");
-
-                const urlMatch = urlMatch1 || urlMatch2;
-                if (urlMatch) {
-                  videoUrl = urlMatch[1] || urlMatch[0];
-                  console.log(`[VideoTask ${taskId}] ✅ Video URL extracted: ${videoUrl}`);
-                } else {
-                  console.log(`[VideoTask ${taskId}] ❌ No URL found in this chunk`);
-                }
-
-                // Check for success message
-                if (content.includes("✅") && content.includes("视频生成成功")) {
-                  console.log(`[VideoTask ${taskId}] Success message detected! videoUrl=${videoUrl}, videoCreated=${videoCreated}`);
-                  if (videoUrl && !videoCreated) {
-                    console.log(`[VideoTask ${taskId}] ✅ Video generation successful, uploading to R2...`);
-
-                    // 上传视频到 R2
-                    let finalVideoUrl = videoUrl;
-                    try {
-                      finalVideoUrl = await uploadVideoFromUrl(videoUrl);
-                      console.log(`[VideoTask ${taskId}] ✅ Video uploaded to R2: ${finalVideoUrl}`);
-                    } catch (uploadError) {
-                      console.error(`[VideoTask ${taskId}] ⚠️ Failed to upload to R2, using original URL:`, uploadError);
-                      // 如果上传失败，使用原始 URL（会过期）
-                    }
-
-                    // 更新任务状态为完成
-                    await prisma.videoTask.update({
-                      where: { id: taskId },
-                      data: {
-                        status: "completed",
-                        videoUrl: finalVideoUrl,
-                        progress: 100,
-                        completedAt: new Date(),
-                        updatedAt: new Date(),
-                      },
-                    });
-
-                    videoCreated = true;
-                    console.log(`[VideoTask ${taskId}] ✅ Completed successfully`);
-                  }
-                }
-              }
-
-              // Check for finish_reason
-              if (data.choices && data.choices[0]?.finish_reason === "stop") {
-                console.log(`[VideoTask ${taskId}] Stream finished (finish_reason: stop)`);
-                break;
-              }
-            } catch (parseError: any) {
-              console.error(`[VideoTask ${taskId}] Parse error:`, parseError.message);
-              // Continue processing other lines
-            }
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
+      console.log(`[VideoTask ${taskId}] Video uploaded to R2: ${videoUrl}`);
+    } else {
+      // 其他情况，尝试使用响应 URL（可能是重定向后的 URL）
+      videoUrl = contentResponse.url;
+      console.log(`[VideoTask ${taskId}] Using response URL: ${videoUrl}`);
     }
 
-    // 如果流结束但没有创建视频，检查是否有videoUrl
-    if (!videoCreated && videoUrl) {
-      console.log(`[VideoTask ${taskId}] Stream ended with videoUrl but not marked completed, uploading to R2...`);
+    // Step 4: 如果是 URL，需要上传到 R2 存储；如果已经是 R2 URL，跳过
+    let finalVideoUrl = videoUrl;
+    const isAlreadyR2Url = videoUrl.includes(process.env.R2_PUBLIC_URL || "doubao.luzhipeng.com");
 
-      // 上传视频到 R2
-      let finalVideoUrl = videoUrl;
+    if (!isAlreadyR2Url) {
       try {
         finalVideoUrl = await uploadVideoFromUrl(videoUrl);
         console.log(`[VideoTask ${taskId}] ✅ Video uploaded to R2: ${finalVideoUrl}`);
       } catch (uploadError) {
         console.error(`[VideoTask ${taskId}] ⚠️ Failed to upload to R2, using original URL:`, uploadError);
+        // 如果上传失败，使用原始 URL（可能会过期）
       }
-
-      await prisma.videoTask.update({
-        where: { id: taskId },
-        data: {
-          status: "completed",
-          videoUrl: finalVideoUrl,
-          progress: 100,
-          completedAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
-      console.log(`[VideoTask ${taskId}] ✅ Completed successfully`);
-    } else if (!videoCreated) {
-      throw new Error("Failed to extract video URL from response");
+    } else {
+      console.log(`[VideoTask ${taskId}] Video already on R2, skipping upload`);
     }
+
+    // Step 5: 更新任务状态为完成
+    await prisma.videoTask.update({
+      where: { id: taskId },
+      data: {
+        status: "completed",
+        videoUrl: finalVideoUrl,
+        progress: 100,
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    console.log(`[VideoTask ${taskId}] ✅ Task completed successfully`);
+
   } catch (error) {
     // 异常：更新状态为 failed
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createVideoTask } from "@/app/actions/video-task";
+import { createVideoTask, SoraDuration } from "@/app/actions/video-task";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { prompt, orientation, inputImage } = body;
+    const { prompt, orientation, inputImage, durationSeconds } = body;
 
     if (!prompt) {
       return NextResponse.json(
@@ -13,11 +13,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 验证时长参数（Sora 2 API 只支持 4, 8, 12 秒）
+    const validDurations: SoraDuration[] = ["4", "8", "12"];
+    const duration: SoraDuration = validDurations.includes(durationSeconds)
+      ? durationSeconds
+      : "8"; // 默认 8 秒
+
     // 创建异步任务
     const { taskId } = await createVideoTask(
       prompt,
       orientation || "portrait",
-      inputImage
+      inputImage,
+      duration
     );
 
     // 立即返回任务 ID

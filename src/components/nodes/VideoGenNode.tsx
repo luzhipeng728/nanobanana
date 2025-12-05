@@ -27,7 +27,8 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
   const [prompt, setPrompt] = useState(data.prompt || "");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">(data.orientation || "portrait");
   const [model, setModel] = useState<VideoModel>(data.model || "sora");
-  const [durationSeconds, setDurationSeconds] = useState<number>(data.durationSeconds || 5);
+  // Sora 默认 8 秒，Veo 默认 5 秒
+  const [durationSeconds, setDurationSeconds] = useState<number>(data.durationSeconds || 8);
   
   const [connectedImagesCount, setConnectedImagesCount] = useState<number>(0);
   const [showCameos, setShowCameos] = useState(false);
@@ -222,12 +223,16 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     const connectedNodes = getConnectedImageNodes(id);
     const inputImage = connectedNodes.length > 0 ? connectedNodes[0].data.imageUrl : undefined;
 
+    // 将数字时长转换为字符串（Sora 2 API 要求字符串格式）
+    const durationStr = String(durationSeconds) as "4" | "8" | "12";
+
     const result = await generate({
       apiPath: "/api/generate-video",
       body: {
         prompt,
         orientation,
         inputImage,
+        durationSeconds: durationStr, // 传递时长参数
       }
     });
 
@@ -322,29 +327,36 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
           />
         </div>
 
-        {/* 时长选择 - Veo 专用 */}
-        {isVeoModel && (
-          <div className="space-y-1.5">
-            <NodeLabel>视频时长</NodeLabel>
-            <NodeTabSelect
-              value={String(durationSeconds)}
-              onChange={(val) => {
-                const num = parseInt(val);
-                setDurationSeconds(num);
-                data.durationSeconds = num;
-              }}
-              options={[
-                { value: "3", label: "3秒" },
-                { value: "4", label: "4秒" },
-                { value: "5", label: "5秒" },
-                { value: "6", label: "6秒" },
-                { value: "8", label: "8秒" },
-              ]}
-              color="orange"
-              size="sm"
-            />
-          </div>
-        )}
+        {/* 时长选择 - Sora 和 Veo 都支持 */}
+        <div className="space-y-1.5">
+          <NodeLabel>视频时长</NodeLabel>
+          <NodeTabSelect
+            value={String(durationSeconds)}
+            onChange={(val) => {
+              const num = parseInt(val);
+              setDurationSeconds(num);
+              data.durationSeconds = num;
+            }}
+            options={
+              isVeoModel
+                ? [
+                    { value: "3", label: "3秒" },
+                    { value: "4", label: "4秒" },
+                    { value: "5", label: "5秒" },
+                    { value: "6", label: "6秒" },
+                    { value: "8", label: "8秒" },
+                  ]
+                : [
+                    // Sora 2 API 只支持 4, 8, 12 秒
+                    { value: "4", label: "4秒" },
+                    { value: "8", label: "8秒" },
+                    { value: "12", label: "12秒" },
+                  ]
+            }
+            color="orange"
+            size="sm"
+          />
+        </div>
 
         {/* 角色选择 - Sora 专用 */}
         {!isVeoModel && (
