@@ -164,9 +164,33 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
         throw new Error(`Failed to download input image: ${imageResponse.status}`);
       }
       const imageBuffer = await imageResponse.arrayBuffer();
-      const imageBlob = new Blob([imageBuffer], { type: "image/png" });
 
-      console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(imageBuffer.byteLength / 1024).toFixed(1)} KB`);
+      // 根据 URL 或响应头确定 MIME 类型
+      let mimeType = imageResponse.headers.get("content-type") || "image/png";
+      // 确保是支持的格式
+      if (!["image/jpeg", "image/png", "image/webp"].includes(mimeType)) {
+        // 根据 URL 扩展名判断
+        const url = task.inputImage.toLowerCase();
+        if (url.includes(".jpg") || url.includes(".jpeg")) {
+          mimeType = "image/jpeg";
+        } else if (url.includes(".webp")) {
+          mimeType = "image/webp";
+        } else {
+          mimeType = "image/png"; // 默认 PNG
+        }
+      }
+
+      // 确定文件扩展名
+      const extMap: Record<string, string> = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+      };
+      const ext = extMap[mimeType] || "png";
+
+      const imageBlob = new Blob([imageBuffer], { type: mimeType });
+
+      console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(imageBuffer.byteLength / 1024).toFixed(1)} KB, type: ${mimeType}`);
 
       // 构建 multipart/form-data
       const formData = new FormData();
@@ -174,7 +198,7 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
       formData.append("prompt", task.prompt);
       formData.append("size", size);
       formData.append("seconds", durationSeconds);
-      formData.append("input_reference", imageBlob, "input.png");
+      formData.append("input_reference", imageBlob, `input.${ext}`);
 
       console.log(`[VideoTask ${taskId}] Sending multipart/form-data request...`);
 
