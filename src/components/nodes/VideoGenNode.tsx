@@ -280,8 +280,8 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       />
 
       <div className="space-y-3">
-        {/* 模型选择 */}
-        <div className="space-y-1.5">
+        {/* 模型选择 - Veo 3.1 暂时禁用 */}
+        {/* <div className="space-y-1.5">
           <NodeLabel>模型</NodeLabel>
           <NodeTabSelect
             value={model}
@@ -296,7 +296,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
             ]}
             color="orange"
           />
-        </div>
+        </div> */}
 
         {/* 画面方向 */}
         <div className="space-y-1.5">

@@ -187,7 +187,7 @@ const VideoNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
               <>
                 <video
                   controls
-                  className="w-full h-full object-cover rounded-[calc(2rem-2px)]"
+                  className="w-full h-full object-contain rounded-[calc(2rem-2px)] bg-black"
                   style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                 >
                   <source src={data.videoUrl} type="video/mp4" />
