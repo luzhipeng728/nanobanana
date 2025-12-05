@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
 import { uploadVideoFromUrl } from "./storage";
 import FormData from "form-data";
+import axios from "axios";
 
 const prisma = new PrismaClient();
 
@@ -203,20 +204,37 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
         contentType: mimeType,
       });
 
-      console.log(`[VideoTask ${taskId}] Sending multipart/form-data request...`);
+      console.log(`[VideoTask ${taskId}] Sending multipart/form-data request via axios...`);
 
-      // 使用 form-data 的 getHeaders() 获取正确的 Content-Type（包含 boundary）
-      const headers = formData.getHeaders();
-      headers["Authorization"] = `Bearer ${soraApiToken}`;
+      // 使用 axios 发送 form-data（对 multipart 支持更好）
+      try {
+        const axiosResponse = await axios.post(
+          `${soraApiBaseUrl}/v1/videos`,
+          formData,
+          {
+            headers: {
+              ...formData.getHeaders(),
+              Authorization: `Bearer ${soraApiToken}`,
+            },
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
+          }
+        );
 
-      // 将 Buffer 转换为 Uint8Array 以兼容 fetch body 类型
-      const bodyBuffer = formData.getBuffer();
-
-      createResponse = await fetch(`${soraApiBaseUrl}/v1/videos`, {
-        method: "POST",
-        headers: headers,
-        body: new Uint8Array(bodyBuffer),
-      });
+        // 将 axios 响应转换为类似 fetch Response 的格式
+        createResponse = new Response(JSON.stringify(axiosResponse.data), {
+          status: axiosResponse.status,
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (axiosError: any) {
+        // axios 错误处理
+        const errorData = axiosError.response?.data || { message: axiosError.message };
+        const errorStatus = axiosError.response?.status || 500;
+        createResponse = new Response(JSON.stringify(errorData), {
+          status: errorStatus,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
     } else {
       // 文生视频模式 - 使用 JSON
       const requestBody = {

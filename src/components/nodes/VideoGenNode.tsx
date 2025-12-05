@@ -93,11 +93,13 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
       console.log(`Created video task: ${result.taskId}`);
       const currentNode = getNode(id);
       if (currentNode) {
+        // Sora API 不返回 apiSource，需要根据当前模型判断
+        const apiSource = result.apiSource || (model === "sora" ? "sora" : "veo");
         addVideoNode(
           result.taskId,
           prompt,
           { x: currentNode.position.x + 350, y: currentNode.position.y },
-          { apiSource: result.apiSource, model }
+          { apiSource, model }
         );
       }
       setCurrentStep("");
@@ -217,8 +219,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     }
   };
 
-  // Override hook's onSuccess to handle Sora's missing apiSource
-  // Or better: just use the promise return from generate() for Sora
+  // Sora 视频生成 - 只调用 generate()，由 hook 的 onSuccess 处理 addVideoNode
   const onGenerateSora = async () => {
     const connectedNodes = getConnectedImageNodes(id);
     const inputImage = connectedNodes.length > 0 ? connectedNodes[0].data.imageUrl : undefined;
@@ -226,27 +227,16 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     // 将数字时长转换为字符串（Sora 2 API 要求字符串格式）
     const durationStr = String(durationSeconds) as "4" | "8" | "12";
 
-    const result = await generate({
+    // generate() 成功后会自动触发 onSuccess 回调，不需要在这里再调用 addVideoNode
+    await generate({
       apiPath: "/api/generate-video",
       body: {
         prompt,
         orientation,
         inputImage,
-        durationSeconds: durationStr, // 传递时长参数
+        durationSeconds: durationStr,
       }
     });
-
-    if (result) {
-      const currentNode = getNode(id);
-      if (currentNode) {
-        addVideoNode(
-          result.taskId,
-          prompt,
-          { x: currentNode.position.x + 350, y: currentNode.position.y },
-          { apiSource: "sora", model }
-        );
-      }
-    }
   };
 
   const handleGenerateClick = isVeoModel ? onGenerate : onGenerateSora;
