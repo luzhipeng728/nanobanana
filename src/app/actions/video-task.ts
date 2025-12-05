@@ -173,28 +173,32 @@ async function processVideoTask(taskId: string, durationSeconds: SoraDuration = 
         throw new Error(`Failed to download input image: ${imageResponse.status}`);
       }
       const imageArrayBuffer = await imageResponse.arrayBuffer();
-      let imageBuffer = Buffer.from(imageArrayBuffer);
+      const originalBuffer = Buffer.from(imageArrayBuffer);
 
-      console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(imageBuffer.length / 1024).toFixed(1)} KB`);
+      console.log(`[VideoTask ${taskId}] Downloaded image, size: ${(originalBuffer.length / 1024).toFixed(1)} KB`);
 
       // 解析目标尺寸
       const [targetWidth, targetHeight] = size.split("x").map(Number);
 
       // 使用 sharp 调整图片尺寸（Azure API 要求图片尺寸与 size 匹配）
-      const sharpImage = sharp(imageBuffer);
+      const sharpImage = sharp(originalBuffer);
       const metadata = await sharpImage.metadata();
       console.log(`[VideoTask ${taskId}] Original image: ${metadata.width}x${metadata.height}, target: ${targetWidth}x${targetHeight}`);
 
+      let imageBuffer: Buffer;
       if (metadata.width !== targetWidth || metadata.height !== targetHeight) {
         console.log(`[VideoTask ${taskId}] Resizing image to ${targetWidth}x${targetHeight}...`);
-        imageBuffer = await sharpImage
+        const resizedBuffer = await sharpImage
           .resize(targetWidth, targetHeight, {
             fit: "cover", // 裁剪以填充目标尺寸
             position: "center",
           })
           .png() // 统一转为 PNG
           .toBuffer();
+        imageBuffer = Buffer.from(resizedBuffer);
         console.log(`[VideoTask ${taskId}] Resized image size: ${(imageBuffer.length / 1024).toFixed(1)} KB`);
+      } else {
+        imageBuffer = originalBuffer;
       }
 
       // 使用 PNG 格式（sharp 已转换）
