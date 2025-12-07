@@ -184,15 +184,13 @@ async function generateImageWithPriorityApi(
 
   // 重试循环
   const maxRetries = PRIORITY_API.maxRetries;
-  const initialDelay = 2000; // 2 秒
+  const retryDelay = 2000; // 固定 2 秒间隔
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       if (attempt > 0) {
-        // 指数退避：2s, 4s, 8s... 最大 30s
-        const delay = Math.min(initialDelay * Math.pow(2, attempt - 1), 30000);
-        console.log(`[PriorityAPI] ⏳ 重试 ${attempt}/${maxRetries}，等待 ${delay}ms...`);
-        await sleep(delay);
+        console.log(`[PriorityAPI] ⏳ 重试 ${attempt}/${maxRetries}，等待 ${retryDelay}ms...`);
+        await sleep(retryDelay);
       }
 
       const controller = new AbortController();
