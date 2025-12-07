@@ -33,12 +33,15 @@ const RECOVERY_TIME = 24 * 60 * 60 * 1000; // 24 小时后重试失败的 Key
 
 // ============================================================================
 // 优先 API 配置（省钱方案）
+// 从环境变量读取，优先使用此 API，重试 N 次后才回退到官方 Gemini API
 // ============================================================================
 const PRIORITY_API = {
-  enabled: false, // 暂时禁用优先 API
-  baseUrl: 'http://172.93.101.237:8317/v1beta/models',
-  apiKey: 'sk-12345',
-  cooldownTime: 20 * 60 * 1000, // 20 分钟冷却时间
+  enabled: !!process.env.PRIORITY_IMAGE_API_BASE_URL, // 配置了 baseUrl 就启用
+  baseUrl: process.env.PRIORITY_IMAGE_API_BASE_URL || '',
+  apiKey: process.env.PRIORITY_IMAGE_API_KEY || '',
+  model: process.env.PRIORITY_IMAGE_API_MODEL || 'gemini-3-pro-image',
+  maxRetries: parseInt(process.env.PRIORITY_IMAGE_API_MAX_RETRIES || '10', 10),
+  cooldownTime: 5 * 60 * 1000, // 5 分钟冷却时间（连续失败后的冷却）
 };
 
 // 冷却状态配置文件路径
@@ -105,11 +108,13 @@ function isPriorityApiAvailable(): boolean {
  */
 function markPriorityApiFailed(): void {
   savePriorityApiState({ failedAt: Date.now() });
-  console.log(`[PriorityAPI] ❌ Marked as failed, cooldown for 20 minutes`);
+  const cooldownMinutes = Math.ceil(PRIORITY_API.cooldownTime / 60000);
+  console.log(`[PriorityAPI] ❌ 标记失败，冷却 ${cooldownMinutes} 分钟`);
 }
 
 /**
- * 使用优先 API 生成图片
+ * 使用优先 API 生成图片（带重试逻辑）
+ * 会重试 maxRetries 次，只有全部失败才返回 null 回退到官方 API
  */
 async function generateImageWithPriorityApi(
   prompt: string,
@@ -118,19 +123,23 @@ async function generateImageWithPriorityApi(
   referenceImages: string[]
 ): Promise<{ success: boolean; imageUrl?: string; error?: string; prompt?: string; model?: string } | null> {
   if (!isPriorityApiAvailable()) {
+    console.log(`[PriorityAPI] ⏳ 在冷却中，跳过优先 API`);
     return null; // 在冷却中，返回 null 表示跳过
   }
 
-  const modelName = GEMINI_IMAGE_MODELS[model];
-  const apiUrl = `${PRIORITY_API.baseUrl}/${modelName}:generateContent`;
+  // 使用优先 API 配置的模型
+  const priorityModel = PRIORITY_API.model;
+  const apiUrl = `${PRIORITY_API.baseUrl}/v1beta/models/${priorityModel}:generateContent`;
 
-  console.log(`[PriorityAPI] 🚀 Attempting priority API: ${apiUrl}`);
+  console.log(`[PriorityAPI] 🚀 使用优先 API: ${apiUrl}`);
+  console.log(`[PriorityAPI] 模型: ${priorityModel}, 最大重试: ${PRIORITY_API.maxRetries}`);
 
   // 构建 parts
   const parts: any[] = [{ text: prompt }];
 
   // 添加参考图片
   if (referenceImages.length > 0) {
+    console.log(`[PriorityAPI] 处理 ${referenceImages.length} 张参考图片...`);
     for (const imageUrl of referenceImages) {
       try {
         const compressed = await fetchAndCompressImage(imageUrl, {
@@ -149,12 +158,12 @@ async function generateImageWithPriorityApi(
           });
         }
       } catch (error) {
-        console.error(`[PriorityAPI] Error processing reference image:`, error);
+        console.error(`[PriorityAPI] 处理参考图片失败:`, error);
       }
     }
   }
 
-  // 构建请求体
+  // 构建请求体（Gemini 官方格式）
   const requestBody: any = {
     contents: [{ role: "user", parts }],
     generationConfig: {
@@ -173,85 +182,124 @@ async function generateImageWithPriorityApi(
     }
   }
 
-  // Pro 模型添加 Google Search 工具
-  if (model === "nano-banana-pro") {
-    requestBody.tools = [{ googleSearch: {} }];
-  }
+  // 重试循环
+  const maxRetries = PRIORITY_API.maxRetries;
+  const initialDelay = 2000; // 2 秒
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 分钟超时（优先 API 应该更快）
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': PRIORITY_API.apiKey,
-      },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[PriorityAPI] ❌ API error: ${response.status} - ${errorText.substring(0, 200)}`);
-      markPriorityApiFailed();
-      return null; // 返回 null，让调用者回退到普通 API
-    }
-
-    const data = await response.json();
-    console.log(`[PriorityAPI] ✅ Response received`);
-
-    // 解析响应
-    const candidates = data?.candidates;
-    if (!candidates || candidates.length === 0) {
-      console.error(`[PriorityAPI] ❌ No candidates in response`);
-      markPriorityApiFailed();
-      return null;
-    }
-
-    const responseParts = candidates[0]?.content?.parts;
-    if (!responseParts || responseParts.length === 0) {
-      console.error(`[PriorityAPI] ❌ No content parts in response`);
-      markPriorityApiFailed();
-      return null;
-    }
-
-    // 查找图片数据
-    for (const part of responseParts) {
-      if (part.inlineData && part.inlineData.data) {
-        console.log(`[PriorityAPI] ✅ Image data found`);
-        const base64Data = part.inlineData.data;
-        const mimeType = part.inlineData.mimeType || "image/png";
-        const buffer = Buffer.from(base64Data, "base64");
-
-        console.log(`[PriorityAPI] Image size: ${buffer.length} bytes`);
-
-        // 上传到 R2
-        const imageUrl = await uploadBufferToR2(buffer, mimeType);
-        console.log(`[PriorityAPI] ✅ Image uploaded: ${imageUrl}`);
-
-        return {
-          success: true,
-          imageUrl,
-          prompt,
-          model: `priority/${modelName}`,
-        };
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        // 指数退避：2s, 4s, 8s... 最大 30s
+        const delay = Math.min(initialDelay * Math.pow(2, attempt - 1), 30000);
+        console.log(`[PriorityAPI] ⏳ 重试 ${attempt}/${maxRetries}，等待 ${delay}ms...`);
+        await sleep(delay);
       }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 分钟超时
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': PRIORITY_API.apiKey,
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        // 429 错误（限流）- 继续重试
+        if (response.status === 429) {
+          console.log(`[PriorityAPI] ⚠️  429 限流 (${attempt + 1}/${maxRetries + 1})，继续重试...`);
+          continue;
+        }
+
+        // 其他错误
+        console.error(`[PriorityAPI] ❌ API 错误: ${response.status} - ${errorText.substring(0, 200)}`);
+
+        // 5xx 错误继续重试
+        if (response.status >= 500 && response.status < 600) {
+          console.log(`[PriorityAPI] ⚠️  服务器错误，继续重试...`);
+          continue;
+        }
+
+        // 其他错误不重试，直接返回
+        if (attempt === maxRetries) {
+          markPriorityApiFailed();
+        }
+        continue;
+      }
+
+      const data = await response.json();
+
+      // 解析响应
+      const candidates = data?.candidates;
+      if (!candidates || candidates.length === 0) {
+        console.error(`[PriorityAPI] ❌ 无候选响应`);
+        continue;
+      }
+
+      const responseParts = candidates[0]?.content?.parts;
+      if (!responseParts || responseParts.length === 0) {
+        console.error(`[PriorityAPI] ❌ 响应无内容`);
+        continue;
+      }
+
+      // 查找图片数据
+      for (const part of responseParts) {
+        if (part.inlineData && part.inlineData.data) {
+          console.log(`[PriorityAPI] ✅ 图像数据找到！`);
+          const base64Data = part.inlineData.data;
+          const mimeType = part.inlineData.mimeType || "image/png";
+          const buffer = Buffer.from(base64Data, "base64");
+
+          console.log(`[PriorityAPI] 图像大小: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
+
+          // 上传到 R2
+          const imageUrl = await uploadBufferToR2(buffer, mimeType);
+          console.log(`[PriorityAPI] ✅ 图像上传成功: ${imageUrl}`);
+
+          return {
+            success: true,
+            imageUrl,
+            prompt,
+            model: `priority/${priorityModel}`,
+          };
+        }
+      }
+
+      console.error(`[PriorityAPI] ❌ 响应中无图像数据`);
+      continue;
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorName = error instanceof Error ? error.name : '';
+
+      // 网络错误继续重试
+      const isNetworkError =
+        errorName === 'AbortError' ||
+        errorMessage.includes('fetch failed') ||
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('ECONNRESET');
+
+      if (isNetworkError) {
+        console.log(`[PriorityAPI] ⚠️  网络错误 (${attempt + 1}/${maxRetries + 1})，继续重试...`);
+        continue;
+      }
+
+      console.error(`[PriorityAPI] ❌ 错误:`, errorMessage);
     }
-
-    console.error(`[PriorityAPI] ❌ No image data in response`);
-    markPriorityApiFailed();
-    return null;
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[PriorityAPI] ❌ Error:`, errorMessage);
-    markPriorityApiFailed();
-    return null;
   }
+
+  // 全部重试失败，标记冷却并返回 null
+  console.error(`[PriorityAPI] ❌ 重试 ${maxRetries + 1} 次后仍失败，回退到官方 API`);
+  markPriorityApiFailed();
+  return null;
 }
 
 // 获取或初始化 API Key 状态（从数据库）

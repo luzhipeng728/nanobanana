@@ -44,3 +44,9 @@ next-env.d.ts
 
 # Priority API state file
 .priority-api-state.json
+
+# Generated test images
+scripts/*.jpg
+scripts/*.jpeg
+scripts/*.png
+scripts/*.webp
