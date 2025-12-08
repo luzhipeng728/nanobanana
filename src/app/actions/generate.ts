@@ -78,38 +78,18 @@ function savePriorityApiState(state: PriorityApiState): void {
 }
 
 /**
- * 检查优先 API 是否可用（未在冷却中）
+ * 检查优先 API 是否可用
+ * 已禁用冷却机制，每次都会尝试 30 次
  */
 function isPriorityApiAvailable(): boolean {
-  // 检查是否启用
-  if (!PRIORITY_API.enabled) return false;
-
-  const state = readPriorityApiState();
-
-  if (!state.failedAt) return true;
-
-  const now = Date.now();
-  const elapsed = now - state.failedAt;
-
-  if (elapsed >= PRIORITY_API.cooldownTime) {
-    // 冷却时间结束，重置状态
-    console.log(`[PriorityAPI] ✅ Cooldown ended, re-enabling priority API`);
-    savePriorityApiState({ failedAt: null });
-    return true;
-  }
-
-  const remainingMinutes = Math.ceil((PRIORITY_API.cooldownTime - elapsed) / 60000);
-  console.log(`[PriorityAPI] ⏳ Still in cooldown, ${remainingMinutes} minutes remaining`);
-  return false;
+  return PRIORITY_API.enabled;
 }
 
 /**
- * 标记优先 API 失败，开始冷却
+ * 标记优先 API 失败（仅记录日志，不进行冷却）
  */
 function markPriorityApiFailed(): void {
-  savePriorityApiState({ failedAt: Date.now() });
-  const cooldownMinutes = Math.ceil(PRIORITY_API.cooldownTime / 60000);
-  console.log(`[PriorityAPI] ❌ 标记失败，冷却 ${cooldownMinutes} 分钟`);
+  console.log(`[PriorityAPI] ❌ 30 次重试全部失败，回退到官方 API`);
 }
 
 /**
@@ -123,8 +103,8 @@ async function generateImageWithPriorityApi(
   referenceImages: string[]
 ): Promise<{ success: boolean; imageUrl?: string; error?: string; prompt?: string; model?: string } | null> {
   if (!isPriorityApiAvailable()) {
-    console.log(`[PriorityAPI] ⏳ 在冷却中，跳过优先 API`);
-    return null; // 在冷却中，返回 null 表示跳过
+    console.log(`[PriorityAPI] ⚠️ 优先 API 未启用`);
+    return null;
   }
 
   // 使用优先 API 配置的模型
