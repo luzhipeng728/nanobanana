@@ -50,3 +50,6 @@ scripts/*.jpg
 scripts/*.jpeg
 scripts/*.png
 scripts/*.webp
+
+# PPT generated files
+public/ppt/
