@@ -433,12 +433,12 @@ export async function POST(request: NextRequest) {
           console.warn(`[PPT Task ${task.id}] Failed to upload to R2:`, e);
         }
 
-        // 更新数据库
+        // 更新数据库（只保存 R2 URL，本地路径没用）
         await prisma.pPTTask.update({
           where: { id: task.id },
           data: {
             status: "completed",
-            pptUrl: r2Url || pptFilePath || expectedPath,
+            pptUrl: r2Url || null, // 只保存 R2 URL，不保存本地路径
             slides: JSON.stringify(slides),
             completedAt: new Date(),
             updatedAt: new Date(),
@@ -449,10 +449,12 @@ export async function POST(request: NextRequest) {
         sendEvent("completed", {
           taskId: task.id,
           slides,
-          pptUrl: r2Url || pptFilePath,
-          previewUrl,
-          downloadUrl: r2Url,
-          message: `🎉 PPT 生成完成！共 ${slides.length} 张幻灯片`,
+          pptUrl: r2Url || null,
+          previewUrl: r2Url ? previewUrl : null,
+          downloadUrl: r2Url || null,
+          message: r2Url
+            ? `🎉 PPT 生成完成！共 ${slides.length} 张幻灯片`
+            : `⚠️ PPT 生成完成但上传失败，共 ${slides.length} 张幻灯片`,
         });
 
       } catch (error) {
