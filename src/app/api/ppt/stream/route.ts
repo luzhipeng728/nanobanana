@@ -401,6 +401,7 @@ export async function POST(request: NextRequest) {
 /**
  * 构建 PPT 生成 prompt
  * 明确指示使用 Skill 工具调用 pptx 技能
+ * 集成图片生成能力和设计指南
  */
 function buildPPTPrompt(
   topic: string,
@@ -417,6 +418,9 @@ function buildPPTPrompt(
     creative: "创意活泼风格",
   };
 
+  // 从环境变量获取 API 基础 URL
+  const apiBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://canvas.luzhipeng.com";
+
   // 输出到项目目录下的 public/ppt/{taskId}/ 文件夹
   const projectDir = process.cwd();
   const pptDir = `${projectDir}/public/ppt/${taskId}`;
@@ -429,9 +433,9 @@ function buildPPTPrompt(
 页数：5-8 页
 
 幻灯片结构：
-1. 封面页 - 标题和副标题
-2-6. 内容页 - 每页包含标题和3-5个要点
-7. 结束页 - 感谢语`;
+1. 封面页 - 震撼的视觉封面，标题和副标题
+2-6. 内容页 - 每页包含标题、3-5个要点，配合精美配图
+7. 结束页 - 感谢语 + 联系方式`;
 
   if (description) {
     contentSpec += `\n\n补充说明：${description}`;
@@ -440,7 +444,7 @@ function buildPPTPrompt(
   if (materials.length > 0) {
     const imageUrls = materials.filter((m) => m.type === "image" && m.url).map((m) => m.url);
     if (imageUrls.length > 0) {
-      contentSpec += `\n\n图片素材：\n${imageUrls.map((url, i) => `${i + 1}. ${url}`).join("\n")}`;
+      contentSpec += `\n\n用户提供的图片素材：\n${imageUrls.map((url, i) => `${i + 1}. ${url}`).join("\n")}`;
     }
 
     const textContents = materials.filter((m) => m.type === "text" && m.content).map((m) => m.content);
@@ -449,28 +453,155 @@ function buildPPTPrompt(
     }
   }
 
-  // 明确指示使用 Skill 工具调用 pptx 技能
-  const prompt = `请帮我创建一个专业的 PowerPoint 演示文稿。
+  // 设计指南和图片生成能力
+  const prompt = `请帮我创建一个**视觉震撼、设计精美**的 PowerPoint 演示文稿。
 
-**⚠️ 关键环境说明（必读）：**
+## 📌 环境说明（必读）
 - pptxgenjs、sharp 已全局安装，**禁止运行 npm install**
 - **运行脚本时必须设置 NODE_PATH**：
   \`NODE_PATH=/root/.nvm/versions/node/v22.19.0/lib/node_modules node create-ppt.js\`
-- 使用纯 pptxgenjs API 构建 PPT（不要使用 html2pptx，它需要 playwright 浏览器环境）
+- 使用纯 pptxgenjs API 构建 PPT（不要使用 html2pptx）
 
-**执行步骤：**
-1. mkdir -p ${pptDir}
-2. 使用 Skill 工具调用 pptx 技能
-3. 编写 create-ppt.js（直接用 pptxgenjs API，不要 html2pptx）
-4. **运行脚本**: \`cd ${pptDir} && NODE_PATH=/root/.nvm/versions/node/v22.19.0/lib/node_modules node create-ppt.js\`
-5. 确认 presentation.pptx 已生成
+## 🎨 AI 图片生成能力
+你可以调用 API 生成高质量配图，让 PPT 更加精美！
 
-**PPT 需求规范：**
+**API 调用方式：**
+\`\`\`bash
+curl -X POST "${apiBaseUrl}/api/ppt/generate-image" \\
+  -H "Content-Type: application/json" \\
+  -d '{"prompt": "描述图片内容", "model": "nano-banana", "aspectRatio": "16:9"}'
+\`\`\`
+
+**模型选择：**
+- \`nano-banana\` (快速): 用于装饰性背景、抽象图案、氛围图
+- \`nano-banana-pro\` (高质量): 用于数据可视化、流程图、复杂场景
+
+**Prompt 最佳实践：**
+1. 用完整句子描述场景，不要堆砌关键词
+2. 描述光线、材质、氛围：如 "soft golden hour lighting", "glass and chrome materials"
+3. 使用摄影术语：shallow depth of field, wide-angle shot, overhead view
+4. 风格提示：minimalist, corporate, futuristic, elegant, professional
+
+**推荐为以下页面生成配图：**
+- 封面页：震撼的主题视觉图（16:9 横版）
+- 内容页：与主题相关的配图（可选）
+- 数据页：信息图表背景或装饰元素
+
+## 🎯 设计原则
+
+**配色方案（基于主色 ${primaryColor}）：**
+- 主色：${primaryColor}（用于标题、重点元素）
+- 辅助色：计算互补色或邻近色
+- 背景色：浅色系 #F8FAFC 或深色系 #1E293B
+- 强调色：用于按钮、高亮
+
+**排版规范：**
+- 标题：32-44pt，加粗，主色调
+- 正文：18-24pt，深灰色 #334155
+- 副标题：20-28pt，浅一级的颜色
+- 行间距：1.4-1.6 倍
+- 边距：至少 0.5 英寸
+
+**布局建议：**
+- 黄金比例：主内容区占 2/3，配图占 1/3
+- 留白：大量留白让设计呼吸
+- 对齐：所有元素严格对齐
+- 层次：通过大小、颜色、位置建立视觉层次
+
+**视觉元素：**
+- 使用圆角（8-16px）让设计更现代
+- 添加微妙阴影增加层次感
+- 图标使用线性或填充风格保持一致
+- 渐变背景（subtile）比纯色更高级
+
+## 💎 PptxGenJS 高级技巧
+
+**1. 定义 Slide Master（品牌一致性）：**
+\`\`\`javascript
+pptx.defineSlideMaster({
+  title: 'MASTER_SLIDE',
+  background: { color: 'FFFFFF' },
+  objects: [
+    { rect: { x: 0, y: 6.9, w: '100%', h: 0.6, fill: { color: '${primaryColor.replace('#', '')}' } } },
+    { text: { text: '公司名称', options: { x: 0, y: 6.9, w: '100%', align: 'center', color: 'FFFFFF', fontSize: 10 } } }
+  ],
+  slideNumber: { x: 0.3, y: '95%', color: '${primaryColor.replace('#', '')}' }
+});
+let slide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+\`\`\`
+
+**2. 设置主题字体：**
+\`\`\`javascript
+pptx.theme = { headFontFace: 'Arial', bodyFontFace: 'Arial' };
+pptx.layout = 'LAYOUT_16x9';
+pptx.author = '演示作者';
+pptx.title = '演示标题';
+\`\`\`
+
+**3. 渐变背景：**
+\`\`\`javascript
+slide.background = {
+  color: { type: 'solid', color: 'F1F5F9' }  // 或使用图片
+};
+// 或使用 AI 生成的渐变图片作为背景
+slide.background = { path: 'gradient-bg.png' };
+\`\`\`
+
+**4. 形状和装饰：**
+\`\`\`javascript
+// 添加装饰线条
+slide.addShape(pptx.ShapeType.rect, {
+  x: 0.5, y: 1, w: 0.1, h: 1.5,
+  fill: { color: '${primaryColor.replace('#', '')}' }
+});
+// 圆角矩形卡片
+slide.addShape(pptx.ShapeType.roundRect, {
+  x: 1, y: 2, w: 4, h: 2,
+  fill: { color: 'FFFFFF' },
+  shadow: { type: 'outer', blur: 10, offset: 3, angle: 45, opacity: 0.3 }
+});
+\`\`\`
+
+**5. 富文本样式：**
+\`\`\`javascript
+slide.addText([
+  { text: '重点', options: { bold: true, color: '${primaryColor.replace('#', '')}' } },
+  { text: '：这是正文内容', options: { color: '334155' } }
+], { x: 1, y: 2, w: 8, fontSize: 18 });
+\`\`\`
+
+**6. 图片使用（支持 URL）：**
+\`\`\`javascript
+slide.addImage({
+  path: 'https://xxx.com/image.png',  // 直接使用生成的图片 URL
+  x: 5, y: 1, w: 4, h: 3,
+  rounding: true  // 圆角图片
+});
+\`\`\`
+
+**7. 图表（如需要）：**
+\`\`\`javascript
+slide.addChart(pptx.charts.BAR, chartData, {
+  x: 1, y: 1, w: 6, h: 4,
+  barDir: 'bar',
+  showValue: true,
+  chartColors: ['${primaryColor.replace('#', '')}', '64748B', 'CBD5E1']
+});
+\`\`\`
+
+## 📋 PPT 需求规范
 ${contentSpec}
 
-**输出路径：** ${outputPath}
+## 🔧 执行步骤
+1. \`mkdir -p ${pptDir}\`
+2. **规划内容**：确定每页的标题、要点、配图需求
+3. **生成配图**（可选）：调用图片生成 API 获取 imageUrl
+4. 使用 Skill 工具调用 pptx 技能
+5. 编写 create-ppt.js（直接用 pptxgenjs API）
+6. **运行脚本**: \`cd ${pptDir} && NODE_PATH=/root/.nvm/versions/node/v22.19.0/lib/node_modules node create-ppt.js\`
+7. 确认 ${outputPath} 已生成
 
-请开始执行。`;
+请开始执行，创建一份让人眼前一亮的专业演示文稿！`;
 
   return prompt;
 }
