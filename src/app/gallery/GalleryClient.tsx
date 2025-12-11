@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, PlayCircle, Clock, Search, Sparkles, Image as ImageIcon, Loader2, Eye, Heart, Globe, Film } from "lucide-react";
+import { ArrowLeft, PlayCircle, Clock, Search, Sparkles, Image as ImageIcon, Loader2, Eye, Heart, Globe, Film, FileSpreadsheet, Download, ExternalLink } from "lucide-react";
 import PageViewCounter from "@/components/PageViewCounter";
 import { cn } from "@/lib/utils";
 
@@ -24,11 +24,13 @@ interface GalleryItem {
   id: string;
   title: string;
   cover: string | null;
-  type: 'slideshow' | 'scrollytelling';
+  type: 'slideshow' | 'scrollytelling' | 'ppt';
   imageCount?: number;
   createdAt: string;
   videoUrl?: string | null;
   htmlUrl?: string | null;
+  pptUrl?: string | null;
+  previewUrl?: string | null;
   views: number;
   likes: number;
 }
@@ -38,7 +40,7 @@ interface GalleryClientProps {
 }
 
 type SortType = 'featured' | 'latest' | 'popular';
-type FilterType = 'all' | 'slideshow' | 'scrollytelling';
+type FilterType = 'all' | 'slideshow' | 'scrollytelling' | 'ppt';
 
 export default function GalleryClient({ initialSlides }: GalleryClientProps) {
   const [slides, setSlides] = useState<GalleryItem[]>(initialSlides);
@@ -47,7 +49,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
   const [hasMore, setHasMore] = useState(true);
   const [currentSort, setCurrentSort] = useState<SortType>('latest');
   const [currentFilter, setCurrentFilter] = useState<FilterType>('all');
-  const [counts, setCounts] = useState({ slideshow: 0, scrollytelling: 0 });
+  const [counts, setCounts] = useState({ slideshow: 0, scrollytelling: 0, ppt: 0 });
   const observerTarget = useRef<HTMLDivElement>(null);
 
   // 加载数据
@@ -161,6 +163,9 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
     if (item.type === 'scrollytelling') {
       return `/scrollytelling/${item.id}`;
     }
+    if (item.type === 'ppt') {
+      return `/ppt/${item.id}`;
+    }
     return `/slides/${item.id}`;
   };
 
@@ -232,7 +237,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                   )}
                 >
                   全部
-                  <span className="text-[10px] opacity-60">({counts.slideshow + counts.scrollytelling})</span>
+                  <span className="text-[10px] opacity-60">({counts.slideshow + counts.scrollytelling + counts.ppt})</span>
                 </button>
                 <button
                   onClick={() => handleFilterChange('slideshow')}
@@ -259,6 +264,19 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                   <Globe className="w-3.5 h-3.5" />
                   一镜到底
                   <span className="text-[10px] opacity-60">({counts.scrollytelling})</span>
+                </button>
+                <button
+                  onClick={() => handleFilterChange('ppt')}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 flex items-center gap-1.5",
+                    currentFilter === 'ppt'
+                      ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm"
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                  )}
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  PPT
+                  <span className="text-[10px] opacity-60">({counts.ppt})</span>
                 </button>
               </nav>
             </div>
@@ -330,10 +348,14 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                             "w-12 h-12 rounded-xl flex items-center justify-center mx-auto",
                             slide.type === 'scrollytelling'
                               ? "bg-cyan-100 dark:bg-cyan-900/30"
+                              : slide.type === 'ppt'
+                              ? "bg-orange-100 dark:bg-orange-900/30"
                               : "bg-purple-100 dark:bg-purple-900/30"
                           )}>
                             {slide.type === 'scrollytelling' ? (
                               <Globe className="w-6 h-6 text-cyan-500" />
+                            ) : slide.type === 'ppt' ? (
+                              <FileSpreadsheet className="w-6 h-6 text-orange-500" />
                             ) : (
                               <Sparkles className="w-6 h-6 text-purple-500" />
                             )}
@@ -351,12 +373,19 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                         "flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md rounded-full border shadow-sm",
                         slide.type === 'scrollytelling'
                           ? "bg-cyan-500/70 border-cyan-400/30"
+                          : slide.type === 'ppt'
+                          ? "bg-orange-500/70 border-orange-400/30"
                           : "bg-purple-500/70 border-purple-400/30"
                       )}>
                         {slide.type === 'scrollytelling' ? (
                           <>
                             <Globe className="w-3 h-3" />
                             网页
+                          </>
+                        ) : slide.type === 'ppt' ? (
+                          <>
+                            <FileSpreadsheet className="w-3 h-3" />
+                            PPT
                           </>
                         ) : (
                           <>
@@ -383,10 +412,14 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                         "flex items-center justify-center w-16 h-16 rounded-full backdrop-blur-xl shadow-2xl scale-90 group-hover:scale-100 transition-transform duration-300",
                         slide.type === 'scrollytelling'
                           ? "bg-cyan-500/90 text-white"
+                          : slide.type === 'ppt'
+                          ? "bg-orange-500/90 text-white"
                           : "bg-white/90 dark:bg-black/80 text-neutral-900 dark:text-white"
                       )}>
                         {slide.type === 'scrollytelling' ? (
                           <Globe className="w-8 h-8" />
+                        ) : slide.type === 'ppt' ? (
+                          <FileSpreadsheet className="w-8 h-8" />
                         ) : (
                           <PlayCircle className="w-8 h-8 fill-current opacity-90" />
                         )}
@@ -401,6 +434,8 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                         "text-[17px] font-bold text-neutral-900 dark:text-white leading-snug line-clamp-2 transition-colors",
                         slide.type === 'scrollytelling'
                           ? "group-hover:text-cyan-600 dark:group-hover:text-cyan-400"
+                          : slide.type === 'ppt'
+                          ? "group-hover:text-orange-600 dark:group-hover:text-orange-400"
                           : "group-hover:text-purple-600 dark:group-hover:text-purple-400"
                       )}>
                         {slide.title}

@@ -8,13 +8,15 @@ interface GalleryItem {
   id: string;
   title: string;
   cover: string | null;
-  type: 'slideshow' | 'scrollytelling';
+  type: 'slideshow' | 'scrollytelling' | 'ppt';
   imageCount?: number;
   createdAt: Date;
   views: number;
   likes: number;
   videoUrl?: string | null;
   htmlUrl?: string | null;
+  pptUrl?: string | null;
+  previewUrl?: string | null;
   needsCover?: boolean;
 }
 
@@ -25,23 +27,29 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const sort = searchParams.get("sort") || "latest"; // latest, popular, featured
-    const typeFilter = searchParams.get("type") || "all"; // all, slideshow, scrollytelling
+    const typeFilter = searchParams.get("type") || "all"; // all, slideshow, scrollytelling, ppt
     const skip = (page - 1) * limit;
 
     let slideshowOrderBy: any = { createdAt: "desc" };
     let scrollytellingOrderBy: any = { createdAt: "desc" };
+    let pptOrderBy: any = { createdAt: "desc" };
 
     if (sort === "popular") {
       slideshowOrderBy = { views: "desc" };
       scrollytellingOrderBy = { views: "desc" };
+      // PPT 暂无 views 字段，用 createdAt 代替
+      pptOrderBy = { createdAt: "desc" };
     } else if (sort === "featured") {
       slideshowOrderBy = { likes: "desc" };
       scrollytellingOrderBy = { likes: "desc" };
+      // PPT 暂无 likes 字段，用 createdAt 代替
+      pptOrderBy = { createdAt: "desc" };
     }
 
     let allItems: GalleryItem[] = [];
     let totalSlideshow = 0;
     let totalScrollytelling = 0;
+    let totalPPT = 0;
 
     // 获取幻灯片列表
     if (typeFilter === "all" || typeFilter === "slideshow") {
@@ -123,6 +131,76 @@ export async function GET(request: NextRequest) {
       allItems = [...allItems, ...scrollytellingItems];
     }
 
+    // 获取 PPT 列表
+    if (typeFilter === "all" || typeFilter === "ppt") {
+      const [ppts, count] = await Promise.all([
+        prisma.pPTTask.findMany({
+          where: {
+            status: "completed",
+            deletedAt: null,
+            pptUrl: { not: null },
+          },
+          orderBy: pptOrderBy,
+          select: {
+            id: true,
+            topic: true,
+            description: true,
+            slides: true,
+            pptUrl: true,
+            primaryColor: true,
+            createdAt: true,
+          },
+        }),
+        prisma.pPTTask.count({
+          where: {
+            status: "completed",
+            deletedAt: null,
+            pptUrl: { not: null },
+          },
+        }),
+      ]);
+
+      totalPPT = count;
+
+      const pptItems: GalleryItem[] = ppts.map((p) => {
+        // 尝试解析 slides 获取第一张幻灯片作为封面
+        let slideCount = 0;
+        let coverImage: string | null = null;
+        if (p.slides) {
+          try {
+            const slidesData = JSON.parse(p.slides);
+            slideCount = Array.isArray(slidesData) ? slidesData.length : 0;
+            // 尝试获取第一张幻灯片的图片
+            if (Array.isArray(slidesData) && slidesData[0]?.imageUrl) {
+              coverImage = slidesData[0].imageUrl;
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        // 生成 Office Online 预览链接
+        const previewUrl = p.pptUrl
+          ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(p.pptUrl)}`
+          : null;
+
+        return {
+          id: p.id,
+          title: p.topic,
+          cover: coverImage,
+          type: 'ppt' as const,
+          imageCount: slideCount,
+          createdAt: p.createdAt,
+          pptUrl: p.pptUrl,
+          previewUrl,
+          views: 0, // PPT 暂无统计
+          likes: 0, // PPT 暂无统计
+        };
+      });
+
+      allItems = [...allItems, ...pptItems];
+    }
+
     // 排序混合列表
     if (sort === "latest") {
       allItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -166,6 +244,7 @@ export async function GET(request: NextRequest) {
       counts: {
         slideshow: totalSlideshow,
         scrollytelling: totalScrollytelling,
+        ppt: totalPPT,
       },
     });
   } catch (error) {
