@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  background: #1E3A5F; font-family: Arial, sans-serif;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+.accent-bar {
+  position: absolute; top: 0; left: 0; width: 720pt; height: 8pt;
+  background: #3B82F6;
+}
+.accent-bar-bottom {
+  position: absolute; bottom: 0; left: 0; width: 720pt; height: 8pt;
+  background: #3B82F6;
+}
+.content {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.icon-circle {
+  width: 60pt; height: 60pt; border-radius: 50%; border: 3pt solid #3B82F6;
+  display: flex; align-items: center; justify-content: center; margin-bottom: 24pt;
+}
+.icon-circle p { color: #3B82F6; font-size: 28pt; margin: 0; }
+h1 {
+  color: #FFFFFF; font-size: 42pt; font-weight: bold; margin: 0 0 12pt 0;
+  text-align: center;
+}
+.subtitle {
+  color: #93C5FD; font-size: 18pt; margin: 0 0 40pt 0; text-align: center;
+}
+.divider {
+  width: 60pt; height: 2pt; background: #3B82F6; margin-bottom: 40pt;
+}
+.contact-info {
+  display: flex; gap: 40pt;
+}
+.contact-item {
+  display: flex; flex-direction: column; align-items: center;
+}
+.contact-item p { color: #93C5FD; font-size: 12pt; margin: 0; }
+.contact-item h3 { color: #FFFFFF; font-size: 14pt; font-weight: bold; margin: 4pt 0 0 0; }
+</style>
+</head>
+<body>
+<div class="accent-bar"></div>
+<div class="accent-bar-bottom"></div>
+<div class="content">
+  <div class="icon-circle"><p>✓</p></div>
+  <h1>感谢聆听</h1>
+  <p class="subtitle">携手共进 · 再创佳绩</p>
+  <div class="divider"></div>
+  <div class="contact-info">
+    <div class="contact-item">
+      <p>汇报人</p>
+      <h3>张三</h3>
+    </div>
+    <div class="contact-item">
+      <p>部门</p>
+      <h3>技术研发部</h3>
+    </div>
+    <div class="contact-item">
+      <p>日期</p>
+      <h3>2024年12月</h3>
+    </div>
+  </div>
+</div>
+</body>
+</html>

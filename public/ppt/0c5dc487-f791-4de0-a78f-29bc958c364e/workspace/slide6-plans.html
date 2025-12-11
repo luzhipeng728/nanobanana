@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  background: #FFFFFF; font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+}
+.header {
+  background: #1E3A5F; padding: 20pt 40pt; display: flex; align-items: center;
+}
+.header-accent {
+  width: 6pt; height: 30pt; background: #3B82F6; margin-right: 16pt;
+}
+h1 { color: #FFFFFF; font-size: 28pt; font-weight: bold; margin: 0; }
+.main {
+  flex: 1; padding: 24pt 40pt;
+}
+.timeline {
+  display: flex; gap: 16pt; margin-bottom: 20pt;
+}
+.quarter {
+  flex: 1; background: #F8FAFC; border-radius: 8pt; padding: 16pt;
+  border-top: 4pt solid #3B82F6;
+}
+.quarter-header {
+  display: flex; align-items: center; gap: 8pt; margin-bottom: 12pt;
+}
+.quarter-badge {
+  background: #3B82F6; padding: 4pt 10pt; border-radius: 4pt;
+}
+.quarter-badge p { color: #FFFFFF; font-size: 11pt; font-weight: bold; margin: 0; }
+.quarter-header h3 { color: #1E3A5F; font-size: 13pt; font-weight: bold; margin: 0; }
+.quarter-list { padding-left: 16pt; margin: 0; }
+.quarter-list li { color: #374151; font-size: 10pt; margin-bottom: 6pt; }
+.goals-section {
+  background: #EFF6FF; border-radius: 8pt; padding: 16pt 20pt;
+}
+.goals-header { display: flex; align-items: center; gap: 10pt; margin-bottom: 12pt; }
+.goals-icon {
+  background: #3B82F6; width: 28pt; height: 28pt; border-radius: 6pt;
+  display: flex; align-items: center; justify-content: center;
+}
+.goals-icon p { color: #FFFFFF; font-size: 14pt; margin: 0; }
+.goals-header h2 { color: #1E3A5F; font-size: 14pt; font-weight: bold; margin: 0; }
+.goals-grid { display: flex; gap: 20pt; }
+.goal-item { flex: 1; }
+.goal-item h4 { color: #3B82F6; font-size: 11pt; font-weight: bold; margin: 0 0 4pt 0; }
+.goal-item p { color: #374151; font-size: 10pt; margin: 0; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-accent"></div>
+  <h1>2025年工作规划</h1>
+</div>
+<div class="main">
+  <div class="timeline">
+    <div class="quarter">
+      <div class="quarter-header">
+        <div class="quarter-badge"><p>Q1</p></div>
+        <h3>基础建设</h3>
+      </div>
+      <ul class="quarter-list">
+        <li>完成系统稳定性提升</li>
+        <li>搭建自动化测试框架</li>
+        <li>技术债务清理 30%</li>
+      </ul>
+    </div>
+    <div class="quarter">
+      <div class="quarter-header">
+        <div class="quarter-badge"><p>Q2</p></div>
+        <h3>能力升级</h3>
+      </div>
+      <ul class="quarter-list">
+        <li>微服务架构优化</li>
+        <li>引入 AI 辅助开发</li>
+        <li>团队技能培训</li>
+      </ul>
+    </div>
+    <div class="quarter">
+      <div class="quarter-header">
+        <div class="quarter-badge"><p>Q3</p></div>
+        <h3>创新突破</h3>
+      </div>
+      <ul class="quarter-list">
+        <li>新产品技术攻关</li>
+        <li>性能优化 50%</li>
+        <li>安全体系完善</li>
+      </ul>
+    </div>
+    <div class="quarter">
+      <div class="quarter-header">
+        <div class="quarter-badge"><p>Q4</p></div>
+        <h3>成果沉淀</h3>
+      </div>
+      <ul class="quarter-list">
+        <li>技术平台产品化</li>
+        <li>知识体系建设</li>
+        <li>年度目标收官</li>
+      </ul>
+    </div>
+  </div>
+  <div class="goals-section">
+    <div class="goals-header">
+      <div class="goals-icon"><p>◎</p></div>
+      <h2>年度关键目标</h2>
+    </div>
+    <div class="goals-grid">
+      <div class="goal-item">
+        <h4>系统可用性</h4>
+        <p>达到 99.99% SLA</p>
+      </div>
+      <div class="goal-item">
+        <h4>研发效能</h4>
+        <p>提升 30% 交付速度</p>
+      </div>
+      <div class="goal-item">
+        <h4>技术创新</h4>
+        <p>完成 2 项专利申请</p>
+      </div>
+      <div class="goal-item">
+        <h4>人才培养</h4>
+        <p>培养 5 名技术骨干</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

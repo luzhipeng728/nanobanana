@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  background: #FFFFFF; font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+}
+.header {
+  background: #1E3A5F; padding: 16pt 40pt; display: flex; align-items: center;
+}
+.header-accent {
+  width: 5pt; height: 24pt; background: #3B82F6; margin-right: 12pt;
+}
+h1 { color: #FFFFFF; font-size: 24pt; font-weight: bold; margin: 0; }
+.main {
+  flex: 1; padding: 16pt 40pt 40pt 40pt; display: flex; gap: 24pt;
+}
+.column { flex: 1; }
+.section-header {
+  display: flex; align-items: center; gap: 8pt; margin-bottom: 10pt;
+}
+.icon-box {
+  width: 24pt; height: 24pt; border-radius: 4pt;
+  display: flex; align-items: center; justify-content: center;
+}
+.icon-orange { background: #F59E0B; }
+.icon-green { background: #10B981; }
+.icon-box p { color: #FFFFFF; font-size: 12pt; margin: 0; }
+.section-header h2 { color: #1E3A5F; font-size: 13pt; font-weight: bold; margin: 0; }
+.item-list { display: flex; flex-direction: column; gap: 6pt; }
+.item {
+  background: #FEF3C7; padding: 8pt 12pt; border-radius: 4pt;
+  border-left: 3pt solid #F59E0B;
+}
+.item-green {
+  background: #D1FAE5; padding: 8pt 12pt; border-radius: 4pt;
+  border-left: 3pt solid #10B981;
+}
+.item h3, .item-green h3 { color: #1E3A5F; font-size: 10pt; font-weight: bold; margin: 0 0 2pt 0; }
+.item p, .item-green p { color: #374151; font-size: 8pt; margin: 0; line-height: 1.3; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-accent"></div>
+  <h1>问题与改进</h1>
+</div>
+<div class="main">
+  <div class="column">
+    <div class="section-header">
+      <div class="icon-box icon-orange"><p>!</p></div>
+      <h2>存在的问题</h2>
+    </div>
+    <div class="item-list">
+      <div class="item">
+        <h3>技术债务积累</h3>
+        <p>部分历史代码质量欠佳，重构进度不及预期</p>
+      </div>
+      <div class="item">
+        <h3>文档建设滞后</h3>
+        <p>技术文档更新不及时，知识传承效率待提升</p>
+      </div>
+      <div class="item">
+        <h3>跨团队沟通</h3>
+        <p>与业务团队的沟通机制需要进一步优化</p>
+      </div>
+      <div class="item">
+        <h3>创新投入不足</h3>
+        <p>日常工作占比过高，技术预研时间有限</p>
+      </div>
+    </div>
+  </div>
+  <div class="column">
+    <div class="section-header">
+      <div class="icon-box icon-green"><p>✓</p></div>
+      <h2>改进措施</h2>
+    </div>
+    <div class="item-list">
+      <div class="item-green">
+        <h3>制定重构计划</h3>
+        <p>建立技术债务管理机制，分阶段进行代码重构</p>
+      </div>
+      <div class="item-green">
+        <h3>完善文档体系</h3>
+        <p>建立文档模板和审核流程，推行文档即代码</p>
+      </div>
+      <div class="item-green">
+        <h3>优化协作流程</h3>
+        <p>建立定期同步机制，使用协作工具提升效率</p>
+      </div>
+      <div class="item-green">
+        <h3>预留创新时间</h3>
+        <p>每周固定技术调研时间，鼓励创新实验</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

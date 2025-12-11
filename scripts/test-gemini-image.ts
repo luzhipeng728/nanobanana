@@ -10,14 +10,14 @@ import * as path from 'path';
 
 // API 配置
 const API_CONFIG = {
-  baseUrl: 'http://104.243.42.248:8020',
-  apiKey: 'sk-Hueuh821981hHDJHA278wy7qhdus',
+  baseUrl: 'http://api.tenclock.shop:9020',
+  apiKey: 'sk-chatify-MoLu154!',
   model: 'gemini-3-pro-image',
 };
 
 // 重试配置
 const RETRY_CONFIG = {
-  maxRetries: 5,
+  maxRetries: 10000,
   initialDelay: 2000, // 2 秒
 };
 
@@ -66,7 +66,7 @@ async function generateImage(
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
       if (attempt > 0) {
-        const delay = RETRY_CONFIG.initialDelay * Math.pow(2, attempt - 1);
+        const delay = 0;
         console.log(`⏳ 重试 ${attempt}/${RETRY_CONFIG.maxRetries}，等待 ${delay}ms...`);
         await sleep(delay);
       }
@@ -88,6 +88,7 @@ async function generateImage(
         // 429 错误重试
         if (response.status === 429) {
           console.log(`⚠️  429 限流，准备重试...`);
+          console.log(errorText)
           continue;
         }
 

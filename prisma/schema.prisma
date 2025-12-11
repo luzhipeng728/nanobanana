@@ -23,6 +23,7 @@ model User {
   veoTasks    VeoTask[]
   spriteTasks SpriteTask[]
   ttsTasks    TTSTask[]
+  pptTasks    PPTTask[]
 }
 
 model Canvas {
@@ -305,4 +306,29 @@ model ScrollytellingLike {
 
   @@unique([scrollytellingId, userIdentifier])
   @@index([userIdentifier])
+}
+
+// PPT 演示文稿生成任务
+model PPTTask {
+  id           String    @id @default(uuid())
+  status       String    // pending, processing, completed, failed
+  topic        String    @db.Text              // PPT 主题
+  description  String?   @db.Text              // 补充说明
+  template     String    @default("business")  // business, tech, minimal, creative
+  primaryColor String    @default("#3B82F6")   // 主色调
+  materials    String?   @db.LongText          // JSON: 输入素材 [{type, url, content}]
+  slides       String?   @db.LongText          // JSON: 生成的幻灯片数据
+  fileId       String?   @db.Text              // Claude Files API 返回的文件 ID
+  pptUrl       String?   @db.Text              // 上传到 R2 后的 PPT URL
+  error        String?   @db.Text
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  completedAt  DateTime?
+  deletedAt    DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([deletedAt])
 }

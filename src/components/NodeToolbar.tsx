@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles, Bot, Mic2 } from "lucide-react";
+import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles, Bot, Mic2, Presentation } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 
-type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'chatAgent' | 'sprite' | 'superAgent' | 'ttsGen';
+type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'chatAgent' | 'sprite' | 'superAgent' | 'ttsGen' | 'pptGen';
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, nodeType: NodeType) => void;
@@ -79,6 +79,13 @@ const baseItems = [
     description: 'AI 图表生成',
     icon: MessageSquare,
     accentColor: '#ec4899',
+  },
+  {
+    type: 'pptGen' as NodeType,
+    title: 'PPT',
+    description: 'AI 智能生成演示文稿',
+    icon: Presentation,
+    accentColor: '#f59e0b',
   },
 ];
 

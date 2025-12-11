@@ -28,6 +28,9 @@ import SpriteNode from "./nodes/SpriteNode";
 import SuperAgentNode from "./nodes/SuperAgentNode";
 import TTSGenNode from "./nodes/TTSGenNode";
 import TTSNode from "./nodes/TTSNode";
+import PPTGenNode from "./nodes/PPTGenNode";
+import PPTEditorNode from "./nodes/PPTEditorNode";
+import PPTNode from "./nodes/PPTNode";
 import ImageModal from "./ImageModal";
 import NodeToolbar, { type NodeType } from "./NodeToolbar";
 import CanvasContextMenu from "./CanvasContextMenu";
@@ -69,6 +72,9 @@ const nodeTypes = {
   superAgent: SuperAgentNode as any,
   ttsGen: TTSGenNode as any,
   tts: TTSNode as any,
+  pptGen: PPTGenNode as any,
+  pptEditor: PPTEditorNode as any,
+  ppt: PPTNode as any,
 };
 
 const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";

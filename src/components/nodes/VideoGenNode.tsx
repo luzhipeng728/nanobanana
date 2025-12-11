@@ -500,7 +500,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
                 }`}
               >
                 <Wand2 className="w-2.5 h-2.5" />
-                AI {connectedImagesCount > 0 ? "分镜" : "优化"} {useAiEnhance ? "开" : "关"}
+                AI 优化 {useAiEnhance ? "开" : "关"}
               </button>
             )}
           </div>
@@ -520,13 +520,13 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
         {/* 快捷提示词 - 图生视频模式 */}
         {connectedImagesCount > 0 && !isVeoModel && (
           <div className="space-y-1.5">
-            <NodeLabel className="text-[10px] text-neutral-500">快捷提示</NodeLabel>
+            <NodeLabel className="text-[10px] text-neutral-500">快捷动作</NodeLabel>
             <div className="flex flex-wrap gap-1">
               {[
-                { label: "🎬 分镜转写实", text: "这是一个分镜故事板，请转化为写实风格的电影视频，人物要真实自然，有流畅的动作" },
-                { label: "🗣️ 带对白", text: "分镜图中有对白文字，请让人物自然地说话，嘴唇动作配合表情" },
-                { label: "✨ 动态场景", text: "让画面中的元素都动起来：头发飘动、衣服摆动、光影变化、环境粒子" },
-                { label: "🎭 情绪表演", text: "注重人物的表情变化和情绪演绎，从细微的眼神到明显的情绪转变" },
+                { label: "😊 微笑转头", text: "她缓缓转头看向镜头，嘴角浮现出温暖的微笑，眼神中带着一丝好奇" },
+                { label: "💨 风吹发丝", text: "微风拂过，发丝轻轻飘动，衣角微微摆动，阳光在发间闪烁" },
+                { label: "👀 眼神变化", text: "眼神从远方慢慢聚焦到镜头，瞳孔微微放大，流露出惊喜的神情" },
+                { label: "🚶 走动靠近", text: "她迈步向前走来，步伐轻盈自然，越来越近，表情从平静变得明亮" },
               ].map((item) => (
                 <button
                   key={item.label}
@@ -586,7 +586,7 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
                   ? "bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600"
                   : "bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600"
               }`}>
-                {currentStep || (isVeoModel ? "Claude Vision 分析中" : "AI 分镜分析中")}
+                {currentStep || (isVeoModel ? "Claude Vision 分析中" : "AI 导演构思中")}
               </span>
             </div>
 

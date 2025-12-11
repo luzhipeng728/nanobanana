@@ -278,6 +278,125 @@ body {
   animation: cursor-blink 1s step-end infinite;
 }
 
+/* 终端光标闪烁 */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* ========================================
+   Liquid Chrome - 金属光泽效果
+   ======================================== */
+
+/* 金属光泽文字扫过动画 */
+@keyframes shimmer-sweep {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* 金属质感文字 */
+.text-chrome {
+  background: linear-gradient(
+    90deg,
+    #71717a 0%,
+    #a1a1aa 20%,
+    #d4d4d8 35%,
+    #fafafa 50%,
+    #d4d4d8 65%,
+    #a1a1aa 80%,
+    #71717a 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-sweep 3s linear infinite;
+}
+
+/* 金属光泽卡片边框扫过 */
+@keyframes border-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.border-chrome {
+  background: linear-gradient(
+    90deg,
+    rgba(212, 212, 216, 0.3) 0%,
+    rgba(250, 250, 250, 0.8) 25%,
+    rgba(212, 212, 216, 0.3) 50%,
+    rgba(250, 250, 250, 0.8) 75%,
+    rgba(212, 212, 216, 0.3) 100%
+  );
+  background-size: 200% 100%;
+  animation: border-shimmer 4s ease-in-out infinite;
+}
+
+/* 玻璃拟态效果 */
+.glass-panel {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(250, 250, 250, 0.7) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 4px 24px -1px rgba(0, 0, 0, 0.05),
+    0 2px 8px -1px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+}
+
+/* 内部高光效果 */
+.inner-glow {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+}
+
+/* 流动光线动画 */
+@keyframes light-flow {
+  0% { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
+}
+
+.light-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%) skewX(-15deg);
+  animation: light-flow 3s ease-in-out infinite;
+}
+
+/* 柔和脉冲光晕 */
+@keyframes soft-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.02); }
+}
+
+.pulse-glow {
+  animation: soft-pulse 2s ease-in-out infinite;
+}
+
 /* 波浪动画（用于音频可视化风格的指示器）*/
 @keyframes wave {
   0%, 100% { transform: scaleY(0.5); }
@@ -446,4 +565,209 @@ body {
 
 .animate-slide-in-right {
   animation: slide-in-right 0.2s ease-out forwards;
+}
+
+/* ========================================
+   PPT Generator - Liquid Mercury 美学
+   ======================================== */
+
+/* 全息彩虹边框 - 用于活跃状态 */
+@keyframes holographic-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  25% {
+    background-position: 50% 100%;
+    filter: hue-rotate(45deg);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(90deg);
+  }
+  75% {
+    background-position: 50% 0%;
+    filter: hue-rotate(45deg);
+  }
+}
+
+.holographic-border {
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.4) 0%,
+    rgba(59, 130, 246, 0.4) 25%,
+    rgba(16, 185, 129, 0.3) 50%,
+    rgba(245, 158, 11, 0.3) 75%,
+    rgba(139, 92, 246, 0.4) 100%
+  );
+  background-size: 300% 300%;
+  animation: holographic-shift 6s ease-in-out infinite;
+}
+
+/* 数据流脉冲 - 工具运行时 */
+@keyframes data-pulse {
+  0% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+.data-flow-pulse::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.3) 30%,
+    rgba(168, 85, 247, 0.5) 50%,
+    rgba(139, 92, 246, 0.3) 70%,
+    transparent 100%
+  );
+  transform-origin: left center;
+  animation: data-pulse 2s ease-out infinite;
+}
+
+/* 水银反射效果 */
+@keyframes mercury-reflect {
+  0%, 100% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+}
+
+.mercury-surface {
+  background: linear-gradient(
+    145deg,
+    rgba(250, 250, 250, 0.95) 0%,
+    rgba(228, 228, 231, 0.8) 30%,
+    rgba(244, 244, 245, 0.9) 50%,
+    rgba(228, 228, 231, 0.7) 70%,
+    rgba(250, 250, 250, 0.9) 100%
+  );
+  background-size: 200% 200%;
+  animation: mercury-reflect 8s ease-in-out infinite;
+}
+
+/* 消息滑入动画 - 交错效果 */
+@keyframes message-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-12px) scale(0.96);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-message-in {
+  animation: message-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 工具图标旋转 */
+@keyframes tool-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-tool-spin {
+  animation: tool-spin 2s linear infinite;
+}
+
+/* 微妙的噪点纹理叠加 */
+.noise-texture {
+  position: relative;
+}
+
+.noise-texture::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* PPT 预览卡片悬浮效果 */
+@keyframes preview-float {
+  0%, 100% {
+    transform: translateY(0) rotateX(0);
+    box-shadow:
+      0 10px 30px -10px rgba(139, 92, 246, 0.2),
+      0 5px 15px -5px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    transform: translateY(-2px) rotateX(1deg);
+    box-shadow:
+      0 15px 40px -10px rgba(139, 92, 246, 0.25),
+      0 8px 20px -5px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.preview-card-float {
+  animation: preview-float 4s ease-in-out infinite;
+}
+
+/* 流光边框 - 用于 PPT 预览 */
+@keyframes border-flow {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+
+.flowing-border {
+  background: linear-gradient(
+    90deg,
+    rgba(139, 92, 246, 0.3) 0%,
+    rgba(59, 130, 246, 0.5) 25%,
+    rgba(139, 92, 246, 0.3) 50%,
+    rgba(168, 85, 247, 0.5) 75%,
+    rgba(139, 92, 246, 0.3) 100%
+  );
+  background-size: 200% 100%;
+  animation: border-flow 3s linear infinite;
+}
+
+/* 输入框焦点光晕 */
+@keyframes input-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+  }
+}
+
+.input-focus-glow:focus {
+  animation: input-glow 2s ease-in-out infinite;
+}
+
+/* 发送按钮脉冲 */
+@keyframes send-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 6px rgba(139, 92, 246, 0);
+  }
+}
+
+.send-button-ready {
+  animation: send-pulse 2s ease-in-out infinite;
 }

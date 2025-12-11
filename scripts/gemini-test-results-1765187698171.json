@@ -1,0 +1,1032 @@
+{
+  "config": {
+    "baseUrl": "http://104.194.9.201:8020",
+    "apiKey": "sk-chatify-MoLu154!",
+    "model": "gemini-3-pro-preview"
+  },
+  "concurrency": 100,
+  "totalDuration": 317765,
+  "avgAttempts": 1.04,
+  "summary": {
+    "promptTokenCount": {
+      "total": 900,
+      "avg": 9
+    },
+    "candidatesTokenCount": {
+      "total": 40,
+      "avg": 0.4
+    },
+    "thoughtsTokenCount": {
+      "total": 105075,
+      "avg": 1050.75
+    },
+    "totalTokenCount": {
+      "total": 106015,
+      "avg": 1060.15
+    }
+  },
+  "results": [
+    {
+      "id": 1,
+      "attempts": 2,
+      "duration": 36372,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1084,
+        "totalTokenCount": 1093
+      }
+    },
+    {
+      "id": 2,
+      "attempts": 1,
+      "duration": 27277,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 3,
+      "attempts": 1,
+      "duration": 15022,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 4,
+      "attempts": 1,
+      "duration": 18028,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 5,
+      "attempts": 1,
+      "duration": 132715,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1658,
+        "totalTokenCount": 1667
+      }
+    },
+    {
+      "id": 6,
+      "attempts": 1,
+      "duration": 15851,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 7,
+      "attempts": 1,
+      "duration": 27651,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 8,
+      "attempts": 1,
+      "duration": 18831,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 9,
+      "attempts": 1,
+      "duration": 209873,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 10,
+      "attempts": 1,
+      "duration": 209693,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 11,
+      "attempts": 1,
+      "duration": 15828,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 12,
+      "attempts": 1,
+      "duration": 15573,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 13,
+      "attempts": 1,
+      "duration": 14645,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 14,
+      "attempts": 1,
+      "duration": 46965,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1756,
+        "totalTokenCount": 1765
+      }
+    },
+    {
+      "id": 15,
+      "attempts": 1,
+      "duration": 210072,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 16,
+      "attempts": 1,
+      "duration": 15841,
+      "usageMetadata": {
+        "candidatesTokenCount": 27,
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 995,
+        "totalTokenCount": 1031
+      }
+    },
+    {
+      "id": 17,
+      "attempts": 1,
+      "duration": 17137,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 18,
+      "attempts": 1,
+      "duration": 13714,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 19,
+      "attempts": 1,
+      "duration": 16025,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 20,
+      "attempts": 1,
+      "duration": 14640,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 21,
+      "attempts": 1,
+      "duration": 16035,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 22,
+      "attempts": 1,
+      "duration": 15571,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 23,
+      "attempts": 1,
+      "duration": 15624,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 24,
+      "attempts": 1,
+      "duration": 15860,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 25,
+      "attempts": 1,
+      "duration": 15283,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 26,
+      "attempts": 1,
+      "duration": 27698,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 27,
+      "attempts": 1,
+      "duration": 15653,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 28,
+      "attempts": 1,
+      "duration": 15574,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 29,
+      "attempts": 1,
+      "duration": 14851,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 30,
+      "attempts": 1,
+      "duration": 133752,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 31,
+      "attempts": 1,
+      "duration": 14961,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 32,
+      "attempts": 2,
+      "duration": 17441,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 33,
+      "attempts": 2,
+      "duration": 317751,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 34,
+      "attempts": 1,
+      "duration": 210548,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 35,
+      "attempts": 1,
+      "duration": 16132,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 36,
+      "attempts": 1,
+      "duration": 19090,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 37,
+      "attempts": 1,
+      "duration": 16033,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 38,
+      "attempts": 1,
+      "duration": 133222,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 39,
+      "attempts": 1,
+      "duration": 22148,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1274,
+        "totalTokenCount": 1283
+      }
+    },
+    {
+      "id": 40,
+      "attempts": 1,
+      "duration": 16321,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 41,
+      "attempts": 1,
+      "duration": 27849,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 42,
+      "attempts": 1,
+      "duration": 27952,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 43,
+      "attempts": 1,
+      "duration": 32058,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1654,
+        "totalTokenCount": 1663
+      }
+    },
+    {
+      "id": 44,
+      "attempts": 1,
+      "duration": 14851,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 45,
+      "attempts": 1,
+      "duration": 14635,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 46,
+      "attempts": 1,
+      "duration": 14638,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 47,
+      "attempts": 1,
+      "duration": 16319,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 48,
+      "attempts": 1,
+      "duration": 14901,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 49,
+      "attempts": 1,
+      "duration": 15226,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 50,
+      "attempts": 1,
+      "duration": 209091,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 51,
+      "attempts": 1,
+      "duration": 14487,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 52,
+      "attempts": 1,
+      "duration": 14575,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 53,
+      "attempts": 1,
+      "duration": 15814,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 54,
+      "attempts": 1,
+      "duration": 16581,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 55,
+      "attempts": 1,
+      "duration": 14012,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 56,
+      "attempts": 1,
+      "duration": 116891,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 57,
+      "attempts": 1,
+      "duration": 19644,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1038,
+        "totalTokenCount": 1047
+      }
+    },
+    {
+      "id": 58,
+      "attempts": 1,
+      "duration": 15858,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 59,
+      "attempts": 1,
+      "duration": 15065,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 60,
+      "attempts": 1,
+      "duration": 15568,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 61,
+      "attempts": 1,
+      "duration": 209589,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 62,
+      "attempts": 1,
+      "duration": 15422,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 63,
+      "attempts": 1,
+      "duration": 34451,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 64,
+      "attempts": 1,
+      "duration": 15422,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 65,
+      "attempts": 1,
+      "duration": 16314,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 66,
+      "attempts": 1,
+      "duration": 15272,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 67,
+      "attempts": 1,
+      "duration": 14900,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 68,
+      "attempts": 1,
+      "duration": 15428,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 69,
+      "attempts": 1,
+      "duration": 15066,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 70,
+      "attempts": 1,
+      "duration": 15226,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 71,
+      "attempts": 1,
+      "duration": 14634,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 72,
+      "attempts": 1,
+      "duration": 31033,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1455,
+        "totalTokenCount": 1464
+      }
+    },
+    {
+      "id": 73,
+      "attempts": 1,
+      "duration": 116016,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 74,
+      "attempts": 1,
+      "duration": 16570,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 75,
+      "attempts": 2,
+      "duration": 21078,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 76,
+      "attempts": 1,
+      "duration": 14303,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 77,
+      "attempts": 1,
+      "duration": 15086,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 78,
+      "attempts": 1,
+      "duration": 15086,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 79,
+      "attempts": 1,
+      "duration": 16212,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 80,
+      "attempts": 1,
+      "duration": 15837,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 81,
+      "attempts": 1,
+      "duration": 14524,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 82,
+      "attempts": 1,
+      "duration": 19641,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 83,
+      "attempts": 1,
+      "duration": 209657,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 84,
+      "attempts": 1,
+      "duration": 133763,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 85,
+      "attempts": 1,
+      "duration": 15815,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 86,
+      "attempts": 1,
+      "duration": 132469,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 87,
+      "attempts": 1,
+      "duration": 14641,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 88,
+      "attempts": 1,
+      "duration": 209296,
+      "usageMetadata": {
+        "candidatesTokenCount": 13,
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1009,
+        "totalTokenCount": 1031
+      }
+    },
+    {
+      "id": 89,
+      "attempts": 1,
+      "duration": 15844,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 90,
+      "attempts": 1,
+      "duration": 15295,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 91,
+      "attempts": 1,
+      "duration": 14644,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 92,
+      "attempts": 1,
+      "duration": 15294,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 93,
+      "attempts": 1,
+      "duration": 15016,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 94,
+      "attempts": 1,
+      "duration": 26363,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1082,
+        "totalTokenCount": 1091
+      }
+    },
+    {
+      "id": 95,
+      "attempts": 1,
+      "duration": 15422,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 96,
+      "attempts": 1,
+      "duration": 15822,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 97,
+      "attempts": 1,
+      "duration": 133968,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 98,
+      "attempts": 1,
+      "duration": 14485,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 99,
+      "attempts": 1,
+      "duration": 209453,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    },
+    {
+      "id": 100,
+      "attempts": 1,
+      "duration": 117505,
+      "usageMetadata": {
+        "promptTokenCount": 9,
+        "thoughtsTokenCount": 1023,
+        "totalTokenCount": 1032
+      }
+    }
+  ]
+}
