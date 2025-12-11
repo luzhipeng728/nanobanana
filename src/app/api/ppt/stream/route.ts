@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { query } from "@anthropic-ai/claude-agent-sdk";
+import { readFile, access, constants } from "fs/promises";
+import { uploadBufferToR2 } from "@/lib/r2";
 
 const prisma = new PrismaClient();
 
@@ -325,12 +327,41 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        // 尝试找到并上传 PPTX 文件到 R2
+        let r2Url: string | undefined;
+        let previewUrl: string | undefined;
+        const projectDir = process.cwd();
+        const expectedPath = `${projectDir}/public/ppt/${task.id}/presentation.pptx`;
+
+        // 如果没有解析到路径，使用预期路径
+        const localPath = pptFilePath || expectedPath;
+
+        try {
+          await access(localPath, constants.R_OK);
+          sendEvent("status", { message: "📤 上传 PPT 到云存储..." });
+
+          const fileBuffer = await readFile(localPath);
+          r2Url = await uploadBufferToR2(
+            fileBuffer,
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "ppt"
+          );
+
+          // 生成 Office Online 预览链接
+          if (r2Url) {
+            previewUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(r2Url)}`;
+            console.log(`[PPT Task ${task.id}] Uploaded to R2: ${r2Url}`);
+          }
+        } catch (e) {
+          console.warn(`[PPT Task ${task.id}] Failed to upload to R2:`, e);
+        }
+
         // 更新数据库
         await prisma.pPTTask.update({
           where: { id: task.id },
           data: {
             status: "completed",
-            pptUrl: pptFilePath,
+            pptUrl: r2Url || pptFilePath || expectedPath,
             slides: JSON.stringify(slides),
             completedAt: new Date(),
             updatedAt: new Date(),
@@ -341,7 +372,9 @@ export async function POST(request: NextRequest) {
         sendEvent("completed", {
           taskId: task.id,
           slides,
-          pptUrl: pptFilePath,
+          pptUrl: r2Url || pptFilePath,
+          previewUrl,
+          downloadUrl: r2Url,
           message: `🎉 PPT 生成完成！共 ${slides.length} 张幻灯片`,
         });
 
@@ -419,14 +452,23 @@ function buildPPTPrompt(
   // 明确指示使用 Skill 工具调用 pptx 技能
   const prompt = `请帮我创建一个专业的 PowerPoint 演示文稿。
 
-**重要指示：**
-1. 先用 Bash 创建输出目录：mkdir -p ${pptDir}
-2. 然后使用 Skill 工具调用 pptx 技能来生成 PPT
+**⚠️ 关键环境说明（必读）：**
+- pptxgenjs、sharp 已全局安装，**禁止运行 npm install**
+- **运行脚本时必须设置 NODE_PATH**：
+  \`NODE_PATH=/root/.nvm/versions/node/v22.19.0/lib/node_modules node create-ppt.js\`
+- 使用纯 pptxgenjs API 构建 PPT（不要使用 html2pptx，它需要 playwright 浏览器环境）
 
-PPT 需求规范：
+**执行步骤：**
+1. mkdir -p ${pptDir}
+2. 使用 Skill 工具调用 pptx 技能
+3. 编写 create-ppt.js（直接用 pptxgenjs API，不要 html2pptx）
+4. **运行脚本**: \`cd ${pptDir} && NODE_PATH=/root/.nvm/versions/node/v22.19.0/lib/node_modules node create-ppt.js\`
+5. 确认 presentation.pptx 已生成
+
+**PPT 需求规范：**
 ${contentSpec}
 
-输出路径：${outputPath}
+**输出路径：** ${outputPath}
 
 请开始执行。`;
 

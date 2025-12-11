@@ -3,7 +3,7 @@
 import { memo, useState, useCallback, useEffect, useRef } from "react";
 import { Handle, Position, NodeProps, useReactFlow, useStore, addEdge } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
-import { Loader2, Presentation, Link2, Palette, Sparkles, Send, Download, RefreshCw } from "lucide-react";
+import { Loader2, Presentation, Link2, Palette, Sparkles, Send, Download, RefreshCw, Eye, ExternalLink } from "lucide-react";
 import { NodeTextarea, NodeLabel, NodeButton, NodeTabSelect } from "@/components/ui/NodeUI";
 import { GeneratorNodeLayout } from "./GeneratorNodeLayout";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
@@ -68,6 +68,8 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   // PPT 预览状态
   const [slides, setSlides] = useState<SlidePreview[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -346,6 +348,12 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                     setSlides(data.slides);
                     setCurrentSlide(0);
                   }
+                  if (data.previewUrl) {
+                    setPreviewUrl(data.previewUrl);
+                  }
+                  if (data.downloadUrl) {
+                    setDownloadUrl(data.downloadUrl);
+                  }
                   addMessage({
                     type: "completed",
                     role: "system",
@@ -404,6 +412,8 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     setSessionId(null);
     setTaskId(null);
     setCurrentSlide(0);
+    setPreviewUrl(null);
+    setDownloadUrl(null);
   }, []);
 
   // 键盘事件
@@ -434,8 +444,21 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         onTouchEnd={handleTouchEnd}
         headerActions={
           <div className="flex items-center gap-1">
-            {taskId && (
-              <button onClick={downloadPPT} className="p-1 rounded hover:bg-purple-100" title="下载">
+            {previewUrl && (
+              <button
+                onClick={() => window.open(previewUrl, "_blank")}
+                className="p-1 rounded hover:bg-purple-100"
+                title="在线预览"
+              >
+                <Eye className="w-3.5 h-3.5 text-purple-600" />
+              </button>
+            )}
+            {downloadUrl && (
+              <button
+                onClick={() => window.open(downloadUrl, "_blank")}
+                className="p-1 rounded hover:bg-purple-100"
+                title="下载 PPT"
+              >
                 <Download className="w-3.5 h-3.5 text-purple-600" />
               </button>
             )}
@@ -764,6 +787,30 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   下一页
                 </button>
               </div>
+
+              {/* 预览和下载按钮 */}
+              {(previewUrl || downloadUrl) && (
+                <div className="flex items-center justify-center gap-2 mt-2.5 pt-2.5 border-t border-zinc-200/40">
+                  {previewUrl && (
+                    <button
+                      onClick={() => window.open(previewUrl, "_blank")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-semibold rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 transition-all shadow-md shadow-purple-200/50"
+                    >
+                      <Eye className="w-3 h-3" />
+                      在线预览
+                    </button>
+                  )}
+                  {downloadUrl && (
+                    <button
+                      onClick={() => window.open(downloadUrl, "_blank")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-semibold rounded-lg bg-gradient-to-br from-zinc-100 to-zinc-200 hover:from-zinc-200 hover:to-zinc-300 transition-all border border-zinc-200/60 shadow-sm"
+                    >
+                      <Download className="w-3 h-3" />
+                      下载 PPT
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

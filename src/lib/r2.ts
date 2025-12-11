@@ -33,6 +33,10 @@ export async function uploadBufferToR2(buffer: Buffer, contentType: string = "im
   else if (contentType.includes("ogg")) ext = "ogg";
   else if (contentType.includes("mp4")) ext = "mp4";
   else if (contentType.includes("webm")) ext = "webm";
+  else if (contentType.includes("presentationml") || contentType.includes("pptx")) ext = "pptx";
+  else if (contentType.includes("wordprocessingml") || contentType.includes("docx")) ext = "docx";
+  else if (contentType.includes("spreadsheetml") || contentType.includes("xlsx")) ext = "xlsx";
+  else if (contentType.includes("pdf")) ext = "pdf";
 
   const fileName = `nanobanana/${folder}/${uuidv4()}.${ext}`;
 
