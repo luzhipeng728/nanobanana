@@ -52,6 +52,10 @@ export async function POST(request: NextRequest) {
       // 标志：控制器是否已关闭
       let isClosed = false;
 
+      // 心跳定时器（每 30 秒发送一次，防止 Cloudflare 100s 超时）
+      let heartbeatTimer: NodeJS.Timeout | null = null;
+      let heartbeatCount = 0;
+
       // 发送 SSE 消息的辅助函数（带关闭检查）
       const sendEvent = (type: string, data: any) => {
         if (isClosed) return; // 如果已关闭，忽略发送
@@ -64,8 +68,31 @@ export async function POST(request: NextRequest) {
         }
       };
 
+      // 启动心跳定时器
+      const startHeartbeat = () => {
+        heartbeatTimer = setInterval(() => {
+          if (!isClosed) {
+            heartbeatCount++;
+            sendEvent("heartbeat", {
+              count: heartbeatCount,
+              elapsed: heartbeatCount * 30,
+              message: `⏳ 正在处理中... (已运行 ${heartbeatCount * 30}s)`
+            });
+          }
+        }, 30000); // 每 30 秒发送一次心跳
+      };
+
+      // 停止心跳定时器
+      const stopHeartbeat = () => {
+        if (heartbeatTimer) {
+          clearInterval(heartbeatTimer);
+          heartbeatTimer = null;
+        }
+      };
+
       // 安全关闭控制器
       const safeClose = () => {
+        stopHeartbeat(); // 先停止心跳
         if (!isClosed) {
           isClosed = true;
           try {
@@ -91,6 +118,9 @@ export async function POST(request: NextRequest) {
 
         sendEvent("task_created", { taskId: task.id });
         sendEvent("status", { message: "🚀 启动 Claude Agent..." });
+
+        // 启动心跳定时器（防止 Cloudflare 超时）
+        startHeartbeat();
 
         // 构建 prompt
         const isFollowUp = !!existingSessionId;

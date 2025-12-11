@@ -90,6 +90,7 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
+  const [heartbeatInfo, setHeartbeatInfo] = useState<{ elapsed: number; message: string } | null>(null);
 
   // PPT 版本状态
   const [pptVersions, setPptVersions] = useState<PPTVersion[]>([]);
@@ -412,6 +413,14 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                     isError: true,
                   });
                   break;
+
+                case "heartbeat":
+                  // 更新心跳信息（用于显示等待时间）
+                  setHeartbeatInfo({
+                    elapsed: data.elapsed,
+                    message: data.message,
+                  });
+                  break;
               }
             } catch (e) {
               if (e instanceof SyntaxError) continue;
@@ -427,6 +436,7 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
       }
     } finally {
       setIsGenerating(false);
+      setHeartbeatInfo(null); // 清除心跳信息
     }
   }, [theme, description, template, primaryColor, isGenerating, sessionId, id, getConnectedImageNodes, addMessage, updateLastStreamMessage, finishStreamMessage]);
 
@@ -580,6 +590,22 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   )}
                 </div>
               </div>
+
+              {/* 心跳等待指示器 */}
+              {isGenerating && heartbeatInfo && (
+                <div className="px-3 py-2 bg-gradient-to-r from-amber-50/80 via-orange-50/60 to-amber-50/80 border-b border-amber-200/40">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" style={{ animationDelay: '0.2s' }} />
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" style={{ animationDelay: '0.4s' }} />
+                    </div>
+                    <span className="text-[10px] font-medium text-amber-700">
+                      {heartbeatInfo.message}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* 消息流 - 添加交错动画 */}
               <div className="max-h-72 overflow-y-auto p-2.5 space-y-2">
