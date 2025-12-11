@@ -111,6 +111,8 @@ export async function POST(request: NextRequest) {
 
         // 构建查询选项
         const queryOptions: any = {
+          // 使用 Claude Opus 4.5 模型（最强大的模型）
+          model: "claude-opus-4-5-20251101",
           // 加载项目和用户设置（包括 skills）
           settingSources: ["project", "user"],
           // 显式加载 document-skills 插件
@@ -121,8 +123,8 @@ export async function POST(request: NextRequest) {
           allowedTools: ["Skill", "Write", "Read", "Bash", "Edit", "Glob", "Grep", "WebSearch", "WebFetch"],
           // 权限模式：自动接受编辑
           permissionMode: "acceptEdits",
-          // 最大轮数
-          maxTurns: 30,
+          // 不限制轮数，让 Agent 完成任务（设置一个很大的数）
+          maxTurns: 200,
           // 包含流式消息
           includePartialMessages: true,
           // 工作目录
