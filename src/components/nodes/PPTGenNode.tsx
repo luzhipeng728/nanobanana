@@ -476,7 +476,7 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         icon={Presentation}
         color="purple"
         selected={selected}
-        className="w-[360px]"
+        className="w-[640px]"
         isGenerating={isGenerating}
         onGenerate={() => onGenerate()}
         generateButtonText={agentMessages.length > 0 ? "重新生成" : "生成 PPT"}
@@ -582,7 +582,7 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
               </div>
 
               {/* 消息流 - 添加交错动画 */}
-              <div className="max-h-44 overflow-y-auto p-2.5 space-y-2">
+              <div className="max-h-72 overflow-y-auto p-2.5 space-y-2">
                 {agentMessages.map((msg, idx) => {
                   const isLast = idx === agentMessages.length - 1;
                   const isActive = msg.isStreaming && isLast;
