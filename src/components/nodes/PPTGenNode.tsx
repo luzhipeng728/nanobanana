@@ -61,6 +61,17 @@ interface SlidePreview {
   layout: string;
 }
 
+// PPT 版本类型
+interface PPTVersion {
+  id: string;           // taskId
+  version: number;      // 版本号
+  previewUrl: string;   // Office Online 预览链接
+  downloadUrl: string;  // R2 下载链接
+  createdAt: number;    // 创建时间戳
+  description: string;  // 版本描述（用户输入的主题或修改需求）
+  slides: SlidePreview[]; // 该版本的幻灯片
+}
+
 const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { getConnectedImageNodes } = useCanvas();
   const { getNode, setNodes, setEdges } = useReactFlow();
@@ -80,11 +91,16 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
 
-  // PPT 预览状态
-  const [slides, setSlides] = useState<SlidePreview[]>([]);
+  // PPT 版本状态
+  const [pptVersions, setPptVersions] = useState<PPTVersion[]>([]);
+  const [currentVersionIndex, setCurrentVersionIndex] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+
+  // 当前版本的便捷访问
+  const currentVersion = pptVersions[currentVersionIndex] || null;
+  const slides = currentVersion?.slides || [];
+  const previewUrl = currentVersion?.previewUrl || null;
+  const downloadUrl = currentVersion?.downloadUrl || null;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -235,7 +251,8 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     setIsGenerating(true);
     if (!customPrompt) {
       setAgentMessages([]);
-      setSlides([]);
+      // 重置版本时会清除 slides（因为 slides 从 currentVersion 派生）
+      // 但保留版本历史，以便对比
     }
 
     // 添加用户消息
@@ -359,20 +376,31 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   break;
 
                 case "completed":
-                  if (data.slides) {
-                    setSlides(data.slides);
-                    setCurrentSlide(0);
-                  }
-                  if (data.previewUrl) {
-                    setPreviewUrl(data.previewUrl);
-                  }
-                  if (data.downloadUrl) {
-                    setDownloadUrl(data.downloadUrl);
+                  // 添加新版本到版本列表
+                  if (data.previewUrl || data.downloadUrl) {
+                    setPptVersions(prev => {
+                      const newVersion: PPTVersion = {
+                        id: data.taskId || `v${prev.length + 1}`,
+                        version: prev.length + 1,
+                        previewUrl: data.previewUrl || "",
+                        downloadUrl: data.downloadUrl || data.pptUrl || "",
+                        createdAt: Date.now(),
+                        description: prev.length === 0
+                          ? (theme || "初始版本")
+                          : (chatInput || `优化版本 ${prev.length + 1}`),
+                        slides: data.slides || [],
+                      };
+                      const updated = [...prev, newVersion];
+                      // 自动切换到最新版本
+                      setCurrentVersionIndex(updated.length - 1);
+                      setCurrentSlide(0);
+                      return updated;
+                    });
                   }
                   addMessage({
                     type: "completed",
                     role: "system",
-                    content: `✅ PPT 生成完成！共 ${data.slides?.length || 0} 页`,
+                    content: `✅ PPT 生成完成！共 ${data.slides?.length || 0} 页（版本 ${pptVersions.length + 1}）`,
                   });
                   break;
 
@@ -423,12 +451,11 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   // 重置
   const resetChat = useCallback(() => {
     setAgentMessages([]);
-    setSlides([]);
+    setPptVersions([]);
+    setCurrentVersionIndex(0);
     setSessionId(null);
     setTaskId(null);
     setCurrentSlide(0);
-    setPreviewUrl(null);
-    setDownloadUrl(null);
   }, []);
 
   // 键盘事件
@@ -805,6 +832,41 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   下一页
                 </button>
               </div>
+
+              {/* 版本选择器 */}
+              {pptVersions.length > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-2.5 pt-2.5 border-t border-zinc-200/40">
+                  <span className="text-[9px] text-zinc-500">版本:</span>
+                  <div className="flex items-center gap-1">
+                    {pptVersions.map((v, idx) => (
+                      <button
+                        key={v.id}
+                        onClick={() => {
+                          setCurrentVersionIndex(idx);
+                          setCurrentSlide(0);
+                        }}
+                        title={`${v.description} (${new Date(v.createdAt).toLocaleTimeString()})`}
+                        className={cn(
+                          "min-w-[24px] h-6 px-1.5 text-[9px] font-semibold rounded-md transition-all",
+                          idx === currentVersionIndex
+                            ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-md"
+                            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                        )}
+                      >
+                        V{v.version}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 当前版本信息 */}
+              {currentVersion && pptVersions.length > 0 && (
+                <div className="text-center text-[8px] text-zinc-400 mt-1">
+                  {currentVersion.description}
+                  {pptVersions.length > 1 && ` · ${new Date(currentVersion.createdAt).toLocaleTimeString()}`}
+                </div>
+              )}
 
               {/* 预览和下载按钮 */}
               {(previewUrl || downloadUrl) && (

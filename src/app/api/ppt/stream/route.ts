@@ -94,8 +94,19 @@ export async function POST(request: NextRequest) {
 
         // 构建 prompt
         const isFollowUp = !!existingSessionId;
+        const projectDir = process.cwd();
+        const pptDir = `${projectDir}/public/ppt/${task.id}`;
+        const outputPath = `${pptDir}/presentation.pptx`;
+
         const userPrompt = isFollowUp
-          ? `用户追加需求：${topic}\n\n请根据之前的 PPT 进行修改。`
+          ? `用户追加需求：${topic}
+
+**重要：修改后的 PPT 必须保存到新路径！**
+
+1. 先创建目录：\`mkdir -p "${pptDir}"\`
+2. 修改后的 PPT 保存到：\`${outputPath}\`
+
+请根据之前的 PPT 内容进行修改，并将最终结果保存到上述新路径。`
           : buildPPTPrompt(topic, description, template, primaryColor, materials, task.id);
 
         console.log(`[PPT Task ${task.id}] ${isFollowUp ? "Continuing" : "Starting"} with Claude Agent SDK...`);
@@ -332,8 +343,8 @@ export async function POST(request: NextRequest) {
         // 尝试找到并上传 PPTX 文件到 R2
         let r2Url: string | undefined;
         let previewUrl: string | undefined;
-        const projectDir = process.cwd();
-        const expectedPath = `${projectDir}/public/ppt/${task.id}/presentation.pptx`;
+        // projectDir, pptDir, outputPath 已在前面定义
+        const expectedPath = outputPath;
 
         // 如果没有解析到路径，使用预期路径
         const localPath = pptFilePath || expectedPath;
