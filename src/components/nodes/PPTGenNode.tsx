@@ -4,11 +4,26 @@ import { memo, useState, useCallback, useEffect, useRef } from "react";
 import { Handle, Position, NodeProps, useReactFlow, useStore, addEdge } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { Loader2, Presentation, Link2, Palette, Sparkles, Send, Download, RefreshCw, Eye, ExternalLink } from "lucide-react";
+import { Streamdown } from "streamdown";
 import { NodeTextarea, NodeLabel, NodeButton, NodeTabSelect } from "@/components/ui/NodeUI";
 import { GeneratorNodeLayout } from "./GeneratorNodeLayout";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { useTouchContextMenu, createNodeMenuOptions } from "@/components/TouchContextMenu";
 import { cn } from "@/lib/utils";
+
+// Helper function to normalize markdown content
+const normalizeMarkdown = (content: string) => {
+  let normalized = content;
+  // Replace unsupported language tags
+  normalized = normalized.replace(/```prompt\b/g, "```text");
+  // Remove excessive blank lines (more than 2 consecutive newlines)
+  normalized = normalized.replace(/\n{3,}/g, "\n\n");
+  // Trim leading/trailing whitespace from each line while preserving structure
+  normalized = normalized.split("\n").map(line => line.trimEnd()).join("\n");
+  // Remove [Image #X] placeholders as we show images separately
+  normalized = normalized.replace(/\[Image #\d+\](?::\s*)?/g, "");
+  return normalized.trim();
+};
 
 // PPT 模板类型
 type PPTTemplate = "business" | "tech" | "minimal" | "creative";
@@ -575,23 +590,26 @@ const PPTGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                         </div>
                       )}
 
-                      {/* 助手输出 */}
+                      {/* 助手输出 - Markdown 渲染 */}
                       {msg.role === "assistant" && !msg.toolName && (
                         <div className="flex justify-start">
                           <div className={cn(
                             "max-w-[90%] px-3 py-2 rounded-2xl rounded-tl-md text-[10px] text-zinc-700",
                             "bg-white border shadow-sm transition-all duration-300 leading-relaxed",
+                            "prose prose-xs prose-zinc max-w-none",
+                            "[&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_pre]:my-1 [&_h1]:text-xs [&_h2]:text-xs [&_h3]:text-[10px]",
+                            "[&_code]:text-[9px] [&_code]:px-1 [&_code]:py-0.5 [&_code]:bg-zinc-100 [&_code]:rounded",
                             isActive
                               ? "border-purple-200/80 shadow-purple-100/50 shadow-md"
                               : "border-zinc-100/80"
                           )}>
                             {msg.isStreaming ? (
-                              <span>
-                                {msg.streamContent || msg.content}
+                              <div>
+                                <Streamdown>{normalizeMarkdown(msg.streamContent || msg.content || "")}</Streamdown>
                                 <span className="inline-block w-0.5 h-3.5 ml-0.5 bg-gradient-to-b from-violet-400 to-purple-600 animate-pulse rounded-full" />
-                              </span>
+                              </div>
                             ) : (
-                              <span>{(msg.content || "").length > 200 ? (msg.content || "").substring(0, 200) + "…" : msg.content}</span>
+                              <Streamdown>{normalizeMarkdown(msg.content || "")}</Streamdown>
                             )}
                           </div>
                         </div>

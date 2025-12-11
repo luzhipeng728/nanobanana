@@ -502,23 +502,34 @@ function buildPPTPrompt(
 
 **⚠️ 重要：模型选择规则（必须遵守，控制成本）**
 
-| 场景 | 模型 | imageSize 参数 | 说明 |
-|------|------|----------------|------|
-| **默认** | \`nano-banana\` | ❌ 不支持 | 封面背景、装饰图、氛围图、抽象图案（快速、低成本） |
-| **特殊** | \`nano-banana-pro\` | \`4K\` | **仅用于**：数据可视化、图表、流程图、带文字的图片 |
+| 场景 | 模型 | imageSize | 说明 |
+|------|------|-----------|------|
+| **默认** | \`nano-banana\` | ❌ 不传 | 封面背景、装饰图、氛围图、抽象纹理（快速、低成本） |
+| **特殊** | \`nano-banana-pro\` | \`4K\` | 见下方详细列表 |
 
-**绝大多数配图都应使用 \`nano-banana\`，只有需要精确文字或复杂图表时才用 \`nano-banana-pro\`！**
+**🔥 必须使用 \`nano-banana-pro\` + \`4K\` 的场景：**
+- 📝 **中文文字图片**：任何包含中文标签、标题、说明的图片
+- 📊 **信息图表**：数据可视化、统计图表、KPI 仪表盘
+- 🔄 **流程图**：步骤说明、工作流程、架构图、时间线
+- 📈 **折线图/柱状图**：趋势图、对比图、数据分析图
+- 🗂️ **组织架构图**：层级结构、团队结构、关系图
+- 🎯 **对比图**：Before/After、优劣对比、方案对比
+- 📋 **表格式图片**：带数据的表格、矩阵图、清单图
+- 🏷️ **带标注的图**：产品功能标注、地图标注、技术架构标注
+- 🎨 **自定义图标**：品牌图标、功能图标、Logo 风格图形
+
+**绝大多数纯装饰图都应使用 \`nano-banana\`，只要涉及文字或复杂图表就用 \`nano-banana-pro\`！**
 
 **API 调用示例：**
 
-1️⃣ **普通配图（默认，大多数情况）—— 不传 imageSize：**
+1️⃣ **普通配图（默认）—— 不传 imageSize：**
 \`\`\`bash
 curl -X POST "${apiBaseUrl}/api/ppt/generate-image" \\
   -H "Content-Type: application/json" \\
   -d '{"prompt": "描述图片内容", "model": "nano-banana", "aspectRatio": "16:9"}'
 \`\`\`
 
-2️⃣ **图表/带文字的图片（仅在需要时）—— 用 pro 模型 + 4K：**
+2️⃣ **带文字/图表（用 pro + 4K）：**
 \`\`\`bash
 curl -X POST "${apiBaseUrl}/api/ppt/generate-image" \\
   -H "Content-Type: application/json" \\
@@ -530,11 +541,13 @@ curl -X POST "${apiBaseUrl}/api/ppt/generate-image" \\
 | 类型 | 模型 | 用途示例 |
 |------|------|----------|
 | 🖼️ 封面背景 | \`nano-banana\` | 大气的主题视觉图、渐变背景、抽象纹理 |
-| 🎨 装饰配图 | \`nano-banana\` | 氛围图、插画风格配图、概念图 |
-| 📊 信息图表 | \`nano-banana-pro\` + 4K | 带文字的数据可视化、统计图表 |
+| 🎨 装饰配图 | \`nano-banana\` | 氛围图、插画风格配图、无文字概念图 |
+| 📝 中文文字图 | \`nano-banana-pro\` + 4K | 带中文标签的任何图片 |
+| 📊 信息图表 | \`nano-banana-pro\` + 4K | 数据可视化、统计图、KPI 面板 |
 | 🔄 流程图 | \`nano-banana-pro\` + 4K | 步骤说明、工作流程、架构图 |
-| 📝 解释性图 | \`nano-banana-pro\` + 4K | 概念解释图、对比图、带标注的图 |
-| 🎯 图标/符号 | \`nano-banana-pro\` + 4K | 自定义图标、Logo 风格图形 |
+| 📈 数据图表 | \`nano-banana-pro\` + 4K | 折线图、柱状图、饼图、趋势图 |
+| 🗂️ 结构图 | \`nano-banana-pro\` + 4K | 组织架构、层级结构、关系图 |
+| 🎯 对比图 | \`nano-banana-pro\` + 4K | Before/After、方案对比 |
 
 **图片在 PPT 中的位置：**
 - **全屏背景**：封面、章节过渡页
@@ -542,14 +555,56 @@ curl -X POST "${apiBaseUrl}/api/ppt/generate-image" \\
 - **小型插图**：嵌入文字段落中，增强视觉效果
 - **图标组**：用于要点列表前的视觉标识
 
-**Prompt 最佳实践：**
-1. 用完整句子描述场景，不要堆砌关键词
-2. 描述光线、材质、氛围：如 "soft golden hour lighting", "glass and chrome materials"
-3. 使用摄影术语：shallow depth of field, wide-angle shot, overhead view
-4. 风格提示：minimalist, corporate, futuristic, elegant, professional
-5. **信息图表 Prompt 示例**：
-   - "A professional infographic showing 4 steps of customer journey, with icons and connecting arrows, clean white background, corporate blue color scheme"
-   - "Circular diagram showing 5 key pillars of digital transformation, with text labels, modern flat design style"
+## 🎯 Prompt 最佳实践（来自 Gemini 官方）
+
+**基础原则：**
+1. 用完整句子描述场景，而非堆砌关键词
+2. 描述光线、材质、氛围等细节
+3. 使用摄影术语控制画面效果
+4. 修图时明确说明"保持其它不变"
+
+**📊 信息图表 Prompt 模板（中文）：**
+\`\`\`
+创建一个专业的信息图表，展示[主题]的[N]个关键要素。
+要求：
+- 清晰的层级结构和视觉流向
+- 使用图标配合中文标签
+- 配色方案：[主色调]为主，[辅助色]点缀
+- 风格：现代简约/商务专业/科技感
+- 白色或浅灰色背景
+- 每个要素配有简短中文说明
+\`\`\`
+
+**🔄 流程图 Prompt 模板（中文）：**
+\`\`\`
+创建一个[水平/垂直/环形]流程图，展示[流程名称]的[N]个步骤。
+要求：
+- 步骤用数字标注（1, 2, 3...）
+- 每个步骤有中文标题和简短描述
+- 用箭头清晰连接各步骤
+- 配色：主色[颜色]，渐变效果
+- 现代扁平化设计风格
+- 图标辅助说明每个步骤
+\`\`\`
+
+**📈 数据图表 Prompt 模板：**
+\`\`\`
+创建一个[折线图/柱状图/饼图]，展示[数据主题]。
+数据：[X轴标签] 对应 [Y轴数值]
+要求：
+- 清晰的中文数据标签
+- 图例说明（如有多系列）
+- 标注关键数据点
+- 配色专业，数据可读性强
+- 包含标题和数据来源
+\`\`\`
+
+**🎨 风格关键词（可组合使用）：**
+- 光线：soft golden hour lighting, dramatic side lighting, ambient glow
+- 材质：glass and chrome, matte finish, glossy surface
+- 氛围：corporate professional, tech startup vibe, elegant luxury
+- 摄影：shallow depth of field, wide-angle shot, overhead view, macro shot
+- 风格：minimalist, futuristic, retro vintage, hand-drawn illustration
 
 ## 🔍 网络搜索能力
 你可以使用 **WebSearch 工具**搜索网络，获取最新数据和信息来丰富 PPT 内容！
