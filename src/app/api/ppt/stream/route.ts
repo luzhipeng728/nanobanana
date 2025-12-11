@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
           plugins: [
             { type: "local", path: pluginPath },
           ],
-          // 允许的工具
-          allowedTools: ["Skill", "Write", "Read", "Bash", "Edit", "Glob", "Grep"],
+          // 允许的工具（包含 WebSearch 用于搜索丰富内容）
+          allowedTools: ["Skill", "Write", "Read", "Bash", "Edit", "Glob", "Grep", "WebSearch", "WebFetch"],
           // 权限模式：自动接受编辑
           permissionMode: "acceptEdits",
           // 最大轮数
@@ -454,7 +454,40 @@ function buildPPTPrompt(
   }
 
   // 设计指南和图片生成能力
-  const prompt = `请帮我创建一个**视觉震撼、设计精美**的 PowerPoint 演示文稿。
+  const prompt = `请帮我创建一个**视觉震撼、内容丰富、设计精美**的 PowerPoint 演示文稿。
+
+## 🚨 核心要求（必须遵守！）
+
+**❌ 绝对禁止：**
+- 普通的纯文字页面
+- 只有标题和几个要点的空洞页面
+- 缺乏视觉元素的单调设计
+
+**✅ 必须做到：**
+- **每一页都要有精美配图**（背景图、内容配图、图表、图标等）
+- **内容要丰富详实**：先用 WebSearch 搜索主题相关信息，获取真实数据和案例
+- **视觉要震撼**：使用渐变、阴影、圆角卡片、图形装饰等现代设计元素
+- **布局要专业**：合理分配图文比例，大量留白，视觉层次分明
+
+## 📋 制作流程（按顺序执行）
+
+1. **🔍 内容研究**（必做！）
+   - 使用 WebSearch 搜索主题相关的最新数据、行业趋势、案例
+   - 收集 3-5 个关键统计数据或事实
+   - 找到 2-3 个具体案例或引用
+
+2. **📝 内容规划**
+   - 基于搜索结果，规划每页的详细内容
+   - 确定每页需要什么类型的配图
+
+3. **🎨 生成配图**
+   - 为封面生成震撼的背景图
+   - 为内容页生成解释性配图或图表
+   - 每个 PPT 至少生成 3-5 张配图
+
+4. **💎 制作 PPT**
+   - 使用 pptxgenjs 制作高质量 PPT
+   - 确保每页都有视觉亮点
 
 ## 📌 环境说明（必读）
 - pptxgenjs、sharp 已全局安装，**禁止运行 npm install**
@@ -465,27 +498,71 @@ function buildPPTPrompt(
 ## 🎨 AI 图片生成能力
 你可以调用 API 生成高质量配图，让 PPT 更加精美！
 
-**API 调用方式：**
+**⚠️ 重要：模型选择规则（必须遵守，控制成本）**
+
+| 场景 | 模型 | imageSize 参数 | 说明 |
+|------|------|----------------|------|
+| **默认** | \`nano-banana\` | ❌ 不支持 | 封面背景、装饰图、氛围图、抽象图案（快速、低成本） |
+| **特殊** | \`nano-banana-pro\` | \`4K\` | **仅用于**：数据可视化、图表、流程图、带文字的图片 |
+
+**绝大多数配图都应使用 \`nano-banana\`，只有需要精确文字或复杂图表时才用 \`nano-banana-pro\`！**
+
+**API 调用示例：**
+
+1️⃣ **普通配图（默认，大多数情况）—— 不传 imageSize：**
 \`\`\`bash
 curl -X POST "${apiBaseUrl}/api/ppt/generate-image" \\
   -H "Content-Type: application/json" \\
   -d '{"prompt": "描述图片内容", "model": "nano-banana", "aspectRatio": "16:9"}'
 \`\`\`
 
-**模型选择：**
-- \`nano-banana\` (快速): 用于装饰性背景、抽象图案、氛围图
-- \`nano-banana-pro\` (高质量): 用于数据可视化、流程图、复杂场景
+2️⃣ **图表/带文字的图片（仅在需要时）—— 用 pro 模型 + 4K：**
+\`\`\`bash
+curl -X POST "${apiBaseUrl}/api/ppt/generate-image" \\
+  -H "Content-Type: application/json" \\
+  -d '{"prompt": "描述图表或带文字内容", "model": "nano-banana-pro", "aspectRatio": "16:9", "imageSize": "4K"}'
+\`\`\`
+
+**图片使用场景（不只是背景！）：**
+
+| 类型 | 模型 | 用途示例 |
+|------|------|----------|
+| 🖼️ 封面背景 | \`nano-banana\` | 大气的主题视觉图、渐变背景、抽象纹理 |
+| 🎨 装饰配图 | \`nano-banana\` | 氛围图、插画风格配图、概念图 |
+| 📊 信息图表 | \`nano-banana-pro\` + 4K | 带文字的数据可视化、统计图表 |
+| 🔄 流程图 | \`nano-banana-pro\` + 4K | 步骤说明、工作流程、架构图 |
+| 📝 解释性图 | \`nano-banana-pro\` + 4K | 概念解释图、对比图、带标注的图 |
+| 🎯 图标/符号 | \`nano-banana-pro\` + 4K | 自定义图标、Logo 风格图形 |
+
+**图片在 PPT 中的位置：**
+- **全屏背景**：封面、章节过渡页
+- **内容配图**：放在文字旁边，辅助解释内容（占幻灯片 1/3 - 1/2）
+- **小型插图**：嵌入文字段落中，增强视觉效果
+- **图标组**：用于要点列表前的视觉标识
 
 **Prompt 最佳实践：**
 1. 用完整句子描述场景，不要堆砌关键词
 2. 描述光线、材质、氛围：如 "soft golden hour lighting", "glass and chrome materials"
 3. 使用摄影术语：shallow depth of field, wide-angle shot, overhead view
 4. 风格提示：minimalist, corporate, futuristic, elegant, professional
+5. **信息图表 Prompt 示例**：
+   - "A professional infographic showing 4 steps of customer journey, with icons and connecting arrows, clean white background, corporate blue color scheme"
+   - "Circular diagram showing 5 key pillars of digital transformation, with text labels, modern flat design style"
 
-**推荐为以下页面生成配图：**
-- 封面页：震撼的主题视觉图（16:9 横版）
-- 内容页：与主题相关的配图（可选）
-- 数据页：信息图表背景或装饰元素
+## 🔍 网络搜索能力
+你可以使用 **WebSearch 工具**搜索网络，获取最新数据和信息来丰富 PPT 内容！
+
+**搜索场景：**
+- 获取行业最新数据和统计
+- 查找权威来源和引用
+- 了解主题的最新趋势
+- 补充具体案例和实例
+
+**使用建议：**
+1. 在规划 PPT 内容前，先搜索主题相关的最新信息
+2. 为数据页面搜索真实统计数据
+3. 引用数据时标注来源，增加可信度
+4. 搜索竞品或行业案例作为参考
 
 ## 🎯 设计原则
 
@@ -514,94 +591,203 @@ curl -X POST "${apiBaseUrl}/api/ppt/generate-image" \\
 - 图标使用线性或填充风格保持一致
 - 渐变背景（subtile）比纯色更高级
 
+## 📐 专业演示设计原则
+
+**🔺 金字塔原则 (Pyramid Principle)：**
+每个 PPT 都应遵循：**结论 → 原因 → 证据**
+1. 第一页：直接给出核心结论/观点
+2. 中间页：支撑结论的 3-5 个理由
+3. 每个理由：配以数据、案例、图表作为证据
+
+**📊 Assertion-Evidence 框架：**
+每页幻灯片 = **一个断言标题** + **视觉证据**
+- 标题必须是完整的句子（不是关键词）
+- 例如：❌ "销售数据" → ✅ "Q3 销售额同比增长 47%"
+- 视觉区域用图表、图片、图标来证明标题的断言
+
 ## 💎 PptxGenJS 高级技巧
 
-**1. 定义 Slide Master（品牌一致性）：**
+**1. 多个 Slide Master（不同页面类型）：**
 \`\`\`javascript
+// 封面 Master
 pptx.defineSlideMaster({
-  title: 'MASTER_SLIDE',
+  title: 'TITLE_SLIDE',
+  background: { path: 'cover-bg.png' }, // AI 生成的封面背景
+  objects: [
+    { rect: { x: 0, y: 5, w: '100%', h: 2.5, fill: { color: '000000', transparency: 50 } } }
+  ]
+});
+
+// 内容页 Master（带 Logo 和页脚）
+pptx.defineSlideMaster({
+  title: 'CONTENT_SLIDE',
+  margin: [0.5, 0.25, 1.0, 0.25],
   background: { color: 'FFFFFF' },
   objects: [
+    { image: { x: 11.5, y: 0.2, w: 1.2, h: 0.5, path: 'logo.png' } },
     { rect: { x: 0, y: 6.9, w: '100%', h: 0.6, fill: { color: '${primaryColor.replace('#', '')}' } } },
-    { text: { text: '公司名称', options: { x: 0, y: 6.9, w: '100%', align: 'center', color: 'FFFFFF', fontSize: 10 } } }
+    { text: { text: '${topic}', options: { x: 0.5, y: 6.95, w: 8, h: 0.5, fontSize: 10, color: 'FFFFFF' } } }
   ],
-  slideNumber: { x: 0.3, y: '95%', color: '${primaryColor.replace('#', '')}' }
+  slideNumber: { x: 12, y: 6.95, fontFace: 'Arial', fontSize: 10, color: 'FFFFFF' }
 });
-let slide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+
+// 数据页 Master
+pptx.defineSlideMaster({
+  title: 'DATA_SLIDE',
+  background: { color: 'F8FAFC' },
+  objects: [
+    { rect: { x: 0, y: 0, w: '100%', h: 1.2, fill: { color: '${primaryColor.replace('#', '')}' } } }
+  ]
+});
 \`\`\`
 
-**2. 设置主题字体：**
+**2. Placeholder 占位符系统（灵活布局）：**
 \`\`\`javascript
-pptx.theme = { headFontFace: 'Arial', bodyFontFace: 'Arial' };
+pptx.defineSlideMaster({
+  title: 'TWO_COLUMN',
+  objects: [
+    { placeholder: { options: { name: 'title', type: 'title', x: 0.5, y: 0.5, w: 12, h: 1 } } },
+    { placeholder: { options: { name: 'left', type: 'body', x: 0.5, y: 1.8, w: 5.5, h: 4.5 } } },
+    { placeholder: { options: { name: 'right', type: 'body', x: 6.5, y: 1.8, w: 5.5, h: 4.5 } } }
+  ]
+});
+let slide = pptx.addSlide({ masterName: 'TWO_COLUMN' });
+slide.addText('标题内容', { placeholder: 'title' });
+slide.addText('左侧内容', { placeholder: 'left' });
+slide.addImage({ path: 'image.png', placeholder: 'right' });
+\`\`\`
+
+**3. 设置主题和元数据：**
+\`\`\`javascript
+pptx.theme = { headFontFace: 'Microsoft YaHei', bodyFontFace: 'Microsoft YaHei' };
 pptx.layout = 'LAYOUT_16x9';
 pptx.author = '演示作者';
-pptx.title = '演示标题';
+pptx.title = '${topic}';
+pptx.subject = '由 AI 生成的专业演示文稿';
+pptx.company = 'NanoBanana AI';
 \`\`\`
 
-**3. 渐变背景：**
-\`\`\`javascript
-slide.background = {
-  color: { type: 'solid', color: 'F1F5F9' }  // 或使用图片
-};
-// 或使用 AI 生成的渐变图片作为背景
-slide.background = { path: 'gradient-bg.png' };
-\`\`\`
-
-**4. 形状和装饰：**
-\`\`\`javascript
-// 添加装饰线条
-slide.addShape(pptx.ShapeType.rect, {
-  x: 0.5, y: 1, w: 0.1, h: 1.5,
-  fill: { color: '${primaryColor.replace('#', '')}' }
-});
-// 圆角矩形卡片
-slide.addShape(pptx.ShapeType.roundRect, {
-  x: 1, y: 2, w: 4, h: 2,
-  fill: { color: 'FFFFFF' },
-  shadow: { type: 'outer', blur: 10, offset: 3, angle: 45, opacity: 0.3 }
-});
-\`\`\`
-
-**5. 富文本样式：**
+**4. 多样式富文本（混合样式）：**
 \`\`\`javascript
 slide.addText([
-  { text: '重点', options: { bold: true, color: '${primaryColor.replace('#', '')}' } },
-  { text: '：这是正文内容', options: { color: '334155' } }
-], { x: 1, y: 2, w: 8, fontSize: 18 });
+  { text: '47%', options: { fontSize: 72, bold: true, color: '${primaryColor.replace('#', '')}' } },
+  { text: '\\n同比增长', options: { fontSize: 24, color: '64748B', breakLine: true } },
+  { text: '\\nQ3 销售额创历史新高', options: { fontSize: 16, color: '94A3B8' } }
+], { x: 1, y: 2, w: 4, h: 3, valign: 'middle' });
 \`\`\`
 
-**6. 图片使用（支持 URL）：**
+**5. 卡片式布局（现代设计）：**
 \`\`\`javascript
-slide.addImage({
-  path: 'https://xxx.com/image.png',  // 直接使用生成的图片 URL
-  x: 5, y: 1, w: 4, h: 3,
-  rounding: true  // 圆角图片
+// 创建卡片背景
+slide.addShape(pptx.ShapeType.roundRect, {
+  x: 0.5, y: 1.5, w: 3.5, h: 4,
+  fill: { color: 'FFFFFF' },
+  shadow: { type: 'outer', blur: 15, offset: 5, angle: 45, opacity: 0.15, color: '000000' },
+  line: { color: 'E2E8F0', width: 1 }
+});
+// 卡片内容
+slide.addImage({ path: 'icon.png', x: 1.5, y: 2, w: 1.5, h: 1.5 });
+slide.addText('功能特点', { x: 0.7, y: 3.8, w: 3, h: 0.5, fontSize: 18, bold: true, color: '1E293B' });
+slide.addText('详细描述内容...', { x: 0.7, y: 4.4, w: 3, h: 1, fontSize: 12, color: '64748B' });
+\`\`\`
+
+**6. 专业表格样式：**
+\`\`\`javascript
+slide.addTable([
+  [{ text: '指标', options: { fill: { color: '${primaryColor.replace('#', '')}' }, color: 'FFFFFF', bold: true } },
+   { text: 'Q2', options: { fill: { color: '${primaryColor.replace('#', '')}' }, color: 'FFFFFF', bold: true } },
+   { text: 'Q3', options: { fill: { color: '${primaryColor.replace('#', '')}' }, color: 'FFFFFF', bold: true } }],
+  ['收入', '$2.4M', '$3.1M'],
+  ['增长率', '12%', '29%'],
+  ['用户数', '45K', '67K']
+], {
+  x: 1, y: 2, w: 10, h: 3,
+  fontSize: 14,
+  border: { type: 'solid', color: 'E2E8F0', pt: 1 },
+  align: 'center',
+  valign: 'middle'
 });
 \`\`\`
 
-**7. 图表（如需要）：**
+**7. 图表（多种类型）：**
 \`\`\`javascript
+// 柱状图
 slide.addChart(pptx.charts.BAR, chartData, {
-  x: 1, y: 1, w: 6, h: 4,
-  barDir: 'bar',
+  x: 1, y: 1.5, w: 6, h: 4,
   showValue: true,
-  chartColors: ['${primaryColor.replace('#', '')}', '64748B', 'CBD5E1']
+  showTitle: true,
+  title: '季度销售对比',
+  chartColors: ['${primaryColor.replace('#', '')}', '64748B', '94A3B8']
 });
+
+// 饼图
+slide.addChart(pptx.charts.PIE, pieData, {
+  x: 7, y: 1.5, w: 5, h: 4,
+  showPercent: true,
+  showLegend: true
+});
+
+// 折线图
+slide.addChart(pptx.charts.LINE, lineData, {
+  x: 1, y: 1, w: 11, h: 5,
+  showMarker: true,
+  lineSmooth: true
+});
+\`\`\`
+
+**8. 图片高级用法：**
+\`\`\`javascript
+// 圆角图片
+slide.addImage({ path: imageUrl, x: 5, y: 1, w: 4, h: 3, rounding: true });
+
+// 带阴影的图片
+slide.addImage({
+  path: imageUrl, x: 1, y: 1, w: 6, h: 4,
+  shadow: { type: 'outer', blur: 10, offset: 3, angle: 45, opacity: 0.3 }
+});
+
+// 全屏背景图
+slide.background = { path: imageUrl };
 \`\`\`
 
 ## 📋 PPT 需求规范
 ${contentSpec}
 
-## 🔧 执行步骤
-1. \`mkdir -p ${pptDir}\`
-2. **规划内容**：确定每页的标题、要点、配图需求
-3. **生成配图**（可选）：调用图片生成 API 获取 imageUrl
-4. 使用 Skill 工具调用 pptx 技能
-5. 编写 create-ppt.js（直接用 pptxgenjs API）
-6. **运行脚本**: \`cd ${pptDir} && NODE_PATH=/root/.nvm/versions/node/v22.19.0/lib/node_modules node create-ppt.js\`
-7. 确认 ${outputPath} 已生成
+## 🔧 执行步骤（严格按顺序！）
 
-请开始执行，创建一份让人眼前一亮的专业演示文稿！`;
+### 第一步：内容研究（必做！）
+\`\`\`
+使用 WebSearch 搜索：
+- "${topic} 最新数据 统计"
+- "${topic} 行业趋势 2024"
+- "${topic} 案例 实例"
+\`\`\`
+记录搜索到的关键数据、统计、案例，后续用于丰富内容。
+
+### 第二步：创建工作目录
+\`mkdir -p ${pptDir}\`
+
+### 第三步：生成配图（至少 3-5 张！）
+为以下页面生成配图：
+- 🖼️ 封面：震撼的主题背景图（nano-banana）
+- 📊 数据页：信息图表或统计图（如需文字用 nano-banana-pro + 4K）
+- 🎨 内容页：解释性配图、流程图（根据需要选择模型）
+- 🏁 结尾：总结性视觉图
+
+### 第四步：编写 PPT 脚本
+使用 Skill 工具调用 pptx 技能，编写 create-ppt.js：
+- 应用搜索到的真实数据
+- 嵌入生成的配图 URL
+- 使用高级设计技巧（Slide Master、渐变、阴影等）
+
+### 第五步：生成 PPT
+\`cd ${pptDir} && NODE_PATH=/root/.nvm/versions/node/v22.19.0/lib/node_modules node create-ppt.js\`
+
+### 第六步：验证
+确认 ${outputPath} 已生成，检查文件大小是否合理。
+
+---
+**立即开始执行！记住：先搜索、再规划、再生成配图、最后制作 PPT。创建一份让人眼前一亮的专业演示文稿！**`;
 
   return prompt;
 }
