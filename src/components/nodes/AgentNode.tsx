@@ -3,7 +3,7 @@
 import { memo, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
-import { enqueue, getQueueStatus } from "@/lib/rate-limiter";
+import { enqueue, getQueueStatus, type ModelType } from "@/lib/rate-limiter";
 import {
   Loader2,
   Brain,
@@ -601,7 +601,7 @@ Panel 4（右下）：收尾镜头 - 结束状态或情绪释放
       );
 
       // 使用速率限制器排队执行
-      return enqueue(selectedModel, async () => {
+      return enqueue(selectedModel as ModelType, async () => {
         const startTime = Date.now();
 
         try {

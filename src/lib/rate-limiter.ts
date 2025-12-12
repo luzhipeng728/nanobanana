@@ -4,7 +4,7 @@
  * Pro 模型: 20 RPM
  */
 
-type ModelType = "nano-banana" | "nano-banana-pro";
+export type ModelType = "nano-banana" | "nano-banana-pro" | "seedream-4.5";
 
 interface QueueItem {
   id: string;
@@ -30,12 +30,14 @@ interface RateLimiterState {
 const RPM_LIMITS: Record<ModelType, number> = {
   "nano-banana": 500,      // Fast 模型 500 RPM
   "nano-banana-pro": 20,   // Pro 模型 20 RPM
+  "seedream-4.5": 60,      // Seedream 4.5 60 RPM (保守估计)
 };
 
 // 最大并发数（避免同时发送太多请求）
 const MAX_CONCURRENT: Record<ModelType, number> = {
   "nano-banana": 50,       // Fast 模型最多 50 并发
   "nano-banana-pro": 5,    // Pro 模型最多 5 并发
+  "seedream-4.5": 10,      // Seedream 最多 10 并发
 };
 
 // 全局状态（单例）

@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     headers: { "Content-Type": "application/json" },
   });
 
-  /* 原代码已禁用
+  // 原代码已禁用（return 之后的代码不会执行，但保留以备参考）
   const body = await request.json();
   const {
     topic,
@@ -1582,4 +1582,3 @@ function parseSlideText(text: string): SlideData[] {
 
   return slides;
 }
-*/

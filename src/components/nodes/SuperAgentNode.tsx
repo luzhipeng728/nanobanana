@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect, memo } from "react";
 import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
-import { enqueue, getQueueStatus } from "@/lib/rate-limiter";
+import { enqueue, getQueueStatus, type ModelType } from "@/lib/rate-limiter";
 import {
   Sparkles,
   Loader2,
@@ -282,7 +282,7 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
         prev.map((p) => (p.id === prompt.id ? { ...p, status: "pending" as const } : p))
       );
 
-      return enqueue(selectedModel, async () => {
+      return enqueue(selectedModel as ModelType, async () => {
         try {
           setGeneratingCount((prev) => prev + 1);
           setPrompts((prev) =>

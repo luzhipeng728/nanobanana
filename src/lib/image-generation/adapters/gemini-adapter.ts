@@ -363,8 +363,9 @@ export class GeminiAdapter extends ImageGenerationAdapter {
           if (currentImageSize === '4K' && attempt >= 2) {
             console.log(`[GeminiAdapter] 4K 降级到 2K`);
             currentImageSize = '2K';
-            if (requestBody.generationConfig.imageConfig) {
-              requestBody.generationConfig.imageConfig.image_size = '2K';
+            const genConfig = requestBody.generationConfig as { imageConfig?: { image_size?: string } } | undefined;
+            if (genConfig?.imageConfig) {
+              genConfig.imageConfig.image_size = '2K';
             }
           }
         }
