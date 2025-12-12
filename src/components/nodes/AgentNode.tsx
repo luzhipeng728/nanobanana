@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useCallback, useRef, useEffect } from "react";
+import { memo, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Handle, Position, NodeProps, useReactFlow, useStore } from "@xyflow/react";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { enqueue, getQueueStatus } from "@/lib/rate-limiter";
@@ -21,6 +21,7 @@ import {
   ChevronUp,
   FileCode,
   GitBranch,
+  AlertCircle,
 } from "lucide-react";
 import {
   AnimatedProgress,
@@ -28,19 +29,94 @@ import {
   ThinkingIndicator,
 } from "@/components/ui/StreamingUI";
 import type { AgentNodeData, AgentPrompt, AgentStreamEvent } from "@/types/agent";
-import { RESOLUTION_OPTIONS } from "@/types/image-gen";
 import { BaseNode } from "./BaseNode";
 import { NodeTextarea, NodeSelect, NodeButton, NodeLabel, NodeTabSelect } from "@/components/ui/NodeUI";
 import ReactMarkdown from "react-markdown";
+import { useImageModels, getDefaultModelId } from "@/hooks/useImageModels";
 
 const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const { addImageNode, updateImageNode, getNode, getConnectedImageNodes } = useCanvas();
   const { getNode: getReactFlowNode, getNodes: getReactFlowNodes } = useReactFlow();
 
+  // 获取可用模型列表
+  const {
+    models,
+    isLoading: isLoadingModels,
+    supportsReferenceImages,
+    getSupportedResolutions,
+    getSupportedAspectRatios,
+  } = useImageModels();
+
   const [userRequest, setUserRequest] = useState(data.userRequest || "");
-  const [selectedModel, setSelectedModel] = useState<"nano-banana" | "nano-banana-pro">("nano-banana");
+  const [selectedModel, setSelectedModel] = useState<string>("nano-banana-pro");
   const [imageSize, setImageSize] = useState<string>("2K"); // Default resolution for Pro model
   const [aspectRatio, setAspectRatio] = useState<string>("16:9"); // 默认比例
+
+  // 当模型列表加载完成后，设置默认模型
+  useEffect(() => {
+    if (models.length > 0 && !data.model) {
+      const defaultModel = getDefaultModelId(models);
+      setSelectedModel(defaultModel);
+    }
+  }, [models, data.model]);
+
+  // 检查当前模型是否支持参考图
+  const currentModelSupportsRef = useMemo(() => {
+    return supportsReferenceImages(selectedModel);
+  }, [selectedModel, supportsReferenceImages]);
+
+  // 模型选项
+  const modelOptions = useMemo(() => {
+    return models.map(m => ({
+      value: m.id,
+      label: m.label,
+    }));
+  }, [models]);
+
+  // 当前模型支持的分辨率和比例
+  const supportedResolutions = useMemo(() => {
+    return getSupportedResolutions(selectedModel);
+  }, [selectedModel, getSupportedResolutions]);
+
+  const supportedAspectRatios = useMemo(() => {
+    return getSupportedAspectRatios(selectedModel);
+  }, [selectedModel, getSupportedAspectRatios]);
+
+  // 分辨率选项
+  const resolutionOptions = useMemo(() => {
+    return supportedResolutions.map(r => ({
+      value: r,
+      label: r,
+    }));
+  }, [supportedResolutions]);
+
+  // 比例选项
+  const aspectRatioOptions = useMemo(() => {
+    const labelMap: Record<string, string> = {
+      '16:9': '横屏',
+      '9:16': '竖屏',
+      '1:1': '方形',
+      '4:3': '4:3',
+      '3:4': '3:4',
+    };
+    return supportedAspectRatios.map(r => ({
+      value: r,
+      label: labelMap[r] || r,
+    }));
+  }, [supportedAspectRatios]);
+
+  // 当模型变更时，校验并重置分辨率和比例
+  useEffect(() => {
+    if (supportedResolutions.length > 0 && !supportedResolutions.includes(imageSize)) {
+      setImageSize(supportedResolutions[0]);
+    }
+  }, [selectedModel, supportedResolutions, imageSize]);
+
+  useEffect(() => {
+    if (supportedAspectRatios.length > 0 && !supportedAspectRatios.includes(aspectRatio)) {
+      setAspectRatio(supportedAspectRatios[0]);
+    }
+  }, [selectedModel, supportedAspectRatios, aspectRatio]);
   const [status, setStatus] = useState<AgentNodeData["status"]>(data.status || "idle");
   const [currentStep, setCurrentStep] = useState<string>("");
   const [progress, setProgress] = useState(0);
@@ -1104,29 +1180,42 @@ Generate a CLEAN image as if the markers do not exist.
         {/* 模型选择 */}
         <div className="space-y-1.5">
           <NodeLabel>模型</NodeLabel>
-          <NodeTabSelect
-            value={selectedModel}
-            onChange={(val) => setSelectedModel(val as "nano-banana" | "nano-banana-pro")}
-            options={[
-              { value: "nano-banana", label: "快速" },
-              { value: "nano-banana-pro", label: "高级" },
-            ]}
-            disabled={isRunning}
-            color="purple"
-          />
+          {isLoadingModels ? (
+            <div className="flex items-center gap-2 text-xs text-neutral-500">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              加载模型列表...
+            </div>
+          ) : modelOptions.length > 0 ? (
+            <NodeTabSelect
+              value={selectedModel}
+              onChange={setSelectedModel}
+              options={modelOptions}
+              disabled={isRunning}
+              color="purple"
+            />
+          ) : (
+            <div className="text-xs text-red-500">无可用模型</div>
+          )}
         </div>
 
-        {/* 分辨率 - Pro 模型时显示 */}
-        {selectedModel === "nano-banana-pro" && (
+        {/* 参考图警告 - 当选中的模型不支持参考图但连接了参考图时显示 */}
+        {connectedImages.length > 0 && useForImageGen && !currentModelSupportsRef && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2 flex gap-2 items-start">
+            <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-tight">
+              当前模型不支持参考图功能，参考图将仅用于 Claude 分析
+            </p>
+          </div>
+        )}
+
+        {/* 分辨率 - 根据模型能力显示 */}
+        {resolutionOptions.length > 0 && (
           <div className="space-y-1.5">
             <NodeLabel>分辨率</NodeLabel>
             <NodeTabSelect
               value={imageSize}
               onChange={setImageSize}
-              options={Object.entries(RESOLUTION_OPTIONS).map(([key, option]) => ({
-                value: option.value,
-                label: option.label,
-              }))}
+              options={resolutionOptions}
               disabled={isRunning}
               color="purple"
               size="sm"
@@ -1135,19 +1224,13 @@ Generate a CLEAN image as if the markers do not exist.
         )}
 
         {/* 画面比例 - 只有没有参考图（或没勾选给生图模型）时才显示 */}
-        {!(connectedImages.length > 0 && useForImageGen) && (
+        {!(connectedImages.length > 0 && useForImageGen) && aspectRatioOptions.length > 0 && (
           <div className="space-y-1.5">
             <NodeLabel>画面比例</NodeLabel>
             <NodeTabSelect
               value={aspectRatio}
               onChange={setAspectRatio}
-              options={[
-                { value: "16:9", label: "横屏" },
-                { value: "9:16", label: "竖屏" },
-                { value: "1:1", label: "方形" },
-                { value: "4:3", label: "4:3" },
-                { value: "3:4", label: "3:4" },
-              ]}
+              options={aspectRatioOptions}
               disabled={isRunning}
               color="purple"
               size="sm"

@@ -1,25 +1,26 @@
 "use client";
 
-import { memo, useState, useCallback, useEffect, useRef } from "react";
+import { memo, useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Handle, Position, NodeProps, useReactFlow, useStore, addEdge } from "@xyflow/react";
 import { rewritePrompt } from "@/app/actions/generate";
 import { createImageTask } from "@/app/actions/image-task";
-import { type GeminiImageModel, type ImageGenerationConfig, RESOLUTION_OPTIONS } from "@/types/image-gen";
+import { type ImageGenerationConfig, RESOLUTION_OPTIONS } from "@/types/image-gen";
 import { useCanvas } from "@/contexts/CanvasContext";
-import { Loader2, Wand2, Image as ImageIcon, Link2, GitBranch, FileCode } from "lucide-react";
+import { Loader2, Wand2, Image as ImageIcon, Link2, GitBranch, FileCode, AlertCircle } from "lucide-react";
 import { NodeTextarea, NodeLabel, NodeButton, NodeTabSelect } from "@/components/ui/NodeUI";
 import { GeneratorNodeLayout } from "./GeneratorNodeLayout";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { useTouchContextMenu, createNodeMenuOptions } from "@/components/TouchContextMenu";
 import { cn } from "@/lib/utils";
 import { useTaskGeneration } from "@/hooks/useTaskGeneration";
+import { useImageModels, getDefaultModelId } from "@/hooks/useImageModels";
 
 // Define the data structure for the node
 type ImageGenNodeData = {
   prompt: string;
   imageUrl?: string;
   isGenerating: boolean;
-  model?: GeminiImageModel;
+  model?: string;
   aspectRatio?: string;
   imageSize?: string;
 };
@@ -28,11 +29,76 @@ const ImageGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
   const { addImageNode, getConnectedImageNodes } = useCanvas();
   const { getNode, setNodes, setEdges } = useReactFlow();
 
+  // 获取可用模型列表
+  const {
+    models,
+    isLoading: isLoadingModels,
+    supportsReferenceImages,
+    getSupportedResolutions,
+    getSupportedAspectRatios,
+  } = useImageModels();
+
   const [prompt, setPrompt] = useState(data.prompt || "");
-  const [selectedModel, setSelectedModel] = useState<GeminiImageModel>(data.model || "nano-banana");
-  const [aspectRatio, setAspectRatio] = useState<string>(data.aspectRatio || (data.model === "nano-banana-pro" ? "auto" : "1:1"));
+  const [selectedModel, setSelectedModel] = useState<string>(data.model || "nano-banana-pro");
+  const [aspectRatio, setAspectRatio] = useState<string>(data.aspectRatio || "auto");
   const [imageSize, setImageSize] = useState<string>(data.imageSize || "1K");
   const [connectedImagesCount, setConnectedImagesCount] = useState<number>(0);
+
+  // 当模型列表加载完成后，设置默认模型
+  useEffect(() => {
+    if (models.length > 0 && !data.model) {
+      const defaultModel = getDefaultModelId(models);
+      setSelectedModel(defaultModel);
+    }
+  }, [models, data.model]);
+
+  // 检查当前模型是否支持参考图
+  const currentModelSupportsRef = useMemo(() => {
+    return supportsReferenceImages(selectedModel);
+  }, [selectedModel, supportsReferenceImages]);
+
+  // 模型选项
+  const modelOptions = useMemo(() => {
+    return models.map(m => ({
+      value: m.id,
+      label: m.label,
+    }));
+  }, [models]);
+
+  // 当前模型支持的分辨率
+  const supportedResolutions = useMemo(() => {
+    return getSupportedResolutions(selectedModel);
+  }, [selectedModel, getSupportedResolutions]);
+
+  // 当前模型支持的比例
+  const supportedAspectRatios = useMemo(() => {
+    return getSupportedAspectRatios(selectedModel);
+  }, [selectedModel, getSupportedAspectRatios]);
+
+  // 分辨率选项（根据模型能力过滤）
+  const resolutionOptions = useMemo(() => {
+    return Object.entries(RESOLUTION_OPTIONS)
+      .filter(([key]) => supportedResolutions.includes(key))
+      .map(([key, option]) => ({
+        value: (option as { value: string; label: string }).value,
+        label: (option as { value: string; label: string }).label,
+      }));
+  }, [supportedResolutions]);
+
+  // 比例选项（根据模型能力过滤）
+  const aspectRatioOptions = useMemo(() => {
+    const allOptions = [
+      { value: "auto", label: "自动" },
+      { value: "1:1", label: "方形" },
+      { value: "16:9", label: "横屏" },
+      { value: "9:16", label: "竖屏" },
+      { value: "4:3", label: "4:3" },
+      { value: "3:4", label: "3:4" },
+    ];
+    return allOptions.filter(opt =>
+      opt.value === "auto" || supportedAspectRatios.includes(opt.value)
+    );
+  }, [supportedAspectRatios]);
 
   // Rewrite Prompt Hook
   const { isGenerating: isRewriting, generate: rewrite } = useTaskGeneration<string>({
@@ -268,12 +334,14 @@ Generate a CLEAN image as if the markers do not exist.
         if (referenceImages.length === 0 && aspectRatio !== "auto") {
           config.aspectRatio = aspectRatio as any;
         }
-        if (selectedModel === "nano-banana-pro") {
-          config.imageSize = imageSize as any;
-        }
+        // 所有模型都支持分辨率设置
+        config.imageSize = imageSize as any;
+
+        // 如果当前模型不支持参考图，清空参考图列表
+        const finalReferenceImages = currentModelSupportsRef ? referenceImages : [];
 
         // Call Server Action
-        const { taskId } = await createImageTask(finalPrompt, selectedModel, config, referenceImages);
+        const { taskId } = await createImageTask(finalPrompt, selectedModel as any, config, finalReferenceImages);
         return { taskId, config, referenceImages };
       }
     });
@@ -404,64 +472,62 @@ Generate a CLEAN image as if the markers do not exist.
           {/* 模型选择 */}
           <div className="space-y-1.5">
             <NodeLabel>模型</NodeLabel>
-            <NodeTabSelect
-              value={selectedModel}
-              onChange={(val) => {
-                const newModel = val as GeminiImageModel;
-                setSelectedModel(newModel);
-                if (newModel === "nano-banana-pro" && aspectRatio === "1:1") {
-                  setAspectRatio("auto");
-                } else if (newModel === "nano-banana" && aspectRatio === "auto") {
-                  setAspectRatio("1:1");
-                }
-                data.model = newModel;
-              }}
-              options={[
-                { value: "nano-banana", label: "快速" },
-                { value: "nano-banana-pro", label: "高级" },
-              ]}
-              color="blue"
-            />
+            {isLoadingModels ? (
+              <div className="flex items-center gap-2 text-xs text-neutral-500">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                加载模型列表...
+              </div>
+            ) : (
+              <NodeTabSelect
+                value={selectedModel}
+                onChange={(val) => {
+                  setSelectedModel(val);
+                  data.model = val;
+                }}
+                options={modelOptions.length > 0 ? modelOptions : [
+                  { value: "nano-banana", label: "快速" },
+                  { value: "nano-banana-pro", label: "高级" },
+                  { value: "seedream-4.5", label: "Seedream" },
+                ]}
+                color="blue"
+              />
+            )}
           </div>
 
-          {/* 分辨率 */}
-          {selectedModel === "nano-banana-pro" && (
-            <div className="space-y-1.5">
-              <NodeLabel>分辨率</NodeLabel>
-              <NodeTabSelect
-                value={imageSize}
-                onChange={(val) => {
-                  setImageSize(val);
-                  data.imageSize = val;
-                }}
-                options={Object.entries(RESOLUTION_OPTIONS).map(([key, option]) => ({
-                  value: option.value,
-                  label: option.label,
-                }))}
-                color="blue"
-                size="sm"
-              />
+          {/* 不支持参考图的提示 */}
+          {!currentModelSupportsRef && connectedImagesCount > 0 && (
+            <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-300">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>当前模型不支持参考图片，已连接的参考图将被忽略</span>
             </div>
           )}
 
-          {/* 画面比例 */}
+          {/* 分辨率 - 根据模型能力动态显示 */}
           <div className="space-y-1.5">
-            <NodeLabel>画面比例 {connectedImagesCount > 0 && <span className="text-neutral-400">(参考图覆盖)</span>}</NodeLabel>
+            <NodeLabel>分辨率</NodeLabel>
+            <NodeTabSelect
+              value={imageSize}
+              onChange={(val) => {
+                setImageSize(val);
+                data.imageSize = val;
+              }}
+              options={resolutionOptions}
+              color="blue"
+              size="sm"
+            />
+          </div>
+
+          {/* 画面比例 - 根据模型能力动态显示 */}
+          <div className="space-y-1.5">
+            <NodeLabel>画面比例 {connectedImagesCount > 0 && currentModelSupportsRef && <span className="text-neutral-400">(参考图覆盖)</span>}</NodeLabel>
             <NodeTabSelect
               value={aspectRatio}
               onChange={(val) => {
                 setAspectRatio(val);
                 data.aspectRatio = val;
               }}
-              options={[
-                { value: "auto", label: "自动" },
-                { value: "1:1", label: "方形" },
-                { value: "16:9", label: "横屏" },
-                { value: "9:16", label: "竖屏" },
-                { value: "4:3", label: "4:3" },
-                { value: "3:4", label: "3:4" },
-              ]}
-              disabled={connectedImagesCount > 0}
+              options={aspectRatioOptions}
+              disabled={connectedImagesCount > 0 && currentModelSupportsRef}
               color="blue"
               size="sm"
             />
