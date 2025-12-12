@@ -26,8 +26,20 @@ interface SlideData {
 /**
  * SSE 流式 PPT 生成 API
  * 使用 Claude Agent SDK 调用 Claude Code CLI + pptx skill
+ *
+ * ⚠️ 此功能已暂时禁用 - 安全原因 (2024-12-12)
  */
 export async function POST(request: NextRequest) {
+  // 功能已禁用，防止 prompt injection 攻击
+  return new Response(JSON.stringify({
+    error: "PPT 生成功能暂时维护中，请稍后再试",
+    disabled: true
+  }), {
+    status: 503,
+    headers: { "Content-Type": "application/json" },
+  });
+
+  /* 原代码已禁用
   const body = await request.json();
   const {
     topic,
@@ -1570,3 +1582,4 @@ function parseSlideText(text: string): SlideData[] {
 
   return slides;
 }
+*/
