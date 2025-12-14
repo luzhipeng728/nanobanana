@@ -1,8 +1,83 @@
-import React, { useState } from "react";
-import { 
-  Save, FolderOpen, GalleryHorizontalEnd, MousePointer2, Hand, 
-  Trash2, LayoutGrid, Import, Share2, GalleryVerticalEnd, User as UserIcon, LogOut 
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  Save, FolderOpen, GalleryHorizontalEnd, MousePointer2, Hand,
+  Trash2, LayoutGrid, Import, Share2, GalleryVerticalEnd, User as UserIcon, LogOut,
+  Settings, Shield, Wallet
 } from "lucide-react";
+
+// 用户下拉菜单组件
+function UserDropdown({ username, onLogout }: { username: string; onLogout: () => void }) {
+  const [userInfo, setUserInfo] = useState<{ isAdmin: boolean; balance: number } | null>(null);
+
+  useEffect(() => {
+    // 获取用户信息（余额和管理员状态）
+    fetch("/api/user/profile")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setUserInfo({ isAdmin: data.user.isAdmin, balance: data.user.balance });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="relative group">
+      <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center gap-2">
+        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+          {username.slice(0, 1).toUpperCase()}
+        </div>
+        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-200 max-w-[80px] truncate">
+          {username}
+        </span>
+      </button>
+      {/* User dropdown */}
+      <div className="absolute top-full mt-2 right-0 w-52 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-xl shadow-xl border border-white/20 dark:border-white/10 hidden group-hover:block z-20 animate-fade-in">
+        <div className="p-3 border-b border-neutral-100 dark:border-white/10">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">登录用户</p>
+          <p className="text-sm font-medium truncate text-neutral-800 dark:text-neutral-100">
+            {username}
+          </p>
+          {userInfo && (
+            <div className="flex items-center gap-1 mt-1">
+              <Wallet className="w-3 h-3 text-purple-500" />
+              <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                ¥{userInfo.balance.toFixed(2)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <Link
+          href="/settings"
+          className="w-full p-3 hover:bg-black/5 dark:hover:bg-white/10 text-left text-sm flex items-center gap-2 text-neutral-700 dark:text-neutral-200 transition-colors"
+        >
+          <Settings className="w-4 h-4" />
+          个人设置
+        </Link>
+
+        {userInfo?.isAdmin && (
+          <Link
+            href="/admin"
+            className="w-full p-3 hover:bg-purple-500/10 text-left text-sm flex items-center gap-2 text-purple-600 dark:text-purple-400 transition-colors"
+          >
+            <Shield className="w-4 h-4" />
+            管理后台
+          </Link>
+        )}
+
+        <button
+          onClick={onLogout}
+          className="w-full p-3 hover:bg-red-500/10 text-left text-sm flex items-center gap-2 text-red-600 dark:text-red-400 rounded-b-xl transition-colors border-t border-neutral-100 dark:border-white/10"
+        >
+          <LogOut className="w-4 h-4" />
+          退出登录
+        </button>
+      </div>
+    </div>
+  );
+}
 
 interface CanvasToolbarProps {
   userId: string | null;
@@ -154,28 +229,7 @@ export const CanvasToolbar = React.memo(({
       <div className="w-px bg-neutral-200 dark:bg-white/10 my-1 mx-1" />
 
       {userId ? (
-        <div className="relative group">
-          <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-               {username.slice(0, 1).toUpperCase()}
-            </div>
-            <span className="text-xs font-medium text-neutral-700 dark:text-neutral-200 max-w-[80px] truncate">{username}</span>
-          </button>
-          {/* User dropdown */}
-          <div className="absolute top-full mt-2 right-0 w-48 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-xl shadow-xl border border-white/20 dark:border-white/10 hidden group-hover:block z-20 animate-fade-in">
-            <div className="p-3 border-b border-neutral-100 dark:border-white/10">
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Logged in as</p>
-              <p className="text-sm font-medium truncate text-neutral-800 dark:text-neutral-100">{username}</p>
-            </div>
-            <button
-              onClick={onLogout}
-              className="w-full p-3 hover:bg-red-500/10 text-left text-sm flex items-center gap-2 text-red-600 dark:text-red-400 rounded-b-xl transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
-          </div>
-        </div>
+        <UserDropdown username={username} onLogout={onLogout} />
       ) : (
         <button
           onClick={onOpenAuth}

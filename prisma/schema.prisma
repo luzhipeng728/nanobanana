@@ -14,6 +14,8 @@ model User {
   id          String       @id @default(uuid())
   username    String       @unique
   password    String       // 密码哈希
+  isAdmin     Boolean      @default(false) // 管理员标识（可审核权限申请、管理用户）
+  balance     Decimal      @default(100.00) @db.Decimal(10, 2) // 余额（RMB），新用户默认 100 元
   createdAt   DateTime     @default(now())
   canvases    Canvas[]
   imageTasks  ImageTask[]
@@ -25,6 +27,8 @@ model User {
   ttsTasks    TTSTask[]
   pptTasks    PPTTask[]
   modelPermissions UserModelPermission[]
+  consumptionRecords ConsumptionRecord[]
+  permissionRequests PermissionRequest[]
 }
 
 // 用户-模型权限（细粒度控制）
@@ -38,6 +42,43 @@ model UserModelPermission {
   @@unique([userId, modelId])
   @@index([userId])
   @@index([modelId])
+}
+
+// 消费记录
+model ConsumptionRecord {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // image, music, video, sticker, veo, sprite, tts, ppt
+  modelId     String   // 使用的模型 ID
+  taskId      String?  // 关联的任务 ID（可选）
+  amount      Decimal  @db.Decimal(10, 4) // 消费金额（RMB）
+  balanceBefore Decimal @db.Decimal(10, 2) // 消费前余额
+  balanceAfter  Decimal @db.Decimal(10, 2) // 消费后余额
+  description String?  @db.Text // 描述信息
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// 模型权限申请
+model PermissionRequest {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modelId     String   // 申请的模型 ID
+  reason      String?  @db.Text // 申请理由
+  status      String   @default("pending") // pending, approved, rejected
+  reviewedBy  String?  // 审核人用户名
+  reviewNote  String?  @db.Text // 审核备注
+  createdAt   DateTime @default(now())
+  reviewedAt  DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Canvas {

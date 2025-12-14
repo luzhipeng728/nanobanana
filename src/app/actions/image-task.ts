@@ -3,6 +3,8 @@
 import { PrismaClient } from "@prisma/client";
 import { cookies } from "next/headers";
 import { generateImageAction } from "./generate";
+import { checkBalance, deductBalance } from "@/lib/billing";
+import { getModelPrice } from "@/lib/pricing";
 import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen";
 
 const prisma = new PrismaClient();
@@ -39,8 +41,22 @@ export async function createImageTask(
   model: GeminiImageModel,
   config: ImageGenerationConfig = {},
   referenceImages: string[] = []
-): Promise<{ taskId: string }> {
+): Promise<{ taskId: string; error?: string }> {
   const userId = await getCurrentUserId();
+
+  // 检查用户余额是否足够
+  if (userId) {
+    const price = getModelPrice(model);
+    if (price > 0) {
+      const { sufficient, balance } = await checkBalance(userId, price);
+      if (!sufficient) {
+        return {
+          taskId: "",
+          error: `余额不足，当前余额 ¥${balance.toFixed(2)}，本次需要 ¥${price.toFixed(2)}`,
+        };
+      }
+    }
+  }
 
   const task = await prisma.imageTask.create({
     data: {
@@ -132,6 +148,23 @@ async function processImageTask(taskId: string): Promise<void> {
           updatedAt: new Date(),
         },
       });
+
+      // 扣费（仅当有用户 ID 时）
+      if (task.userId) {
+        const billingResult = await deductBalance(
+          task.userId,
+          "image",
+          task.model,
+          taskId,
+          `图片生成: ${task.prompt.substring(0, 50)}...`
+        );
+        if (billingResult.success) {
+          console.log(`[Task ${taskId}] 💰 Charged ¥${billingResult.amount?.toFixed(2)}, balance: ¥${billingResult.balanceAfter?.toFixed(2)}`);
+        } else {
+          console.warn(`[Task ${taskId}] ⚠️ Billing failed: ${billingResult.error}`);
+        }
+      }
+
       console.log(`[Task ${taskId}] ✅ Completed successfully`);
     } else {
       // 失败：更新状态为 failed
