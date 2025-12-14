@@ -34,6 +34,8 @@ interface ConsumptionRecord {
   balanceAfter: number;
   description: string | null;
   createdAt: string;
+  imageUrl: string | null;
+  prompt: string | null;
 }
 
 interface UserDetail {
@@ -43,6 +45,47 @@ interface UserDetail {
     total: number;
     totalAmount: number;
   };
+}
+
+// 图片预览弹窗
+function ImagePreviewModal({
+  imageUrl,
+  prompt,
+  onClose,
+}: {
+  imageUrl: string;
+  prompt: string | null;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-w-4xl max-h-[90vh] bg-white rounded-xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white z-10"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        <img
+          src={imageUrl}
+          alt="Generated image"
+          className="max-w-full max-h-[80vh] object-contain"
+        />
+        {prompt && (
+          <div className="p-4 bg-white border-t">
+            <p className="text-sm text-[var(--muted-foreground)]">Prompt:</p>
+            <p className="text-sm text-[var(--foreground)] mt-1">{prompt}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // 用户详情弹窗组件
@@ -57,6 +100,7 @@ function UserDetailModal({
   const [detail, setDetail] = useState<UserDetail | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [previewImage, setPreviewImage] = useState<{ url: string; prompt: string | null } | null>(null);
 
   const fetchDetail = useCallback(async (pageNum: number) => {
     setLoading(true);
@@ -192,9 +236,28 @@ function UserDetailModal({
                     {detail.consumption.records.map((record) => (
                       <div
                         key={record.id}
-                        className="flex items-center justify-between p-3 bg-[var(--secondary)] rounded-lg"
+                        className="flex items-center gap-3 p-3 bg-[var(--secondary)] rounded-lg"
                       >
-                        <div>
+                        {/* 图片缩略图 */}
+                        {record.imageUrl ? (
+                          <div
+                            className="w-12 h-12 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0 border border-[var(--border)]"
+                            onClick={() => setPreviewImage({ url: record.imageUrl!, prompt: record.prompt })}
+                          >
+                            <img
+                              src={record.imageUrl}
+                              alt="Generated"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-[var(--muted)] flex items-center justify-center flex-shrink-0">
+                            <Image className="w-5 h-5 text-[var(--muted-foreground)]" />
+                          </div>
+                        )}
+
+                        {/* 消费信息 */}
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-[var(--foreground)]">
                               {CONSUMPTION_TYPE_LABELS[record.type as ConsumptionType] || record.type}
@@ -206,13 +269,15 @@ function UserDetailModal({
                           <div className="text-xs text-[var(--muted-foreground)] mt-1">
                             {new Date(record.createdAt).toLocaleString("zh-CN")}
                           </div>
-                          {record.description && (
-                            <div className="text-xs text-[var(--muted-foreground)] mt-1 truncate max-w-xs">
-                              {record.description}
+                          {record.prompt && (
+                            <div className="text-xs text-[var(--muted-foreground)] mt-1 truncate">
+                              {record.prompt.substring(0, 60)}...
                             </div>
                           )}
                         </div>
-                        <div className="text-right">
+
+                        {/* 金额 */}
+                        <div className="text-right flex-shrink-0">
                           <div
                             className={`font-medium ${
                               record.amount > 0 ? "text-red-500" : "text-green-500"
@@ -259,6 +324,15 @@ function UserDetailModal({
           <div className="p-8 text-center text-red-500">获取用户详情失败</div>
         )}
       </div>
+
+      {/* 图片预览弹窗 */}
+      {previewImage && (
+        <ImagePreviewModal
+          imageUrl={previewImage.url}
+          prompt={previewImage.prompt}
+          onClose={() => setPreviewImage(null)}
+        />
+      )}
     </div>
   );
 }

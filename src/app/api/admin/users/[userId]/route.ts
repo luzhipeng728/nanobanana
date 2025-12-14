@@ -81,6 +81,20 @@ export async function GET(
       }),
     ]);
 
+    // 获取关联的图片任务信息
+    const taskIds = consumptionRecords
+      .filter((r) => r.taskId && r.type === 'image')
+      .map((r) => r.taskId as string);
+
+    const imageTasks = taskIds.length > 0
+      ? await prisma.imageTask.findMany({
+          where: { id: { in: taskIds } },
+          select: { id: true, imageUrl: true, prompt: true },
+        })
+      : [];
+
+    const taskMap = new Map(imageTasks.map((t) => [t.id, t]));
+
     return NextResponse.json({
       success: true,
       user: {
@@ -94,17 +108,22 @@ export async function GET(
         consumptionCount: user._count.consumptionRecords,
       },
       consumption: {
-        records: consumptionRecords.map((r) => ({
-          id: r.id,
-          type: r.type,
-          modelId: r.modelId,
-          taskId: r.taskId,
-          amount: Number(r.amount),
-          balanceBefore: Number(r.balanceBefore),
-          balanceAfter: Number(r.balanceAfter),
-          description: r.description,
-          createdAt: r.createdAt,
-        })),
+        records: consumptionRecords.map((r) => {
+          const task = r.taskId ? taskMap.get(r.taskId) : null;
+          return {
+            id: r.id,
+            type: r.type,
+            modelId: r.modelId,
+            taskId: r.taskId,
+            amount: Number(r.amount),
+            balanceBefore: Number(r.balanceBefore),
+            balanceAfter: Number(r.balanceAfter),
+            description: r.description,
+            createdAt: r.createdAt,
+            imageUrl: task?.imageUrl || null,
+            prompt: task?.prompt || null,
+          };
+        }),
         total: consumptionTotal,
         totalAmount: Number(consumptionSum._sum.amount ?? 0),
       },
