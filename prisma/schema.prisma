@@ -215,6 +215,25 @@ model ApiKeyState {
   updatedAt       DateTime @updatedAt
 }
 
+// API Key 存储（用于管理 Gemini、Seedream 等外部服务的 Key）
+model ApiKey {
+  id        String   @id @default(uuid())
+  provider  String   // 提供商标识: gemini, seedream
+  key       String   @db.Text // API Key
+  name      String?  // 备注名称，如 "Gemini Key 1", "Seedream 主账号"
+  isActive  Boolean  @default(true) // 是否启用
+  priority  Int      @default(0) // 优先级（同 provider 多个 key 时，数字越大优先级越高）
+  usageCount Int     @default(0) // 使用次数统计
+  lastUsedAt DateTime? // 最后使用时间
+  lastError  String?  @db.Text // 最后一次错误信息
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([provider])
+  @@index([isActive])
+  @@index([provider, isActive, priority])
+}
+
 // Sprite 精灵图生成任务
 model SpriteTask {
   id              String    @id @default(uuid())

@@ -13,6 +13,7 @@ import type {
 } from '../types';
 import { getSeedreamSize } from '../utils/resolution-mapper';
 import { uploadBufferToR2 } from '@/lib/r2';
+import { getSeedreamKey } from '@/lib/api-keys';
 
 // Seedream API 配置
 const SEEDREAM_API_URL = 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
@@ -96,11 +97,12 @@ export class SeedreamAdapter extends ImageGenerationAdapter {
    * 生成图片
    */
   async generate(params: ImageGenerationParams): Promise<ImageGenerationResult> {
-    const apiKey = process.env.SEEDREAM_API_KEY;
+    // 从数据库获取 API Key
+    const apiKey = await getSeedreamKey();
     if (!apiKey) {
       return {
         success: false,
-        error: 'SEEDREAM_API_KEY 未配置',
+        error: 'Seedream API Key 未配置（请在管理后台添加）',
       };
     }
 

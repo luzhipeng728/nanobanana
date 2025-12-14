@@ -21,6 +21,7 @@ import type {
 import { uploadBufferToR2 } from '@/lib/r2';
 import { fetchAndCompressImage } from '@/lib/image-utils';
 import { prisma } from '@/lib/prisma';
+import { getGeminiKeys } from '@/lib/api-keys';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -34,20 +35,28 @@ const GEMINI_MODEL_MAP: Record<string, string> = {
 };
 
 // ============================================================================
-// API Key 管理
+// API Key 管理（从数据库获取）
 // ============================================================================
 
-const GEMINI_API_KEYS: string[] = [];
-const keyEnvNames = [
-  'GEMINI_API_KEY',
-  'GEMINI_API_KEY_2',
-  'GEMINI_API_KEY_3',
-  'GEMINI_API_KEY_4',
-  'GEMINI_API_KEY_5',
-];
-for (const envName of keyEnvNames) {
-  const key = process.env[envName];
-  if (key) GEMINI_API_KEYS.push(key);
+// 运行时缓存 Key 列表
+let cachedGeminiKeys: string[] = [];
+let keysLoadedAt = 0;
+const KEY_CACHE_TTL = 60 * 1000; // 1 分钟缓存
+
+async function loadGeminiKeys(): Promise<string[]> {
+  const now = Date.now();
+  if (cachedGeminiKeys.length > 0 && now - keysLoadedAt < KEY_CACHE_TTL) {
+    return cachedGeminiKeys;
+  }
+
+  const keys = await getGeminiKeys();
+  if (keys.length > 0) {
+    cachedGeminiKeys = keys;
+    keysLoadedAt = now;
+    console.log(`[GeminiAdapter] 从数据库加载了 ${keys.length} 个 API Key`);
+  }
+
+  return cachedGeminiKeys;
 }
 
 const RECOVERY_TIME = 24 * 60 * 60 * 1000; // 24 小时后重试失败的 Key
@@ -110,7 +119,8 @@ async function getKeyState() {
 }
 
 async function getCurrentApiKey(): Promise<{ key: string; index: number } | null> {
-  if (GEMINI_API_KEYS.length === 0) return null;
+  const keys = await loadGeminiKeys();
+  if (keys.length === 0) return null;
 
   const state = await getKeyState();
   const failedKeys: number[] = JSON.parse(state.failedKeys);
@@ -144,8 +154,8 @@ async function getCurrentApiKey(): Promise<{ key: string; index: number } | null
   }
 
   // 找第一个可用的 Key
-  for (let i = 0; i < GEMINI_API_KEYS.length; i++) {
-    const index = (state.currentKeyIndex + i) % GEMINI_API_KEYS.length;
+  for (let i = 0; i < keys.length; i++) {
+    const index = (state.currentKeyIndex + i) % keys.length;
     if (!stillFailedKeys.includes(index)) {
       if (index !== state.currentKeyIndex) {
         await prisma.apiKeyState.update({
@@ -153,15 +163,16 @@ async function getCurrentApiKey(): Promise<{ key: string; index: number } | null
           data: { currentKeyIndex: index },
         });
       }
-      return { key: GEMINI_API_KEYS[index], index };
+      return { key: keys[index], index };
     }
   }
 
-  console.warn(`[GeminiAdapter] All ${GEMINI_API_KEYS.length} keys exhausted!`);
-  return { key: GEMINI_API_KEYS[0], index: 0 };
+  console.warn(`[GeminiAdapter] All ${keys.length} keys exhausted!`);
+  return { key: keys[0], index: 0 };
 }
 
 async function markKeyFailed(keyIndex: number): Promise<boolean> {
+  const keys = await loadGeminiKeys();
   const state = await getKeyState();
   const failedKeys: number[] = JSON.parse(state.failedKeys);
   const failedAt: Record<string, number> = JSON.parse(state.failedAt);
@@ -170,11 +181,11 @@ async function markKeyFailed(keyIndex: number): Promise<boolean> {
     failedKeys.push(keyIndex);
     failedAt[String(keyIndex)] = Date.now();
 
-    console.log(`[GeminiAdapter] Key ${keyIndex + 1}/${GEMINI_API_KEYS.length} marked as FAILED`);
+    console.log(`[GeminiAdapter] Key ${keyIndex + 1}/${keys.length} marked as FAILED`);
 
     let nextIndex = -1;
-    for (let i = 1; i < GEMINI_API_KEYS.length; i++) {
-      const candidateIndex = (keyIndex + i) % GEMINI_API_KEYS.length;
+    for (let i = 1; i < keys.length; i++) {
+      const candidateIndex = (keyIndex + i) % keys.length;
       if (!failedKeys.includes(candidateIndex)) {
         nextIndex = candidateIndex;
         break;
@@ -191,7 +202,7 @@ async function markKeyFailed(keyIndex: number): Promise<boolean> {
     });
 
     if (nextIndex >= 0) {
-      console.log(`[GeminiAdapter] Switched to Key ${nextIndex + 1}/${GEMINI_API_KEYS.length}`);
+      console.log(`[GeminiAdapter] Switched to Key ${nextIndex + 1}/${keys.length}`);
       return true;
     } else {
       console.error(`[GeminiAdapter] All keys exhausted!`);
@@ -199,7 +210,7 @@ async function markKeyFailed(keyIndex: number): Promise<boolean> {
     }
   }
 
-  return failedKeys.length < GEMINI_API_KEYS.length;
+  return failedKeys.length < keys.length;
 }
 
 // ============================================================================

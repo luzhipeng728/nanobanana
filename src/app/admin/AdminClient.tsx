@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PREMIUM_MODELS, IMAGE_MODELS } from "@/lib/image-generation/types";
 import { IMAGE_MODEL_PRICING, formatPrice, CONSUMPTION_TYPE_LABELS } from "@/lib/pricing";
 import type { ConsumptionType } from "@/lib/pricing";
-import { X, Wallet, Calendar, Image, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Wallet, Calendar, Image, ChevronLeft, ChevronRight, Key } from "lucide-react";
 
 // Cloudflare Image Resizing - 缩略图 URL
 function getThumbnailUrl(url: string, width = 200): string {
@@ -459,6 +459,13 @@ export default function AdminClient({ currentUser }: { currentUser: string }) {
             <span className="text-sm text-[var(--foreground)]">
               管理员: {currentUser}
             </span>
+            <Link
+              href="/admin/api-keys"
+              className="px-3 py-1.5 text-sm bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg transition-colors flex items-center gap-1"
+            >
+              <Key className="w-4 h-4" />
+              API Keys
+            </Link>
             <Link
               href="/"
               className="px-3 py-1.5 text-sm bg-[var(--secondary)] hover:bg-[var(--muted)] rounded-lg transition-colors"
