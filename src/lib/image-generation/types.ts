@@ -32,6 +32,42 @@ export const IMAGE_MODELS = {
 
 export type ImageModel = keyof typeof IMAGE_MODELS;
 
+// ============ 模型权限分类 ============
+
+/**
+ * 基础模型 - 所有登录用户都可使用
+ */
+export const BASE_MODELS: ImageModel[] = ['nano-banana', 'seedream-4.5'];
+
+/**
+ * 高级模型 - 需要单独授权
+ */
+export const PREMIUM_MODELS: ImageModel[] = ['nano-banana-pro'];
+
+/**
+ * 检查模型是否为基础模型（无需授权）
+ */
+export function isBaseModel(model: ImageModel): boolean {
+  return BASE_MODELS.includes(model);
+}
+
+/**
+ * 检查模型是否为高级模型（需要授权）
+ */
+export function isPremiumModel(model: ImageModel): boolean {
+  return PREMIUM_MODELS.includes(model);
+}
+
+/**
+ * 根据用户已授权的模型列表，返回用户可用的所有模型
+ * @param grantedModels 用户被授权的高级模型 ID 列表
+ */
+export function getAvailableModelsForUser(grantedModels: string[]): ImageModel[] {
+  // 基础模型 + 用户被授权的高级模型
+  const premiumGranted = PREMIUM_MODELS.filter(m => grantedModels.includes(m));
+  return [...BASE_MODELS, ...premiumGranted];
+}
+
 // ============ 输入参数 ============
 
 export interface ImageGenerationParams {

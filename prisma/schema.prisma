@@ -24,6 +24,20 @@ model User {
   spriteTasks SpriteTask[]
   ttsTasks    TTSTask[]
   pptTasks    PPTTask[]
+  modelPermissions UserModelPermission[]
+}
+
+// 用户-模型权限（细粒度控制）
+model UserModelPermission {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modelId   String   // 模型 ID，如 'nano-banana-pro'
+  createdAt DateTime @default(now())
+
+  @@unique([userId, modelId])
+  @@index([userId])
+  @@index([modelId])
 }
 
 model Canvas {

@@ -28,6 +28,7 @@ import type {
   ImageModel,
   IMAGE_MODELS,
 } from './types';
+import { getAvailableModelsForUser, isBaseModel } from './types';
 
 // ============================================================================
 // 适配器注册
@@ -135,6 +136,51 @@ export function getModelList(): Array<{
 }
 
 /**
+ * 获取扁平化的模型列表（根据用户授权过滤）
+ * @param grantedModels 用户被授权的高级模型 ID 列表（从 UserModelPermission 表查询）
+ */
+export function getModelListForUser(grantedModels: string[]): Array<{
+  id: string;
+  label: string;
+  adapter: string;
+  supportsReferenceImages: boolean;
+}> {
+  const availableModels = getAvailableModelsForUser(grantedModels);
+  return getModelList().filter(model =>
+    availableModels.includes(model.id as ImageModel)
+  );
+}
+
+/**
+ * 获取所有可用模型及其能力（根据用户授权过滤）
+ * @param grantedModels 用户被授权的高级模型 ID 列表（从 UserModelPermission 表查询）
+ */
+export function getAvailableModelsForUserWithCapabilities(grantedModels: string[]): AdapterCapabilities[] {
+  const availableModels = getAvailableModelsForUser(grantedModels);
+
+  return adapters.map(adapter => {
+    // 过滤该适配器下用户有权限使用的模型
+    const allowedModels = adapter.models.filter(modelId =>
+      availableModels.includes(modelId as ImageModel)
+    );
+
+    return {
+      name: adapter.name,
+      models: allowedModels.map(modelId => ({
+        id: modelId,
+        label: adapter.getModelLabel(modelId),
+        description: getModelDescription(modelId),
+      })),
+      supportedResolutions: adapter.capabilities.supportedResolutions,
+      supportedAspectRatios: adapter.capabilities.supportedAspectRatios,
+      supportsReferenceImages: adapter.capabilities.supportsReferenceImages,
+      maxReferenceImages: adapter.capabilities.maxReferenceImages,
+      extraOptions: adapter.capabilities.extraOptions,
+    };
+  }).filter(cap => cap.models.length > 0);  // 过滤掉没有可用模型的适配器
+}
+
+/**
  * 检查模型是否支持参考图片
  */
 export function modelSupportsReferenceImages(modelId: string): boolean {
@@ -191,4 +237,11 @@ export type {
   ExtraOptionConfig,
 } from './types';
 
-export { IMAGE_MODELS } from './types';
+export {
+  IMAGE_MODELS,
+  BASE_MODELS,
+  PREMIUM_MODELS,
+  isBaseModel,
+  isPremiumModel,
+  getAvailableModelsForUser,
+} from './types';
