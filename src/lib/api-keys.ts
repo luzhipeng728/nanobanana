@@ -70,10 +70,18 @@ export async function getGeminiKeys(): Promise<string[]> {
 }
 
 /**
- * 获取 Seedream Key
+ * 获取 Seedream Key（单个，用于简单场景）
  */
 export async function getSeedreamKey(): Promise<string | null> {
   return getApiKey('seedream');
+}
+
+/**
+ * 获取所有 Seedream Keys（用于轮询）
+ */
+export async function getSeedreamKeys(): Promise<string[]> {
+  const keys = await getApiKeys('seedream');
+  return keys.map(k => k.key);
 }
 
 /**

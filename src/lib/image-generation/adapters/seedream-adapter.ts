@@ -13,7 +13,7 @@ import type {
 } from '../types';
 import { getSeedreamSize } from '../utils/resolution-mapper';
 import { uploadBufferToR2 } from '@/lib/r2';
-import { getSeedreamKey } from '@/lib/api-keys';
+import { getSeedreamKeys } from '@/lib/api-keys';
 
 // Seedream API 配置
 const SEEDREAM_API_URL = 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
@@ -21,6 +21,35 @@ const SEEDREAM_MODEL_ID = 'doubao-seedream-4-5-251128';
 
 // 默认超时时间（毫秒）
 const DEFAULT_TIMEOUT = 180000; // 3 分钟
+
+// Key 轮转状态
+let currentSeedreamKeyIndex = 0;
+let cachedSeedreamKeys: string[] = [];
+let seedreamKeysLoadedAt = 0;
+const SEEDREAM_KEY_CACHE_TTL = 60 * 1000; // 1 分钟缓存
+
+async function loadSeedreamKeys(): Promise<string[]> {
+  const now = Date.now();
+  if (cachedSeedreamKeys.length > 0 && now - seedreamKeysLoadedAt < SEEDREAM_KEY_CACHE_TTL) {
+    return cachedSeedreamKeys;
+  }
+
+  const keys = await getSeedreamKeys();
+  if (keys.length > 0) {
+    cachedSeedreamKeys = keys;
+    seedreamKeysLoadedAt = now;
+    console.log(`[Seedream] 从数据库加载了 ${keys.length} 个 API Key`);
+  }
+
+  return cachedSeedreamKeys;
+}
+
+function getNextSeedreamKey(keys: string[]): string {
+  if (keys.length === 0) throw new Error('No Seedream keys available');
+  const key = keys[currentSeedreamKeyIndex % keys.length];
+  currentSeedreamKeyIndex = (currentSeedreamKeyIndex + 1) % keys.length;
+  return key;
+}
 
 /**
  * Seedream API 响应类型
@@ -97,14 +126,18 @@ export class SeedreamAdapter extends ImageGenerationAdapter {
    * 生成图片
    */
   async generate(params: ImageGenerationParams): Promise<ImageGenerationResult> {
-    // 从数据库获取 API Key
-    const apiKey = await getSeedreamKey();
-    if (!apiKey) {
+    // 从数据库获取 API Keys（支持多 Key 轮转）
+    const keys = await loadSeedreamKeys();
+    if (keys.length === 0) {
       return {
         success: false,
         error: 'Seedream API Key 未配置（请在管理后台添加）',
       };
     }
+
+    // 轮转获取下一个 Key
+    const apiKey = getNextSeedreamKey(keys);
+    console.log(`[Seedream] 使用 Key ${(currentSeedreamKeyIndex) || keys.length}/${keys.length}`);
 
     // 计算实际尺寸
     const size = getSeedreamSize(params.resolution || '2K', params.aspectRatio || '1:1');
