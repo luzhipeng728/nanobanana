@@ -7,6 +7,20 @@ import { IMAGE_MODEL_PRICING, formatPrice, CONSUMPTION_TYPE_LABELS } from "@/lib
 import type { ConsumptionType } from "@/lib/pricing";
 import { X, Wallet, Calendar, Image, ChevronLeft, ChevronRight } from "lucide-react";
 
+// Cloudflare Image Resizing - 缩略图 URL
+function getThumbnailUrl(url: string, width = 200): string {
+  if (url.includes('doubao.luzhipeng.com')) {
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
+      return `https://doubao.luzhipeng.com/cdn-cgi/image/format=auto,width=${width},quality=75${path}`;
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
+
 interface User {
   id: string;
   username: string;
@@ -238,14 +252,14 @@ function UserDetailModal({
                         key={record.id}
                         className="flex items-center gap-3 p-3 bg-[var(--secondary)] rounded-lg"
                       >
-                        {/* 图片缩略图 */}
+                        {/* 图片缩略图 - 使用 Cloudflare 优化 */}
                         {record.imageUrl ? (
                           <div
                             className="w-12 h-12 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0 border border-[var(--border)]"
                             onClick={() => setPreviewImage({ url: record.imageUrl!, prompt: record.prompt })}
                           >
                             <img
-                              src={record.imageUrl}
+                              src={getThumbnailUrl(record.imageUrl, 100)}
                               alt="Generated"
                               className="w-full h-full object-cover"
                             />
