@@ -22,6 +22,25 @@ const SEEDREAM_MODEL_ID = 'doubao-seedream-4-5-251128';
 // 默认超时时间（毫秒）
 const DEFAULT_TIMEOUT = 180000; // 3 分钟
 
+// 重试配置
+const MAX_RETRIES = 3;
+const INITIAL_DELAY = 2000;
+
+// 判断是否可重试的错误
+const isRetryableError = (status: number, errorMessage: string): boolean => {
+  // 408 Request Timeout、429 Too Many Requests、5xx 服务器错误
+  const retryableStatuses = [408, 429, 500, 502, 503, 504];
+  if (retryableStatuses.includes(status)) return true;
+
+  const retryableMessages = [
+    'timeout', 'overloaded', 'unavailable', 'temporarily',
+    'try again', 'aborted', 'fetch failed', 'too many requests',
+  ];
+  return retryableMessages.some(msg => errorMessage.toLowerCase().includes(msg));
+};
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Key 轮转状态
 let currentSeedreamKeyIndex = 0;
 let cachedSeedreamKeys: string[] = [];
@@ -135,10 +154,6 @@ export class SeedreamAdapter extends ImageGenerationAdapter {
       };
     }
 
-    // 轮转获取下一个 Key
-    const apiKey = getNextSeedreamKey(keys);
-    console.log(`[Seedream] 使用 Key ${(currentSeedreamKeyIndex) || keys.length}/${keys.length}`);
-
     // 计算实际尺寸
     const size = getSeedreamSize(params.resolution || '2K', params.aspectRatio || '1:1');
 
@@ -146,143 +161,190 @@ export class SeedreamAdapter extends ImageGenerationAdapter {
     console.log(`[Seedream] 分辨率: ${params.resolution || '2K'}, 比例: ${params.aspectRatio || '1:1'}, 实际尺寸: ${size}`);
     console.log(`[Seedream] 提示词: ${params.prompt.substring(0, 100)}...`);
 
-    try {
-      // 构建请求体
-      const requestBody: Record<string, unknown> = {
-        model: SEEDREAM_MODEL_ID,
-        prompt: params.prompt,
-        size,
-        response_format: 'url',
-        stream: false,
-        watermark: false,
-      };
+    // 构建请求体
+    const requestBody: Record<string, unknown> = {
+      model: SEEDREAM_MODEL_ID,
+      prompt: params.prompt,
+      size,
+      response_format: 'url',
+      stream: false,
+      watermark: false,
+    };
 
-      // 组图功能
-      const sequentialMode = params.extraOptions?.sequentialImageGeneration || 'disabled';
-      requestBody.sequential_image_generation = sequentialMode;
+    // 组图功能
+    const sequentialMode = params.extraOptions?.sequentialImageGeneration || 'disabled';
+    requestBody.sequential_image_generation = sequentialMode;
 
-      if (sequentialMode === 'auto' && params.extraOptions?.sequentialImageGenerationOptions) {
-        requestBody.sequential_image_generation_options = params.extraOptions.sequentialImageGenerationOptions;
-      }
+    if (sequentialMode === 'auto' && params.extraOptions?.sequentialImageGenerationOptions) {
+      requestBody.sequential_image_generation_options = params.extraOptions.sequentialImageGenerationOptions;
+    }
 
-      // 设置超时
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+    // 带重试的 API 调用
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      // 每次重试使用不同的 Key（轮转）
+      const apiKey = getNextSeedreamKey(keys);
+      console.log(`[Seedream] 使用 Key ${(currentSeedreamKeyIndex) || keys.length}/${keys.length}${attempt > 0 ? ` (重试 ${attempt}/${MAX_RETRIES})` : ''}`);
 
-      const response = await fetch(SEEDREAM_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
-      });
+      try {
+        // 设置超时
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
 
-      clearTimeout(timeoutId);
+        const response = await fetch(SEEDREAM_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
 
-      // 解析响应
-      const data: SeedreamResponse = await response.json();
+        clearTimeout(timeoutId);
 
-      // 检查错误
-      if (data.error) {
-        console.error(`[Seedream] API 错误:`, data.error);
-        return {
-          success: false,
-          error: `Seedream API 错误: ${data.error.message}`,
-        };
-      }
+        // 解析响应
+        const data: SeedreamResponse = await response.json();
 
-      if (!response.ok) {
-        console.error(`[Seedream] HTTP 错误: ${response.status}`);
-        return {
-          success: false,
-          error: `Seedream API HTTP 错误: ${response.status}`,
-        };
-      }
+        // 检查 HTTP 错误（可重试）
+        if (!response.ok) {
+          const errorMsg = data.error?.message || `HTTP ${response.status}`;
+          console.error(`[Seedream] HTTP 错误: ${response.status} - ${errorMsg}`);
 
-      // 检查数据
-      if (!data.data || data.data.length === 0) {
-        console.error(`[Seedream] 响应中没有图片数据`);
-        return {
-          success: false,
-          error: 'Seedream API 返回空数据',
-        };
-      }
-
-      console.log(`[Seedream] API 返回 ${data.data.length} 张图片`);
-
-      // 下载图片并上传到 R2
-      const uploadedUrls: string[] = [];
-
-      for (let i = 0; i < data.data.length; i++) {
-        const imageData = data.data[i];
-        console.log(`[Seedream] 处理图片 ${i + 1}/${data.data.length}, 原始尺寸: ${imageData.size}`);
-
-        try {
-          // 下载图片
-          const imageResponse = await fetch(imageData.url);
-          if (!imageResponse.ok) {
-            console.error(`[Seedream] 下载图片失败: ${imageResponse.status}`);
+          // 检查是否可重试
+          if (attempt < MAX_RETRIES && isRetryableError(response.status, errorMsg)) {
+            const delay = INITIAL_DELAY * Math.pow(2, attempt);
+            console.log(`[Seedream] 可重试错误，等待 ${delay}ms 后重试...`);
+            await sleep(delay);
             continue;
           }
 
-          const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-          const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
-
-          console.log(`[Seedream] 图片大小: ${(imageBuffer.length / 1024 / 1024).toFixed(2)} MB`);
-
-          // 上传到 R2
-          const r2Url = await uploadBufferToR2(imageBuffer, mimeType);
-          uploadedUrls.push(r2Url);
-
-          console.log(`[Seedream] 图片 ${i + 1} 上传成功: ${r2Url}`);
-        } catch (uploadError) {
-          console.error(`[Seedream] 上传图片 ${i + 1} 失败:`, uploadError);
+          return {
+            success: false,
+            error: `Seedream API 错误 (${response.status}): ${errorMsg}`,
+          };
         }
-      }
 
-      if (uploadedUrls.length === 0) {
+        // 检查 API 错误
+        if (data.error) {
+          console.error(`[Seedream] API 错误:`, data.error);
+
+          // 检查是否可重试
+          if (attempt < MAX_RETRIES && isRetryableError(0, data.error.message)) {
+            const delay = INITIAL_DELAY * Math.pow(2, attempt);
+            console.log(`[Seedream] 可重试错误，等待 ${delay}ms 后重试...`);
+            await sleep(delay);
+            continue;
+          }
+
+          return {
+            success: false,
+            error: `Seedream API 错误: ${data.error.message}`,
+          };
+        }
+
+        // 检查数据
+        if (!data.data || data.data.length === 0) {
+          console.error(`[Seedream] 响应中没有图片数据`);
+          return {
+            success: false,
+            error: 'Seedream API 返回空数据',
+          };
+        }
+
+        console.log(`[Seedream] API 返回 ${data.data.length} 张图片`);
+
+        // 下载图片并上传到 R2
+        const uploadedUrls: string[] = [];
+
+        for (let i = 0; i < data.data.length; i++) {
+          const imageData = data.data[i];
+          console.log(`[Seedream] 处理图片 ${i + 1}/${data.data.length}, 原始尺寸: ${imageData.size}`);
+
+          try {
+            // 下载图片
+            const imageResponse = await fetch(imageData.url);
+            if (!imageResponse.ok) {
+              console.error(`[Seedream] 下载图片失败: ${imageResponse.status}`);
+              continue;
+            }
+
+            const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+            const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
+
+            console.log(`[Seedream] 图片大小: ${(imageBuffer.length / 1024 / 1024).toFixed(2)} MB`);
+
+            // 上传到 R2
+            const r2Url = await uploadBufferToR2(imageBuffer, mimeType);
+            uploadedUrls.push(r2Url);
+
+            console.log(`[Seedream] 图片 ${i + 1} 上传成功: ${r2Url}`);
+          } catch (uploadError) {
+            console.error(`[Seedream] 上传图片 ${i + 1} 失败:`, uploadError);
+          }
+        }
+
+        if (uploadedUrls.length === 0) {
+          return {
+            success: false,
+            error: '所有图片上传失败',
+          };
+        }
+
+        console.log(`[Seedream] 生成完成，共 ${uploadedUrls.length} 张图片`);
+
         return {
-          success: false,
-          error: '所有图片上传失败',
-        };
-      }
-
-      console.log(`[Seedream] 生成完成，共 ${uploadedUrls.length} 张图片`);
-
-      return {
-        success: true,
-        imageUrl: uploadedUrls[0],
-        imageUrls: uploadedUrls.length > 1 ? uploadedUrls : undefined,
-        meta: {
-          model: `seedream/${SEEDREAM_MODEL_ID}`,
-          actualResolution: data.data[0]?.size,
-          usage: {
-            generatedImages: data.usage.generated_images,
-            tokens: data.usage.total_tokens,
+          success: true,
+          imageUrl: uploadedUrls[0],
+          imageUrls: uploadedUrls.length > 1 ? uploadedUrls : undefined,
+          meta: {
+            model: `seedream/${SEEDREAM_MODEL_ID}`,
+            actualResolution: data.data[0]?.size,
+            usage: {
+              generatedImages: data.usage.generated_images,
+              tokens: data.usage.total_tokens,
+            },
           },
-        },
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorName = error instanceof Error ? error.name : '';
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorName = error instanceof Error ? error.name : '';
 
-      // 超时错误
-      if (errorName === 'AbortError') {
-        console.error(`[Seedream] 请求超时`);
+        // 超时错误（可重试）
+        if (errorName === 'AbortError') {
+          console.error(`[Seedream] 请求超时`);
+          if (attempt < MAX_RETRIES) {
+            const delay = INITIAL_DELAY * Math.pow(2, attempt);
+            console.log(`[Seedream] 超时，等待 ${delay}ms 后重试...`);
+            await sleep(delay);
+            continue;
+          }
+          return {
+            success: false,
+            error: 'Seedream API 请求超时（已重试多次）',
+          };
+        }
+
+        // 其他网络错误（可重试）
+        if (attempt < MAX_RETRIES && isRetryableError(0, errorMessage)) {
+          const delay = INITIAL_DELAY * Math.pow(2, attempt);
+          console.log(`[Seedream] 网络错误: ${errorMessage}，等待 ${delay}ms 后重试...`);
+          await sleep(delay);
+          continue;
+        }
+
+        console.error(`[Seedream] 生成失败:`, errorMessage);
         return {
           success: false,
-          error: 'Seedream API 请求超时',
+          error: `Seedream 生成失败: ${errorMessage}`,
         };
       }
-
-      console.error(`[Seedream] 生成失败:`, errorMessage);
-      return {
-        success: false,
-        error: `Seedream 生成失败: ${errorMessage}`,
-      };
     }
+
+    // 理论上不会到达这里，但作为保险
+    return {
+      success: false,
+      error: 'Seedream 生成失败（已达最大重试次数）',
+    };
   }
 
   /**

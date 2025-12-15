@@ -103,6 +103,7 @@ async function processQueue() {
     // 按模型分组检查
     const fastItems = state.queue.filter(item => item.model === "nano-banana");
     const proItems = state.queue.filter(item => item.model === "nano-banana-pro");
+    const seedreamItems = state.queue.filter(item => item.model === "seedream-4.5");
 
     let processed = false;
 
@@ -136,13 +137,30 @@ async function processQueue() {
       }
     }
 
+    // 处理 Seedream 4.5 模型队列
+    const seedreamConcurrent = state.queue.filter(
+      item => item.model === "seedream-4.5" && state.processing < MAX_CONCURRENT["seedream-4.5"]
+    ).length;
+
+    for (const item of seedreamItems) {
+      if (getAvailableQuota("seedream-4.5") > 0 &&
+          seedreamConcurrent < MAX_CONCURRENT["seedream-4.5"]) {
+        if (consumeQuota("seedream-4.5")) {
+          processItem(item);
+          processed = true;
+        }
+      }
+    }
+
     // 如果没有处理任何项，等待一段时间
     if (!processed && state.queue.length > 0) {
       const waitFast = getWaitTime("nano-banana");
       const waitPro = getWaitTime("nano-banana-pro");
+      const waitSeedream = getWaitTime("seedream-4.5");
       const minWait = Math.min(
         fastItems.length > 0 ? waitFast : Infinity,
-        proItems.length > 0 ? waitPro : Infinity
+        proItems.length > 0 ? waitPro : Infinity,
+        seedreamItems.length > 0 ? waitSeedream : Infinity
       );
 
       if (minWait > 0 && minWait < Infinity) {
@@ -225,8 +243,10 @@ export function getQueueStatus() {
     processing: state.processing,
     fastQuota: getAvailableQuota("nano-banana"),
     proQuota: getAvailableQuota("nano-banana-pro"),
+    seedreamQuota: getAvailableQuota("seedream-4.5"),
     fastInQueue: state.queue.filter(item => item.model === "nano-banana").length,
     proInQueue: state.queue.filter(item => item.model === "nano-banana-pro").length,
+    seedreamInQueue: state.queue.filter(item => item.model === "seedream-4.5").length,
   };
 }
 
