@@ -127,8 +127,8 @@ export type SuperAgentStreamEvent =
   | { type: 'thought'; iteration: number; content: string }       // 完整思考（向后兼容）
   | { type: 'action'; iteration: number; tool: string; input: Record<string, any> }
   | { type: 'observation'; iteration: number; result: any }
-  // 工具输入生成流式事件（防止长内容生成超时）
-  | { type: 'tool_input_chunk'; iteration: number; tool: string; chunkSize: number; totalSize: number }
+  // 工具输入生成流式事件（实时显示生成内容，防止长内容生成超时）
+  | { type: 'tool_input_chunk'; iteration: number; tool: string; chunk: string; content: string; chunkSize: number; totalSize: number }
   | { type: 'search_start'; query: string }
   | { type: 'search_result'; summary: string }
   // 深度研究事件
@@ -165,7 +165,9 @@ export type SuperAgentStreamEvent =
   | { type: 'complete'; result: FinalOutput }
   | { type: 'error'; error: string }
   // 多轮对话事件
-  | { type: 'conversation_state'; conversationId: string; totalTokens: number; hasCompressedHistory: boolean };
+  | { type: 'conversation_state'; conversationId: string; totalTokens: number; hasCompressedHistory: boolean }
+  // 通用进度事件（用于 HyprLab 等长时间操作的心跳）
+  | { type: 'progress'; message: string; elapsedSeconds?: number; estimatedMinutes?: { min: number; max: number } };
 
 // ========== 节点数据类型 ==========
 

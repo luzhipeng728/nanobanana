@@ -467,8 +467,13 @@ Generate a CLEAN image as if the markers do not exist.
         const chunkEvent = event as any;
         const toolDisplayName = TOOL_NAMES[chunkEvent.tool] || chunkEvent.tool;
         const sizeKB = (chunkEvent.totalSize / 1024).toFixed(1);
-        // 显示生成进度，让用户知道系统在工作
-        setStreamingThought(`📝 ${toolDisplayName}... 已生成 ${sizeKB}KB`);
+        // 实时显示生成内容的最后部分，让用户看到实际生成的提示词
+        const content = chunkEvent.content || '';
+        // 显示最后 200 个字符，避免内容过长
+        const displayContent = content.length > 200
+          ? '...' + content.slice(-200)
+          : content;
+        setStreamingThought(`📝 ${toolDisplayName} (${sizeKB}KB)\n${displayContent}`);
         break;
 
       case "observation":
@@ -623,6 +628,13 @@ Generate a CLEAN image as if the markers do not exist.
         if (typeof convEvent.hasCompressedHistory === 'boolean') {
           setHasCompressedHistory(convEvent.hasCompressedHistory);
         }
+        break;
+
+      // HyprLab 深度研究心跳事件（通用 progress 类型）
+      case "progress":
+        const progressEvent = event as any;
+        const progressMsg = progressEvent.message || `⏳ 处理中... ${progressEvent.elapsedSeconds || 0}秒`;
+        setStreamingThought(progressMsg);
         break;
     }
   }, []);

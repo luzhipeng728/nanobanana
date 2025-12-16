@@ -402,21 +402,20 @@ export async function runReActLoop(
               const currentBlock = collector.contentBlocks[idx];
               const toolName = currentBlock?.type === 'tool_use' ? currentBlock.name : 'unknown';
 
-              // 每收到一定量数据就发送进度事件，防止长时间无响应导致超时
-              // 特别是 finalize_output 工具可能生成大量提示词内容
               const totalSize = collector.currentToolInput.length;
               const chunkSize = partialJson.length;
 
-              // 每 2KB 发送一次进度事件，或者在数据量较大时更频繁
-              if (totalSize % 2048 < chunkSize || totalSize < 100) {
-                await sendEvent({
-                  type: 'tool_input_chunk',
-                  iteration: state.iteration,
-                  tool: toolName,
-                  chunkSize,
-                  totalSize
-                });
-              }
+              // 每次都发送流式事件，让前端实时显示生成内容
+              // 这样可以防止长时间无响应导致超时，同时让用户看到实际生成的内容
+              await sendEvent({
+                type: 'tool_input_chunk',
+                iteration: state.iteration,
+                tool: toolName,
+                chunk: partialJson,        // 新增：当前 chunk 内容
+                content: collector.currentToolInput,  // 新增：累积的完整内容
+                chunkSize,
+                totalSize
+              });
             }
             break;
           }

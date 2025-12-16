@@ -7,8 +7,7 @@
  *
  * 特性：
  * - 优先 API 支持（省钱方案）
- * - 多 API Key 轮转
- * - Vertex AI 回退
+ * - 多 API Key 轮转（从数据库获取 Key 池）
  * - 参考图片支持
  */
 
@@ -16,14 +15,11 @@ import { ImageGenerationAdapter, type AdapterCapabilitiesConfig } from '../base-
 import type {
   ImageGenerationParams,
   ImageGenerationResult,
-  ImageResolution,
 } from '../types';
 import { uploadBufferToR2 } from '@/lib/r2';
 import { fetchAndCompressImage } from '@/lib/image-utils';
 import { prisma } from '@/lib/prisma';
 import { getGeminiKeys } from '@/lib/api-keys';
-import * as fs from 'fs';
-import * as path from 'path';
 
 // ============================================================================
 // 模型配置
@@ -72,14 +68,6 @@ const PRIORITY_API = {
   model: process.env.PRIORITY_IMAGE_API_MODEL || 'gemini-3-pro-image',
   maxRetries: parseInt(process.env.PRIORITY_IMAGE_API_MAX_RETRIES || '10', 10),
 };
-
-// ============================================================================
-// Vertex AI 配置
-// ============================================================================
-
-const VERTEX_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || '';
-const VERTEX_LOCATION = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
-const VERTEX_MODEL_ID = 'gemini-2.0-flash-preview-image-generation';
 
 // ============================================================================
 // 辅助函数
@@ -258,16 +246,8 @@ export class GeminiAdapter extends ImageGenerationAdapter {
       console.log(`[GeminiAdapter] Priority API 失败，回退到标准 API`);
     }
 
-    // 标准 Gemini API
-    const result = await this.generateWithGeminiApi(params);
-
-    // 如果失败且有 Vertex AI 配置，尝试回退
-    if (!result.success && VERTEX_PROJECT_ID) {
-      console.log(`[GeminiAdapter] 尝试 Vertex AI 回退...`);
-      return await this.generateWithVertexAI(params);
-    }
-
-    return result;
+    // 标准 Gemini API（使用数据库中的 Key 池轮训）
+    return await this.generateWithGeminiApi(params);
   }
 
   /**
@@ -459,81 +439,6 @@ export class GeminiAdapter extends ImageGenerationAdapter {
   }
 
   /**
-   * 使用 Vertex AI 生成（回退方案）
-   */
-  private async generateWithVertexAI(params: ImageGenerationParams): Promise<ImageGenerationResult> {
-    console.log(`[GeminiAdapter/Vertex] 开始 Vertex AI 生成...`);
-
-    if (!VERTEX_PROJECT_ID) {
-      return { success: false, error: 'Vertex AI not configured' };
-    }
-
-    try {
-      const accessToken = await this.getVertexAccessToken();
-      const parts = await this.buildParts(params);
-
-      const requestBody: Record<string, unknown> = {
-        contents: [{ role: 'user', parts }],
-        generationConfig: {
-          responseModalities: ['TEXT', 'IMAGE'],
-        },
-      };
-
-      if (params.aspectRatio || params.resolution) {
-        requestBody.generationConfig = {
-          ...requestBody.generationConfig as object,
-          imageConfig: {
-            ...(params.aspectRatio && params.aspectRatio !== 'auto' && { aspectRatio: params.aspectRatio }),
-            ...(params.resolution && { imageSize: params.resolution }),
-            personGeneration: 'allow_all',
-          },
-        };
-      }
-
-      const apiUrl = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/publishers/google/models/${VERTEX_MODEL_ID}:generateContent`;
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 600000);
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        return { success: false, error: `Vertex AI error: ${response.status} - ${errorText}` };
-      }
-
-      const data = await response.json();
-      const imageResult = await this.parseGeminiResponse(data);
-
-      if (imageResult) {
-        return {
-          success: true,
-          imageUrl: imageResult.imageUrl,
-          meta: {
-            model: `vertex-ai/${VERTEX_MODEL_ID}`,
-            actualResolution: imageResult.size,
-          },
-        };
-      }
-
-      return { success: false, error: 'No image data in Vertex AI response' };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return { success: false, error: `Vertex AI error: ${errorMessage}` };
-    }
-  }
-
-  /**
    * 构建请求 parts（包含文本和参考图片）
    */
   private async buildParts(params: ImageGenerationParams): Promise<unknown[]> {
@@ -648,93 +553,6 @@ export class GeminiAdapter extends ImageGenerationAdapter {
     }
 
     return null;
-  }
-
-  /**
-   * 获取 Vertex AI Access Token
-   */
-  private async getVertexAccessToken(): Promise<string> {
-    // 方式1: 服务账号 JSON
-    const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-    if (serviceAccountJson) {
-      const serviceAccount = JSON.parse(serviceAccountJson);
-      const jwt = await this.createVertexJWT(serviceAccount);
-      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-          assertion: jwt,
-        }),
-      });
-      const tokenData = await tokenResponse.json() as { access_token?: string };
-      if (!tokenData.access_token) {
-        throw new Error('Failed to get Vertex AI access token');
-      }
-      return tokenData.access_token;
-    }
-
-    // 方式2: ADC (本地开发)
-    const os = await import('os');
-    const adcPath = path.join(os.homedir(), '.config', 'gcloud', 'application_default_credentials.json');
-
-    if (fs.existsSync(adcPath)) {
-      const adcContent = fs.readFileSync(adcPath, 'utf-8');
-      const adc = JSON.parse(adcContent) as {
-        type?: string;
-        client_id?: string;
-        client_secret?: string;
-        refresh_token?: string;
-      };
-
-      if (adc.type === 'authorized_user') {
-        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            client_id: adc.client_id || '',
-            client_secret: adc.client_secret || '',
-            refresh_token: adc.refresh_token || '',
-            grant_type: 'refresh_token',
-          }),
-        });
-
-        if (!tokenResponse.ok) {
-          throw new Error('Failed to refresh ADC token');
-        }
-
-        const tokenData = await tokenResponse.json() as { access_token?: string };
-        return tokenData.access_token || '';
-      }
-    }
-
-    throw new Error('No Google Cloud credentials found');
-  }
-
-  /**
-   * 创建 Vertex AI JWT
-   */
-  private async createVertexJWT(serviceAccount: { client_email: string; private_key: string }): Promise<string> {
-    const header = { alg: 'RS256', typ: 'JWT' };
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      iss: serviceAccount.client_email,
-      scope: 'https://www.googleapis.com/auth/cloud-platform',
-      aud: 'https://oauth2.googleapis.com/token',
-      iat: now,
-      exp: now + 3600,
-    };
-
-    const base64Header = Buffer.from(JSON.stringify(header)).toString('base64url');
-    const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    const unsignedToken = `${base64Header}.${base64Payload}`;
-
-    const crypto = await import('crypto');
-    const sign = crypto.createSign('RSA-SHA256');
-    sign.update(unsignedToken);
-    const signature = sign.sign(serviceAccount.private_key, 'base64url');
-
-    return `${unsignedToken}.${signature}`;
   }
 
   /**
