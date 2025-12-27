@@ -44,8 +44,22 @@ COPY . .
 RUN npx prisma generate
 
 # Build the application
+# 设置构建时的占位环境变量（运行时会被实际值覆盖）
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV OPENAI_API_KEY=build-placeholder
+ENV OPENAI_BASE_URL=https://api.openai.com/v1
+ENV OPENAI_MODEL=gpt-4
+ENV DATABASE_URL=mysql://user:pass@localhost:3306/db
+ENV R2_ACCOUNT_ID=placeholder
+ENV R2_ACCESS_KEY_ID=placeholder
+ENV R2_SECRET_ACCESS_KEY=placeholder
+ENV R2_BUCKET_NAME=placeholder
+ENV R2_PUBLIC_URL=https://example.com
+ENV GEMINI_API_KEY=placeholder
+ENV ANTHROPIC_API_KEY=placeholder
+ENV ANTHROPIC_BASE_URL=https://api.anthropic.com
+
 RUN npm run build
 
 # ============================================================================
