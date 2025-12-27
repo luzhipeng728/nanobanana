@@ -67,11 +67,58 @@ jobs:
     steps:
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          MUREKA_API_URL: ${{ secrets.MUREKA_API_URL }}
+          MUREKA_API_TOKEN: ${{ secrets.MUREKA_API_TOKEN }}
+          SORA_API_BASE_URL: ${{ secrets.SORA_API_BASE_URL }}
+          SORA_API_TOKEN: ${{ secrets.SORA_API_TOKEN }}
+          SORA_API_TYPE: ${{ secrets.SORA_API_TYPE }}
+          GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+          GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_SEARCH_API_KEY: ${{ secrets.GOOGLE_SEARCH_API_KEY }}
+          GOOGLE_SEARCH_ENGINE_ID: ${{ secrets.GOOGLE_SEARCH_ENGINE_ID }}
+          CLAUDE_MODEL: ${{ secrets.CLAUDE_MODEL }}
+          CLAUDE_MAX_TOKENS: ${{ secrets.CLAUDE_MAX_TOKENS }}
+          CLAUDE_LIGHT_MODEL: ${{ secrets.CLAUDE_LIGHT_MODEL }}
+          CLAUDE_LIGHT_MAX_TOKENS: ${{ secrets.CLAUDE_LIGHT_MAX_TOKENS }}
+          DEEP_RESEARCH_MAX_ROUNDS: ${{ secrets.DEEP_RESEARCH_MAX_ROUNDS }}
+          HYPRLAB_API_KEY: ${{ secrets.HYPRLAB_API_KEY }}
+          BYTEDANCE_TTS_API_KEY: ${{ secrets.BYTEDANCE_TTS_API_KEY }}
+          BYTEDANCE_TTS_RESOURCE_ID: ${{ secrets.BYTEDANCE_TTS_RESOURCE_ID }}
+          SCROLLYTELLING_API_BASE_URL: ${{ secrets.SCROLLYTELLING_API_BASE_URL }}
+          SCROLLYTELLING_API_KEY: ${{ secrets.SCROLLYTELLING_API_KEY }}
+          SCROLLYTELLING_MODEL: ${{ secrets.SCROLLYTELLING_MODEL }}
+          PRIORITY_IMAGE_API_BASE_URL: ${{ secrets.PRIORITY_IMAGE_API_BASE_URL }}
+          PRIORITY_IMAGE_API_KEY: ${{ secrets.PRIORITY_IMAGE_API_KEY }}
+          PRIORITY_IMAGE_API_MODEL: ${{ secrets.PRIORITY_IMAGE_API_MODEL }}
+          PRIORITY_IMAGE_API_MAX_RETRIES: ${{ secrets.PRIORITY_IMAGE_API_MAX_RETRIES }}
+          SEEDREAM_API_KEY: ${{ secrets.SEEDREAM_API_KEY }}
+          SORA2_API_KEY: ${{ secrets.SORA2_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_REPO: ${{ github.repository }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
+          envs: DATABASE_URL,R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY,R2_BUCKET_NAME,R2_PUBLIC_URL,OPENAI_BASE_URL,OPENAI_API_KEY,OPENAI_MODEL,GEMINI_API_KEY,GEMINI_API_KEY_2,GEMINI_API_KEY_3,GEMINI_MODEL,TAVILY_API_KEY,MUREKA_API_URL,MUREKA_API_TOKEN,SORA_API_BASE_URL,SORA_API_TOKEN,SORA_API_TYPE,GOOGLE_CLOUD_PROJECT,GOOGLE_CLOUD_LOCATION,ANTHROPIC_BASE_URL,ANTHROPIC_API_KEY,GOOGLE_SEARCH_API_KEY,GOOGLE_SEARCH_ENGINE_ID,CLAUDE_MODEL,CLAUDE_MAX_TOKENS,CLAUDE_LIGHT_MODEL,CLAUDE_LIGHT_MAX_TOKENS,DEEP_RESEARCH_MAX_ROUNDS,HYPRLAB_API_KEY,BYTEDANCE_TTS_API_KEY,BYTEDANCE_TTS_RESOURCE_ID,SCROLLYTELLING_API_BASE_URL,SCROLLYTELLING_API_KEY,SCROLLYTELLING_MODEL,PRIORITY_IMAGE_API_BASE_URL,PRIORITY_IMAGE_API_KEY,PRIORITY_IMAGE_API_MODEL,PRIORITY_IMAGE_API_MAX_RETRIES,SEEDREAM_API_KEY,SORA2_API_KEY,GH_TOKEN,GH_ACTOR,GH_REPO
           script: |
             set -e
 
@@ -80,60 +127,60 @@ jobs:
             pm2 delete nanobanana-prod 2>/dev/null || true
 
             # 登录到 GitHub Container Registry
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "$GH_TOKEN" | docker login ghcr.io -u $GH_ACTOR --password-stdin
 
             # 拉取最新镜像
-            docker pull ghcr.io/${{ github.repository }}:latest
+            docker pull ghcr.io/$GH_REPO:latest
 
             # 停止并删除旧容器
             docker stop nanobanana 2>/dev/null || true
             docker rm nanobanana 2>/dev/null || true
 
-            # 创建 .env 文件（不带引号，避免 Prisma 解析问题）
-            cat > /opt/nanobanana/.env.production << 'ENVEOF'
-DATABASE_URL=${{ secrets.DATABASE_URL }}
-R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
-R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
-R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}
-R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
-R2_PUBLIC_URL=${{ secrets.R2_PUBLIC_URL }}
-OPENAI_BASE_URL=${{ secrets.OPENAI_BASE_URL }}
-OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
-GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-GEMINI_API_KEY_2=${{ secrets.GEMINI_API_KEY_2 }}
-GEMINI_API_KEY_3=${{ secrets.GEMINI_API_KEY_3 }}
-GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}
-TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
-MUREKA_API_URL=${{ secrets.MUREKA_API_URL }}
-MUREKA_API_TOKEN=${{ secrets.MUREKA_API_TOKEN }}
-SORA_API_BASE_URL=${{ secrets.SORA_API_BASE_URL }}
-SORA_API_TOKEN=${{ secrets.SORA_API_TOKEN }}
-SORA_API_TYPE=${{ secrets.SORA_API_TYPE }}
-GOOGLE_CLOUD_PROJECT=${{ secrets.GOOGLE_CLOUD_PROJECT }}
-GOOGLE_CLOUD_LOCATION=${{ secrets.GOOGLE_CLOUD_LOCATION }}
-ANTHROPIC_BASE_URL=${{ secrets.ANTHROPIC_BASE_URL }}
-ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
-GOOGLE_SEARCH_API_KEY=${{ secrets.GOOGLE_SEARCH_API_KEY }}
-GOOGLE_SEARCH_ENGINE_ID=${{ secrets.GOOGLE_SEARCH_ENGINE_ID }}
-CLAUDE_MODEL=${{ secrets.CLAUDE_MODEL }}
-CLAUDE_MAX_TOKENS=${{ secrets.CLAUDE_MAX_TOKENS }}
-CLAUDE_LIGHT_MODEL=${{ secrets.CLAUDE_LIGHT_MODEL }}
-CLAUDE_LIGHT_MAX_TOKENS=${{ secrets.CLAUDE_LIGHT_MAX_TOKENS }}
-DEEP_RESEARCH_MAX_ROUNDS=${{ secrets.DEEP_RESEARCH_MAX_ROUNDS }}
-HYPRLAB_API_KEY=${{ secrets.HYPRLAB_API_KEY }}
-BYTEDANCE_TTS_API_KEY=${{ secrets.BYTEDANCE_TTS_API_KEY }}
-BYTEDANCE_TTS_RESOURCE_ID=${{ secrets.BYTEDANCE_TTS_RESOURCE_ID }}
-SCROLLYTELLING_API_BASE_URL=${{ secrets.SCROLLYTELLING_API_BASE_URL }}
-SCROLLYTELLING_API_KEY=${{ secrets.SCROLLYTELLING_API_KEY }}
-SCROLLYTELLING_MODEL=${{ secrets.SCROLLYTELLING_MODEL }}
-PRIORITY_IMAGE_API_BASE_URL=${{ secrets.PRIORITY_IMAGE_API_BASE_URL }}
-PRIORITY_IMAGE_API_KEY=${{ secrets.PRIORITY_IMAGE_API_KEY }}
-PRIORITY_IMAGE_API_MODEL=${{ secrets.PRIORITY_IMAGE_API_MODEL }}
-PRIORITY_IMAGE_API_MAX_RETRIES=${{ secrets.PRIORITY_IMAGE_API_MAX_RETRIES }}
-SEEDREAM_API_KEY=${{ secrets.SEEDREAM_API_KEY }}
-SORA2_API_KEY=${{ secrets.SORA2_API_KEY }}
-ENVEOF
+            # 创建 .env 文件
+            cat > /opt/nanobanana/.env.production << EOF
+            DATABASE_URL=$DATABASE_URL
+            R2_ACCOUNT_ID=$R2_ACCOUNT_ID
+            R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID
+            R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY
+            R2_BUCKET_NAME=$R2_BUCKET_NAME
+            R2_PUBLIC_URL=$R2_PUBLIC_URL
+            OPENAI_BASE_URL=$OPENAI_BASE_URL
+            OPENAI_API_KEY=$OPENAI_API_KEY
+            OPENAI_MODEL=$OPENAI_MODEL
+            GEMINI_API_KEY=$GEMINI_API_KEY
+            GEMINI_API_KEY_2=$GEMINI_API_KEY_2
+            GEMINI_API_KEY_3=$GEMINI_API_KEY_3
+            GEMINI_MODEL=$GEMINI_MODEL
+            TAVILY_API_KEY=$TAVILY_API_KEY
+            MUREKA_API_URL=$MUREKA_API_URL
+            MUREKA_API_TOKEN=$MUREKA_API_TOKEN
+            SORA_API_BASE_URL=$SORA_API_BASE_URL
+            SORA_API_TOKEN=$SORA_API_TOKEN
+            SORA_API_TYPE=$SORA_API_TYPE
+            GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT
+            GOOGLE_CLOUD_LOCATION=$GOOGLE_CLOUD_LOCATION
+            ANTHROPIC_BASE_URL=$ANTHROPIC_BASE_URL
+            ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
+            GOOGLE_SEARCH_API_KEY=$GOOGLE_SEARCH_API_KEY
+            GOOGLE_SEARCH_ENGINE_ID=$GOOGLE_SEARCH_ENGINE_ID
+            CLAUDE_MODEL=$CLAUDE_MODEL
+            CLAUDE_MAX_TOKENS=$CLAUDE_MAX_TOKENS
+            CLAUDE_LIGHT_MODEL=$CLAUDE_LIGHT_MODEL
+            CLAUDE_LIGHT_MAX_TOKENS=$CLAUDE_LIGHT_MAX_TOKENS
+            DEEP_RESEARCH_MAX_ROUNDS=$DEEP_RESEARCH_MAX_ROUNDS
+            HYPRLAB_API_KEY=$HYPRLAB_API_KEY
+            BYTEDANCE_TTS_API_KEY=$BYTEDANCE_TTS_API_KEY
+            BYTEDANCE_TTS_RESOURCE_ID=$BYTEDANCE_TTS_RESOURCE_ID
+            SCROLLYTELLING_API_BASE_URL=$SCROLLYTELLING_API_BASE_URL
+            SCROLLYTELLING_API_KEY=$SCROLLYTELLING_API_KEY
+            SCROLLYTELLING_MODEL=$SCROLLYTELLING_MODEL
+            PRIORITY_IMAGE_API_BASE_URL=$PRIORITY_IMAGE_API_BASE_URL
+            PRIORITY_IMAGE_API_KEY=$PRIORITY_IMAGE_API_KEY
+            PRIORITY_IMAGE_API_MODEL=$PRIORITY_IMAGE_API_MODEL
+            PRIORITY_IMAGE_API_MAX_RETRIES=$PRIORITY_IMAGE_API_MAX_RETRIES
+            SEEDREAM_API_KEY=$SEEDREAM_API_KEY
+            SORA2_API_KEY=$SORA2_API_KEY
+            EOF
 
             # 启动新容器
             docker run -d \
@@ -152,7 +199,7 @@ ENVEOF
               --log-driver json-file \
               --log-opt max-size=50m \
               --log-opt max-file=3 \
-              ghcr.io/${{ github.repository }}:latest
+              ghcr.io/$GH_REPO:latest
 
             # 等待容器健康
             echo "等待容器启动..."
@@ -160,7 +207,7 @@ ENVEOF
 
             for i in {1..12}; do
               if curl -sf http://localhost:3004/api/health > /dev/null 2>&1; then
-                echo "✓ 服务启动成功!"
+                echo "服务启动成功!"
                 break
               fi
               echo "等待服务就绪... ($i/12)"
