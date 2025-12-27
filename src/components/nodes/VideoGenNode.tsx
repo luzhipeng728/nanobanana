@@ -27,8 +27,8 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
   const [prompt, setPrompt] = useState(data.prompt || "");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">(data.orientation || "portrait");
   const [model, setModel] = useState<VideoModel>(data.model || "sora");
-  // Sora 默认 8 秒，Veo 默认 5 秒
-  const [durationSeconds, setDurationSeconds] = useState<number>(data.durationSeconds || 8);
+  // Sora2 默认 10 秒，Veo 默认 5 秒
+  const [durationSeconds, setDurationSeconds] = useState<number>(data.durationSeconds || 10);
   
   const [connectedImagesCount, setConnectedImagesCount] = useState<number>(0);
   const [showCameos, setShowCameos] = useState(false);
@@ -233,8 +233,8 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
     console.log("[Sora] inputImage:", inputImage ? String(inputImage).substring(0, 50) + "..." : "undefined");
     console.log("[Sora] useAiEnhance:", useAiEnhance);
 
-    // 将数字时长转换为字符串（Sora 2 API 要求字符串格式）
-    const durationStr = String(durationSeconds) as "4" | "8" | "12";
+    // 将数字时长转换为字符串（Sora2 API 支持 10s 和 15s）
+    const durationStr = String(durationSeconds) as "10" | "15";
 
     // 清理状态
     setAnalysisText("");
@@ -418,10 +418,8 @@ const VideoGenNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => 
                     { value: "8", label: "8秒" },
                   ]
                 : [
-                    // Sora 2 API 只支持 4, 8, 12 秒
-                    { value: "4", label: "4秒" },
-                    { value: "8", label: "8秒" },
-                    { value: "12", label: "12秒" },
+                    { value: "10", label: "10秒" },
+                    { value: "15", label: "15秒" },
                   ]
             }
             color="orange"

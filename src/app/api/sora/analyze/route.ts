@@ -13,11 +13,8 @@ export interface SoraAnalyzeEvent {
 }
 
 /**
- * Sora 2 视频智能分析 API
- * 基于 OpenAI Cookbook 官方 Sora 2 Prompting Guide 最佳实践
- *
- * 核心结构：Style → Scene → Cinematography → Actions → Background Sound
- * 像给摄影团队做 briefing 一样写提示词
+ * Sora2 视频提示词优化 API
+ * 简洁实用，专注于生成有效的视频动作描述
  */
 export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
@@ -58,11 +55,11 @@ export async function POST(request: NextRequest) {
 
       let imageAnalysis = "";
 
-      // 第一阶段：详细分析图片
+      // 有图片时：分析图片内容
       if (imageUrl) {
         await sendEvent({
           type: "status",
-          step: "👁️ AI 正在分析图片内容...",
+          step: "👁️ 分析图片内容...",
           progress: 10,
         });
 
@@ -92,10 +89,10 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // 流式分析图片 - 基于 Sora 2 Cookbook 官方最佳实践
+        // 简洁的图片分析
         const analysisStream = anthropic.messages.stream({
           model: CLAUDE_LIGHT_MODEL,
-          max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
+          max_tokens: 1024,
           messages: [
             {
               role: "user",
@@ -103,50 +100,16 @@ export async function POST(request: NextRequest) {
                 ...imageContent,
                 {
                   type: "text",
-                  text: `你是一位专业电影摄影师，正在为 Sora 2 视频生成分析这张图片。
-像给摄影团队做 briefing 一样，详细描述如何将这张静态图片变成 ${durationSeconds} 秒的电影级视频。
+                  text: `分析这张图片，为生成 ${durationSeconds} 秒视频做准备。
 
-用户的创意想法：${userRequest}
+用户想要的动作：${userRequest}
 
-请按以下 Sora 2 官方推荐结构分析：
+请简洁描述：
+1. **画面主体**：人物外观、服装、表情、姿态
+2. **场景环境**：地点、光线、氛围
+3. **动作建议**：基于用户想法，设计自然流畅的动作
 
-## 1. Style 风格定位
-- 电影风格/年代感（如：现代电影、复古胶片、纪录片风格等）
-- 视觉美学（色调倾向、质感、氛围）
-- 参考风格（如有）
-
-## 2. Scene 场景描述
-- **环境**：具体地点、时间（白天/夜晚/黄金时段）
-- **主体**：人物/物体的详细外观（服装、发型、表情、姿态）
-- **空间层次**：前景、中景、背景各有什么元素
-- **氛围细节**：天气、温度感、环境粒子（灰尘/雨滴/花瓣等）
-
-## 3. Cinematography 摄影设计
-- **Camera 机位**：景别（wide/medium/close-up）、角度（平视/俯拍/仰拍）
-- **Lens 镜头**：焦距建议（24mm广角/35mm/50mm标准/85mm人像）
-- **Movement 运动**：静止/推进(dolly-in)/跟踪/横摇(pan)/摇移
-- **Depth 景深**：浅景深（突出主体）或深景深（展示环境）
-- **Lighting 光线**：主光方向、色温、质感（硬光/柔光）
-
-## 4. Actions 动作设计 (${durationSeconds}秒时间线)
-根据 ${durationSeconds} 秒时长设计连贯的动作序列：
-${durationSeconds <= 4
-  ? "- 聚焦单一关键动作或情绪瞬间\n- 保持简洁但视觉冲击力强"
-  : durationSeconds <= 8
-    ? "- 0-2秒：建立初始状态\n- 2-6秒：主要动作/情绪发展\n- 6-8秒：自然收尾"
-    : "- 0-3秒：场景建立\n- 3-8秒：动作发展\n- 8-12秒：收尾"}
-
-具体描述：
-- **主体动作**：表情变化、眼神、肢体动作、手势
-- **微动态**：呼吸起伏、眨眼、嘴唇微动、头发飘动
-- **物理效果**：衣物摆动、材质反射、光影变化
-
-## 5. Mood 情绪氛围
-- 整体情绪基调
-- 心理暗示（主体在想什么/感受什么）
-- 情绪弧线（从什么状态到什么状态）
-
-请用中文详细描述，像给专业摄影团队做 briefing 一样具体。`,
+用中文简洁回答。`,
                 },
               ],
             },
@@ -162,73 +125,32 @@ ${durationSeconds <= 4
         }
 
         await sendEvent({ type: "analysis_end" });
-
-        await sendEvent({
-          type: "status",
-          step: "✨ 正在生成 Sora 2 提示词...",
-          progress: 60,
-        });
       } else {
-        // 无图片模式：先分析用户需求，流式展示思考过程
+        // 无图片：直接优化提示词
         await sendEvent({
           type: "status",
-          step: "🎬 AI 正在构思视频画面...",
+          step: "🎬 构思视频画面...",
           progress: 10,
         });
 
         await sendEvent({ type: "analysis_start" });
 
-        // 流式分析用户需求（基于 Sora 2 Cookbook 官方最佳实践）
         const thinkingStream = anthropic.messages.stream({
           model: CLAUDE_LIGHT_MODEL,
-          max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
+          max_tokens: 1024,
           messages: [
             {
               role: "user",
-              content: `你是一位专业电影摄影师，正在为 Sora 2 视频生成设计一个 ${durationSeconds} 秒的视频画面。
-像给摄影团队做 briefing 一样，基于用户的想法构建完整的视觉方案。
+              content: `基于用户描述，构思一个 ${durationSeconds} 秒的视频画面。
 
-用户的创意想法：${userRequest}
+用户描述：${userRequest}
 
-请按以下 Sora 2 官方推荐结构设计：
+请简洁设计：
+1. **画面主体**：人物/物体的外观细节
+2. **场景环境**：地点、时间、光线、氛围
+3. **动作设计**：${durationSeconds}秒内的动作流程
 
-## 1. Style 风格定位
-- 电影风格/年代感（现代、复古胶片、科幻、纪录片等）
-- 视觉美学（色调、质感、整体氛围）
-- 风格参考（如有适合的电影/导演风格）
-
-## 2. Scene 场景设计
-- **环境**：具体地点类型、时间（白天/黄金时段/夜晚/蓝调时刻）
-- **主体**：人物/物体的详细外观（年龄、服装、发型、材质、颜色）
-- **空间层次**：前景、中景、背景各安排什么元素
-- **氛围细节**：天气、温度感、环境粒子（灰尘/雨滴/落叶/光斑等）
-
-## 3. Cinematography 摄影设计
-- **Camera 机位**：景别（wide establishing / medium / close-up / extreme close-up）
-- **Lens 镜头**：焦距（24mm广角/35mm/50mm标准/85mm人像/135mm长焦）
-- **Angle 角度**：平视(eye level)/低角度(low angle)/高角度(high angle)
-- **Movement 运动**：静止/缓慢推进(slow dolly-in)/跟踪(tracking)/横摇(pan)/升降(crane)
-- **Depth 景深**：浅景深虚化背景 or 深景深展示环境
-- **Lighting 光线**：主光方向和类型、色温、软硬光质感
-
-## 4. Actions 动作时间线 (${durationSeconds}秒)
-${durationSeconds <= 4
-  ? "**短片节奏** - 聚焦单一动作或情绪瞬间：\n- 0-1秒：快速建立主体\n- 1-3秒：核心动作/表情\n- 3-4秒：定格或微妙变化"
-  : durationSeconds <= 8
-    ? "**中等节奏** - 包含完整情绪弧线：\n- 0-2秒：建立场景，主体初始状态\n- 2-5秒：主要动作展开，情绪发展\n- 5-8秒：情绪释放或自然收尾"
-    : "**叙事节奏** - 构建完整小故事：\n- 0-3秒：场景建立，交代环境\n- 3-7秒：动作发展，情绪变化\n- 7-10秒：情节推进\n- 10-12秒：高潮或意味深长的结尾"}
-
-具体动作设计：
-- **主体动作**：表情变化、眼神移动、肢体语言、手势
-- **微动态**：呼吸、眨眼、嘴唇微动、发丝飘动
-- **物理效果**：衣物随动作摆动、材质反光、环境光影变化
-
-## 5. Mood 情绪氛围
-- 整体情绪基调（温暖/冷峻/神秘/浪漫/紧张等）
-- 心理暗示（主体的内心状态）
-- 情绪弧线（从___到___的变化）
-
-请用中文详细设计，这些信息将用于生成专业的 Sora 2 提示词。`,
+用中文简洁回答。`,
             },
           ],
         });
@@ -242,90 +164,59 @@ ${durationSeconds <= 4
         }
 
         await sendEvent({ type: "analysis_end" });
-
-        await sendEvent({
-          type: "status",
-          step: "✨ 正在生成专业提示词...",
-          progress: 60,
-        });
       }
 
-      // 第二阶段：生成 Sora 2 视频提示词（基于 OpenAI Cookbook 官方结构）
-      const durationGuide = getDurationGuide(durationSeconds);
+      await sendEvent({
+        type: "status",
+        step: "✨ 生成视频提示词...",
+        progress: 60,
+      });
 
-      // 统一的 Sora 2 Cookbook 提示词生成模板
-      const promptSystemMessage = `You are an expert cinematographer crafting prompts for OpenAI Sora 2.
-Your task is to write prompts as if briefing a professional film crew.
-
-## Your Analysis:
-${imageAnalysis}
-
-## User's Creative Idea: ${userRequest}
-## Video Duration: ${durationSeconds} seconds
-
-${durationGuide}
-
-## SORA 2 COOKBOOK PROMPT STRUCTURE
-
-Write the prompt following this official structure (combine into flowing prose):
-
-**1. Style (开头)**
-Film era/aesthetic, visual style, color grade, texture.
-Examples: "Style: 1970s romantic drama, shot on 35mm film with natural flares, soft focus, and warm halation"
-
-**2. Scene Description (主体)**
-- Setting: specific location, time of day, weather, atmosphere
-- Subject: detailed appearance (clothing, hair, expression, pose)
-- Environment: foreground/background elements, spatial depth
-- Ambient details: particles, reflections, environmental motion
-
-**3. Cinematography (技术)**
-- Camera: shot type (wide/medium/close-up), angle (eye level/low/high)
-- Lens: focal length (24mm/35mm/50mm/85mm), depth of field
-- Movement: static, dolly-in, tracking, pan, crane
-- Lighting: key light direction, color temperature, quality (soft/hard)
-
-**4. Actions (动态)**
-Describe what happens over ${durationSeconds} seconds:
-- Character actions and movements
-- Micro-details: breathing, blinking, hair movement, fabric motion
-- Physics: material behavior, wind effects, light changes
-${durationSeconds <= 4 ? "Focus on ONE key moment or gesture." : durationSeconds <= 8 ? "Include setup → action → subtle resolution." : "Include clear beginning → development → ending arc."}
-
-**5. Mood/Atmosphere (可选)**
-Emotional tone, psychological undertone.
-
-## OFFICIAL SORA 2 EXAMPLE (reference style):
-"Style: 1970s romantic drama, shot on 35 mm film with natural flares, soft focus, and warm halation. Slight gate weave and handheld micro-shake evoke vintage intimacy. At golden hour, a brick tenement rooftop transforms into a small stage. Laundry lines strung with white sheets sway in the wind, catching the last rays of sunlight. Strings of mismatched fairy bulbs hum faintly overhead. A young woman in a flowing red silk dress dances barefoot, curls glowing in the fading light. Her partner — sleeves rolled, suspenders loose — claps along, his smile wide and unguarded. Cinematography: Camera: medium-wide shot, slow dolly-in from eye level. Lens: 40 mm spherical; shallow focus to isolate the couple from skyline. Lighting: golden natural key with tungsten bounce. Mood: nostalgic, tender, cinematic. Actions: She spins; her dress flares, catching sunlight. He steps in, catches her hand, and dips her into shadow. Sheets drift across frame, briefly veiling the skyline before parting again."
-
-## RULES:
-- Write in present tense (what IS happening)
-- Be specific about camera parameters (actual mm values, not vague terms)
-- Include physics: wind, material behavior, light interaction
-- Add micro-movements: breathing, blinking, hair sway, fabric motion
-- Describe spatial relationships clearly
-- Keep as ONE continuous shot (no cuts)
-- Style should be PHOTOREALISTIC or CINEMATIC unless user requests otherwise
-
-## OUTPUT:
-Generate a professional Sora 2 prompt (120-200 words) in English.
-Output ONLY the prompt text, no explanations or labels.`;
-
+      // 生成最终提示词 - 简洁有效
       const promptResponse = await anthropic.messages.create({
         model: CLAUDE_LIGHT_MODEL,
-        max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
-        messages: [{ role: "user", content: promptSystemMessage }],
+        max_tokens: 512,
+        messages: [
+          {
+            role: "user",
+            content: `基于以下分析，生成一段视频生成提示词。
+
+## 分析内容：
+${imageAnalysis}
+
+## 用户原始描述：
+${userRequest}
+
+## 视频时长：${durationSeconds} 秒
+
+## 要求：
+1. 提示词要具体描述动作过程，不要只描述静态画面
+2. 包含表情、眼神、肢体动作等细节
+3. 描述环境氛围、光线变化
+4. 保持自然流畅，适合 ${durationSeconds} 秒时长
+5. 用英文输出（视频模型对英文效果更好）
+6. 直接输出提示词，不要任何解释
+
+示例格式：
+"A young woman with long black hair stands in a sunlit garden. She slowly turns her head toward the camera, her eyes meeting the lens with a gentle smile forming on her lips. The golden hour light catches her hair as a soft breeze lifts a few strands. Her expression shifts from contemplative to warmly inviting as she tilts her head slightly."`,
+          },
+        ],
       });
 
       const textBlock = promptResponse.content.find(
         (block): block is Anthropic.TextBlock => block.type === "text"
       );
 
-      const generatedPrompt = textBlock?.text?.trim() || userRequest;
+      let generatedPrompt = textBlock?.text?.trim() || userRequest;
+
+      // 清理可能的引号包裹
+      if (generatedPrompt.startsWith('"') && generatedPrompt.endsWith('"')) {
+        generatedPrompt = generatedPrompt.slice(1, -1);
+      }
 
       await sendEvent({
         type: "status",
-        step: "✅ Sora 2 提示词已就绪！",
+        step: "✅ 提示词已就绪！",
         progress: 100,
       });
 
@@ -352,58 +243,4 @@ Output ONLY the prompt text, no explanations or labels.`;
       Connection: "keep-alive",
     },
   });
-}
-
-/**
- * 根据时长提供专业的 Sora 2 创作指导
- * 基于 OpenAI Cookbook 官方最佳实践
- */
-function getDurationGuide(seconds: number): string {
-  if (seconds <= 4) {
-    return `## Duration: ${seconds}s — Single Moment
-
-**Best For:** A glance, a gesture, a reaction, a single striking visual
-**Approach:** One camera setup, one focused action, maximum visual impact
-
-**Timing:**
-- 0-1s: Establish subject in environment
-- 1-3s: The key moment/action/expression
-- 3-4s: Hold or subtle micro-movement
-
-**Camera:** Static or minimal movement (gentle push-in works well)
-**Physics:** Focus on 1-2 micro-details (hair sway, fabric ripple, light flicker)
-**Avoid:** Complex sequences, multiple actions, camera movement changes`;
-  } else if (seconds <= 8) {
-    return `## Duration: ${seconds}s — Emotional Arc
-
-**Best For:** Character moments, mood pieces, single emotional transition
-**Approach:** Setup → Development → Subtle resolution
-
-**Timing:**
-- 0-2s: Establish scene and subject's initial state
-- 2-5s: Primary action/emotion unfolds
-- 5-8s: Resolution or new emotional state
-
-**Camera:** One smooth movement allowed (slow dolly-in, gentle pan)
-**Physics:** Environmental motion (wind, light shifts, ambient particles)
-**Micro-details:** Breathing rhythm, blinking, hair/fabric response to movement
-**Lens:** 50mm or 85mm for character focus, shallow depth of field`;
-  } else {
-    return `## Duration: ${seconds}s — Mini Narrative
-
-**Best For:** Short scene with clear progression, beginning-middle-end
-**Approach:** Full story arc with 2-3 distinct beats
-
-**Timing:**
-- 0-3s: Wide establishing shot, set the scene
-- 3-7s: Action develops, emotional journey
-- 7-10s: Climax or key turning point
-- 10-12s: Resolution, final meaningful state
-
-**Camera:** Can include smooth continuous movement or gentle reframe
-**Storytelling:** Cause-and-effect, show character motivation through action
-**Physics:** Complex interactions (multiple elements responding to environment)
-**Depth:** Use foreground/background relationship to create visual interest
-**Lens:** Start wide (35mm), can end tighter if following action`;
-  }
 }

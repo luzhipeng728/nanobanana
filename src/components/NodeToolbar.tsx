@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles, Bot, Mic2, Presentation } from "lucide-react";
+import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles, Bot, Mic2, Presentation, Film, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 
-type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'chatAgent' | 'sprite' | 'superAgent' | 'ttsGen' | 'pptGen';
+type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'chatAgent' | 'sprite' | 'superAgent' | 'ttsGen' | 'pptGen' | 'researchVideoGen' | 'storyVideoGen';
 
 interface NodeToolbarProps {
   onDragStart: (event: React.DragEvent, nodeType: NodeType) => void;
@@ -87,6 +87,21 @@ const baseItems = [
     icon: Presentation,
     accentColor: '#f59e0b',
   },
+  {
+    type: 'researchVideoGen' as NodeType,
+    title: '研究视频',
+    description: 'AI 深度研究视频生成',
+    icon: Film,
+    accentColor: '#8b5cf6',
+  },
+  // 故事视频节点暂时隐藏
+  // {
+  //   type: 'storyVideoGen' as NodeType,
+  //   title: '故事视频',
+  //   description: 'AI 儿童读物/古诗解说视频',
+  //   icon: BookOpen,
+  //   accentColor: '#ec4899',
+  // },
 ];
 
 const VIDEO_UNLOCK_KEY = 'nanobanana-video-unlocked';

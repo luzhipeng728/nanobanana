@@ -1,7 +1,7 @@
 // 工具处理器 - 实际执行工具调用的逻辑
 
 import Anthropic from '@anthropic-ai/sdk';
-import { SKILL_LIBRARY, matchSkillByKeywords } from './skills';
+import { SKILL_LIBRARY, matchSkillByKeywords, convertPromptForSeedream, isSeedreamModel } from './skills';
 import type { ToolResult, FinalOutput, SuperAgentStreamEvent } from '@/types/super-agent';
 // 旧版 DeepResearch（基于 Google + Tavily + LLM 评估）
 import { runDeepResearch, ResearchProgressEvent as LegacyResearchProgressEvent } from './deep-research';
@@ -108,7 +108,7 @@ export const handleSkillMatcher: ToolHandler = async (params, sendEvent) => {
 
 // 工具2: 技能加载器
 export const handleLoadSkill: ToolHandler = async (params, sendEvent) => {
-  const { skill_id } = params;
+  const { skill_id, image_model } = params;
   const skill = SKILL_LIBRARY[skill_id];
 
   if (!skill) {
@@ -119,15 +119,31 @@ export const handleLoadSkill: ToolHandler = async (params, sendEvent) => {
     };
   }
 
+  // 根据图片模型转换提示词（Seedream 不支持 hex 颜色代码）
+  let basePrompt = skill.basePrompt;
+  let examples = skill.examples;
+
+  if (image_model && isSeedreamModel(image_model)) {
+    console.log(`[LoadSkill] Converting prompts for Seedream model: ${image_model}`);
+    basePrompt = convertPromptForSeedream(skill.basePrompt);
+
+    // 也转换示例中的提示词
+    examples = skill.examples.map(example => ({
+      ...example,
+      filledPrompt: convertPromptForSeedream(example.filledPrompt)
+    }));
+  }
+
   return {
     success: true,
     data: {
       metadata: skill.metadata,
-      basePrompt: skill.basePrompt,
+      basePrompt,
       variables: skill.variables,
-      examples: skill.examples,
+      examples,
       qualityChecklist: skill.qualityChecklist,
-      commonIssues: skill.commonIssues
+      commonIssues: skill.commonIssues,
+      _seedreamMode: image_model ? isSeedreamModel(image_model) : false
     },
     shouldContinue: true
   };

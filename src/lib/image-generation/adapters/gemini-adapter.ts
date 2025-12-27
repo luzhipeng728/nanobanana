@@ -55,8 +55,6 @@ async function loadGeminiKeys(): Promise<string[]> {
   return cachedGeminiKeys;
 }
 
-const RECOVERY_TIME = 24 * 60 * 60 * 1000; // 24 小时后重试失败的 Key
-
 // ============================================================================
 // 优先 API 配置
 // ============================================================================
@@ -86,7 +84,7 @@ const isRetryableError = (status: number, errorMessage: string): boolean => {
   return retryableMessages.some(msg => errorMessage.toLowerCase().includes(msg));
 };
 
-// API Key 状态管理
+// API Key 状态管理（简化版：失败就轮到下一个，不记录失败状态）
 async function getKeyState() {
   let state = await prisma.apiKeyState.findUnique({
     where: { id: 'gemini' },
@@ -111,94 +109,25 @@ async function getCurrentApiKey(): Promise<{ key: string; index: number } | null
   if (keys.length === 0) return null;
 
   const state = await getKeyState();
-  const failedKeys: number[] = JSON.parse(state.failedKeys);
-  const failedAt: Record<string, number> = JSON.parse(state.failedAt);
-  const now = Date.now();
+  const index = state.currentKeyIndex % keys.length;
 
-  // 清理过期的失败记录
-  let hasRecovered = false;
-  const stillFailedKeys: number[] = [];
-  const stillFailedAt: Record<string, number> = {};
-
-  for (const keyIndex of failedKeys) {
-    const failTime = failedAt[String(keyIndex)];
-    if (failTime && now - failTime > RECOVERY_TIME) {
-      console.log(`[GeminiAdapter] Key ${keyIndex + 1} recovered after 24h cooldown`);
-      hasRecovered = true;
-    } else {
-      stillFailedKeys.push(keyIndex);
-      if (failTime) stillFailedAt[String(keyIndex)] = failTime;
-    }
-  }
-
-  if (hasRecovered) {
-    await prisma.apiKeyState.update({
-      where: { id: 'gemini' },
-      data: {
-        failedKeys: JSON.stringify(stillFailedKeys),
-        failedAt: JSON.stringify(stillFailedAt),
-      },
-    });
-  }
-
-  // 找第一个可用的 Key
-  for (let i = 0; i < keys.length; i++) {
-    const index = (state.currentKeyIndex + i) % keys.length;
-    if (!stillFailedKeys.includes(index)) {
-      if (index !== state.currentKeyIndex) {
-        await prisma.apiKeyState.update({
-          where: { id: 'gemini' },
-          data: { currentKeyIndex: index },
-        });
-      }
-      return { key: keys[index], index };
-    }
-  }
-
-  console.warn(`[GeminiAdapter] All ${keys.length} keys exhausted!`);
-  return { key: keys[0], index: 0 };
+  console.log(`[GeminiAdapter] 使用 Key ${index + 1}/${keys.length}`);
+  return { key: keys[index], index };
 }
 
-async function markKeyFailed(keyIndex: number): Promise<boolean> {
+async function rotateToNextKey(currentIndex: number): Promise<boolean> {
   const keys = await loadGeminiKeys();
-  const state = await getKeyState();
-  const failedKeys: number[] = JSON.parse(state.failedKeys);
-  const failedAt: Record<string, number> = JSON.parse(state.failedAt);
+  if (keys.length <= 1) return false;
 
-  if (!failedKeys.includes(keyIndex)) {
-    failedKeys.push(keyIndex);
-    failedAt[String(keyIndex)] = Date.now();
+  const nextIndex = (currentIndex + 1) % keys.length;
 
-    console.log(`[GeminiAdapter] Key ${keyIndex + 1}/${keys.length} marked as FAILED`);
+  await prisma.apiKeyState.update({
+    where: { id: 'gemini' },
+    data: { currentKeyIndex: nextIndex },
+  });
 
-    let nextIndex = -1;
-    for (let i = 1; i < keys.length; i++) {
-      const candidateIndex = (keyIndex + i) % keys.length;
-      if (!failedKeys.includes(candidateIndex)) {
-        nextIndex = candidateIndex;
-        break;
-      }
-    }
-
-    await prisma.apiKeyState.update({
-      where: { id: 'gemini' },
-      data: {
-        currentKeyIndex: nextIndex >= 0 ? nextIndex : 0,
-        failedKeys: JSON.stringify(failedKeys),
-        failedAt: JSON.stringify(failedAt),
-      },
-    });
-
-    if (nextIndex >= 0) {
-      console.log(`[GeminiAdapter] Switched to Key ${nextIndex + 1}/${keys.length}`);
-      return true;
-    } else {
-      console.error(`[GeminiAdapter] All keys exhausted!`);
-      return false;
-    }
-  }
-
-  return failedKeys.length < keys.length;
+  console.log(`[GeminiAdapter] 轮转到 Key ${nextIndex + 1}/${keys.length}`);
+  return true;
 }
 
 // ============================================================================
@@ -344,6 +273,11 @@ export class GeminiAdapter extends ImageGenerationAdapter {
     let currentImageSize = params.resolution;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      // 每次重试前获取当前 Key（可能已经轮转）
+      const currentKeyInfo = await getCurrentApiKey();
+      const currentApiKey = currentKeyInfo?.key || keyInfo.key;
+      const currentKeyIndex = currentKeyInfo?.index ?? keyInfo.index;
+
       try {
         if (attempt > 0) {
           const delay = INITIAL_DELAY * Math.pow(2, attempt - 1);
@@ -364,10 +298,6 @@ export class GeminiAdapter extends ImageGenerationAdapter {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 600000);
 
-        const currentKeyInfo = await getCurrentApiKey();
-        const currentApiKey = currentKeyInfo?.key || keyInfo.key;
-        const currentKeyIndex = currentKeyInfo?.index ?? keyInfo.index;
-
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
@@ -382,19 +312,12 @@ export class GeminiAdapter extends ImageGenerationAdapter {
 
         if (!response.ok) {
           const errorText = await response.text();
+          console.error(`[GeminiAdapter] Key ${currentKeyIndex + 1} 失败: ${response.status} - ${errorText.substring(0, 200)}`);
 
-          // 429 或 503 - 切换 Key
-          if (response.status === 429 || response.status === 503) {
-            const hasMoreKeys = await markKeyFailed(currentKeyIndex);
-            if (hasMoreKeys) {
-              attempt--;
-              continue;
-            }
-            return { success: false, error: 'All Gemini API keys exhausted' };
-          }
-
-          if (attempt < MAX_RETRIES && isRetryableError(response.status, errorText)) {
-            continue;
+          // 任何错误都轮转到下一个 Key
+          const rotated = await rotateToNextKey(currentKeyIndex);
+          if (rotated && attempt < MAX_RETRIES) {
+            continue; // 用下一个 Key 重试
           }
 
           return { success: false, error: `Gemini API error: ${response.status}` };
@@ -417,21 +340,15 @@ export class GeminiAdapter extends ImageGenerationAdapter {
         return { success: false, error: 'No image data in response' };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`[GeminiAdapter] Key ${currentKeyIndex + 1} 异常:`, errorMessage);
 
         if (attempt === MAX_RETRIES) {
           return { success: false, error: errorMessage };
         }
 
-        const isNetworkError =
-          (error instanceof Error && error.name === 'AbortError') ||
-          errorMessage.includes('fetch failed') ||
-          errorMessage.includes('timeout');
-
-        if (isNetworkError) {
-          continue;
-        }
-
-        return { success: false, error: errorMessage };
+        // 任何错误都轮转到下一个 Key 并重试
+        await rotateToNextKey(currentKeyIndex);
+        continue;
       }
     }
 

@@ -13,11 +13,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证时长参数（Sora 2 API 只支持 4, 8, 12 秒）
-    const validDurations: SoraDuration[] = ["4", "8", "12"];
+    // 验证时长参数（Sora2 API 支持 10s 和 15s）
+    const validDurations: SoraDuration[] = ["10", "15"];
     const duration: SoraDuration = validDurations.includes(durationSeconds)
       ? durationSeconds
-      : "8"; // 默认 8 秒
+      : "10"; // 默认 10 秒
 
     // 创建异步任务
     const { taskId } = await createVideoTask(

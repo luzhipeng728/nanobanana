@@ -26,6 +26,7 @@ model User {
   spriteTasks SpriteTask[]
   ttsTasks    TTSTask[]
   pptTasks    PPTTask[]
+  researchVideoProjects ResearchVideoProject[]
   modelPermissions UserModelPermission[]
   consumptionRecords ConsumptionRecord[]
   permissionRequests PermissionRequest[]
@@ -405,4 +406,202 @@ model PPTTask {
   @@index([userId])
   @@index([status])
   @@index([deletedAt])
+}
+
+// 研究视频项目 - AI驱动的视频生成
+model ResearchVideoProject {
+  id              String    @id @default(uuid())
+  status          String    @default("draft") // draft, researching, scripting, generating_tts, generating_images, ready_for_edit, composing, completed, failed
+
+  // 基本信息
+  topic           String    @db.Text              // 用户输入的主题
+  title           String?                         // 生成的标题
+
+  // 研究相关
+  researchDimensions String? @db.LongText         // JSON: AI生成的研究维度 [{id, dimension, query, status, result}]
+  researchResults    String? @db.LongText         // 合并后的研究结果
+
+  // 脚本
+  fullScript      String?   @db.LongText          // 完整脚本文本
+
+  // 配置
+  speaker         String    @default("zh_female_vivi") // TTS发音人
+  speed           Float     @default(1.0)         // TTS语速
+  imageModel      String    @default("nano-banana") // 图片生成模型
+  aspectRatio     String    @default("16:9")      // 视频画面比例
+
+  // 输出
+  videoUrl        String?   @db.Text              // 最终视频URL
+  coverUrl        String?   @db.Text              // 封面图URL
+  duration        Float?                          // 视频总时长（秒）
+
+  // 关联
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  segments        ResearchVideoSegment[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  completedAt     DateTime?
+  deletedAt       DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+// 研究视频分段 - 每个分段包含音频和图片
+model ResearchVideoSegment {
+  id              String    @id @default(uuid())
+  projectId       String
+  project         ResearchVideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  order           Int                             // 分段顺序 (0-based)
+  text            String    @db.Text              // 该段脚本文本
+
+  // v2: 章节信息（用于信息图生成）
+  chapterTitle    String?   @db.VarChar(255)      // 章节标题
+  keyPoints       String?   @db.Text              // JSON: ["要点1", "要点2", ...]
+  visualStyle     String?   @db.VarChar(50)       // infographic | news | data | story | comparison
+
+  // TTS 音频
+  audioUrl        String?   @db.Text              // 音频 URL
+  audioDuration   Float?                          // 音频时长（秒）
+  ttsStatus       String    @default("pending")   // pending, generating, completed, failed
+  ttsParams       String?   @db.Text              // JSON: {emotion, pitch, volume}
+
+  // 配图（支持多图）
+  imageUrl        String?   @db.Text              // 主图 URL（兼容旧模式）
+  imagePrompt     String?   @db.Text              // 主图提示词
+  imageStatus     String    @default("pending")   // pending, generating, completed, failed
+  // 多图模式
+  images          String?   @db.Text              // JSON: [{index, imageUrl, prompt, durationRatio}]
+
+  // 运镜参数（预留）
+  cameraMove      String?   @db.Text              // JSON: {type, duration, params}
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([projectId, order])
+  @@index([projectId])
+}
+
+// ============================================================================
+// 故事视频智能体 - AI驱动的儿童读物/古诗解说视频生成
+// ============================================================================
+
+// 故事视频项目
+model StoryVideoProject {
+  id              String    @id @default(uuid())
+  status          String    @default("draft") // draft, planning, generating_frames, generating_videos, evaluating, composing, completed, failed
+
+  // 基本信息
+  story           String    @db.LongText          // 用户输入的故事/主题
+  title           String?                         // AI生成的标题
+  contentType     String    @default("children_book") // children_book, poetry, science, fairy_tale
+
+  // 配置
+  artStyle        String    @default("watercolor children's book style") // 画风描述
+  aspectRatio     String    @default("16:9")      // 16:9 或 9:16
+  qualityMode     String    @default("standard")  // economy, standard, high_quality
+  voiceId         String?                         // TTS发音人ID（可选）
+  bgmStyle        String?                         // 背景音乐风格（可选）
+
+  // 分镜规划
+  storyboard      String?   @db.LongText          // JSON: 完整分镜脚本
+  characterRefs   String?   @db.LongText          // JSON: 角色参考特征
+
+  // 输出
+  videoUrl        String?   @db.Text              // 最终视频URL
+  coverUrl        String?   @db.Text              // 封面图URL
+  duration        Float?                          // 视频总时长（秒）
+  totalCost       Decimal?  @db.Decimal(10, 4)    // 总消费金额
+
+  // 生成日志
+  generationLog   String?   @db.LongText          // JSON: 生成过程日志
+
+  // 关联
+  userId          String?
+  scenes          StoryVideoScene[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  completedAt     DateTime?
+  deletedAt       DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+// 故事视频场景
+model StoryVideoScene {
+  id              String    @id @default(uuid())
+  projectId       String
+  project         StoryVideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  order           Int                             // 场景顺序 (0-based)
+  status          String    @default("pending")   // pending, generating_frame, generating_video, evaluating, approved, failed
+
+  // 分镜信息
+  description     String    @db.Text              // 场景描述
+  expectedAction  String?   @db.Text              // 预期动作
+  characters      String?   @db.Text              // JSON: 出场角色
+  narration       String?   @db.Text              // 旁白文字
+  transitionHint  String?   @db.Text              // 过渡提示
+
+  // 首帧图片
+  firstFrameUrl   String?   @db.Text              // 首帧图片URL
+  firstFramePrompt String?  @db.Text              // 首帧生成提示词
+  frameModel      String    @default("nano-banana-pro") // 图片生成模型
+
+  // 视频片段
+  videoSegments   String?   @db.LongText          // JSON: [{id, order, videoUrl, duration, inputFrame, prompt, model, status, evaluation}]
+  totalDuration   Float?                          // 该场景总时长
+
+  // AI评估
+  qualityScore    Float?                          // 质量评分 (0-10)
+  evaluationNote  String?   @db.Text              // 评估说明
+  retryCount      Int       @default(0)           // 重试次数
+  maxRetries      Int       @default(3)           // 最大重试次数
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([projectId, order])
+  @@index([projectId])
+}
+
+// Sora2 视频生成任务（用于异步轮询）
+model Sora2Task {
+  id              String    @id @default(uuid())
+  status          String    @default("pending")   // pending, processing, completed, failed
+
+  // 任务信息
+  externalTaskId  String?   @db.VarChar(255)      // Sora2 API返回的任务ID
+  model           String                          // sora2-portrait, sora2-portrait-15s, sora2-landscape, sora2-landscape-15s
+  prompt          String    @db.Text              // 视频生成提示词
+  inputImageUrl   String    @db.Text              // 输入图片URL
+
+  // 结果
+  videoUrl        String?   @db.Text              // 生成的视频URL
+  lastFrameUrl    String?   @db.Text              // 提取的尾帧URL
+  duration        Float?                          // 视频时长（秒）
+  progress        Int       @default(0)           // 进度 0-100
+
+  // 错误信息
+  error           String?   @db.Text
+
+  // 关联
+  sceneId         String?                         // 关联的场景ID
+  userId          String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  completedAt     DateTime?
+
+  @@index([status])
+  @@index([sceneId])
+  @@index([externalTaskId])
 }

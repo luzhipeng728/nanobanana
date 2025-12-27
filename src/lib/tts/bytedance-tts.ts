@@ -264,9 +264,10 @@ export class BytedanceTTSClient {
 
     // 转换参数值：speed/volume/pitch 范围 0.5-2.0 → speech_rate/loudness_rate 范围 -50 到 100
     // 公式：(value - 1) * 100，例如 1.5 → 50，0.5 → -50，1.0 → 0
-    const speechRate = Math.round((opts.speed! - 1) * 100);
-    const loudnessRate = Math.round((opts.volume! - 1) * 100);
-    const pitchRate = Math.round((opts.pitch! - 1) * 100);
+    // 使用默认值 1.0 处理 undefined 的情况
+    const speechRate = Math.round(((opts.speed ?? 1.0) - 1) * 100);
+    const loudnessRate = Math.round(((opts.volume ?? 1.0) - 1) * 100);
+    const pitchRate = Math.round(((opts.pitch ?? 1.0) - 1) * 100);
 
     // 构建 audio_params（使用正确的 v3 API 参数名）
     const audioParams: Record<string, unknown> = {

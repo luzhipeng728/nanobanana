@@ -8,7 +8,7 @@ interface GalleryItem {
   id: string;
   title: string;
   cover: string | null;
-  type: 'slideshow' | 'scrollytelling' | 'ppt';
+  type: 'slideshow' | 'scrollytelling' | 'ppt' | 'research-video';
   imageCount?: number;
   createdAt: Date;
   views: number;
@@ -17,6 +17,7 @@ interface GalleryItem {
   htmlUrl?: string | null;
   pptUrl?: string | null;
   previewUrl?: string | null;
+  duration?: number | null;
   needsCover?: boolean;
 }
 
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const sort = searchParams.get("sort") || "latest"; // latest, popular, featured
-    const typeFilter = searchParams.get("type") || "all"; // all, slideshow, scrollytelling, ppt
+    const typeFilter = searchParams.get("type") || "all"; // all, slideshow, scrollytelling, ppt, research-video
     const skip = (page - 1) * limit;
 
     let slideshowOrderBy: any = { createdAt: "desc" };
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
     let totalSlideshow = 0;
     let totalScrollytelling = 0;
     let totalPPT = 0;
+    let totalResearchVideo = 0;
 
     // 获取幻灯片列表
     if (typeFilter === "all" || typeFilter === "slideshow") {
@@ -201,6 +203,50 @@ export async function GET(request: NextRequest) {
       allItems = [...allItems, ...pptItems];
     }
 
+    // 获取研究视频列表
+    if (typeFilter === "all" || typeFilter === "research-video") {
+      const [researchVideos, count] = await Promise.all([
+        prisma.researchVideoProject.findMany({
+          where: {
+            status: "completed",
+            videoUrl: { not: null },
+          },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            title: true,
+            topic: true,
+            coverUrl: true,
+            videoUrl: true,
+            duration: true,
+            createdAt: true,
+          },
+        }),
+        prisma.researchVideoProject.count({
+          where: {
+            status: "completed",
+            videoUrl: { not: null },
+          },
+        }),
+      ]);
+
+      totalResearchVideo = count;
+
+      const researchVideoItems: GalleryItem[] = researchVideos.map((v) => ({
+        id: v.id,
+        title: v.title || v.topic,
+        cover: v.coverUrl,
+        type: 'research-video' as const,
+        createdAt: v.createdAt,
+        videoUrl: v.videoUrl,
+        duration: v.duration,
+        views: 0,
+        likes: 0,
+      }));
+
+      allItems = [...allItems, ...researchVideoItems];
+    }
+
     // 排序混合列表
     if (sort === "latest") {
       allItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -245,6 +291,7 @@ export async function GET(request: NextRequest) {
         slideshow: totalSlideshow,
         scrollytelling: totalScrollytelling,
         ppt: totalPPT,
+        'research-video': totalResearchVideo,
       },
     });
   } catch (error) {

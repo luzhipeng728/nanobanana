@@ -157,6 +157,37 @@ export async function uploadVideoBuffer(buffer: Buffer, fileName: string): Promi
 }
 
 /**
+ * 直接上传图片 Buffer 到 R2
+ */
+export async function uploadImageBuffer(buffer: Buffer, fileName: string): Promise<string> {
+  console.log(`[R2] Uploading image buffer, size: ${(buffer.length / 1024).toFixed(2)} KB, fileName: ${fileName}`);
+
+  try {
+    // 确定扩展名和 MIME 类型
+    const ext = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+    const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+
+    const key = `nanobanana/images/${fileName}`;
+
+    const command = new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: mimeType,
+    });
+
+    await r2Client.send(command);
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
+
+    console.log(`[R2] Image uploaded successfully: ${publicUrl}`);
+    return publicUrl;
+  } catch (error) {
+    console.error("[R2] Error uploading image buffer:", error);
+    throw new Error("Failed to upload image buffer to R2");
+  }
+}
+
+/**
  * 从 Base64 上传视频到 R2
  */
 export async function uploadVideoFromBase64(base64Data: string, mimeType: string = "video/mp4"): Promise<string> {

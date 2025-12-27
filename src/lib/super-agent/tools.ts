@@ -43,13 +43,19 @@ export const SUPER_AGENT_TOOLS: AgentTool[] = [
   // 工具2: 技能加载器
   {
     name: 'load_skill',
-    description: '加载指定技能的完整内容，包括提示词模板、变量定义、示例和常见问题解决方案。',
+    description: '加载指定技能的完整内容，包括提示词模板、变量定义、示例和常见问题解决方案。会根据 image_model 自动转换提示词格式（如 Seedream 不支持 hex 颜色代码）。',
     parameters: [
       {
         name: 'skill_id',
         type: 'string',
         description: '技能ID，如 product-showcase, tutorial-infographic 等',
         required: true
+      },
+      {
+        name: 'image_model',
+        type: 'string',
+        description: '目标图片生成模型，如 nano-banana, nano-banana-pro, seedream-4.5。不同模型有不同的提示词格式要求。',
+        required: false
       }
     ]
   },

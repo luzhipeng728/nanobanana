@@ -31,6 +31,10 @@ import TTSNode from "./nodes/TTSNode";
 import PPTGenNode from "./nodes/PPTGenNode";
 import PPTEditorNode from "./nodes/PPTEditorNode";
 import PPTNode from "./nodes/PPTNode";
+import ResearchVideoGenNode from "./nodes/ResearchVideoGenNode";
+import ResearchVideoEditorNode from "./nodes/ResearchVideoEditorNode";
+import ResearchVideoNode from "./nodes/ResearchVideoNode";
+import StoryVideoGenNode from "./nodes/StoryVideoGenNode";
 import ImageModal from "./ImageModal";
 import NodeToolbar, { type NodeType } from "./NodeToolbar";
 import CanvasContextMenu from "./CanvasContextMenu";
@@ -75,6 +79,10 @@ const nodeTypes = {
   pptGen: PPTGenNode as any,
   pptEditor: PPTEditorNode as any,
   ppt: PPTNode as any,
+  researchVideoGen: ResearchVideoGenNode as any,
+  researchVideoEditor: ResearchVideoEditorNode as any,
+  researchVideo: ResearchVideoNode as any,
+  storyVideoGen: StoryVideoGenNode as any,
 };
 
 const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
@@ -657,6 +665,10 @@ export default function InfiniteCanvas() {
           ? { width: 1000, height: 700 }
           : type === 'ttsGen'
           ? { width: 340 }
+          : type === 'researchVideoGen'
+          ? { width: 400, height: 500 }
+          : type === 'researchVideoEditor'
+          ? { width: 800, height: 600 }
           : undefined,
         data: type === 'imageGen'
           ? { prompt: '' }
@@ -676,6 +688,8 @@ export default function InfiniteCanvas() {
           ? {}
           : type === 'ttsGen'
           ? { text: '', speaker: 'zh_female_vivi', speed: 1.0 }
+          : type === 'researchVideoGen'
+          ? { topic: '', speaker: 'zh_female_vivi', speed: 1.0, aspectRatio: '16:9' }
           : {},
       };
 

@@ -1,147 +1,81 @@
-# NanoBanana 项目开发指南
+# CLAUDE.md
 
-## 图片生成适配器系统
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-### 架构概述
+## Build & Development Commands
 
-项目使用适配器模式管理多个图片生成服务，位于 `src/lib/image-generation/`：
-
-```
-src/lib/image-generation/
-├── index.ts                    # 统一入口 + 工厂函数
-├── base-adapter.ts             # 适配器基类
-├── types.ts                    # 统一类型定义
-├── adapters/
-│   ├── gemini-adapter.ts       # Gemini 系列
-│   └── seedream-adapter.ts     # Seedream 4.5
-└── utils/
-    ├── resolution-mapper.ts    # 分辨率映射
-    └── image-compress.ts       # 图片压缩
+```bash
+npm run dev          # Start dev server (0.0.0.0:3000)
+npm run build        # Build for production (runs prisma generate first)
+npm run start        # Start production server (0.0.0.0:3004)
+npm run lint         # Run ESLint
 ```
 
-### 添加新图片适配器步骤
-
-#### 1. 创建适配器文件
-
-在 `src/lib/image-generation/adapters/` 创建新文件，如 `my-adapter.ts`：
-
-```typescript
-import { ImageGenerationAdapter } from '../base-adapter';
-import type { ImageGenerationParams, ImageGenerationResult, AdapterCapabilitiesConfig } from '../types';
-
-export class MyAdapter extends ImageGenerationAdapter {
-  readonly name = 'my-adapter';
-  readonly models = ['my-model-fast', 'my-model-pro'];
-
-  readonly capabilities: AdapterCapabilitiesConfig = {
-    supportedResolutions: ['1K', '2K', '4K'],
-    supportedAspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4'],
-    supportsReferenceImages: false,  // 是否支持参考图
-    maxReferenceImages: 0,
-    extraOptions: [],  // 模型特有选项
-  };
-
-  async generate(params: ImageGenerationParams): Promise<ImageGenerationResult> {
-    const apiKey = process.env.MY_API_KEY;
-    if (!apiKey) {
-      return { success: false, error: 'MY_API_KEY 未配置' };
-    }
-
-    // 实现 API 调用逻辑
-    // ...
-
-    return {
-      success: true,
-      imageUrl: 'https://...',
-      meta: { model: params.model },
-    };
-  }
-}
+Database commands:
+```bash
+npx prisma generate  # Generate Prisma client (auto-runs on build/postinstall)
+npx prisma db push   # Push schema changes to database
+npx prisma studio    # Open Prisma Studio GUI
 ```
 
-#### 2. 注册适配器
+## Architecture Overview
 
-在 `src/lib/image-generation/index.ts` 中注册：
+NanoBanana is a Next.js 16 app providing an infinite canvas for AI-powered content generation (images, music, video, PPT, TTS, etc.). Uses React Flow for the canvas interface.
 
-```typescript
-import { MyAdapter } from './adapters/my-adapter';
+### Core Layers
 
-const adapters: ImageGenerationAdapter[] = [
-  new GeminiAdapter(),
-  new SeedreamAdapter(),
-  new MyAdapter(),  // 添加新适配器
-];
-```
+**Frontend Canvas** (`src/components/`)
+- `InfiniteCanvas.tsx` - Main React Flow canvas container
+- `nodes/*.tsx` - Node types for different content (ImageNode, MusicNode, VideoGenNode, etc.)
+- Generator nodes (`*GenNode.tsx`) handle input/config, result nodes display output
+- `CanvasContext.tsx` - Shared state for node management, selection, slideshow mode
 
-#### 3. 更新类型定义
+**API Routes** (`src/app/api/`)
+- Task-based async pattern: create task → poll status → get result
+- `/api/generate-*` - Start generation tasks
+- `/api/*-task` - Poll task status (GET by taskId)
+- `/api/image-models` - Dynamic model list from adapters
 
-在 `src/types/image-gen.ts` 添加模型信息：
+**Agent Systems** (`src/lib/`)
+- `super-agent/` - ReAct loop agent with tool calling (web search, image gen, deep research)
+- `chat-agent/` - Similar agent for chat interface with SSE streaming
+- `scrollytelling-agent/` - Generates immersive scrolling webpages
 
-```typescript
-export const IMAGE_MODELS = {
-  // 现有模型...
-  'my-model-fast': { adapter: 'my-adapter', apiModel: 'actual-api-model-id', label: '我的模型快速版' },
-  'my-model-pro': { adapter: 'my-adapter', apiModel: 'actual-api-model-pro', label: '我的模型高级版' },
-} as const;
-```
+### Image Generation Adapter System
 
-#### 4. 更新速率限制器
+Located in `src/lib/image-generation/`:
+- `base-adapter.ts` - Abstract adapter class
+- `adapters/` - Implementations (GeminiAdapter, SeedreamAdapter)
+- `index.ts` - `generateImage()` entry point, routes to adapters by model ID
 
-在 `src/lib/rate-limiter.ts` 添加模型配置：
+To add a new adapter:
+1. Create adapter in `adapters/` extending `ImageGenerationAdapter`
+2. Register in `index.ts` adapters array
+3. Add model to `src/types/image-gen.ts` IMAGE_MODELS
+4. Add rate limits in `src/lib/rate-limiter.ts`
 
-```typescript
-// 更新 ModelType
-export type ModelType = "nano-banana" | "nano-banana-pro" | "seedream-4.5" | "my-model-fast" | "my-model-pro";
+### Rate Limiting
 
-// 添加 RPM 限制
-const RPM_LIMITS: Record<ModelType, number> = {
-  // 现有配置...
-  "my-model-fast": 100,
-  "my-model-pro": 20,
-};
+`src/lib/rate-limiter.ts` implements RPM-based queuing per model type with configurable concurrency limits. Use `enqueue(model, fn)` to wrap API calls.
 
-// 添加并发限制
-const MAX_CONCURRENT: Record<ModelType, number> = {
-  // 现有配置...
-  "my-model-fast": 20,
-  "my-model-pro": 5,
-};
-```
+### Database
 
-#### 5. 添加环境变量
+MySQL via Prisma. Schema in `prisma/schema.prisma`. Key models:
+- `User` - Auth, balance, permissions
+- `*Task` - Async task status (ImageTask, MusicTask, VideoTask, etc.)
+- `Canvas` - Saved canvas state (JSON)
+- `ApiKey` - External API key rotation (Gemini, Seedream)
 
-在 `.env` 添加 API Key：
+### File Storage
 
-```env
-MY_API_KEY=your-api-key-here
-```
+R2/S3 for generated assets. Upload utilities in `src/lib/image-utils.ts`.
 
-#### 6. 测试验证
+## Key Patterns
 
-1. 重启开发服务器
-2. 访问 `/api/image-models` 确认新模型出现
-3. 在画布节点中测试模型选择和生成
+**Task Polling**: Frontend polls `/api/*-task?taskId=X` until status is `completed` or `failed`.
 
-### 关键文件说明
+**Node Communication**: Nodes connect via React Flow edges. Use `getConnectedImageNodes()` from CanvasContext to find connected images for multi-image operations.
 
-| 文件 | 用途 |
-|------|------|
-| `src/lib/image-generation/types.ts` | 类型定义（ImageGenerationParams, ImageGenerationResult, AdapterCapabilities） |
-| `src/lib/image-generation/base-adapter.ts` | 适配器基类，提供参数验证 |
-| `src/lib/image-generation/index.ts` | 统一入口，`generateImage()` 和 `getAvailableModels()` |
-| `src/app/api/image-models/route.ts` | 模型列表 API，供前端获取 |
-| `src/hooks/useImageModels.ts` | React Hook，提供模型列表和能力查询 |
-| `src/lib/rate-limiter.ts` | 速率限制器，控制 API 调用频率 |
+**Model Permissions**: Users have base models by default. Premium models require `UserModelPermission` records. Check with `getAvailableModelsForUser()`.
 
-### 前端节点更新
-
-三个节点使用 `useImageModels` hook 动态获取模型列表：
-- `ImageGenNode.tsx` - 基础图片生成
-- `AgentNode.tsx` - Agent 批量生成
-- `SuperAgentNode.tsx` - 智能提示词生成
-
-这些节点会自动显示新添加的模型，无需手动修改 UI。
-
-### 设计文档
-
-详细设计文档：`docs/plans/2025-01-12-image-generation-adapter-design.md`
+**Streaming**: Chat agents use SSE via `createSSEStream()` from `src/lib/chat-agent/sse-handler.ts`.

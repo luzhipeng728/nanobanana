@@ -24,13 +24,14 @@ interface GalleryItem {
   id: string;
   title: string;
   cover: string | null;
-  type: 'slideshow' | 'scrollytelling' | 'ppt';
+  type: 'slideshow' | 'scrollytelling' | 'ppt' | 'research-video';
   imageCount?: number;
   createdAt: string;
   videoUrl?: string | null;
   htmlUrl?: string | null;
   pptUrl?: string | null;
   previewUrl?: string | null;
+  duration?: number | null;
   views: number;
   likes: number;
 }
@@ -40,7 +41,7 @@ interface GalleryClientProps {
 }
 
 type SortType = 'featured' | 'latest' | 'popular';
-type FilterType = 'all' | 'slideshow' | 'scrollytelling' | 'ppt';
+type FilterType = 'all' | 'slideshow' | 'scrollytelling' | 'ppt' | 'research-video';
 
 export default function GalleryClient({ initialSlides }: GalleryClientProps) {
   const [slides, setSlides] = useState<GalleryItem[]>(initialSlides);
@@ -49,7 +50,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
   const [hasMore, setHasMore] = useState(true);
   const [currentSort, setCurrentSort] = useState<SortType>('latest');
   const [currentFilter, setCurrentFilter] = useState<FilterType>('all');
-  const [counts, setCounts] = useState({ slideshow: 0, scrollytelling: 0, ppt: 0 });
+  const [counts, setCounts] = useState({ slideshow: 0, scrollytelling: 0, ppt: 0, 'research-video': 0 });
   const observerTarget = useRef<HTMLDivElement>(null);
 
   // 加载数据
@@ -166,7 +167,18 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
     if (item.type === 'ppt') {
       return `/ppt/${item.id}`;
     }
+    if (item.type === 'research-video') {
+      return `/research-video/${item.id}`;
+    }
     return `/slides/${item.id}`;
+  };
+
+  // 格式化时长
+  const formatDuration = (seconds?: number | null) => {
+    if (!seconds) return '';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -237,7 +249,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                   )}
                 >
                   全部
-                  <span className="text-[10px] opacity-60">({counts.slideshow + counts.scrollytelling + counts.ppt})</span>
+                  <span className="text-[10px] opacity-60">({counts.slideshow + counts.scrollytelling + counts.ppt + counts['research-video']})</span>
                 </button>
                 <button
                   onClick={() => handleFilterChange('slideshow')}
@@ -277,6 +289,19 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                   <FileSpreadsheet className="w-3.5 h-3.5" />
                   PPT
                   <span className="text-[10px] opacity-60">({counts.ppt})</span>
+                </button>
+                <button
+                  onClick={() => handleFilterChange('research-video')}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 flex items-center gap-1.5",
+                    currentFilter === 'research-video'
+                      ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm"
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
+                  )}
+                >
+                  <PlayCircle className="w-3.5 h-3.5" />
+                  研究视频
+                  <span className="text-[10px] opacity-60">({counts['research-video']})</span>
                 </button>
               </nav>
             </div>
@@ -350,12 +375,16 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                               ? "bg-cyan-100 dark:bg-cyan-900/30"
                               : slide.type === 'ppt'
                               ? "bg-orange-100 dark:bg-orange-900/30"
+                              : slide.type === 'research-video'
+                              ? "bg-emerald-100 dark:bg-emerald-900/30"
                               : "bg-purple-100 dark:bg-purple-900/30"
                           )}>
                             {slide.type === 'scrollytelling' ? (
                               <Globe className="w-6 h-6 text-cyan-500" />
                             ) : slide.type === 'ppt' ? (
                               <FileSpreadsheet className="w-6 h-6 text-orange-500" />
+                            ) : slide.type === 'research-video' ? (
+                              <PlayCircle className="w-6 h-6 text-emerald-500" />
                             ) : (
                               <Sparkles className="w-6 h-6 text-purple-500" />
                             )}
@@ -375,6 +404,8 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                           ? "bg-cyan-500/70 border-cyan-400/30"
                           : slide.type === 'ppt'
                           ? "bg-orange-500/70 border-orange-400/30"
+                          : slide.type === 'research-video'
+                          ? "bg-emerald-500/70 border-emerald-400/30"
                           : "bg-purple-500/70 border-purple-400/30"
                       )}>
                         {slide.type === 'scrollytelling' ? (
@@ -386,6 +417,11 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                           <>
                             <FileSpreadsheet className="w-3 h-3" />
                             PPT
+                          </>
+                        ) : slide.type === 'research-video' ? (
+                          <>
+                            <PlayCircle className="w-3 h-3" />
+                            研究视频
                           </>
                         ) : (
                           <>
@@ -414,12 +450,16 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                           ? "bg-cyan-500/90 text-white"
                           : slide.type === 'ppt'
                           ? "bg-orange-500/90 text-white"
+                          : slide.type === 'research-video'
+                          ? "bg-emerald-500/90 text-white"
                           : "bg-white/90 dark:bg-black/80 text-neutral-900 dark:text-white"
                       )}>
                         {slide.type === 'scrollytelling' ? (
                           <Globe className="w-8 h-8" />
                         ) : slide.type === 'ppt' ? (
                           <FileSpreadsheet className="w-8 h-8" />
+                        ) : slide.type === 'research-video' ? (
+                          <PlayCircle className="w-8 h-8" />
                         ) : (
                           <PlayCircle className="w-8 h-8 fill-current opacity-90" />
                         )}
@@ -436,6 +476,8 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                           ? "group-hover:text-cyan-600 dark:group-hover:text-cyan-400"
                           : slide.type === 'ppt'
                           ? "group-hover:text-orange-600 dark:group-hover:text-orange-400"
+                          : slide.type === 'research-video'
+                          ? "group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
                           : "group-hover:text-purple-600 dark:group-hover:text-purple-400"
                       )}>
                         {slide.title}
@@ -454,12 +496,17 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
-                        {slide.imageCount && (
+                        {slide.type === 'research-video' && slide.duration ? (
+                          <span className="flex items-center gap-1" title="视频时长">
+                            <PlayCircle className="w-3.5 h-3.5" />
+                            {formatDuration(slide.duration)}
+                          </span>
+                        ) : slide.imageCount ? (
                           <span className="flex items-center gap-1">
                             <ImageIcon className="w-3.5 h-3.5" />
                             {slide.imageCount}页
                           </span>
-                        )}
+                        ) : null}
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
                           {formatDate(slide.createdAt)}

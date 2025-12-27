@@ -1,7 +1,90 @@
 // 预设技能库 - 8个完整的提示词技能模板
 // 基于 Gemini 图片生成最佳实践优化：叙事化描述、摄影术语、分步指令
+// 支持 Seedream 模型的 hex 颜色转换
 
 import type { SkillTemplate } from '@/types/super-agent';
+
+/**
+ * Hex 颜色到描述性名称的映射表
+ */
+const HEX_COLOR_MAP: Record<string, string> = {
+  // 深色背景
+  '#0a0a0f': 'deep space black',
+  '#0f172a': 'deep navy blue',
+  '#1a1a2e': 'dark purple-blue',
+  '#16213e': 'midnight blue',
+  '#1e293b': 'dark charcoal gray',
+
+  // 霓虹/强调色
+  '#00f0ff': 'bright cyan',
+  '#06b6d4': 'cyan',
+  '#3b82f6': 'electric blue',
+  '#8b5cf6': 'violet purple',
+  '#a855f7': 'vibrant purple',
+  '#10b981': 'emerald green',
+  '#34d399': 'light emerald',
+  '#f59e0b': 'warm amber',
+  '#f97316': 'bright orange',
+  '#f43f5e': 'rose red',
+  '#ef4444': 'bright red',
+};
+
+/**
+ * 将提示词中的 hex 颜色代码转换为描述性颜色名称
+ * 用于 Seedream 模型兼容性
+ */
+export function convertPromptForSeedream(prompt: string): string {
+  let converted = prompt;
+
+  // 替换所有已知的 hex 颜色
+  for (const [hex, name] of Object.entries(HEX_COLOR_MAP)) {
+    // 匹配带括号的格式: (#0f172a) 或不带括号的格式
+    const patterns = [
+      new RegExp(`\\(${hex}\\)`, 'gi'),
+      new RegExp(hex, 'gi'),
+    ];
+
+    for (const pattern of patterns) {
+      converted = converted.replace(pattern, name);
+    }
+  }
+
+  // 处理未知的 hex 颜色 - 转换为通用描述
+  converted = converted.replace(
+    /#([0-9A-Fa-f]{6})\b/g,
+    (match) => {
+      // 简单的颜色分析
+      const hex = match.substring(1);
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+
+      // 根据 RGB 值判断大致颜色
+      const brightness = (r + g + b) / 3;
+      if (brightness < 50) return 'very dark color';
+      if (brightness < 100) return 'dark color';
+      if (brightness > 200) return 'light color';
+
+      if (r > g && r > b) return 'reddish color';
+      if (g > r && g > b) return 'greenish color';
+      if (b > r && b > g) return 'bluish color';
+
+      return 'neutral color';
+    }
+  );
+
+  // 移除任何剩余的括号中的颜色代码格式
+  converted = converted.replace(/\s*\([^)]*#[0-9A-Fa-f]{6}[^)]*\)/g, '');
+
+  return converted;
+}
+
+/**
+ * 判断是否为 Seedream 模型
+ */
+export function isSeedreamModel(model: string): boolean {
+  return model.toLowerCase().includes('seedream');
+}
 
 /**
  * Gemini 图片生成最佳实践（来自官方文档）：
