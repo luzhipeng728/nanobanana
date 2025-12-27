@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  nanobanana:
+    image: ghcr.io/luzhipeng728/nanobanana:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nanobanana
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - nanobanana-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    read_only: true
+    tmpfs:
+      - /tmp:size=256M
+      - /app/.next/cache:size=512M
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+networks:
+  nanobanana-network:
+    driver: bridge

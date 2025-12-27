@@ -1,0 +1,172 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script: |
+            set -e
+
+            # 登录到 GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # 拉取最新镜像
+            docker pull ghcr.io/${{ github.repository }}:latest
+
+            # 停止并删除旧容器
+            docker stop nanobanana 2>/dev/null || true
+            docker rm nanobanana 2>/dev/null || true
+
+            # 创建 .env 文件
+            cat > /opt/nanobanana/.env.production << 'ENVEOF'
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
+            R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
+            R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}
+            R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
+            R2_PUBLIC_URL=${{ secrets.R2_PUBLIC_URL }}
+            OPENAI_BASE_URL=${{ secrets.OPENAI_BASE_URL }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            GEMINI_API_KEY_2=${{ secrets.GEMINI_API_KEY_2 }}
+            GEMINI_API_KEY_3=${{ secrets.GEMINI_API_KEY_3 }}
+            GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}
+            TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
+            MUREKA_API_URL=${{ secrets.MUREKA_API_URL }}
+            MUREKA_API_TOKEN=${{ secrets.MUREKA_API_TOKEN }}
+            SORA_API_BASE_URL=${{ secrets.SORA_API_BASE_URL }}
+            SORA_API_TOKEN=${{ secrets.SORA_API_TOKEN }}
+            SORA_API_TYPE=${{ secrets.SORA_API_TYPE }}
+            GOOGLE_CLOUD_PROJECT=${{ secrets.GOOGLE_CLOUD_PROJECT }}
+            GOOGLE_CLOUD_LOCATION=${{ secrets.GOOGLE_CLOUD_LOCATION }}
+            ANTHROPIC_BASE_URL=${{ secrets.ANTHROPIC_BASE_URL }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+            GOOGLE_SEARCH_API_KEY=${{ secrets.GOOGLE_SEARCH_API_KEY }}
+            GOOGLE_SEARCH_ENGINE_ID=${{ secrets.GOOGLE_SEARCH_ENGINE_ID }}
+            CLAUDE_MODEL=${{ secrets.CLAUDE_MODEL }}
+            CLAUDE_MAX_TOKENS=${{ secrets.CLAUDE_MAX_TOKENS }}
+            CLAUDE_LIGHT_MODEL=${{ secrets.CLAUDE_LIGHT_MODEL }}
+            CLAUDE_LIGHT_MAX_TOKENS=${{ secrets.CLAUDE_LIGHT_MAX_TOKENS }}
+            DEEP_RESEARCH_MAX_ROUNDS=${{ secrets.DEEP_RESEARCH_MAX_ROUNDS }}
+            HYPRLAB_API_KEY=${{ secrets.HYPRLAB_API_KEY }}
+            BYTEDANCE_TTS_API_KEY=${{ secrets.BYTEDANCE_TTS_API_KEY }}
+            BYTEDANCE_TTS_RESOURCE_ID=${{ secrets.BYTEDANCE_TTS_RESOURCE_ID }}
+            SCROLLYTELLING_API_BASE_URL=${{ secrets.SCROLLYTELLING_API_BASE_URL }}
+            SCROLLYTELLING_API_KEY=${{ secrets.SCROLLYTELLING_API_KEY }}
+            SCROLLYTELLING_MODEL=${{ secrets.SCROLLYTELLING_MODEL }}
+            PRIORITY_IMAGE_API_BASE_URL=${{ secrets.PRIORITY_IMAGE_API_BASE_URL }}
+            PRIORITY_IMAGE_API_KEY=${{ secrets.PRIORITY_IMAGE_API_KEY }}
+            PRIORITY_IMAGE_API_MODEL=${{ secrets.PRIORITY_IMAGE_API_MODEL }}
+            PRIORITY_IMAGE_API_MAX_RETRIES=${{ secrets.PRIORITY_IMAGE_API_MAX_RETRIES }}
+            SEEDREAM_API_KEY=${{ secrets.SEEDREAM_API_KEY }}
+            SORA2_API_KEY=${{ secrets.SORA2_API_KEY }}
+            ENVEOF
+
+            # 启动新容器
+            docker run -d \
+              --name nanobanana \
+              --restart unless-stopped \
+              -p 3004:3004 \
+              --env-file /opt/nanobanana/.env.production \
+              -e NODE_ENV=production \
+              --memory 4g \
+              --cpus 2 \
+              --health-cmd "curl -f http://localhost:3004/api/health || exit 1" \
+              --health-interval 30s \
+              --health-timeout 10s \
+              --health-retries 3 \
+              --health-start-period 60s \
+              --log-driver json-file \
+              --log-opt max-size=50m \
+              --log-opt max-file=3 \
+              ghcr.io/${{ github.repository }}:latest
+
+            # 等待容器健康
+            echo "等待容器启动..."
+            sleep 10
+
+            for i in {1..12}; do
+              if curl -sf http://localhost:3004/api/health > /dev/null 2>&1; then
+                echo "✓ 服务启动成功!"
+                break
+              fi
+              echo "等待服务就绪... ($i/12)"
+              sleep 5
+            done
+
+            # 清理旧镜像
+            docker image prune -f --filter "until=24h"
+
+            # 显示状态
+            echo ""
+            echo "=== 部署完成 ==="
+            docker ps --filter "name=nanobanana" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"

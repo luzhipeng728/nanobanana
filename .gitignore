@@ -45,6 +45,21 @@ next-env.d.ts
 # Priority API state file
 .priority-api-state.json
 
+# Temporary and test files
+*.log
+nohup.out
+*.bak
+tmp.mjs
+test*.mjs
+test*.sh
+oauth_creds.json
+batch_generate_images.py
+gemini_api_complete.sh
+.a
+next
+nanobanana@*
+prisma/db.bak
+
 # Generated test images
 scripts/*.jpg
 scripts/*.jpeg
