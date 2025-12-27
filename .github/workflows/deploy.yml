@@ -89,51 +89,51 @@ jobs:
             docker stop nanobanana 2>/dev/null || true
             docker rm nanobanana 2>/dev/null || true
 
-            # 创建 .env 文件
+            # 创建 .env 文件（不带引号，避免 Prisma 解析问题）
             cat > /opt/nanobanana/.env.production << 'ENVEOF'
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
-            R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
-            R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}
-            R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
-            R2_PUBLIC_URL=${{ secrets.R2_PUBLIC_URL }}
-            OPENAI_BASE_URL=${{ secrets.OPENAI_BASE_URL }}
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-            OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
-            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-            GEMINI_API_KEY_2=${{ secrets.GEMINI_API_KEY_2 }}
-            GEMINI_API_KEY_3=${{ secrets.GEMINI_API_KEY_3 }}
-            GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}
-            TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
-            MUREKA_API_URL=${{ secrets.MUREKA_API_URL }}
-            MUREKA_API_TOKEN=${{ secrets.MUREKA_API_TOKEN }}
-            SORA_API_BASE_URL=${{ secrets.SORA_API_BASE_URL }}
-            SORA_API_TOKEN=${{ secrets.SORA_API_TOKEN }}
-            SORA_API_TYPE=${{ secrets.SORA_API_TYPE }}
-            GOOGLE_CLOUD_PROJECT=${{ secrets.GOOGLE_CLOUD_PROJECT }}
-            GOOGLE_CLOUD_LOCATION=${{ secrets.GOOGLE_CLOUD_LOCATION }}
-            ANTHROPIC_BASE_URL=${{ secrets.ANTHROPIC_BASE_URL }}
-            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
-            GOOGLE_SEARCH_API_KEY=${{ secrets.GOOGLE_SEARCH_API_KEY }}
-            GOOGLE_SEARCH_ENGINE_ID=${{ secrets.GOOGLE_SEARCH_ENGINE_ID }}
-            CLAUDE_MODEL=${{ secrets.CLAUDE_MODEL }}
-            CLAUDE_MAX_TOKENS=${{ secrets.CLAUDE_MAX_TOKENS }}
-            CLAUDE_LIGHT_MODEL=${{ secrets.CLAUDE_LIGHT_MODEL }}
-            CLAUDE_LIGHT_MAX_TOKENS=${{ secrets.CLAUDE_LIGHT_MAX_TOKENS }}
-            DEEP_RESEARCH_MAX_ROUNDS=${{ secrets.DEEP_RESEARCH_MAX_ROUNDS }}
-            HYPRLAB_API_KEY=${{ secrets.HYPRLAB_API_KEY }}
-            BYTEDANCE_TTS_API_KEY=${{ secrets.BYTEDANCE_TTS_API_KEY }}
-            BYTEDANCE_TTS_RESOURCE_ID=${{ secrets.BYTEDANCE_TTS_RESOURCE_ID }}
-            SCROLLYTELLING_API_BASE_URL=${{ secrets.SCROLLYTELLING_API_BASE_URL }}
-            SCROLLYTELLING_API_KEY=${{ secrets.SCROLLYTELLING_API_KEY }}
-            SCROLLYTELLING_MODEL=${{ secrets.SCROLLYTELLING_MODEL }}
-            PRIORITY_IMAGE_API_BASE_URL=${{ secrets.PRIORITY_IMAGE_API_BASE_URL }}
-            PRIORITY_IMAGE_API_KEY=${{ secrets.PRIORITY_IMAGE_API_KEY }}
-            PRIORITY_IMAGE_API_MODEL=${{ secrets.PRIORITY_IMAGE_API_MODEL }}
-            PRIORITY_IMAGE_API_MAX_RETRIES=${{ secrets.PRIORITY_IMAGE_API_MAX_RETRIES }}
-            SEEDREAM_API_KEY=${{ secrets.SEEDREAM_API_KEY }}
-            SORA2_API_KEY=${{ secrets.SORA2_API_KEY }}
-            ENVEOF
+DATABASE_URL=${{ secrets.DATABASE_URL }}
+R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
+R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
+R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}
+R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
+R2_PUBLIC_URL=${{ secrets.R2_PUBLIC_URL }}
+OPENAI_BASE_URL=${{ secrets.OPENAI_BASE_URL }}
+OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
+GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+GEMINI_API_KEY_2=${{ secrets.GEMINI_API_KEY_2 }}
+GEMINI_API_KEY_3=${{ secrets.GEMINI_API_KEY_3 }}
+GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}
+TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
+MUREKA_API_URL=${{ secrets.MUREKA_API_URL }}
+MUREKA_API_TOKEN=${{ secrets.MUREKA_API_TOKEN }}
+SORA_API_BASE_URL=${{ secrets.SORA_API_BASE_URL }}
+SORA_API_TOKEN=${{ secrets.SORA_API_TOKEN }}
+SORA_API_TYPE=${{ secrets.SORA_API_TYPE }}
+GOOGLE_CLOUD_PROJECT=${{ secrets.GOOGLE_CLOUD_PROJECT }}
+GOOGLE_CLOUD_LOCATION=${{ secrets.GOOGLE_CLOUD_LOCATION }}
+ANTHROPIC_BASE_URL=${{ secrets.ANTHROPIC_BASE_URL }}
+ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+GOOGLE_SEARCH_API_KEY=${{ secrets.GOOGLE_SEARCH_API_KEY }}
+GOOGLE_SEARCH_ENGINE_ID=${{ secrets.GOOGLE_SEARCH_ENGINE_ID }}
+CLAUDE_MODEL=${{ secrets.CLAUDE_MODEL }}
+CLAUDE_MAX_TOKENS=${{ secrets.CLAUDE_MAX_TOKENS }}
+CLAUDE_LIGHT_MODEL=${{ secrets.CLAUDE_LIGHT_MODEL }}
+CLAUDE_LIGHT_MAX_TOKENS=${{ secrets.CLAUDE_LIGHT_MAX_TOKENS }}
+DEEP_RESEARCH_MAX_ROUNDS=${{ secrets.DEEP_RESEARCH_MAX_ROUNDS }}
+HYPRLAB_API_KEY=${{ secrets.HYPRLAB_API_KEY }}
+BYTEDANCE_TTS_API_KEY=${{ secrets.BYTEDANCE_TTS_API_KEY }}
+BYTEDANCE_TTS_RESOURCE_ID=${{ secrets.BYTEDANCE_TTS_RESOURCE_ID }}
+SCROLLYTELLING_API_BASE_URL=${{ secrets.SCROLLYTELLING_API_BASE_URL }}
+SCROLLYTELLING_API_KEY=${{ secrets.SCROLLYTELLING_API_KEY }}
+SCROLLYTELLING_MODEL=${{ secrets.SCROLLYTELLING_MODEL }}
+PRIORITY_IMAGE_API_BASE_URL=${{ secrets.PRIORITY_IMAGE_API_BASE_URL }}
+PRIORITY_IMAGE_API_KEY=${{ secrets.PRIORITY_IMAGE_API_KEY }}
+PRIORITY_IMAGE_API_MODEL=${{ secrets.PRIORITY_IMAGE_API_MODEL }}
+PRIORITY_IMAGE_API_MAX_RETRIES=${{ secrets.PRIORITY_IMAGE_API_MAX_RETRIES }}
+SEEDREAM_API_KEY=${{ secrets.SEEDREAM_API_KEY }}
+SORA2_API_KEY=${{ secrets.SORA2_API_KEY }}
+ENVEOF
 
             # 启动新容器
             docker run -d \
