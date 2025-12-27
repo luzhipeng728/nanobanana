@@ -75,6 +75,10 @@ jobs:
           script: |
             set -e
 
+            # 停止 pm2 的 nanobanana 服务（如果存在）
+            pm2 stop nanobanana-prod 2>/dev/null || true
+            pm2 delete nanobanana-prod 2>/dev/null || true
+
             # 登录到 GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
