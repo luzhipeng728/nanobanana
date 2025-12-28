@@ -1257,7 +1257,7 @@ export default function InfiniteCanvas() {
   }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, addStickerNode, addTTSNode, getConnectedImageNodes, getNode, openImageModal, getNodes, getEdges, slideshowMode, slideshowSelections, toggleSlideshowSelection]);
 
   return (
-    <div className="w-full h-screen relative bg-neutral-50 dark:bg-black">
+    <div className="w-full h-screen relative bg-[#050508]">
       <CanvasToolbar
         userId={userId}
         username={username}
@@ -1296,36 +1296,39 @@ export default function InfiniteCanvas() {
         className="hidden"
       />
 
-      {/* Selection Mode Indicator - 精致设计 */}
+      {/* Selection Mode Indicator - Neo-Cyber 风格 */}
       {selectionMode && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 animate-slide-up">
           <div className="relative group">
-            {/* 渐变光晕背景 */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-2xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity" />
+            {/* 霓虹光晕背景 */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity" />
 
             {/* 主容器 */}
-            <div className="relative flex items-center gap-4 px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl shadow-blue-500/30">
+            <div className="relative flex items-center gap-4 px-5 py-3 bg-[#0a0a12]/95 border border-cyan-500/30 rounded-xl shadow-[0_0_30px_rgba(0,245,255,0.3)]">
+              {/* 顶部装饰线 */}
+              <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
+
               {/* 左侧图标 */}
-              <div className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-xl">
-                <MousePointer2 className="w-4 h-4 text-white" />
+              <div className="flex items-center justify-center w-8 h-8 bg-cyan-500/20 rounded-lg border border-cyan-500/30 shadow-[0_0_10px_rgba(0,245,255,0.3)]">
+                <MousePointer2 className="w-4 h-4 text-cyan-400" />
               </div>
 
               {/* 文本 */}
               <div className="flex flex-col">
-                <span className="text-sm font-semibold text-white">选择模式</span>
-                <span className="text-xs text-blue-100/80">拖动框选节点 · Delete 删除</span>
+                <span className="font-cyber text-xs font-bold tracking-wider uppercase text-cyan-400">SELECT MODE</span>
+                <span className="text-[10px] text-white/50">拖动框选 · Delete 删除</span>
               </div>
 
               {/* 分隔线 */}
-              <div className="w-px h-8 bg-white/20" />
+              <div className="w-px h-8 bg-gradient-to-b from-transparent via-cyan-500/30 to-transparent" />
 
               {/* 关闭按钮 */}
               <button
                 onClick={() => setSelectionMode(false)}
-                className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+                className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 transition-all"
                 title="退出选择模式"
               >
-                <X className="w-4 h-4 text-white" />
+                <X className="w-4 h-4 text-white/70 hover:text-red-400" />
               </button>
             </div>
           </div>
@@ -1366,54 +1369,65 @@ export default function InfiniteCanvas() {
         />
       )}
 
-      {/* Placement Mode Overlay - 精致设计 */}
+      {/* Placement Mode Overlay - Neo-Cyber 风格 */}
       {(isPlacingImage || pendingGalleryImage || pendingNodeType) && (
         <div
           className="absolute inset-0 z-20 cursor-crosshair"
           onClick={handleCanvasClick}
         >
-          {/* 半透明遮罩增加聚焦感 */}
-          <div className="absolute inset-0 bg-black/5 dark:bg-white/5 pointer-events-none" />
+          {/* 扫描线遮罩 */}
+          <div className="absolute inset-0 cyber-scanline opacity-10 pointer-events-none" />
 
           {/* 顶部提示条 */}
           <div className="absolute top-20 left-1/2 -translate-x-1/2 animate-fade-in">
             <div className="relative">
-              {/* 光晕效果 */}
-              <div className={`absolute -inset-1 rounded-2xl blur-lg opacity-50 ${
-                pendingNodeType ? 'bg-gradient-to-r from-blue-500 to-indigo-500' :
-                pendingGalleryImage ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500' :
-                'bg-gradient-to-r from-cyan-500 to-blue-500'
+              {/* 霓虹光晕效果 */}
+              <div className={`absolute -inset-1 rounded-xl blur-lg opacity-50 ${
+                pendingNodeType ? 'bg-gradient-to-r from-purple-500 to-pink-500' :
+                pendingGalleryImage ? 'bg-gradient-to-r from-pink-500 to-orange-500' :
+                'bg-gradient-to-r from-cyan-500 to-purple-500'
               }`} />
 
               {/* 主容器 */}
-              <div className={`relative flex items-center gap-4 px-5 py-3 rounded-2xl shadow-2xl border border-white/20 ${
-                pendingNodeType ? 'bg-gradient-to-r from-blue-600 to-indigo-600' :
-                pendingGalleryImage ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600' :
-                'bg-gradient-to-r from-cyan-600 to-blue-600'
-              }`}>
+              <div className="relative flex items-center gap-4 px-5 py-3 bg-[#0a0a12]/95 border border-cyan-500/30 rounded-xl shadow-[0_0_30px_rgba(0,245,255,0.3)]">
+                {/* 顶部装饰线 */}
+                <div className={`absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent ${
+                  pendingNodeType ? 'via-purple-500/50' :
+                  pendingGalleryImage ? 'via-pink-500/50' :
+                  'via-cyan-500/50'
+                } to-transparent`} />
+
                 {/* 左侧图标 */}
-                <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl">
+                <div className={`flex items-center justify-center w-10 h-10 rounded-lg border ${
+                  pendingNodeType ? 'bg-purple-500/20 border-purple-500/30 shadow-[0_0_15px_rgba(191,0,255,0.3)]' :
+                  pendingGalleryImage ? 'bg-pink-500/20 border-pink-500/30 shadow-[0_0_15px_rgba(255,0,170,0.3)]' :
+                  'bg-cyan-500/20 border-cyan-500/30 shadow-[0_0_15px_rgba(0,245,255,0.3)]'
+                }`}>
                   {pendingNodeType ? (
-                    <Wand2 className="w-5 h-5 text-white" />
+                    <Wand2 className="w-5 h-5 text-purple-400" />
                   ) : (
-                    <ImageIcon className="w-5 h-5 text-white" />
+                    <ImageIcon className="w-5 h-5 text-cyan-400" />
                   )}
                 </div>
 
                 {/* 文本 */}
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-white">
+                  <span className={`font-cyber text-xs font-bold tracking-wider uppercase ${
+                    pendingNodeType ? 'text-purple-400' :
+                    pendingGalleryImage ? 'text-pink-400' :
+                    'text-cyan-400'
+                  }`}>
                     {pendingNodeType
-                      ? `放置 ${pendingNodeType === 'imageGen' ? '图片生成器' : pendingNodeType === 'agent' ? 'Agent' : pendingNodeType === 'superAgent' ? 'Prompt Expert' : pendingNodeType === 'musicGen' ? '音乐生成器' : pendingNodeType === 'videoGen' ? '视频生成器' : pendingNodeType === 'chat' ? '聊天' : pendingNodeType === 'sprite' ? 'Sprite' : pendingNodeType === 'chatAgent' ? 'Agent Chat' : pendingNodeType === 'ttsGen' ? '语音合成' : pendingNodeType}`
+                      ? `PLACE ${pendingNodeType === 'imageGen' ? 'IMAGE GEN' : pendingNodeType === 'agent' ? 'AGENT' : pendingNodeType === 'superAgent' ? 'PROMPT EXPERT' : pendingNodeType === 'musicGen' ? 'MUSIC GEN' : pendingNodeType === 'videoGen' ? 'VIDEO GEN' : pendingNodeType === 'chat' ? 'CHAT' : pendingNodeType === 'sprite' ? 'SPRITE' : pendingNodeType === 'chatAgent' ? 'AGENT CHAT' : pendingNodeType === 'ttsGen' ? 'TTS' : pendingNodeType.toUpperCase()}`
                       : pendingGalleryImage
-                      ? '放置画廊图片'
-                      : '放置上传图片'}
+                      ? 'PLACE GALLERY IMAGE'
+                      : 'PLACE UPLOAD IMAGE'}
                   </span>
-                  <span className="text-xs text-white/70">点击画布任意位置放置</span>
+                  <span className="text-[10px] text-white/50">点击画布任意位置放置</span>
                 </div>
 
                 {/* 分隔线 */}
-                <div className="w-px h-8 bg-white/20" />
+                <div className="w-px h-8 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
 
                 {/* 取消按钮 */}
                 <button
@@ -1421,11 +1435,11 @@ export default function InfiniteCanvas() {
                     e.stopPropagation();
                     cancelPlacingImage();
                   }}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-white text-sm font-medium"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 transition-all text-white/70 hover:text-red-400 text-xs font-medium"
                   title="取消"
                 >
                   <X className="w-4 h-4" />
-                  <span>取消</span>
+                  <span>CANCEL</span>
                 </button>
               </div>
             </div>
@@ -1452,7 +1466,7 @@ export default function InfiniteCanvas() {
               fitView
               minZoom={0.1}
               maxZoom={4}
-              className="bg-neutral-50 dark:bg-black"
+              className="!bg-[#050508]"
               onlyRenderVisibleElements={false}
               nodesFocusable={false}
               edgesFocusable={false}
@@ -1465,8 +1479,8 @@ export default function InfiniteCanvas() {
               zoomOnScroll={!isTouchDevice}
               preventScrolling={true}
             >
-              <Controls />
-              <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+              <Controls className="!bg-[#0a0a12] !border-cyan-500/20 !shadow-[0_0_20px_rgba(0,245,255,0.1)] [&>button]:!bg-[#0a0a12] [&>button]:!border-cyan-500/20 [&>button]:!text-cyan-400 [&>button:hover]:!bg-cyan-500/10" />
+              <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(0, 245, 255, 0.15)" />
             </ReactFlow>
           </CanvasContext.Provider>
         </AudioProvider>
@@ -1486,30 +1500,44 @@ export default function InfiniteCanvas() {
         setAuthError={setAuthError}
       />
 
-      {/* Loading State - 精致设计 */}
+      {/* Loading State - Neo-Cyber 风格 */}
       {isLoading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-neutral-900/80 to-black/90 backdrop-blur-xl">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#050508]/95 backdrop-blur-xl">
+          {/* 背景网格 */}
+          <div className="absolute inset-0 cyber-grid opacity-30" />
+          {/* 扫描线 */}
+          <div className="absolute inset-0 cyber-scanline opacity-20" />
+
           <div className="relative">
             {/* 外圈光晕 */}
-            <div className="absolute -inset-8 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-cyan-500/20 rounded-full blur-2xl animate-pulse" />
+            <div className="absolute -inset-12 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-neon-pulse" />
 
             {/* 主卡片 */}
-            <div className="relative bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl shadow-black/50 overflow-hidden">
+            <div className="relative bg-[#0a0a12]/90 border border-cyan-500/30 rounded-2xl shadow-[0_0_40px_rgba(0,245,255,0.2)] overflow-hidden">
               {/* 顶部渐变装饰条 */}
-              <div className="h-1.5 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500" />
+              <div className="h-[2px] bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500" />
 
-              <div className="px-8 py-6 flex flex-col items-center gap-4">
+              {/* 角落装饰 */}
+              <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-cyan-500/50" />
+              <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-cyan-500/50" />
+              <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-cyan-500/50" />
+              <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-cyan-500/50" />
+
+              <div className="px-10 py-8 flex flex-col items-center gap-5">
                 {/* 旋转加载动画 */}
-                <div className="relative w-12 h-12">
-                  <div className="absolute inset-0 rounded-full border-2 border-neutral-200 dark:border-neutral-700" />
-                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-purple-500 border-r-blue-500 animate-spin" />
-                  <Loader2 className="absolute inset-0 m-auto w-5 h-5 text-purple-500 animate-pulse" />
+                <div className="relative w-16 h-16">
+                  <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-cyan-500 border-r-purple-500 cyber-loading-ring" />
+                  <div className="absolute inset-2 rounded-full border border-white/5" />
+                  <Loader2 className="absolute inset-0 m-auto w-6 h-6 text-cyan-500 animate-spin" />
                 </div>
 
                 {/* 文本 */}
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">正在加载画布</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">请稍候...</p>
+                  <p className="font-cyber text-sm font-bold tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400">
+                    LOADING CANVAS
+                  </p>
+                  <p className="font-mono text-[10px] text-cyan-400/60 mt-2">INITIALIZING SYSTEM...</p>
                 </div>
               </div>
             </div>
@@ -1550,49 +1578,61 @@ export default function InfiniteCanvas() {
         videoUnlocked={videoUnlocked}
       />
 
-      {/* 导入幻灯片弹窗 - 精致设计 */}
+      {/* 导入幻灯片弹窗 - Neo-Cyber 风格 */}
       {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xl animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050508]/90 backdrop-blur-xl animate-fade-in">
+          {/* 背景效果 */}
+          <div className="absolute inset-0 cyber-grid opacity-20" />
+          <div className="absolute inset-0 cyber-scanline opacity-10" />
+
           <div className="relative w-[420px] animate-scale-in">
-            {/* 外部光晕 */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-yellow-500/20 rounded-3xl blur-2xl" />
+            {/* 外部霓虹光晕 */}
+            <div className="absolute -inset-4 bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-yellow-500/20 rounded-2xl blur-2xl" />
 
             {/* 主弹窗 */}
-            <div className="relative bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl shadow-black/30 overflow-hidden border border-neutral-200/50 dark:border-white/10">
+            <div className="relative bg-[#0a0a12]/95 rounded-2xl shadow-[0_0_40px_rgba(255,107,0,0.2)] overflow-hidden border border-orange-500/30">
               {/* 顶部渐变装饰 */}
-              <div className="h-24 bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500 relative">
-                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBjeD0iMjAiIGN5PSIyMCIgcj0iMiIvPjwvZz48L3N2Zz4=')] opacity-50" />
+              <div className="h-20 bg-gradient-to-br from-orange-500/20 via-amber-500/20 to-yellow-500/10 relative">
+                <div className="absolute inset-0 cyber-grid opacity-30" />
+                {/* 顶部边框 */}
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500" />
+                {/* 角落装饰 */}
+                <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-orange-500/50" />
+                <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-orange-500/50" />
+
                 {/* 图标 */}
                 <div className="absolute -bottom-6 left-6">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-xl border-4 border-white dark:border-neutral-900">
-                    <Import className="w-6 h-6 text-white" />
+                  <div className="w-14 h-14 rounded-xl bg-[#0a0a12] border-2 border-orange-500/50 flex items-center justify-center shadow-[0_0_20px_rgba(255,107,0,0.4)]">
+                    <Import className="w-6 h-6 text-orange-400" />
                   </div>
                 </div>
                 {/* 关闭按钮 */}
                 <button
                   onClick={() => setIsImportModalOpen(false)}
-                  className="absolute top-4 right-4 p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
+                  className="absolute top-3 right-3 p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 transition-all"
                 >
-                  <X className="w-5 h-5 text-white" />
+                  <X className="w-4 h-4 text-white/70 hover:text-red-400" />
                 </button>
               </div>
 
               {/* 内容区域 */}
               <div className="p-6 pt-10">
-                <h3 className="text-xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-                  导入幻灯片素材
+                <h3 className="font-cyber text-lg font-bold tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400 mb-2">
+                  IMPORT SLIDES
                 </h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-5">
+                <p className="text-xs text-white/50 mb-5">
                   粘贴幻灯片链接或 ID，快速导入所有图片到画布
                 </p>
 
-                <div className="relative mb-5">
+                <div className="relative mb-5 group">
+                  {/* 发光边框效果 */}
+                  <div className="absolute -inset-[1px] bg-gradient-to-r from-orange-500/0 via-orange-500/20 to-orange-500/0 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity blur-sm" />
                   <input
                     type="text"
                     value={importInput}
                     onChange={(e) => setImportInput(e.target.value)}
                     placeholder="https://canvas.luzhipeng.com/slides/xxx"
-                    className="w-full px-4 py-3.5 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"
+                    className="relative w-full px-4 py-3.5 rounded-xl bg-[#050508] border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-orange-500/50 focus:shadow-[0_0_20px_rgba(255,107,0,0.15),inset_0_0_20px_rgba(255,107,0,0.05)] transition-all font-mono text-sm"
                     onKeyDown={(e) => e.key === "Enter" && importSlideshow()}
                   />
                 </div>
@@ -1600,29 +1640,33 @@ export default function InfiniteCanvas() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setIsImportModalOpen(false)}
-                    className="flex-1 px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all font-medium"
+                    className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20 transition-all font-cyber text-xs font-bold tracking-wider uppercase"
                   >
-                    取消
+                    CANCEL
                   </button>
                   <button
                     onClick={importSlideshow}
                     disabled={isImporting || !importInput.trim()}
-                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30"
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-cyber text-xs font-bold tracking-wider uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,107,0,0.4)] hover:shadow-[0_0_30px_rgba(255,107,0,0.6)]"
                   >
                     {isImporting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        导入中...
+                        IMPORTING...
                       </>
                     ) : (
                       <>
                         <Import className="w-4 h-4" />
-                        导入
+                        IMPORT
                       </>
                     )}
                   </button>
                 </div>
               </div>
+
+              {/* 底部装饰 */}
+              <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-orange-500/50" />
+              <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-orange-500/50" />
             </div>
           </div>
         </div>
@@ -1641,16 +1685,22 @@ export default function InfiniteCanvas() {
         initialTheme={scrollytellingTheme}
       />
 
-      {/* 右下角访问计数 - 精致设计 */}
+      {/* 右下角访问计数 - Neo-Cyber 风格 */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="relative group">
-          {/* 悬浮时的渐变光晕 */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/30 to-blue-500/30 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* 悬浮时的霓虹光晕 */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/30 to-purple-500/30 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
           {/* 主容器 */}
-          <div className="relative flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-neutral-900/80 backdrop-blur-xl rounded-2xl shadow-lg border border-neutral-200/50 dark:border-white/10 transition-transform duration-300 group-hover:scale-105">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            <PageViewCounter page="/" label="次访问" />
+          <div className="relative flex items-center gap-2 px-4 py-2 bg-[#0a0a12]/90 backdrop-blur-xl rounded-lg border border-cyan-500/20 shadow-[0_0_15px_rgba(0,245,255,0.1)] transition-all duration-300 group-hover:border-cyan-500/40 group-hover:shadow-[0_0_20px_rgba(0,245,255,0.2)]">
+            {/* 状态指示灯 */}
+            <div className="relative">
+              <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" />
+              <div className="absolute inset-0 w-2 h-2 bg-cyan-500 rounded-full animate-ping opacity-50" />
+            </div>
+            <span className="font-mono text-xs text-cyan-400/80">
+              <PageViewCounter page="/" label="VISITS" />
+            </span>
           </div>
         </div>
       </div>
