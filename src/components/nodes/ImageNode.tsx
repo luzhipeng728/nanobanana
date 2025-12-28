@@ -402,31 +402,33 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
     <div
       className={cn(
         "w-full h-full relative",
-        // 连线模式下的视觉反馈
-        connectMode.isActive && connectMode.sourceNodeId !== id && "ring-2 ring-blue-400 ring-offset-2 rounded-2xl cursor-pointer"
+        // 连线模式下的视觉反馈 - Neo-Cyber 风格
+        connectMode.isActive && connectMode.sourceNodeId !== id && [
+          "ring-2 ring-cyan-500/50 ring-offset-2 ring-offset-transparent rounded-2xl cursor-pointer",
+          "shadow-[0_0_20px_rgba(0,245,255,0.3)]"
+        ]
       )}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-        {/* NodeResizer 必须放在节点最外层才能正常工作 */}
+        {/* NodeResizer - Neo-Cyber 风格 */}
         <NodeResizer
           isVisible={selected}
           minWidth={MIN_WIDTH}
           minHeight={MIN_HEIGHT}
           keepAspectRatio={true}
-          lineClassName="!border-blue-400/50 !border-[1.5px]"
-          handleClassName="!w-2 !h-2 !bg-blue-500 !border !border-white !rounded-full !shadow-sm"
+          lineClassName="!border-cyan-500/50 !border-[1.5px]"
+          handleClassName="!w-2.5 !h-2.5 !bg-cyan-500 !border-2 !border-[#0a0a12] !rounded-sm !shadow-[0_0_10px_rgba(0,245,255,0.5)]"
           onResizeEnd={() => {
-            // 用户手动调整尺寸后，标记为已自定义
             updateNodeData(id, { userResized: true });
           }}
         />
 
-        {/* 节点外部上方的手绘标签 */}
+        {/* 节点外部上方的标签 - 科技感风格 */}
         {data.label && (
-          <div className="absolute -top-7 left-0 z-10">
-            <span className="handwriting-label text-xl text-neutral-700 dark:text-neutral-300">
+          <div className="absolute -top-8 left-0 z-10">
+            <span className="font-cyber text-sm font-bold tracking-wider uppercase text-cyan-400 drop-shadow-[0_0_10px_rgba(0,245,255,0.5)]">
               {data.label}
             </span>
           </div>
@@ -435,56 +437,85 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
         <BaseNode
           title="Generated Image"
           icon={ImageIcon}
-          color="blue"
+          color="cyan"
           selected={selected}
           className="w-full h-full min-w-[200px] min-h-[200px] flex flex-col p-0 !border-0 !bg-transparent !shadow-none"
           contentClassName="p-0 flex flex-col h-full"
           hideHeader={true}
         >
+        {/* Neo-Cyber 风格的图片容器 */}
         <div className={cn(
-          "flex-1 flex flex-col p-0 relative group overflow-hidden rounded-[2rem] shadow-md bg-white dark:bg-neutral-950 h-full will-change-transform transform-gpu [contain:layout_style_paint]",
-          !isLoading && "border-2 border-blue-100 dark:border-blue-900/30"
+          "flex-1 flex flex-col p-0 relative group overflow-hidden rounded-2xl h-full",
+          "will-change-transform transform-gpu [contain:layout_style_paint]",
+          "bg-[#0a0a12] border border-white/10",
+          !isLoading && "shadow-[0_0_30px_rgba(0,245,255,0.2)]",
+          selected && "ring-2 ring-cyan-500/50 shadow-[0_0_40px_rgba(0,245,255,0.3)]"
         )}>
-          {/* 生成中的金属光线旋转边框动效 */}
+          {/* Neo-Cyber 风格的加载边框动效 */}
           {isLoading && (
-            <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none z-0">
-              {/* 金属光线发光层 */}
-              <div className="metallic-border-glow rounded-[2rem]" />
+            <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none z-0">
+              {/* 霓虹旋转边框 */}
+              <div className="absolute inset-0 rounded-2xl">
+                <div className="absolute inset-[-2px] bg-gradient-conic from-cyan-500 via-purple-500 to-cyan-500 rounded-2xl cyber-loading-ring opacity-60" />
+                <div className="absolute inset-[1px] bg-[#0a0a12] rounded-2xl" />
+              </div>
             </div>
           )}
 
+          {/* 角落装饰 */}
+          <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-cyan-500/50 pointer-events-none z-10" />
+          <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-cyan-500/50 pointer-events-none z-10" />
+          <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-cyan-500/50 pointer-events-none z-10" />
+          <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-cyan-500/50 pointer-events-none z-10" />
+
           <div className="relative flex-1 min-h-[150px] h-full">
             {isLoading ? (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-100 dark:bg-neutral-900 relative overflow-hidden rounded-[calc(2rem-3px)]">
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+              <div className="w-full h-full flex flex-col items-center justify-center bg-[#0a0a12] relative overflow-hidden rounded-2xl cyber-grid">
+                {/* 扫描线效果 */}
+                <div className="absolute inset-0 cyber-scanline opacity-50" />
 
-                {/* 动态光斑 */}
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/20 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "500ms" }} />
+                {/* 动态光斑 - 霓虹色 */}
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-cyan-500/20 rounded-full blur-3xl animate-neon-pulse" />
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl animate-neon-pulse" style={{ animationDelay: "1s" }} />
 
-                <div className="relative z-10 flex flex-col items-center gap-4">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 blur-2xl opacity-30 animate-pulse scale-150" />
-                    <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
-                      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                <div className="relative z-10 flex flex-col items-center gap-5">
+                  {/* 旋转光环 */}
+                  <div className="relative w-20 h-20">
+                    <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+                    <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-cyan-500 border-r-purple-500 cyber-loading-ring" />
+                    <div className="absolute inset-2 rounded-full border border-white/5" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
                     </div>
                   </div>
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-pulse">
-                      {pollingStatus === "processing" ? "生成中..." : pollingStatus === "pending" ? "排队中..." : "准备中..."}
+
+                  {/* 状态文本 */}
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="font-cyber text-sm font-bold tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 animate-pulse">
+                      {pollingStatus === "processing" ? "GENERATING" : pollingStatus === "pending" ? "QUEUED" : "INITIALIZING"}
                     </span>
                     {data.taskId && (
-                      <span className="text-[10px] text-neutral-400 font-mono px-2 py-0.5 rounded-full bg-neutral-200/50 dark:bg-neutral-800/50">
-                        {data.taskId.substring(0, 8)}
+                      <span className="font-mono text-[10px] text-cyan-400/60 px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                        ID: {data.taskId.substring(0, 8)}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
             ) : data.error ? (
-              <div className="w-full h-full bg-red-50 dark:bg-red-900/10 flex flex-col items-center justify-center p-4">
-                <span className="text-xs font-medium text-red-500 dark:text-red-400 text-center">{data.error}</span>
+              <div className="w-full h-full bg-[#0a0a12] flex flex-col items-center justify-center p-4 relative">
+                {/* 错误状态背景 */}
+                <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent" />
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-60" />
+
+                <div className="relative z-10 flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(255,59,48,0.3)]">
+                    <span className="text-red-400 text-xl">!</span>
+                  </div>
+                  <span className="font-cyber text-xs font-bold tracking-wider uppercase text-red-400 text-center">
+                    {data.error}
+                  </span>
+                </div>
               </div>
             ) : (
               <>
@@ -531,23 +562,31 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   )}
                 </div>
 
-                {/* 悬停遮罩和放大按钮 */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
+                {/* 悬停遮罩和放大按钮 - Neo-Cyber 风格 */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a12]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center pointer-events-none">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleImageClick();
                     }}
-                    className="w-10 h-10 rounded-full bg-white/90 hover:bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg pointer-events-auto cursor-pointer"
+                    className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center",
+                      "bg-[#0a0a12]/90 border border-cyan-500/50",
+                      "shadow-[0_0_20px_rgba(0,245,255,0.4)]",
+                      "opacity-0 group-hover:opacity-100 transition-all duration-300",
+                      "transform translate-y-4 group-hover:translate-y-0",
+                      "pointer-events-auto cursor-pointer",
+                      "hover:bg-cyan-500/20 hover:border-cyan-400"
+                    )}
                     title="查看大图"
                   >
-                    <ExternalLink className="w-5 h-5 text-neutral-900" />
+                    <ExternalLink className="w-5 h-5 text-cyan-400" />
                   </button>
                 </div>
 
-                {/* 右上角按钮组 */}
+                {/* 右上角按钮组 - Neo-Cyber 风格 */}
                 {!slideshowMode && (
-                  <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-3 right-3 flex items-center gap-2 z-10 opacity-0 group-hover:opacity-100 transition-all duration-300">
                     {/* 添加标记按钮 */}
                     <button
                       onClick={(e) => {
@@ -555,16 +594,16 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                         setIsMarkerModalOpen(true);
                       }}
                       className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
-                        "bg-white/90 hover:bg-white shadow-lg",
-                        data.markerData?.marks?.length ? "ring-2 ring-red-500" : ""
+                        "relative w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300",
+                        "bg-[#0a0a12]/90 border border-white/20",
+                        "hover:border-pink-500/50 hover:shadow-[0_0_15px_rgba(255,0,170,0.4)]",
+                        data.markerData?.marks?.length && "border-pink-500/50 shadow-[0_0_15px_rgba(255,0,170,0.3)]"
                       )}
                       title={data.markerData?.marks?.length ? `已有 ${data.markerData.marks.length} 个标记` : "添加标记"}
                     >
-                      <MapPin className="w-4 h-4 text-red-500" />
-                      {/* 标记数量角标 */}
+                      <MapPin className="w-4 h-4 text-pink-400" />
                       {data.markerData?.marks?.length ? (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-pink-500 text-white text-[9px] font-bold rounded-md flex items-center justify-center shadow-[0_0_10px_rgba(255,0,170,0.5)]">
                           {data.markerData.marks.length}
                         </span>
                       ) : null}
@@ -576,14 +615,15 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                         onClick={handleRegenerate}
                         disabled={isRegenerating}
                         className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
-                          "bg-white/90 hover:bg-white shadow-lg",
-                          isRegenerating && "cursor-not-allowed"
+                          "w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300",
+                          "bg-[#0a0a12]/90 border border-white/20",
+                          "hover:border-cyan-500/50 hover:shadow-[0_0_15px_rgba(0,245,255,0.4)]",
+                          isRegenerating && "cursor-not-allowed opacity-50"
                         )}
                         title="重新生成"
                       >
                         <RefreshCw className={cn(
-                          "w-4 h-4 text-blue-600",
+                          "w-4 h-4 text-cyan-400",
                           isRegenerating && "animate-spin"
                         )} />
                       </button>
@@ -591,7 +631,7 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                   </div>
                 )}
 
-                {/* 幻灯片选择按钮 - 左上角 */}
+                {/* 幻灯片选择按钮 - 左上角 - Neo-Cyber 风格 */}
                 {slideshowMode && (
                   <button
                     onClick={(e) => {
@@ -599,16 +639,16 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
                       toggleSlideshowSelection(id);
                     }}
                     className={cn(
-                      "absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 z-20",
-                      "shadow-lg border-2",
+                      "absolute top-3 left-3 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 z-20",
+                      "border-2",
                       slideshowSelections.has(id)
-                        ? "bg-green-500 border-green-400 text-white"
-                        : "bg-white/90 hover:bg-white border-neutral-300 text-neutral-600"
+                        ? "bg-gradient-to-r from-emerald-500 to-green-500 border-emerald-400 text-white shadow-[0_0_20px_rgba(0,255,136,0.5)]"
+                        : "bg-[#0a0a12]/90 hover:bg-cyan-500/10 border-white/20 hover:border-cyan-500/50 text-cyan-400 hover:shadow-[0_0_15px_rgba(0,245,255,0.4)]"
                     )}
                     title={slideshowSelections.has(id) ? `已选择 #${slideshowSelections.get(id)}` : "点击选择"}
                   >
                     {slideshowSelections.has(id) ? (
-                      <span className="text-sm font-bold">{slideshowSelections.get(id)}</span>
+                      <span className="font-cyber text-sm font-bold">{slideshowSelections.get(id)}</span>
                     ) : (
                       <Check className="w-4 h-4" />
                     )}
@@ -618,33 +658,47 @@ const ImageNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
             )}
           </div>
 
-          {/* Footer info overlay */}
+          {/* Footer info overlay - Neo-Cyber 风格 */}
           {!isLoading && !data.error && (
-            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-               {data.timestamp && (
-                <div className="text-[10px] text-white/90 text-center font-medium">
-                  {data.timestamp}
-                </div>
-              )}
+            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[#0a0a12] via-[#0a0a12]/80 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
+              <div className="flex items-center justify-between">
+                {data.timestamp && (
+                  <div className="font-mono text-[10px] text-cyan-400/70 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+                    {data.timestamp}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* 右侧连接提示 - 当图片加载完成后显示 */}
+          {/* 右侧连接提示 - Neo-Cyber 风格 */}
           {!isLoading && !data.error && (
             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-10">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-[9px] font-bold px-2 py-1 rounded-full shadow-lg whitespace-nowrap animate-pulse">
-                拖拽 →
+              <div className={cn(
+                "font-cyber text-[9px] font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg whitespace-nowrap",
+                "bg-[#0a0a12] border border-cyan-500/50 text-cyan-400",
+                "shadow-[0_0_15px_rgba(0,245,255,0.4)]",
+                "animate-pulse"
+              )}>
+                CONNECT →
               </div>
             </div>
           )}
         </div>
 
-        {/* 右侧输出连接点 - 用于连接到生成器作为参考图 */}
+        {/* 右侧输出连接点 - Neo-Cyber 风格 */}
         <Handle
           type="source"
           position={Position.Right}
           isConnectable={isConnectable}
-          className="w-4 h-4 !bg-gradient-to-r !from-blue-500 !to-purple-500 !border-2 !border-white dark:!border-neutral-900 !rounded-full transition-all duration-200 hover:!scale-125 hover:!shadow-lg hover:!shadow-purple-500/50"
+          className={cn(
+            "!w-4 !h-4 !rounded-sm",
+            "!bg-gradient-to-r !from-cyan-500 !to-purple-500",
+            "!border-2 !border-[#0a0a12]",
+            "transition-all duration-200",
+            "hover:!scale-125 hover:!shadow-[0_0_15px_rgba(0,245,255,0.6)]"
+          )}
           title="拖拽连接到生成器作为参考图"
         />
         </BaseNode>

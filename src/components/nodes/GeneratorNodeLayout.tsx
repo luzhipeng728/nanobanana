@@ -1,34 +1,46 @@
 import React, { ReactNode } from "react";
-import { LucideIcon, Loader2 } from "lucide-react";
+import { LucideIcon, Loader2, Zap } from "lucide-react";
 import { BaseNode } from "./BaseNode";
-import { NodeButton } from "@/components/ui/NodeUI";
+import { NodeButton, NodeDivider } from "@/components/ui/NodeUI";
 import { cn } from "@/lib/utils";
 
 interface GeneratorNodeLayoutProps {
   title: string;
   icon: LucideIcon;
-  color: "purple" | "blue" | "green" | "orange" | "pink" | "red" | "neutral";
+  color: "purple" | "blue" | "green" | "orange" | "pink" | "red" | "neutral" | "cyan";
   selected?: boolean;
   className?: string;
   headerActions?: ReactNode;
   children: ReactNode;
-  
+
   // Generate Button Props
   isGenerating: boolean;
   onGenerate: () => void;
   generateButtonText?: string;
   generateButtonDisabled?: boolean;
-  generateButtonClassName?: string; // Added custom className prop
+  generateButtonClassName?: string;
   loadingText?: ReactNode;
-  
+
   // Optional secondary actions next to generate button
   footerActions?: ReactNode;
-  
+
   // Touch/Event handlers
   onTouchStart?: (e: React.TouchEvent) => void;
   onTouchMove?: (e: React.TouchEvent) => void;
   onTouchEnd?: (e: React.TouchEvent) => void;
 }
+
+// 颜色到发光色的映射
+const colorToGlow = {
+  purple: "purple",
+  blue: "cyan",
+  green: "green",
+  orange: "orange",
+  pink: "pink",
+  red: "orange",
+  neutral: "cyan",
+  cyan: "cyan",
+} as const;
 
 export const GeneratorNodeLayout = React.memo(({
   title,
@@ -49,6 +61,8 @@ export const GeneratorNodeLayout = React.memo(({
   onTouchMove,
   onTouchEnd,
 }: GeneratorNodeLayoutProps) => {
+  const glowColor = colorToGlow[color];
+
   return (
     <div
       onTouchStart={onTouchStart}
@@ -67,32 +81,55 @@ export const GeneratorNodeLayout = React.memo(({
           {/* Main Input Content */}
           {children}
 
+          {/* Divider */}
+          <NodeDivider />
+
           {/* Footer: Generate Button and optional actions */}
-          <div className="pt-1 flex gap-2">
+          <div className="flex gap-2">
             {footerActions}
-            
+
             <NodeButton
               variant="primary"
               onClick={onGenerate}
               disabled={isGenerating || generateButtonDisabled}
+              glowColor={glowColor}
               className={cn(
-                "flex-1 text-white", // Default to flex-1 instead of w-full
-                // Auto-map colors based on prop
-                color === 'blue' ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700' :
-                color === 'green' ? 'bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700' :
-                color === 'orange' ? 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-700' :
-                color === 'purple' ? 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-600 dark:hover:bg-purple-700' :
-                'bg-neutral-800 hover:bg-neutral-900',
-                generateButtonClassName // Allow override
+                "flex-1 group",
+                generateButtonClassName
               )}
             >
               {isGenerating ? (
-                loadingText || <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                loadingText || (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="animate-pulse">处理中</span>
+                  </span>
+                )
               ) : (
-                generateButtonText
+                <span className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 group-hover:animate-pulse" />
+                  {generateButtonText}
+                </span>
               )}
             </NodeButton>
           </div>
+
+          {/* 生成中的进度指示 */}
+          {isGenerating && (
+            <div className="relative h-1 rounded-full overflow-hidden bg-white/5">
+              <div
+                className={cn(
+                  "absolute inset-y-0 left-0 rounded-full",
+                  "bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500",
+                  "animate-[shimmer_2s_linear_infinite]"
+                )}
+                style={{
+                  width: '100%',
+                  backgroundSize: '200% 100%',
+                }}
+              />
+            </div>
+          )}
         </div>
       </BaseNode>
     </div>

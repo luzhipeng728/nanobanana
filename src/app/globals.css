@@ -1,8 +1,264 @@
-/* 手绘风格字体 - Google Fonts 导入必须在最前面 */
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
+/* 手绘风格字体 + 科技感字体 */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
 
 @import "tailwindcss";
 @import '@xyflow/react/dist/style.css';
+
+/* ========================================
+   Neo-Cyber 设计系统 - 节点专用
+   ======================================== */
+
+/* 科技感字体类 */
+.font-cyber {
+  font-family: 'Orbitron', 'Rajdhani', sans-serif;
+}
+
+.font-cyber-body {
+  font-family: 'Rajdhani', sans-serif;
+}
+
+/* Neo-Cyber 颜色变量 */
+:root {
+  --cyber-bg: #0a0a0f;
+  --cyber-surface: rgba(15, 15, 25, 0.85);
+  --cyber-surface-light: rgba(25, 25, 40, 0.9);
+  --cyber-border: rgba(100, 100, 150, 0.2);
+
+  --neon-cyan: #00f5ff;
+  --neon-purple: #bf00ff;
+  --neon-pink: #ff00aa;
+  --neon-blue: #0066ff;
+  --neon-green: #00ff88;
+  --neon-orange: #ff6b00;
+
+  --glow-cyan: 0 0 20px rgba(0, 245, 255, 0.4);
+  --glow-purple: 0 0 20px rgba(191, 0, 255, 0.4);
+  --glow-pink: 0 0 20px rgba(255, 0, 170, 0.4);
+}
+
+/* 霓虹边框流动动画 */
+@keyframes neon-border-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-neon-flow {
+  background-size: 300% 300%;
+  animation: neon-border-flow 4s ease infinite;
+}
+
+/* 脉冲发光动画 */
+@keyframes neon-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(12px);
+  }
+}
+
+.animate-neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* 扫描线效果 */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.cyber-scanline::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 245, 255, 0.03) 2px,
+    rgba(0, 245, 255, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 网格背景纹理 */
+.cyber-grid {
+  background-image:
+    linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* 切角边框效果 */
+.cyber-clip {
+  clip-path: polygon(
+    0 8px,
+    8px 0,
+    calc(100% - 8px) 0,
+    100% 8px,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    8px 100%,
+    0 calc(100% - 8px)
+  );
+}
+
+.cyber-clip-lg {
+  clip-path: polygon(
+    0 12px,
+    12px 0,
+    calc(100% - 12px) 0,
+    100% 12px,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    0 calc(100% - 12px)
+  );
+}
+
+/* 角落装饰 */
+.cyber-corner::before,
+.cyber-corner::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--neon-cyan);
+  opacity: 0.6;
+}
+
+.cyber-corner::before {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.cyber-corner::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+
+/* 状态指示灯 */
+@keyframes status-blink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+  50% { opacity: 0.5; box-shadow: 0 0 2px currentColor; }
+}
+
+.cyber-status-light {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: status-blink 2s ease-in-out infinite;
+}
+
+/* 数据流动画 */
+@keyframes data-stream {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.cyber-data-stream::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+  animation: data-stream 3s linear infinite;
+}
+
+/* 悬浮发光效果 */
+.cyber-hover-glow {
+  transition: all 0.3s ease;
+}
+
+.cyber-hover-glow:hover {
+  box-shadow:
+    0 0 20px rgba(0, 245, 255, 0.2),
+    0 0 40px rgba(191, 0, 255, 0.1),
+    inset 0 0 20px rgba(0, 245, 255, 0.05);
+}
+
+/* 输入框聚焦发光 */
+.cyber-input-glow:focus {
+  box-shadow:
+    0 0 0 2px rgba(0, 245, 255, 0.3),
+    0 0 20px rgba(0, 245, 255, 0.2),
+    inset 0 0 10px rgba(0, 245, 255, 0.05);
+  border-color: var(--neon-cyan);
+}
+
+/* 按钮霓虹效果 */
+.cyber-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.cyber-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.cyber-button:hover::before {
+  transform: translateX(100%);
+}
+
+.cyber-button:hover {
+  box-shadow:
+    0 0 20px rgba(0, 245, 255, 0.4),
+    0 0 40px rgba(0, 245, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* 全息闪烁效果 */
+@keyframes hologram-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.8; }
+  94% { opacity: 1; }
+  95% { opacity: 0.9; }
+  96% { opacity: 1; }
+}
+
+.cyber-hologram {
+  animation: hologram-flicker 4s ease-in-out infinite;
+}
+
+/* 加载时的旋转光环 */
+@keyframes cyber-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.cyber-loading-ring {
+  animation: cyber-rotate 2s linear infinite;
+}
 
 /* 手绘标签样式 */
 .handwriting-label {
