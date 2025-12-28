@@ -792,17 +792,37 @@ export default function InfiniteCanvas() {
     }
   }, [nodes, setNodes, setEdges]);
 
+  const handleFitView = useCallback(() => {
+    if (reactFlowInstance) {
+      reactFlowInstance.fitView({ padding: 0.1 });
+    }
+  }, [reactFlowInstance]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+        return;
+      }
+
       if ((e.key === "Delete" || e.key === "Backspace") && selectionMode) {
-        const target = e.target as HTMLElement;
-        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
-          return;
-        }
         e.preventDefault();
         deleteSelectedNodes(true); 
       }
-      if (e.key === "Escape" && selectionMode) {
+      
+      if (e.key === "Escape") {
+        if (selectionMode) setSelectionMode(false);
+      }
+
+      // Shortcuts
+      if (e.code === "Space") {
+        e.preventDefault();
+        setSelectionMode(prev => !prev);
+      }
+      if (e.key === "v" || e.key === "V") {
+        setSelectionMode(true);
+      }
+      if (e.key === "h" || e.key === "H") {
         setSelectionMode(false);
       }
     };
@@ -1254,6 +1274,7 @@ export default function InfiniteCanvas() {
         onClearCache={clearLocalCache}
         onLogout={handleLogout}
         onOpenAuth={() => setIsUserModalOpen(true)}
+        onFitView={handleFitView}
       />
 
       {/* Model Capability Tip */}
@@ -1275,18 +1296,39 @@ export default function InfiniteCanvas() {
         className="hidden"
       />
 
-      {/* Selection Mode Indicator */}
+      {/* Selection Mode Indicator - 精致设计 */}
       {selectionMode && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-blue-500/90 backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg animate-slide-up">
-          <MousePointer2 className="w-4 h-4" />
-          <span className="text-sm font-medium">选择模式：拖动框选节点，按 Delete 删除</span>
-          <button
-            onClick={() => setSelectionMode(false)}
-            className="ml-2 p-1 hover:bg-white/20 rounded-full transition-colors"
-            title="退出选择模式"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 animate-slide-up">
+          <div className="relative group">
+            {/* 渐变光晕背景 */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-2xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity" />
+
+            {/* 主容器 */}
+            <div className="relative flex items-center gap-4 px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl shadow-blue-500/30">
+              {/* 左侧图标 */}
+              <div className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-xl">
+                <MousePointer2 className="w-4 h-4 text-white" />
+              </div>
+
+              {/* 文本 */}
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white">选择模式</span>
+                <span className="text-xs text-blue-100/80">拖动框选节点 · Delete 删除</span>
+              </div>
+
+              {/* 分隔线 */}
+              <div className="w-px h-8 bg-white/20" />
+
+              {/* 关闭按钮 */}
+              <button
+                onClick={() => setSelectionMode(false)}
+                className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+                title="退出选择模式"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1324,37 +1366,69 @@ export default function InfiniteCanvas() {
         />
       )}
 
-      {/* Placement Mode Overlay */}
+      {/* Placement Mode Overlay - 精致设计 */}
       {(isPlacingImage || pendingGalleryImage || pendingNodeType) && (
         <div
           className="absolute inset-0 z-20 cursor-crosshair"
           onClick={handleCanvasClick}
         >
-          <div className={`absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 ${
-            pendingNodeType ? 'bg-blue-500/90' : pendingGalleryImage ? 'bg-purple-500/90' : 'bg-cyan-500/90'
-          } backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-lg animate-fade-in`}>
-            {pendingNodeType ? (
-              <Wand2 className="w-4 h-4" />
-            ) : (
-              <ImageIcon className="w-4 h-4" />
-            )}
-            <span className="text-sm font-medium">
-              {pendingNodeType
-                ? `点击画布放置 ${pendingNodeType === 'imageGen' ? 'Generator' : pendingNodeType === 'agent' ? 'Agent' : pendingNodeType === 'superAgent' ? 'Prompt Expert' : pendingNodeType === 'musicGen' ? 'Music' : pendingNodeType === 'videoGen' ? 'Video' : pendingNodeType === 'chat' ? 'Chat' : pendingNodeType === 'sprite' ? 'Sprite' : pendingNodeType === 'chatAgent' ? 'Agent Chat' : pendingNodeType === 'ttsGen' ? 'TTS' : pendingNodeType} 节点`
-                : pendingGalleryImage
-                ? '点击画布放置画廊图片'
-                : '点击画布选择图片放置位置'}
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                cancelPlacingImage();
-              }}
-              className="ml-2 p-1 hover:bg-white/20 rounded-full transition-colors"
-              title="取消"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          {/* 半透明遮罩增加聚焦感 */}
+          <div className="absolute inset-0 bg-black/5 dark:bg-white/5 pointer-events-none" />
+
+          {/* 顶部提示条 */}
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 animate-fade-in">
+            <div className="relative">
+              {/* 光晕效果 */}
+              <div className={`absolute -inset-1 rounded-2xl blur-lg opacity-50 ${
+                pendingNodeType ? 'bg-gradient-to-r from-blue-500 to-indigo-500' :
+                pendingGalleryImage ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500' :
+                'bg-gradient-to-r from-cyan-500 to-blue-500'
+              }`} />
+
+              {/* 主容器 */}
+              <div className={`relative flex items-center gap-4 px-5 py-3 rounded-2xl shadow-2xl border border-white/20 ${
+                pendingNodeType ? 'bg-gradient-to-r from-blue-600 to-indigo-600' :
+                pendingGalleryImage ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600' :
+                'bg-gradient-to-r from-cyan-600 to-blue-600'
+              }`}>
+                {/* 左侧图标 */}
+                <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl">
+                  {pendingNodeType ? (
+                    <Wand2 className="w-5 h-5 text-white" />
+                  ) : (
+                    <ImageIcon className="w-5 h-5 text-white" />
+                  )}
+                </div>
+
+                {/* 文本 */}
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-white">
+                    {pendingNodeType
+                      ? `放置 ${pendingNodeType === 'imageGen' ? '图片生成器' : pendingNodeType === 'agent' ? 'Agent' : pendingNodeType === 'superAgent' ? 'Prompt Expert' : pendingNodeType === 'musicGen' ? '音乐生成器' : pendingNodeType === 'videoGen' ? '视频生成器' : pendingNodeType === 'chat' ? '聊天' : pendingNodeType === 'sprite' ? 'Sprite' : pendingNodeType === 'chatAgent' ? 'Agent Chat' : pendingNodeType === 'ttsGen' ? '语音合成' : pendingNodeType}`
+                      : pendingGalleryImage
+                      ? '放置画廊图片'
+                      : '放置上传图片'}
+                  </span>
+                  <span className="text-xs text-white/70">点击画布任意位置放置</span>
+                </div>
+
+                {/* 分隔线 */}
+                <div className="w-px h-8 bg-white/20" />
+
+                {/* 取消按钮 */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cancelPlacingImage();
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-white text-sm font-medium"
+                  title="取消"
+                >
+                  <X className="w-4 h-4" />
+                  <span>取消</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1412,14 +1486,33 @@ export default function InfiniteCanvas() {
         setAuthError={setAuthError}
       />
 
-      {/* Loading State */}
+      {/* Loading State - 精致设计 */}
       {isLoading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-neutral-900 p-6 rounded-xl shadow-2xl animate-pulse">
-            <p className="text-sm text-neutral-500 flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Loading Canvas...
-            </p>
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-neutral-900/80 to-black/90 backdrop-blur-xl">
+          <div className="relative">
+            {/* 外圈光晕 */}
+            <div className="absolute -inset-8 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-cyan-500/20 rounded-full blur-2xl animate-pulse" />
+
+            {/* 主卡片 */}
+            <div className="relative bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl shadow-black/50 overflow-hidden">
+              {/* 顶部渐变装饰条 */}
+              <div className="h-1.5 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500" />
+
+              <div className="px-8 py-6 flex flex-col items-center gap-4">
+                {/* 旋转加载动画 */}
+                <div className="relative w-12 h-12">
+                  <div className="absolute inset-0 rounded-full border-2 border-neutral-200 dark:border-neutral-700" />
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-purple-500 border-r-blue-500 animate-spin" />
+                  <Loader2 className="absolute inset-0 m-auto w-5 h-5 text-purple-500 animate-pulse" />
+                </div>
+
+                {/* 文本 */}
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">正在加载画布</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">请稍候...</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1457,59 +1550,79 @@ export default function InfiniteCanvas() {
         videoUnlocked={videoUnlocked}
       />
 
-      {/* 导入幻灯片弹窗 */}
+      {/* 导入幻灯片弹窗 - 精致设计 */}
       {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 w-[400px] shadow-2xl border border-neutral-200 dark:border-neutral-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100">
-                导入幻灯片素材
-              </h3>
-              <button
-                onClick={() => setIsImportModalOpen(false)}
-                className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-neutral-500" />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xl animate-fade-in">
+          <div className="relative w-[420px] animate-scale-in">
+            {/* 外部光晕 */}
+            <div className="absolute -inset-4 bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-yellow-500/20 rounded-3xl blur-2xl" />
 
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-              粘贴幻灯片链接或 ID，快速导入所有图片到画布
-            </p>
+            {/* 主弹窗 */}
+            <div className="relative bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl shadow-black/30 overflow-hidden border border-neutral-200/50 dark:border-white/10">
+              {/* 顶部渐变装饰 */}
+              <div className="h-24 bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500 relative">
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBjeD0iMjAiIGN5PSIyMCIgcj0iMiIvPjwvZz48L3N2Zz4=')] opacity-50" />
+                {/* 图标 */}
+                <div className="absolute -bottom-6 left-6">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-xl border-4 border-white dark:border-neutral-900">
+                    <Import className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                {/* 关闭按钮 */}
+                <button
+                  onClick={() => setIsImportModalOpen(false)}
+                  className="absolute top-4 right-4 p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
 
-            <input
-              type="text"
-              value={importInput}
-              onChange={(e) => setImportInput(e.target.value)}
-              placeholder="https://canvas.luzhipeng.com/slides/xxx 或直接输入 ID"
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50 mb-4"
-              onKeyDown={(e) => e.key === "Enter" && importSlideshow()}
-            />
+              {/* 内容区域 */}
+              <div className="p-6 pt-10">
+                <h3 className="text-xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
+                  导入幻灯片素材
+                </h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-5">
+                  粘贴幻灯片链接或 ID，快速导入所有图片到画布
+                </p>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsImportModalOpen(false)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              >
-                取消
-              </button>
-              <button
-                onClick={importSlideshow}
-                disabled={isImporting || !importInput.trim()}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isImporting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    导入中...
-                  </>
-                ) : (
-                  <>
-                    <Import className="w-4 h-4" />
-                    导入
-                  </>
-                )}
-              </button>
+                <div className="relative mb-5">
+                  <input
+                    type="text"
+                    value={importInput}
+                    onChange={(e) => setImportInput(e.target.value)}
+                    placeholder="https://canvas.luzhipeng.com/slides/xxx"
+                    className="w-full px-4 py-3.5 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"
+                    onKeyDown={(e) => e.key === "Enter" && importSlideshow()}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsImportModalOpen(false)}
+                    className="flex-1 px-4 py-3 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all font-medium"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={importSlideshow}
+                    disabled={isImporting || !importInput.trim()}
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30"
+                  >
+                    {isImporting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        导入中...
+                      </>
+                    ) : (
+                      <>
+                        <Import className="w-4 h-4" />
+                        导入
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1528,9 +1641,18 @@ export default function InfiniteCanvas() {
         initialTheme={scrollytellingTheme}
       />
 
-      {/* 右下角访问计数 */}
-      <div className="fixed bottom-4 right-4 bg-white/80 dark:bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-neutral-200/50 dark:border-white/10 z-50">
-        <PageViewCounter page="/" label="次访问" />
+      {/* 右下角访问计数 - 精致设计 */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className="relative group">
+          {/* 悬浮时的渐变光晕 */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/30 to-blue-500/30 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+          {/* 主容器 */}
+          <div className="relative flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-neutral-900/80 backdrop-blur-xl rounded-2xl shadow-lg border border-neutral-200/50 dark:border-white/10 transition-transform duration-300 group-hover:scale-105">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <PageViewCounter page="/" label="次访问" />
+          </div>
+        </div>
       </div>
     </div>
   );
