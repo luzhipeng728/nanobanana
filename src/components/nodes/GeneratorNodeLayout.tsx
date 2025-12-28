@@ -3,6 +3,7 @@ import { LucideIcon, Loader2, Zap } from "lucide-react";
 import { BaseNode } from "./BaseNode";
 import { NodeButton, NodeDivider } from "@/components/ui/NodeUI";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface GeneratorNodeLayoutProps {
   title: string;
@@ -61,6 +62,9 @@ export const GeneratorNodeLayout = React.memo(({
   onTouchMove,
   onTouchEnd,
 }: GeneratorNodeLayoutProps) => {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const isNeoCyber = theme === 'neo-cyber';
   const glowColor = colorToGlow[color];
 
   return (
@@ -116,12 +120,17 @@ export const GeneratorNodeLayout = React.memo(({
 
           {/* 生成中的进度指示 */}
           {isGenerating && (
-            <div className="relative h-1 rounded-full overflow-hidden bg-white/5">
+            <div className={cn(
+              "relative h-1 rounded-full overflow-hidden",
+              isLight ? "bg-neutral-200" : "bg-white/5"
+            )}>
               <div
                 className={cn(
                   "absolute inset-y-0 left-0 rounded-full",
-                  "bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500",
-                  "animate-[shimmer_2s_linear_infinite]"
+                  "animate-[shimmer_2s_linear_infinite]",
+                  isLight && "bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600",
+                  isNeoCyber && "bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500",
+                  !isLight && !isNeoCyber && "bg-gradient-to-r from-white/60 via-white to-white/60"
                 )}
                 style={{
                   width: '100%',
