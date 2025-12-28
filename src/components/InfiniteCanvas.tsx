@@ -41,6 +41,7 @@ import CanvasContextMenu from "./CanvasContextMenu";
 import PromptPanel from "./PromptPanel";
 import { CanvasContext } from "@/contexts/CanvasContext";
 import { AudioProvider } from "@/contexts/AudioContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { TouchContextMenuProvider } from "./TouchContextMenu";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
 import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
@@ -91,6 +92,9 @@ const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
 const initialNodes: Node[] = [];
 
 export default function InfiniteCanvas() {
+  // Theme
+  const { theme } = useTheme();
+
   // Flow State
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -1256,8 +1260,21 @@ export default function InfiniteCanvas() {
     toggleSlideshowSelection,
   }), [addImageNode, updateImageNode, addMusicNode, addVideoNode, addStickerNode, addTTSNode, getConnectedImageNodes, getNode, openImageModal, getNodes, getEdges, slideshowMode, slideshowSelections, toggleSlideshowSelection]);
 
+  // Theme-based background colors
+  const canvasBgClass = theme === 'light'
+    ? 'bg-[#fdfbf7]'
+    : theme === 'glass-dark'
+    ? 'bg-[#080808]'
+    : 'bg-[#050508]';
+
+  const dotColor = theme === 'light'
+    ? 'rgba(0, 0, 0, 0.08)'
+    : theme === 'glass-dark'
+    ? 'rgba(255, 255, 255, 0.04)'
+    : 'rgba(0, 245, 255, 0.15)';
+
   return (
-    <div className="w-full h-screen relative bg-[#050508]">
+    <div className={`w-full h-screen relative ${canvasBgClass}`}>
       <CanvasToolbar
         userId={userId}
         username={username}
@@ -1466,7 +1483,7 @@ export default function InfiniteCanvas() {
               fitView
               minZoom={0.1}
               maxZoom={4}
-              className="!bg-[#050508]"
+              className={`!${canvasBgClass}`}
               onlyRenderVisibleElements={false}
               nodesFocusable={false}
               edgesFocusable={false}
@@ -1479,8 +1496,14 @@ export default function InfiniteCanvas() {
               zoomOnScroll={!isTouchDevice}
               preventScrolling={true}
             >
-              <Controls className="!bg-[#0a0a12] !border-cyan-500/20 !shadow-[0_0_20px_rgba(0,245,255,0.1)] [&>button]:!bg-[#0a0a12] [&>button]:!border-cyan-500/20 [&>button]:!text-cyan-400 [&>button:hover]:!bg-cyan-500/10" />
-              <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="rgba(0, 245, 255, 0.15)" />
+              <Controls className={
+                theme === 'light'
+                  ? "!bg-white/90 !border-neutral-200 !shadow-lg [&>button]:!bg-white [&>button]:!border-neutral-200 [&>button]:!text-neutral-600 [&>button:hover]:!bg-neutral-100"
+                  : theme === 'glass-dark'
+                  ? "!bg-[#1a1a1a]/80 !border-white/10 !shadow-xl [&>button]:!bg-[#1a1a1a] [&>button]:!border-white/10 [&>button]:!text-white/70 [&>button:hover]:!bg-white/10"
+                  : "!bg-[#0a0a12] !border-cyan-500/20 !shadow-[0_0_20px_rgba(0,245,255,0.1)] [&>button]:!bg-[#0a0a12] [&>button]:!border-cyan-500/20 [&>button]:!text-cyan-400 [&>button:hover]:!bg-cyan-500/10"
+              } />
+              <Background variant={BackgroundVariant.Dots} gap={24} size={1} color={dotColor} />
             </ReactFlow>
           </CanvasContext.Provider>
         </AudioProvider>

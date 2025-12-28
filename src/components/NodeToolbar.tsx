@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Wand2, Brain, Music, MessageSquare, Ghost, Video, Image, ChevronLeft, ChevronRight, Sparkles, Bot, Mic2, Presentation, Film, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type NodeType = 'imageGen' | 'agent' | 'musicGen' | 'videoGen' | 'chat' | 'chatAgent' | 'sprite' | 'superAgent' | 'ttsGen' | 'pptGen' | 'researchVideoGen' | 'storyVideoGen';
 
@@ -123,6 +124,12 @@ export type { NodeType };
 export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTypeSelect }: NodeToolbarProps) {
   const [isCollapsed, setIsCollapsed] = useState(true); // 默认收起
   const isTouchDevice = useIsTouchDevice();
+  const { theme } = useTheme();
+
+  // Theme-based styles
+  const isLight = theme === 'light';
+  const isNeoCyber = theme === 'neo-cyber';
+  const isGlassDark = theme === 'glass-dark';
 
   // 彩蛋：Video 工具解锁状态
   const [videoUnlocked, setVideoUnlocked] = useState(false);
@@ -177,20 +184,32 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
           onClick={() => setIsCollapsed(false)}
           className={cn(
             "relative overflow-hidden rounded-2xl p-3",
-            "bg-white/[0.02] dark:bg-white/[0.02]",
             "backdrop-blur-[2px]",
-            "border border-neutral-200/50 dark:border-white/10",
-            "hover:bg-white/10 dark:hover:bg-white/5 transition-all duration-300",
-            "group"
+            "hover:scale-105 transition-all duration-300",
+            "group",
+            isLight && "bg-white/80 border border-neutral-200/80 hover:bg-white shadow-lg",
+            isNeoCyber && "bg-[#0a0a12]/80 border border-cyan-500/30 hover:bg-cyan-500/10 shadow-[0_0_15px_rgba(0,245,255,0.2)]",
+            isGlassDark && "bg-[#1a1a1a]/80 border border-white/10 hover:bg-white/5 shadow-xl"
           )}
           title="展开工具栏"
         >
           <div className="flex items-center gap-2">
             <div className="relative flex items-center justify-center w-3 h-3">
-              <div className="absolute inset-0 bg-blue-400/50 rounded-full animate-ping" />
-              <div className="w-2 h-2 bg-gradient-to-tr from-blue-400 to-purple-400 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.6)]" />
+              <div className={cn(
+                "absolute inset-0 rounded-full animate-ping",
+                isLight ? "bg-indigo-400/50" : isNeoCyber ? "bg-cyan-400/50" : "bg-white/30"
+              )} />
+              <div className={cn(
+                "w-2 h-2 rounded-full",
+                isLight ? "bg-gradient-to-tr from-indigo-400 to-purple-400 shadow-[0_0_8px_rgba(99,102,241,0.6)]" :
+                isNeoCyber ? "bg-gradient-to-tr from-cyan-400 to-purple-400 shadow-[0_0_8px_rgba(0,245,255,0.6)]" :
+                "bg-white/80 shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+              )} />
             </div>
-            <ChevronRight className="w-4 h-4 text-neutral-600 dark:text-neutral-300 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className={cn(
+              "w-4 h-4 group-hover:translate-x-0.5 transition-transform",
+              isLight ? "text-neutral-600" : isNeoCyber ? "text-cyan-400" : "text-white/70"
+            )} />
           </div>
         </button>
       </div>
@@ -199,19 +218,20 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
 
   return (
     <div className="absolute left-4 top-20 z-10 w-60">
-      {/* 主容器 - 超透明玻璃 */}
+      {/* 主容器 - 主题感知 */}
       <div
         className={cn(
           "relative overflow-hidden rounded-[32px]",
-          // 几乎完全透明
-          "bg-white/[0.02] dark:bg-white/[0.02]",
-          "backdrop-blur-[2px]",
-          // 淡边框
-          "border border-neutral-200/50 dark:border-white/10",
-          // 极淡阴影
-          "shadow-[0_0_0_1px_rgba(0,0,0,0.02)]"
+          "backdrop-blur-xl",
+          isLight && "bg-white/90 border border-neutral-200/80 shadow-xl",
+          isNeoCyber && "bg-[#0a0a12]/90 border border-cyan-500/30 shadow-[0_0_30px_rgba(0,245,255,0.15)]",
+          isGlassDark && "bg-[#1a1a1a]/80 border border-white/10 shadow-2xl"
         )}
       >
+        {/* Neo-Cyber 顶部装饰线 */}
+        {isNeoCyber && (
+          <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
+        )}
 
         {/* 内容区域 */}
         <div className="relative p-4 z-10">
@@ -224,10 +244,21 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
                 title={videoUnlocked ? "Video 已解锁" : undefined}
               >
                 <div className="relative flex items-center justify-center w-3 h-3">
-                  <div className="absolute inset-0 bg-blue-400/50 rounded-full animate-ping" />
-                  <div className="w-2 h-2 bg-gradient-to-tr from-blue-400 to-purple-400 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.6)]" />
+                  <div className={cn(
+                    "absolute inset-0 rounded-full animate-ping",
+                    isLight ? "bg-indigo-400/50" : isNeoCyber ? "bg-cyan-400/50" : "bg-white/30"
+                  )} />
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    isLight ? "bg-gradient-to-tr from-indigo-400 to-purple-400 shadow-[0_0_8px_rgba(99,102,241,0.6)]" :
+                    isNeoCyber ? "bg-gradient-to-tr from-cyan-400 to-purple-400 shadow-[0_0_8px_rgba(0,245,255,0.6)]" :
+                    "bg-white/80 shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+                  )} />
                 </div>
-                <h3 className="text-xs font-bold tracking-widest uppercase text-neutral-800/70 dark:text-white/80">
+                <h3 className={cn(
+                  "text-xs font-bold tracking-widest uppercase",
+                  isLight ? "text-neutral-700" : isNeoCyber ? "text-cyan-400 font-cyber" : "text-white/80"
+                )}>
                   Tools
                 </h3>
                 {/* 彩蛋点击进度提示（未解锁时） */}
@@ -240,10 +271,18 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
               {/* 折叠按钮 */}
               <button
                 onClick={() => setIsCollapsed(true)}
-                className="p-1.5 rounded-lg hover:bg-white/30 dark:hover:bg-white/10 transition-colors group"
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors group",
+                  isLight ? "hover:bg-neutral-100" : isNeoCyber ? "hover:bg-cyan-500/10" : "hover:bg-white/10"
+                )}
                 title="收起工具栏"
               >
-                <ChevronLeft className="w-4 h-4 text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-200 transition-colors" />
+                <ChevronLeft className={cn(
+                  "w-4 h-4 transition-colors",
+                  isLight ? "text-neutral-500 group-hover:text-neutral-700" :
+                  isNeoCyber ? "text-cyan-400/60 group-hover:text-cyan-400" :
+                  "text-white/50 group-hover:text-white/80"
+                )} />
               </button>
             </div>
           </div>
@@ -261,23 +300,24 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
                   isTouchDevice ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
                 )}
               >
-                {/* 卡片本身也是玻璃，但更通透 */}
+                {/* 卡片本身 - 主题感知 */}
                 <div
                   className={cn(
                     "relative flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300",
                     "hover:translate-x-1 hover:scale-[1.02] active:scale-[0.98]",
-                    // 内部卡片样式
-                    "bg-white/30 dark:bg-white/5",
-                    "hover:bg-white/50 dark:hover:bg-white/10",
-                    "border border-white/20 dark:border-white/5",
-                    "shadow-sm hover:shadow-md"
+                    isLight && "bg-white/60 hover:bg-white/80 border border-neutral-200/50 shadow-sm hover:shadow-md",
+                    isNeoCyber && "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(0,245,255,0.1)]",
+                    isGlassDark && "bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/15"
                   )}
                 >
                   {/* 悬浮时的高光扫描效果 */}
                   <div
                     className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-500 overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                    <div className={cn(
+                      "absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]",
+                      isLight ? "bg-gradient-to-r from-transparent via-black/5 to-transparent" : "bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                    )} />
                   </div>
 
                   {/* 图标容器 - 磨砂玻璃 */}
@@ -285,7 +325,7 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
                     className="relative w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
                     style={{
                       background: `linear-gradient(135deg, ${item.accentColor}20, ${item.accentColor}10)`,
-                      boxShadow: `inset 0 0 0 1px ${item.accentColor}30`,
+                      boxShadow: isNeoCyber ? `inset 0 0 0 1px ${item.accentColor}30, 0 0 10px ${item.accentColor}20` : `inset 0 0 0 1px ${item.accentColor}30`,
                     }}
                   >
                     <item.icon
@@ -303,10 +343,16 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
 
                   {/* 文字信息 */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold truncate text-neutral-800/90 dark:text-neutral-100/90">
+                    <p className={cn(
+                      "text-[13px] font-semibold truncate",
+                      isLight ? "text-neutral-800" : "text-white/90"
+                    )}>
                       {item.title}
                     </p>
-                    <p className="text-[10px] truncate text-neutral-600/70 dark:text-neutral-400/70 group-hover:text-neutral-800/80 dark:group-hover:text-neutral-300/80 transition-colors">
+                    <p className={cn(
+                      "text-[10px] truncate transition-colors",
+                      isLight ? "text-neutral-500 group-hover:text-neutral-700" : "text-white/50 group-hover:text-white/70"
+                    )}>
                       {item.description}
                     </p>
                   </div>
@@ -329,7 +375,10 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
             ))}
 
             {/* 分隔线 */}
-            <div className="my-3 mx-2 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            <div className={cn(
+              "my-3 mx-2 h-px bg-gradient-to-r from-transparent to-transparent",
+              isLight ? "via-neutral-200" : isNeoCyber ? "via-cyan-500/30" : "via-white/10"
+            )} />
 
             {/* 图片上传项 - 点击而非拖拽 */}
             <div
@@ -340,17 +389,19 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
                 className={cn(
                   "relative flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300",
                   "hover:translate-x-1 hover:scale-[1.02] active:scale-[0.98]",
-                  "bg-white/30 dark:bg-white/5",
-                  "hover:bg-white/50 dark:hover:bg-white/10",
-                  "border border-white/20 dark:border-white/5",
-                  "shadow-sm hover:shadow-md"
+                  isLight && "bg-white/60 hover:bg-white/80 border border-neutral-200/50 shadow-sm hover:shadow-md",
+                  isNeoCyber && "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(0,245,255,0.1)]",
+                  isGlassDark && "bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/15"
                 )}
               >
                 {/* 悬浮时的高光扫描效果 */}
                 <div
                   className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-500 overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                  <div className={cn(
+                    "absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]",
+                    isLight ? "bg-gradient-to-r from-transparent via-black/5 to-transparent" : "bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  )} />
                 </div>
 
                 {/* 图标容器 */}
@@ -358,7 +409,7 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
                   className="relative w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
                   style={{
                     background: `linear-gradient(135deg, ${uploadItem.accentColor}20, ${uploadItem.accentColor}10)`,
-                    boxShadow: `inset 0 0 0 1px ${uploadItem.accentColor}30`,
+                    boxShadow: isNeoCyber ? `inset 0 0 0 1px ${uploadItem.accentColor}30, 0 0 10px ${uploadItem.accentColor}20` : `inset 0 0 0 1px ${uploadItem.accentColor}30`,
                   }}
                 >
                   <uploadItem.icon
@@ -375,10 +426,16 @@ export default function NodeToolbar({ onDragStart, onImageUploadClick, onNodeTyp
 
                 {/* 文字信息 */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold truncate text-neutral-800/90 dark:text-neutral-100/90">
+                  <p className={cn(
+                    "text-[13px] font-semibold truncate",
+                    isLight ? "text-neutral-800" : "text-white/90"
+                  )}>
                     {uploadItem.title}
                   </p>
-                  <p className="text-[10px] truncate text-neutral-600/70 dark:text-neutral-400/70 group-hover:text-neutral-800/80 dark:group-hover:text-neutral-300/80 transition-colors">
+                  <p className={cn(
+                    "text-[10px] truncate transition-colors",
+                    isLight ? "text-neutral-500 group-hover:text-neutral-700" : "text-white/50 group-hover:text-white/70"
+                  )}>
                     {uploadItem.description}
                   </p>
                 </div>

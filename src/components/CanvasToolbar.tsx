@@ -3,8 +3,9 @@ import Link from "next/link";
 import {
   Save, FolderOpen, GalleryHorizontalEnd, MousePointer2, Hand,
   Trash2, LayoutGrid, Import, Share2, GalleryVerticalEnd, User as UserIcon, LogOut,
-  Settings, Shield, Wallet, Scan, Sparkles
+  Settings, Shield, Wallet, Scan, Sparkles, Sun, Zap, Moon, Palette
 } from "lucide-react";
+import { useTheme, ThemeType, THEME_NAMES } from "@/contexts/ThemeContext";
 
 // 工具栏按钮组件 - 带有精致的悬浮效果和 tooltip
 interface ToolbarButtonProps {
@@ -76,6 +77,115 @@ const ToolbarButton = ({ onClick, title, variant = "default", active, children, 
 const Divider = () => (
   <div className="w-px h-6 bg-gradient-to-b from-transparent via-neutral-300 dark:via-white/20 to-transparent mx-1" />
 );
+
+// 主题切换器组件
+function ThemeSwitcher() {
+  const { theme, setTheme } = useTheme();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const themes: { value: ThemeType; icon: React.ReactNode; label: string; description: string }[] = [
+    {
+      value: "light",
+      icon: <Sun className="w-4 h-4" />,
+      label: "Light",
+      description: "明亮清新"
+    },
+    {
+      value: "neo-cyber",
+      icon: <Zap className="w-4 h-4" />,
+      label: "Neo-Cyber",
+      description: "赛博霓虹"
+    },
+    {
+      value: "glass-dark",
+      icon: <Moon className="w-4 h-4" />,
+      label: "Glass Dark",
+      description: "暗色玻璃"
+    }
+  ];
+
+  const currentTheme = themes.find(t => t.value === theme) || themes[1];
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.theme-switcher-container')) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative theme-switcher-container">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`
+          flex items-center gap-2 p-2.5 rounded-xl transition-all duration-300
+          hover:bg-neutral-100 dark:hover:bg-white/10
+          ${isOpen ? 'bg-neutral-100 dark:bg-white/10' : ''}
+        `}
+        title="切换主题"
+      >
+        <Palette className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
+      </button>
+
+      {isOpen && (
+        <div
+          className="absolute top-full mt-2 right-0 w-48 origin-top-right animate-scale-in z-50"
+          style={{ animationDuration: '200ms' }}
+        >
+          <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl shadow-black/20 dark:shadow-black/50 border border-neutral-200/50 dark:border-white/10 overflow-hidden">
+            <div className="px-3 py-2 border-b border-neutral-100 dark:border-white/5">
+              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">选择主题风格</p>
+            </div>
+            <div className="p-1.5">
+              {themes.map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => {
+                    setTheme(t.value);
+                    setIsOpen(false);
+                  }}
+                  className={`
+                    w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
+                    ${theme === t.value
+                      ? 'bg-gradient-to-r from-violet-500/10 to-purple-500/10 dark:from-violet-500/20 dark:to-purple-500/20'
+                      : 'hover:bg-neutral-100 dark:hover:bg-white/5'
+                    }
+                  `}
+                >
+                  <div className={`
+                    w-8 h-8 rounded-lg flex items-center justify-center
+                    ${theme === t.value
+                      ? 'bg-gradient-to-br from-violet-500 to-purple-500 text-white'
+                      : 'bg-neutral-100 dark:bg-white/10 text-neutral-600 dark:text-neutral-300'
+                    }
+                  `}>
+                    {t.icon}
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className={`text-sm font-medium ${theme === t.value ? 'text-violet-600 dark:text-violet-400' : 'text-neutral-700 dark:text-neutral-200'}`}>
+                      {t.label}
+                    </p>
+                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                      {t.description}
+                    </p>
+                  </div>
+                  {theme === t.value && (
+                    <div className="w-2 h-2 rounded-full bg-violet-500" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // 用户下拉菜单组件 - 点击触发，带有精致动画
 function UserDropdown({ username, onLogout }: { username: string; onLogout: () => void }) {
@@ -364,6 +474,11 @@ export const CanvasToolbar = React.memo(({
           <ToolbarButton onClick={onClearCache} title="清空画布" variant="danger">
             <Trash2 className="w-4 h-4" />
           </ToolbarButton>
+
+          <Divider />
+
+          {/* 主题切换 */}
+          <ThemeSwitcher />
 
           <Divider />
 

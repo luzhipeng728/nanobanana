@@ -1,14 +1,264 @@
-/* 手绘风格字体 + 科技感字体 */
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+/* 手绘风格字体 + 科技感字体 + Inter */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @import "tailwindcss";
 @import '@xyflow/react/dist/style.css';
 
 /* ========================================
-   Neo-Cyber 设计系统 - 节点专用
+   主题系统 - 三套主题 CSS 变量
    ======================================== */
 
-/* 科技感字体类 */
+/* ----------------------------------------
+   Light Theme - 明亮清新风格
+   ---------------------------------------- */
+:root.theme-light {
+  /* 画布背景 */
+  --canvas-bg: #fdfbf7;
+  --canvas-dot-color: rgba(0, 0, 0, 0.08);
+
+  /* 节点基础 */
+  --node-bg: rgba(255, 255, 255, 0.95);
+  --node-bg-hover: rgba(255, 255, 255, 1);
+  --node-border: rgba(0, 0, 0, 0.08);
+  --node-border-hover: rgba(0, 0, 0, 0.15);
+  --node-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --node-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --node-radius: 16px;
+
+  /* 文字颜色 */
+  --text-primary: #1a1a1a;
+  --text-secondary: rgba(26, 26, 26, 0.7);
+  --text-tertiary: rgba(26, 26, 26, 0.5);
+  --text-accent: #6366f1;
+
+  /* 表单控件 */
+  --input-bg: rgba(0, 0, 0, 0.03);
+  --input-border: rgba(0, 0, 0, 0.1);
+  --input-border-focus: #6366f1;
+  --input-shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.1);
+
+  /* 按钮 */
+  --btn-primary-bg: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --btn-primary-text: #ffffff;
+  --btn-secondary-bg: rgba(0, 0, 0, 0.05);
+  --btn-secondary-text: #1a1a1a;
+
+  /* 装饰效果 */
+  --glow-primary: none;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+
+  /* 标签颜色 */
+  --label-text: rgba(0, 0, 0, 0.6);
+  --label-dot: #6366f1;
+
+  /* 分隔线 */
+  --divider-color: rgba(0, 0, 0, 0.08);
+
+  /* 字体 */
+  --font-heading: 'Inter', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+}
+
+/* ----------------------------------------
+   Neo-Cyber Theme - 赛博朋克霓虹风格
+   ---------------------------------------- */
+:root.theme-neo-cyber {
+  /* 画布背景 */
+  --canvas-bg: #050508;
+  --canvas-dot-color: rgba(0, 245, 255, 0.15);
+
+  /* 节点基础 */
+  --node-bg: rgba(10, 10, 18, 0.95);
+  --node-bg-hover: rgba(15, 15, 25, 0.98);
+  --node-border: rgba(0, 245, 255, 0.2);
+  --node-border-hover: rgba(0, 245, 255, 0.4);
+  --node-shadow: 0 0 30px rgba(0, 245, 255, 0.15), 0 0 60px rgba(191, 0, 255, 0.1);
+  --node-shadow-hover: 0 0 40px rgba(0, 245, 255, 0.25), 0 0 80px rgba(191, 0, 255, 0.15);
+  --node-radius: 16px;
+
+  /* 文字颜色 */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --text-accent: #00f5ff;
+
+  /* 表单控件 */
+  --input-bg: rgba(10, 10, 18, 1);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-border-focus: rgba(0, 245, 255, 0.5);
+  --input-shadow-focus: 0 0 20px rgba(0, 245, 255, 0.15), inset 0 0 20px rgba(0, 245, 255, 0.05);
+
+  /* 按钮 */
+  --btn-primary-bg: linear-gradient(135deg, #00f5ff 0%, #0066ff 100%);
+  --btn-primary-text: #000000;
+  --btn-secondary-bg: rgba(255, 255, 255, 0.05);
+  --btn-secondary-text: #ffffff;
+
+  /* 装饰效果 - 霓虹发光 */
+  --glow-primary: 0 0 20px rgba(0, 245, 255, 0.4);
+  --accent-gradient: linear-gradient(135deg, #00f5ff 0%, #bf00ff 50%, #ff00aa 100%);
+
+  /* 标签颜色 */
+  --label-text: rgba(0, 245, 255, 0.8);
+  --label-dot: #00f5ff;
+
+  /* 分隔线 */
+  --divider-color: rgba(255, 255, 255, 0.1);
+
+  /* 字体 - 科技感 */
+  --font-heading: 'Orbitron', 'Rajdhani', sans-serif;
+  --font-body: 'Rajdhani', sans-serif;
+
+  /* Neo-Cyber 专属变量 */
+  --cyber-bg: #0a0a0f;
+  --cyber-surface: rgba(15, 15, 25, 0.85);
+  --cyber-surface-light: rgba(25, 25, 40, 0.9);
+  --cyber-border: rgba(100, 100, 150, 0.2);
+  --neon-cyan: #00f5ff;
+  --neon-purple: #bf00ff;
+  --neon-pink: #ff00aa;
+  --neon-blue: #0066ff;
+  --neon-green: #00ff88;
+  --neon-orange: #ff6b00;
+  --glow-cyan: 0 0 20px rgba(0, 245, 255, 0.4);
+  --glow-purple: 0 0 20px rgba(191, 0, 255, 0.4);
+  --glow-pink: 0 0 20px rgba(255, 0, 170, 0.4);
+}
+
+/* ----------------------------------------
+   Glass Dark Theme - 暗色玻璃质感 (AI 无限流)
+   ---------------------------------------- */
+:root.theme-glass-dark {
+  /* 画布背景 */
+  --canvas-bg: #080808;
+  --canvas-dot-color: rgba(255, 255, 255, 0.04);
+
+  /* 节点基础 - 玻璃质感 */
+  --node-bg: rgba(26, 26, 26, 0.8);
+  --node-bg-hover: rgba(32, 32, 32, 0.85);
+  --node-border: rgba(255, 255, 255, 0.08);
+  --node-border-hover: rgba(255, 255, 255, 0.15);
+  --node-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --node-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --node-radius: 20px;
+
+  /* 文字颜色 - 白色透明度层级 */
+  --text-primary: rgba(255, 255, 255, 1);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.3);
+  --text-accent: #ffffff;
+
+  /* 表单控件 */
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.08);
+  --input-border-focus: rgba(255, 255, 255, 0.2);
+  --input-shadow-focus: 0 0 0 2px rgba(255, 255, 255, 0.05);
+
+  /* 按钮 */
+  --btn-primary-bg: rgba(255, 255, 255, 1);
+  --btn-primary-text: #000000;
+  --btn-secondary-bg: rgba(255, 255, 255, 0.08);
+  --btn-secondary-text: rgba(255, 255, 255, 0.9);
+
+  /* 装饰效果 - 极简无发光 */
+  --glow-primary: none;
+  --accent-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+
+  /* 标签颜色 */
+  --label-text: rgba(255, 255, 255, 0.5);
+  --label-dot: rgba(255, 255, 255, 0.3);
+
+  /* 分隔线 */
+  --divider-color: rgba(255, 255, 255, 0.06);
+
+  /* 字体 - 极简现代 */
+  --font-heading: 'Inter', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+
+  /* Glass Dark 专属变量 */
+  --glass-blur: 20px;
+  --glass-bg: rgba(26, 26, 26, 0.8);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 默认主题 (neo-cyber) */
+:root {
+  /* 画布背景 */
+  --canvas-bg: #050508;
+  --canvas-dot-color: rgba(0, 245, 255, 0.15);
+
+  /* 节点基础 */
+  --node-bg: rgba(10, 10, 18, 0.95);
+  --node-bg-hover: rgba(15, 15, 25, 0.98);
+  --node-border: rgba(0, 245, 255, 0.2);
+  --node-border-hover: rgba(0, 245, 255, 0.4);
+  --node-shadow: 0 0 30px rgba(0, 245, 255, 0.15), 0 0 60px rgba(191, 0, 255, 0.1);
+  --node-shadow-hover: 0 0 40px rgba(0, 245, 255, 0.25), 0 0 80px rgba(191, 0, 255, 0.15);
+  --node-radius: 16px;
+
+  /* 文字颜色 */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --text-accent: #00f5ff;
+
+  /* 表单控件 */
+  --input-bg: rgba(10, 10, 18, 1);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-border-focus: rgba(0, 245, 255, 0.5);
+  --input-shadow-focus: 0 0 20px rgba(0, 245, 255, 0.15), inset 0 0 20px rgba(0, 245, 255, 0.05);
+
+  /* 按钮 */
+  --btn-primary-bg: linear-gradient(135deg, #00f5ff 0%, #0066ff 100%);
+  --btn-primary-text: #000000;
+  --btn-secondary-bg: rgba(255, 255, 255, 0.05);
+  --btn-secondary-text: #ffffff;
+
+  /* 装饰效果 */
+  --glow-primary: 0 0 20px rgba(0, 245, 255, 0.4);
+  --accent-gradient: linear-gradient(135deg, #00f5ff 0%, #bf00ff 50%, #ff00aa 100%);
+
+  /* 标签颜色 */
+  --label-text: rgba(0, 245, 255, 0.8);
+  --label-dot: #00f5ff;
+
+  /* 分隔线 */
+  --divider-color: rgba(255, 255, 255, 0.1);
+
+  /* 字体 */
+  --font-heading: 'Orbitron', 'Rajdhani', sans-serif;
+  --font-body: 'Rajdhani', sans-serif;
+
+  /* Neo-Cyber 专属变量 */
+  --cyber-bg: #0a0a0f;
+  --cyber-surface: rgba(15, 15, 25, 0.85);
+  --cyber-surface-light: rgba(25, 25, 40, 0.9);
+  --cyber-border: rgba(100, 100, 150, 0.2);
+  --neon-cyan: #00f5ff;
+  --neon-purple: #bf00ff;
+  --neon-pink: #ff00aa;
+  --neon-blue: #0066ff;
+  --neon-green: #00ff88;
+  --neon-orange: #ff6b00;
+  --glow-cyan: 0 0 20px rgba(0, 245, 255, 0.4);
+  --glow-purple: 0 0 20px rgba(191, 0, 255, 0.4);
+  --glow-pink: 0 0 20px rgba(255, 0, 170, 0.4);
+}
+
+/* ========================================
+   主题通用类
+   ======================================== */
+
+/* 主题字体类 */
+.font-theme-heading {
+  font-family: var(--font-heading);
+}
+
+.font-theme-body {
+  font-family: var(--font-body);
+}
+
+/* 科技感字体类 (向后兼容) */
 .font-cyber {
   font-family: 'Orbitron', 'Rajdhani', sans-serif;
 }
@@ -17,23 +267,73 @@
   font-family: 'Rajdhani', sans-serif;
 }
 
-/* Neo-Cyber 颜色变量 */
-:root {
-  --cyber-bg: #0a0a0f;
-  --cyber-surface: rgba(15, 15, 25, 0.85);
-  --cyber-surface-light: rgba(25, 25, 40, 0.9);
-  --cyber-border: rgba(100, 100, 150, 0.2);
+/* 主题节点样式 */
+.theme-node {
+  background: var(--node-bg);
+  border: 1px solid var(--node-border);
+  border-radius: var(--node-radius);
+  box-shadow: var(--node-shadow);
+  backdrop-filter: blur(var(--glass-blur, 0px));
+  transition: all 0.3s ease;
+}
 
-  --neon-cyan: #00f5ff;
-  --neon-purple: #bf00ff;
-  --neon-pink: #ff00aa;
-  --neon-blue: #0066ff;
-  --neon-green: #00ff88;
-  --neon-orange: #ff6b00;
+.theme-node:hover {
+  background: var(--node-bg-hover);
+  border-color: var(--node-border-hover);
+  box-shadow: var(--node-shadow-hover);
+}
 
-  --glow-cyan: 0 0 20px rgba(0, 245, 255, 0.4);
-  --glow-purple: 0 0 20px rgba(191, 0, 255, 0.4);
-  --glow-pink: 0 0 20px rgba(255, 0, 170, 0.4);
+/* 主题输入框 */
+.theme-input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  border-radius: 12px;
+}
+
+.theme-input:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: var(--input-shadow-focus);
+  outline: none;
+}
+
+/* 主题按钮 */
+.theme-btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+.theme-btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+}
+
+/* 主题文字 */
+.theme-text-primary {
+  color: var(--text-primary);
+}
+
+.theme-text-secondary {
+  color: var(--text-secondary);
+}
+
+.theme-text-tertiary {
+  color: var(--text-tertiary);
+}
+
+.theme-text-accent {
+  color: var(--text-accent);
+}
+
+/* 主题标签 */
+.theme-label {
+  color: var(--label-text);
+  font-family: var(--font-heading);
+}
+
+/* 主题分隔线 */
+.theme-divider {
+  background: linear-gradient(to right, transparent, var(--divider-color), transparent);
 }
 
 /* 霓虹边框流动动画 */
