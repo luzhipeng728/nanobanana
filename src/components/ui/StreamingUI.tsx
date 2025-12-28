@@ -155,16 +155,17 @@ interface StreamingThoughtProps {
   className?: string;
 }
 
+// Neo-Cyber 风格工具信息
 const TOOL_INFO: Record<string, { icon: React.ElementType; label: string; color: string }> = {
-  skill_matcher: { icon: Target, label: "匹配技能", color: "text-amber-500 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800" },
-  load_skill: { icon: Zap, label: "加载技能", color: "text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800" },
-  generate_prompt: { icon: Wand2, label: "生成提示词", color: "text-purple-500 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800" },
-  web_search: { icon: Search, label: "搜索资料", color: "text-blue-500 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800" },
-  research_topic: { icon: Brain, label: "深度研究", color: "text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800" },
-  analyze_image: { icon: Eye, label: "分析图片", color: "text-pink-500 bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800" },
-  optimize_prompt: { icon: Sparkles, label: "优化提示词", color: "text-violet-500 bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800" },
-  evaluate_prompt: { icon: CheckCircle2, label: "质量评估", color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800" },
-  finalize_output: { icon: CheckCircle2, label: "输出结果", color: "text-green-500 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" },
+  skill_matcher: { icon: Target, label: "匹配技能", color: "text-amber-400 bg-amber-500/10 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]" },
+  load_skill: { icon: Zap, label: "加载技能", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]" },
+  generate_prompt: { icon: Wand2, label: "生成提示词", color: "text-purple-400 bg-purple-500/10 border-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.2)]" },
+  web_search: { icon: Search, label: "搜索资料", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_10px_rgba(0,245,255,0.2)]" },
+  research_topic: { icon: Brain, label: "深度研究", color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_10px_rgba(99,102,241,0.2)]" },
+  analyze_image: { icon: Eye, label: "分析图片", color: "text-pink-400 bg-pink-500/10 border-pink-500/30 shadow-[0_0_10px_rgba(236,72,153,0.2)]" },
+  optimize_prompt: { icon: Sparkles, label: "优化提示词", color: "text-violet-400 bg-violet-500/10 border-violet-500/30 shadow-[0_0_10px_rgba(139,92,246,0.2)]" },
+  evaluate_prompt: { icon: CheckCircle2, label: "质量评估", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]" },
+  finalize_output: { icon: CheckCircle2, label: "输出结果", color: "text-green-400 bg-green-500/10 border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.2)]" },
 };
 
 export const StreamingThought = memo(function StreamingThought({
@@ -189,42 +190,44 @@ export const StreamingThought = memo(function StreamingThought({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl",
-        "bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30",
-        "dark:from-slate-900/80 dark:via-purple-900/20 dark:to-blue-900/20",
-        "shadow-sm",
+        "relative overflow-hidden rounded-xl",
+        "bg-[#0a0a12]/95",
         "border",
         isStreaming
-          ? "border-purple-300 dark:border-purple-600"
-          : "border-purple-100/50 dark:border-purple-800/30",
+          ? "border-purple-500/40 shadow-[0_0_20px_rgba(168,85,247,0.2)]"
+          : "border-white/10",
         className
       )}
     >
-      {/* 顶部渐变光效 */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent z-10" />
+      {/* 顶部霓虹边框 */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 z-10" />
+
+      {/* 角落装饰 */}
+      <div className="absolute top-1.5 left-1.5 w-2 h-2 border-l border-t border-purple-500/50" />
+      <div className="absolute top-1.5 right-1.5 w-2 h-2 border-r border-t border-purple-500/50" />
 
       {/* 动态背景光斑 */}
       {isStreaming && (
         <>
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-purple-400/10 rounded-full blur-3xl animate-pulse z-0" />
-          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-400/10 rounded-full blur-3xl animate-pulse z-0" style={{ animationDelay: "500ms" }} />
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl animate-neon-pulse z-0" />
+          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl animate-neon-pulse z-0" style={{ animationDelay: "500ms" }} />
         </>
       )}
 
       {/* Header */}
-      <div className="relative flex items-center gap-2 px-3 py-2 border-b border-purple-100/30 dark:border-purple-800/20">
+      <div className="relative flex items-center gap-2 px-3 py-2 border-b border-white/10 bg-purple-500/5">
         <div className="relative">
-          <Brain className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+          <Brain className="w-4 h-4 text-purple-400" />
           {isStreaming && (
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(0,245,255,0.8)]" />
           )}
         </div>
-        <span className="text-[11px] font-bold bg-gradient-to-r from-purple-600 via-violet-600 to-blue-600 bg-clip-text text-transparent">
-          {isStreaming ? "正在思考" : "思考完成"}
+        <span className="font-cyber text-[10px] font-bold tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">
+          {isStreaming ? "THINKING" : "COMPLETE"}
         </span>
         {typeof iteration === "number" && (
-          <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 font-medium">
-            迭代 {iteration}
+          <span className="ml-auto text-[10px] px-2 py-0.5 rounded-lg bg-purple-500/20 text-purple-300 font-mono border border-purple-500/30">
+            #{iteration}
           </span>
         )}
         {isStreaming && (
@@ -253,15 +256,19 @@ export const StreamingThought = memo(function StreamingThought({
       {/* Content */}
       <div
         ref={containerRef}
-        className="relative p-3 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800 selectable-text"
+        className="relative p-3 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent selectable-text"
       >
-        <div className="text-[11px] text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap">
+        <div className="text-[11px] text-white/70 leading-relaxed whitespace-pre-wrap font-mono">
           {content}
           {isStreaming && (
-            <span className="inline-block w-0.5 h-4 ml-0.5 bg-purple-500 animate-pulse" />
+            <span className="inline-block w-0.5 h-4 ml-0.5 bg-cyan-400 animate-pulse shadow-[0_0_6px_rgba(0,245,255,0.8)]" />
           )}
         </div>
       </div>
+
+      {/* 底部装饰 */}
+      <div className="absolute bottom-1.5 left-1.5 w-2 h-2 border-l border-b border-purple-500/50" />
+      <div className="absolute bottom-1.5 right-1.5 w-2 h-2 border-r border-b border-purple-500/50" />
     </div>
   );
 });
@@ -287,30 +294,31 @@ export const AnimatedProgress = memo(function AnimatedProgress({
   showPercentage = true,
   className,
 }: AnimatedProgressProps) {
+  // Neo-Cyber 颜色配置
   const colorClasses = {
     purple: {
-      bar: "from-purple-500 via-violet-500 to-purple-600",
-      glow: "shadow-purple-500/50",
-      text: "text-purple-600 dark:text-purple-400",
-      bg: "bg-purple-100 dark:bg-purple-900/30",
+      bar: "from-purple-500 via-pink-500 to-purple-600",
+      glow: "shadow-[0_0_15px_rgba(168,85,247,0.5)]",
+      text: "text-purple-400",
+      bg: "bg-purple-500/10",
     },
     blue: {
       bar: "from-blue-500 via-cyan-500 to-blue-600",
-      glow: "shadow-blue-500/50",
-      text: "text-blue-600 dark:text-blue-400",
-      bg: "bg-blue-100 dark:bg-blue-900/30",
+      glow: "shadow-[0_0_15px_rgba(0,102,255,0.5)]",
+      text: "text-blue-400",
+      bg: "bg-blue-500/10",
     },
     cyan: {
       bar: "from-cyan-500 via-teal-500 to-cyan-600",
-      glow: "shadow-cyan-500/50",
-      text: "text-cyan-600 dark:text-cyan-400",
-      bg: "bg-cyan-100 dark:bg-cyan-900/30",
+      glow: "shadow-[0_0_15px_rgba(0,245,255,0.5)]",
+      text: "text-cyan-400",
+      bg: "bg-cyan-500/10",
     },
     emerald: {
       bar: "from-emerald-500 via-green-500 to-emerald-600",
-      glow: "shadow-emerald-500/50",
-      text: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-100 dark:bg-emerald-900/30",
+      glow: "shadow-[0_0_15px_rgba(16,185,129,0.5)]",
+      text: "text-emerald-400",
+      bg: "bg-emerald-500/10",
     },
   };
 
@@ -321,20 +329,20 @@ export const AnimatedProgress = memo(function AnimatedProgress({
       {(status || showPercentage) && (
         <div className="flex items-center justify-between text-[10px]">
           {status && (
-            <span className="text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 truncate">
+            <span className="text-white/50 flex items-center gap-1.5 truncate font-mono">
               <Loader2 className={cn("w-3 h-3 animate-spin", colors.text)} />
               {status}
             </span>
           )}
           {showPercentage && (
-            <span className={cn("font-bold tabular-nums", colors.text)}>
+            <span className={cn("font-mono font-bold tabular-nums", colors.text)}>
               {Math.round(progress)}%
             </span>
           )}
         </div>
       )}
 
-      <div className="relative h-2 rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
+      <div className="relative h-1.5 rounded-full bg-white/5 overflow-hidden border border-white/10">
         {/* 背景动画 */}
         <div
           className={cn(
@@ -349,14 +357,14 @@ export const AnimatedProgress = memo(function AnimatedProgress({
             "absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out",
             "bg-gradient-to-r",
             colors.bar,
-            variant === "glow" && cn("shadow-lg", colors.glow)
+            colors.glow
           )}
           style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
         >
           {/* 流动光效 */}
           {variant === "gradient" && progress < 100 && (
             <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer"
               style={{ backgroundSize: "200% 100%" }}
             />
           )}
@@ -393,30 +401,31 @@ export const StepTimeline = memo(function StepTimeline({
   compact = false,
   className,
 }: StepTimelineProps) {
+  // Neo-Cyber 颜色配置
   const colorClasses = {
     purple: {
-      active: "bg-purple-500 border-purple-500 text-white",
-      completed: "bg-purple-500 border-purple-500 text-white",
+      active: "bg-purple-500 border-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]",
+      completed: "bg-purple-500 border-purple-500 text-white shadow-[0_0_8px_rgba(168,85,247,0.4)]",
       line: "bg-purple-500",
-      text: "text-purple-600 dark:text-purple-400",
+      text: "text-purple-400",
     },
     blue: {
-      active: "bg-blue-500 border-blue-500 text-white",
-      completed: "bg-blue-500 border-blue-500 text-white",
+      active: "bg-blue-500 border-blue-500 text-white shadow-[0_0_10px_rgba(0,102,255,0.5)]",
+      completed: "bg-blue-500 border-blue-500 text-white shadow-[0_0_8px_rgba(0,102,255,0.4)]",
       line: "bg-blue-500",
-      text: "text-blue-600 dark:text-blue-400",
+      text: "text-blue-400",
     },
     cyan: {
-      active: "bg-cyan-500 border-cyan-500 text-white",
-      completed: "bg-cyan-500 border-cyan-500 text-white",
+      active: "bg-cyan-500 border-cyan-500 text-white shadow-[0_0_10px_rgba(0,245,255,0.5)]",
+      completed: "bg-cyan-500 border-cyan-500 text-white shadow-[0_0_8px_rgba(0,245,255,0.4)]",
       line: "bg-cyan-500",
-      text: "text-cyan-600 dark:text-cyan-400",
+      text: "text-cyan-400",
     },
     emerald: {
-      active: "bg-emerald-500 border-emerald-500 text-white",
-      completed: "bg-emerald-500 border-emerald-500 text-white",
+      active: "bg-emerald-500 border-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)]",
+      completed: "bg-emerald-500 border-emerald-500 text-white shadow-[0_0_8px_rgba(16,185,129,0.4)]",
       line: "bg-emerald-500",
-      text: "text-emerald-600 dark:text-emerald-400",
+      text: "text-emerald-400",
     },
   };
 
@@ -438,8 +447,8 @@ export const StepTimeline = memo(function StepTimeline({
                     compact ? "w-6 h-6" : "w-8 h-8",
                     step.status === "completed" && colors.completed,
                     step.status === "active" && cn(colors.active, "animate-pulse"),
-                    step.status === "pending" && "bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600",
-                    step.status === "error" && "bg-red-500 border-red-500 text-white"
+                    step.status === "pending" && "bg-white/5 border-white/20 text-white/40",
+                    step.status === "error" && "bg-red-500 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]"
                   )}
                 >
                   {step.status === "completed" ? (
@@ -457,7 +466,7 @@ export const StepTimeline = memo(function StepTimeline({
                 {!compact && (
                   <span className={cn(
                     "mt-1 text-[9px] font-medium text-center max-w-[60px] truncate",
-                    step.status === "active" ? colors.text : "text-neutral-500"
+                    step.status === "active" ? colors.text : "text-white/40"
                   )}>
                     {step.title}
                   </span>
@@ -466,7 +475,7 @@ export const StepTimeline = memo(function StepTimeline({
               {!isLast && (
                 <div className={cn(
                   "flex-1 h-0.5 mx-1 rounded-full transition-all duration-500",
-                  step.status === "completed" ? colors.line : "bg-neutral-200 dark:bg-neutral-700"
+                  step.status === "completed" ? colors.line : "bg-white/10"
                 )} />
               )}
             </React.Fragment>
@@ -493,8 +502,8 @@ export const StepTimeline = memo(function StepTimeline({
                   compact ? "w-5 h-5" : "w-6 h-6",
                   step.status === "completed" && colors.completed,
                   step.status === "active" && cn(colors.active, "animate-pulse"),
-                  step.status === "pending" && "bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600 text-neutral-400",
-                  step.status === "error" && "bg-red-500 border-red-500 text-white"
+                  step.status === "pending" && "bg-white/5 border-white/20 text-white/40",
+                  step.status === "error" && "bg-red-500 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]"
                 )}
               >
                 {step.status === "completed" ? (
@@ -512,7 +521,7 @@ export const StepTimeline = memo(function StepTimeline({
               {!isLast && (
                 <div className={cn(
                   "w-0.5 flex-1 min-h-[16px] transition-all duration-500",
-                  step.status === "completed" ? colors.line : "bg-neutral-200 dark:bg-neutral-700"
+                  step.status === "completed" ? colors.line : "bg-white/10"
                 )} />
               )}
             </div>
@@ -522,13 +531,13 @@ export const StepTimeline = memo(function StepTimeline({
               <span className={cn(
                 "text-[11px] font-medium block truncate",
                 step.status === "active" ? colors.text :
-                step.status === "completed" ? "text-neutral-700 dark:text-neutral-300" :
-                "text-neutral-500 dark:text-neutral-400"
+                step.status === "completed" ? "text-white/80" :
+                "text-white/40"
               )}>
                 {step.title}
               </span>
               {step.description && (
-                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 block truncate mt-0.5">
+                <span className="text-[10px] text-white/30 block truncate mt-0.5">
                   {step.description}
                 </span>
               )}
@@ -567,64 +576,71 @@ export const PromptCard = memo(function PromptCard({
     <div
       className={cn(
         "relative overflow-hidden rounded-xl transition-all duration-300",
-        "bg-white dark:bg-neutral-900/50",
+        "bg-[#0a0a12]/80",
         "border",
         status === "generating"
-          ? "border-purple-300 dark:border-purple-700 shadow-md shadow-purple-500/10"
+          ? "border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.2)]"
           : status === "completed"
-          ? "border-emerald-200 dark:border-emerald-800"
+          ? "border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
           : status === "error"
-          ? "border-red-200 dark:border-red-800"
-          : "border-neutral-200 dark:border-neutral-800",
-        "hover:border-purple-200 dark:hover:border-purple-800/50 hover:shadow-sm",
+          ? "border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.15)]"
+          : "border-white/10",
+        "hover:border-purple-500/30 hover:shadow-[0_0_10px_rgba(168,85,247,0.1)]",
         className
       )}
     >
-      {/* 生成中的金属光线边框 */}
+      {/* 顶部装饰线 */}
+      <div className={cn(
+        "absolute top-0 left-0 right-0 h-[1px]",
+        status === "generating" ? "bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" :
+        status === "completed" ? "bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" :
+        "bg-gradient-to-r from-transparent via-white/10 to-transparent"
+      )} />
+
+      {/* 生成中的霓虹边框动画 */}
       {status === "generating" && (
         <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
-          <div className="metallic-border-glow-purple rounded-xl" />
-          <div className="absolute inset-[2px] bg-white dark:bg-neutral-900 rounded-[10px]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 animate-pulse" />
         </div>
       )}
 
       <div className="relative p-3">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate flex-1">
+          <span className="text-xs font-semibold text-white/90 truncate flex-1">
             {scene}
           </span>
           <div className="flex items-center gap-2 ml-2 flex-shrink-0">
             {status === "pending" && onGenerate && (
               <button
                 onClick={onGenerate}
-                className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-500 transition-colors"
+                className="p-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 transition-colors hover:shadow-[0_0_10px_rgba(168,85,247,0.3)]"
               >
                 <Wand2 className="w-3 h-3" />
               </button>
             )}
             {status === "pending" && (
-              <span className="text-[10px] text-neutral-400 px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800">
-                等待中
+              <span className="text-[10px] text-white/40 px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 font-mono">
+                PENDING
               </span>
             )}
             {status === "generating" && (
-              <span className="text-[10px] text-purple-500 px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center gap-1">
+              <span className="text-[10px] text-purple-400 px-2 py-0.5 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center gap-1 shadow-[0_0_8px_rgba(168,85,247,0.2)]">
                 <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                生成中
+                GENERATING
               </span>
             )}
             {status === "completed" && (
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)]" />
             )}
             {status === "error" && (
-              <AlertCircle className="w-4 h-4 text-red-500" />
+              <AlertCircle className="w-4 h-4 text-red-400 drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]" />
             )}
           </div>
         </div>
 
         {/* Prompt preview */}
-        <p className="text-[10px] text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed selectable-text">
+        <p className="text-[10px] text-white/50 line-clamp-2 leading-relaxed selectable-text font-mono">
           {prompt}
         </p>
 
@@ -634,7 +650,7 @@ export const PromptCard = memo(function PromptCard({
             {chineseTexts.map((text, i) => (
               <span
                 key={i}
-                className="px-1.5 py-0.5 text-[9px] rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-100 dark:border-purple-800"
+                className="px-1.5 py-0.5 text-[9px] rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/30"
               >
                 "{text}"
               </span>
@@ -644,7 +660,7 @@ export const PromptCard = memo(function PromptCard({
 
         {/* Error message */}
         {status === "error" && error && (
-          <p className="mt-2 text-[10px] text-red-500">{error}</p>
+          <p className="mt-2 text-[10px] text-red-400">{error}</p>
         )}
       </div>
     </div>
@@ -670,22 +686,25 @@ export const SkillBadge = memo(function SkillBadge({
     <div
       className={cn(
         "flex items-center gap-2 px-3 py-2 rounded-xl",
-        "bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20",
-        "border border-emerald-200 dark:border-emerald-800",
+        "bg-[#0a0a12]/80",
+        "border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]",
         className
       )}
     >
+      {/* 顶部装饰线 */}
+      <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
+
       <div className="relative">
-        <Target className="w-4 h-4 text-emerald-500" />
-        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+        <Target className="w-4 h-4 text-emerald-400" />
+        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
       </div>
       <div className="flex-1 min-w-0">
-        <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 block truncate">
-          匹配技能: {name}
+        <span className="font-cyber text-[10px] font-bold tracking-wider uppercase text-emerald-400 block truncate">
+          SKILL: {name}
         </span>
       </div>
       {typeof confidence === "number" && (
-        <span className="text-[10px] font-bold text-emerald-600/70 dark:text-emerald-400/70 tabular-nums">
+        <span className="text-[10px] font-mono font-bold text-emerald-400/70 tabular-nums px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
           {Math.round(confidence * 100)}%
         </span>
       )}

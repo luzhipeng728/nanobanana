@@ -846,12 +846,15 @@ Generate a CLEAN image as if the markers do not exist.
         className="w-4 h-4 !bg-gradient-to-r !from-purple-500 !to-violet-500 !border-2 !border-white dark:!border-neutral-900 !rounded-full"
       />
 
-      {/* Reference images section */}
+      {/* Reference images section - Neo-Cyber 风格 */}
       {connectedImages.length > 0 && (
-        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-3 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-medium text-purple-700 dark:text-purple-300">
+        <div className="relative bg-[#0a0a12]/80 border border-purple-500/30 rounded-xl p-3 space-y-2 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+          {/* 顶部装饰线 */}
+          <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
+
+          <div className="flex items-center gap-2 text-xs font-cyber font-bold tracking-wider uppercase text-purple-400">
             <ImageIcon className="w-3.5 h-3.5" />
-            参考图用途
+            REF IMAGES
           </div>
           <div className="flex flex-col gap-2">
             <label className="flex items-center gap-2 cursor-pointer group">
@@ -860,10 +863,10 @@ Generate a CLEAN image as if the markers do not exist.
                 checked={useForAnalysis}
                 onChange={(e) => setUseForAnalysis(e.target.checked)}
                 disabled={isProcessing}
-                className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500 disabled:opacity-50"
+                className="w-4 h-4 rounded border-purple-500/30 bg-white/5 text-purple-500 focus:ring-purple-500/30 disabled:opacity-50"
               />
-              <Eye className="w-3.5 h-3.5 text-purple-500" />
-              <span className="text-[11px] text-neutral-700 dark:text-neutral-300">
+              <Eye className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-[11px] text-white/60">
                 让 AI 分析图片生成提示词
               </span>
             </label>
@@ -873,10 +876,10 @@ Generate a CLEAN image as if the markers do not exist.
                 checked={useForImageGen}
                 onChange={(e) => setUseForImageGen(e.target.checked)}
                 disabled={isProcessing}
-                className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500 disabled:opacity-50"
+                className="w-4 h-4 rounded border-purple-500/30 bg-white/5 text-purple-500 focus:ring-purple-500/30 disabled:opacity-50"
               />
-              <Palette className="w-3.5 h-3.5 text-purple-500" />
-              <span className="text-[11px] text-neutral-700 dark:text-neutral-300">
+              <Palette className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-[11px] text-white/60">
                 作为生图模型参考图
               </span>
             </label>
@@ -888,11 +891,11 @@ Generate a CLEAN image as if the markers do not exist.
                 key={idx}
                 src={url}
                 alt={`参考图 ${idx + 1}`}
-                className="w-10 h-10 rounded-lg object-cover border border-purple-200 dark:border-purple-700 flex-shrink-0"
+                className="w-10 h-10 rounded-lg object-cover border border-purple-500/30 flex-shrink-0"
               />
             ))}
             {connectedImages.length > 4 && (
-              <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-800 flex items-center justify-center text-[10px] font-bold text-purple-600 dark:text-purple-300 flex-shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[10px] font-bold text-purple-300 flex-shrink-0">
                 +{connectedImages.length - 4}
               </div>
             )}
@@ -936,11 +939,11 @@ Generate a CLEAN image as if the markers do not exist.
           )}
         </div>
 
-        {/* 参考图警告 - 当选中的模型不支持参考图但连接了参考图时显示 */}
+        {/* 参考图警告 - Neo-Cyber 风格 */}
         {connectedImages.length > 0 && useForImageGen && !currentModelSupportsRef && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2 flex gap-2 items-start">
-            <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-tight">
+          <div className="relative bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 flex gap-2 items-start shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-400/80 leading-tight">
               当前模型不支持参考图功能，参考图将仅用于 AI 分析
             </p>
           </div>
@@ -977,7 +980,7 @@ Generate a CLEAN image as if the markers do not exist.
         )}
       </div>
 
-      {/* Options toggles */}
+      {/* Options toggles - Neo-Cyber 风格 */}
       <div className="space-y-2">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
@@ -985,9 +988,9 @@ Generate a CLEAN image as if the markers do not exist.
             checked={autoGenerate}
             onChange={(e) => setAutoGenerate(e.target.checked)}
             disabled={isProcessing}
-            className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+            className="w-4 h-4 rounded border-purple-500/30 bg-white/5 text-purple-500 focus:ring-purple-500/30"
           />
-          <span className="text-[11px] text-neutral-700 dark:text-neutral-300">
+          <span className="text-[11px] text-white/60">
             生成提示词后自动生成图片
           </span>
         </label>
@@ -998,18 +1001,18 @@ Generate a CLEAN image as if the markers do not exist.
               checked={enableDeepResearch}
               onChange={(e) => setEnableDeepResearch(e.target.checked)}
               disabled={isProcessing}
-              className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+              className="w-4 h-4 rounded border-purple-500/30 bg-white/5 text-purple-500 focus:ring-purple-500/30"
             />
-            <span className="text-[11px] text-neutral-700 dark:text-neutral-300 flex items-center gap-1">
-              <Search className="w-3 h-3 text-purple-500" />
+            <span className="text-[11px] text-white/60 flex items-center gap-1">
+              <Search className="w-3 h-3 text-purple-400" />
               启用深度研究
             </span>
           </label>
           {enableDeepResearch && (
             <div className="ml-6 flex items-center gap-1.5">
-              <span className="text-[10px] text-neutral-500 dark:text-neutral-400">强度:</span>
+              <span className="text-[10px] text-white/40">强度:</span>
               {[
-                { value: 'low', label: '快速', time: '1-3分钟', color: 'green' },
+                { value: 'low', label: '快速', time: '1-3分钟', color: 'emerald' },
                 { value: 'medium', label: '标准', time: '3-7分钟', color: 'amber' },
                 { value: 'high', label: '深度', time: '7-15分钟', color: 'red' },
               ].map((option) => (
@@ -1017,22 +1020,22 @@ Generate a CLEAN image as if the markers do not exist.
                   key={option.value}
                   onClick={() => setReasoningEffort(option.value as 'low' | 'medium' | 'high')}
                   disabled={isProcessing}
-                  className={`px-2 py-0.5 rounded text-[10px] transition-all ${
+                  className={`px-2 py-0.5 rounded-lg text-[10px] transition-all border ${
                     reasoningEffort === option.value
-                      ? option.color === 'green'
-                        ? 'bg-green-500 text-white'
+                      ? option.color === 'emerald'
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
                         : option.color === 'amber'
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-red-500 text-white'
-                      : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.3)]'
+                        : 'bg-red-500/20 text-red-400 border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.3)]'
+                      : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10'
                   }`}
                   title={option.time}
                 >
                   {option.label}
                 </button>
               ))}
-              <span className="text-[9px] text-neutral-400 dark:text-neutral-500 ml-1">
-                ~{reasoningEffort === 'low' ? '1-3' : reasoningEffort === 'medium' ? '3-7' : '7-15'}分钟
+              <span className="text-[9px] text-white/30 ml-1 font-mono">
+                ~{reasoningEffort === 'low' ? '1-3' : reasoningEffort === 'medium' ? '3-7' : '7-15'}min
               </span>
             </div>
           )}
@@ -1079,22 +1082,25 @@ Generate a CLEAN image as if the markers do not exist.
         )}
       </div>
 
-      {/* Conversation history - 对话历史显示 */}
+      {/* Conversation history - Neo-Cyber 风格 */}
       {conversationId && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 space-y-2">
+        <div className="relative bg-[#0a0a12]/80 border border-cyan-500/30 rounded-xl p-3 space-y-2 shadow-[0_0_15px_rgba(0,245,255,0.1)]">
+          {/* 顶部装饰线 */}
+          <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
+
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-medium text-blue-700 dark:text-blue-300">
+            <div className="flex items-center gap-2 text-xs font-cyber font-bold tracking-wider uppercase text-cyan-400">
               <MessageSquare className="w-3.5 h-3.5" />
-              <span>多轮对话</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 font-bold">
-                第 {Math.ceil(conversationHistory.length / 2)} 轮
+              <span>CHAT</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 font-mono border border-cyan-500/30">
+                #{Math.ceil(conversationHistory.length / 2)}
               </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
-                {(conversationTokens / 1000).toFixed(1)}K tokens
+              <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-white/5 text-white/50 font-mono border border-white/10">
+                {(conversationTokens / 1000).toFixed(1)}K
               </span>
               {hasCompressedHistory && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300">
-                  已压缩
+                <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  COMPRESSED
                 </span>
               )}
             </div>
@@ -1102,37 +1108,37 @@ Generate a CLEAN image as if the markers do not exist.
             <button
               onClick={handleNewConversation}
               disabled={isProcessing}
-              className="text-[10px] flex items-center gap-1 px-2 py-1 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-[10px] flex items-center gap-1 px-2 py-1 rounded-lg text-red-400 hover:text-red-300 bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               title="清空会话，开始新对话"
             >
               <Trash2 className="w-3 h-3" />
-              清空
+              CLEAR
             </button>
           </div>
           {conversationHistory.length > 0 && (
-            <div className="max-h-24 overflow-y-auto space-y-1.5 pr-1">
+            <div className="max-h-24 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin scrollbar-thumb-cyan-500/30">
               {conversationHistory.slice(-4).map((msg, idx) => (
                 <div
                   key={idx}
                   className={`text-[11px] px-2 py-1.5 rounded-lg ${
                     msg.role === 'user'
-                      ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
-                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                      ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20'
+                      : 'bg-white/5 text-white/60 border border-white/10'
                   }`}
                 >
-                  <span className="font-medium">{msg.role === 'user' ? '你：' : 'AI：'}</span>
+                  <span className="font-medium font-mono">{msg.role === 'user' ? 'YOU: ' : 'AI: '}</span>
                   {msg.content.length > 60 ? msg.content.substring(0, 60) + '...' : msg.content}
                 </div>
               ))}
               {conversationHistory.length > 4 && (
-                <div className="text-[10px] text-center text-blue-500 dark:text-blue-400">
-                  ... 还有 {conversationHistory.length - 4} 条更早的消息
+                <div className="text-[10px] text-center text-cyan-500/60">
+                  + {conversationHistory.length - 4} more messages
                 </div>
               )}
             </div>
           )}
           {conversationHistory.length === 0 && (
-            <div className="text-[11px] text-center text-blue-400 dark:text-blue-500 py-1">
+            <div className="text-[11px] text-center text-cyan-500/50 py-1">
               对话已建立，输入问题继续交流
             </div>
           )}
@@ -1169,25 +1175,25 @@ Generate a CLEAN image as if the markers do not exist.
         />
       )}
 
-      {/* ReAct process - 使用新的步骤时间线 */}
+      {/* ReAct process - Neo-Cyber 风格 */}
       {thoughtSteps.length > 0 && (
         <div className="space-y-2">
           <button
             onClick={() => setShowDetails(!showDetails)}
-            className="w-full flex items-center justify-between px-3 py-2.5 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-800/50 dark:to-neutral-800 rounded-xl text-xs text-neutral-600 dark:text-neutral-300 hover:from-neutral-100 hover:to-neutral-150 dark:hover:from-neutral-800 dark:hover:to-neutral-700 transition-all border border-neutral-200/50 dark:border-neutral-700/50"
+            className="w-full flex items-center justify-between px-3 py-2.5 bg-[#0a0a12]/80 rounded-xl text-xs text-white/70 hover:bg-purple-500/10 transition-all border border-white/10 hover:border-purple-500/30"
           >
             <span className="flex items-center gap-2">
-              <Brain className="w-3.5 h-3.5 text-purple-500" />
-              <span className="font-medium">思考过程</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300">
-                {thoughtSteps.length} 步
+              <Brain className="w-3.5 h-3.5 text-purple-400" />
+              <span className="font-cyber font-bold tracking-wider uppercase text-purple-400">THINKING</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">
+                {thoughtSteps.length} STEPS
               </span>
             </span>
-            {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showDetails ? <ChevronUp className="w-4 h-4 text-purple-400" /> : <ChevronDown className="w-4 h-4 text-purple-400" />}
           </button>
 
           {showDetails && (
-            <div ref={stepsContainerRef} className="max-h-40 overflow-y-auto pr-1 animate-fade-in">
+            <div ref={stepsContainerRef} className="max-h-40 overflow-y-auto pr-1 animate-fade-in scrollbar-thin scrollbar-thumb-purple-500/30">
               <StepTimeline
                 steps={thoughtSteps.map((step) => ({
                   id: step.iteration,
@@ -1204,33 +1210,33 @@ Generate a CLEAN image as if the markers do not exist.
         </div>
       )}
 
-      {/* Error */}
+      {/* Error - Neo-Cyber 风格 */}
       {error && (
-        <div className="px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
-          <XCircle className="w-4 h-4 text-red-500" />
-          <span className="text-xs text-red-600 dark:text-red-400">{error}</span>
+        <div className="px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2 shadow-[0_0_10px_rgba(239,68,68,0.1)]">
+          <XCircle className="w-4 h-4 text-red-400" />
+          <span className="text-xs text-red-400">{error}</span>
         </div>
       )}
 
-      {/* Generated Prompts - 使用新的 PromptCard 组件 */}
+      {/* Generated Prompts - Neo-Cyber 风格 */}
       {prompts.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <NodeLabel className="mb-0">场景</NodeLabel>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 font-bold">
+              <NodeLabel className="mb-0">SCENES</NodeLabel>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">
                 {prompts.length}
               </span>
             </div>
             <button
               onClick={handleCopyAll}
-              className="text-[10px] text-purple-600 hover:text-purple-500 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+              className="text-[10px] text-purple-400 hover:text-purple-300 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-purple-500/20 hover:border-purple-500/30 transition-all"
             >
               <Copy className="w-3 h-3" />
-              复制全部
+              COPY ALL
             </button>
           </div>
-          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-800">
+          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-purple-500/30">
             {prompts.map((prompt, index) => (
               <PromptCard
                 key={prompt.id}

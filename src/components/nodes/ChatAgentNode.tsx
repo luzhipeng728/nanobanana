@@ -463,38 +463,48 @@ const ChatAgentNode = ({
   return (
     <div
       className={cn(
-        "nowheel bg-white dark:bg-neutral-950 border-2 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full h-full overflow-hidden flex flex-col transition-all duration-300",
+        "nowheel bg-[#0a0a12]/95 border rounded-2xl w-full h-full overflow-hidden flex flex-col transition-all duration-300",
+        "shadow-[0_0_30px_rgba(99,102,241,0.2)]",
         selected
-          ? "ring-4 ring-offset-0 ring-indigo-400/40 border-indigo-200 dark:border-indigo-800 shadow-[0_8px_20px_-6px_rgba(99,102,241,0.15)]"
-          : "border-neutral-200 dark:border-neutral-800 hover:shadow-lg"
+          ? "ring-2 ring-offset-0 ring-indigo-500/50 border-indigo-500/40 shadow-[0_0_40px_rgba(99,102,241,0.3)]"
+          : "border-indigo-500/20 hover:border-indigo-500/30"
       )}
     >
+      {/* 顶部霓虹边框 */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 z-10" />
+
+      {/* 角落装饰 */}
+      <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-indigo-500/50 z-10" />
+      <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-indigo-500/50 z-10" />
+      <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-indigo-500/50 z-10" />
+      <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-indigo-500/50 z-10" />
+
       <NodeResizer
         isVisible={true}
         minWidth={450}
         minHeight={550}
-        lineClassName="!border-indigo-400"
-        handleClassName="!w-3 !h-3 !bg-indigo-500 !rounded-full"
+        lineClassName="!border-indigo-500/50"
+        handleClassName="!w-3 !h-3 !bg-indigo-500 !rounded-full !shadow-[0_0_8px_rgba(99,102,241,0.5)]"
       />
       <Handle
         type="target"
         position={Position.Top}
         isConnectable={isConnectable}
-        className="w-3 h-3 !bg-indigo-500 !border-2 !border-white dark:!border-neutral-900"
+        className="w-3 h-3 !bg-gradient-to-r !from-indigo-500 !to-purple-500 !border-2 !border-[#0a0a12] !shadow-[0_0_10px_rgba(99,102,241,0.5)]"
       />
 
-      {/* 头部 */}
-      <div className="px-5 py-4 border-b border-indigo-100 dark:border-indigo-900/20 flex items-center justify-between flex-shrink-0 bg-indigo-50/50 dark:bg-indigo-900/20 backdrop-blur-sm">
+      {/* 头部 - Neo-Cyber 风格 */}
+      <div className="px-5 py-4 border-b border-indigo-500/20 flex items-center justify-between flex-shrink-0 bg-indigo-500/5 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shadow-sm text-indigo-600 dark:text-indigo-300">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
             <Bot className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-100 tracking-tight">
-              智能助手
+            <h3 className="font-cyber text-xs font-bold tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+              AGENT CHAT
             </h3>
-            <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium">
-              支持工具调用 · 图片上传
+            <p className="text-[10px] text-white/40 font-mono">
+              TOOLS · IMAGE UPLOAD
             </p>
           </div>
         </div>
@@ -502,10 +512,10 @@ const ChatAgentNode = ({
           <button
             onClick={() => setShowSettings(!showSettings)}
             className={cn(
-              "p-2 rounded-full transition-all",
+              "p-2 rounded-lg transition-all border",
               showSettings
-                ? "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600"
-                : "hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500"
+                ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.3)]"
+                : "bg-white/5 border-white/10 text-white/50 hover:bg-indigo-500/10 hover:border-indigo-500/30 hover:text-indigo-400"
             )}
           >
             <Settings2 className="w-4 h-4" />
@@ -513,7 +523,7 @@ const ChatAgentNode = ({
           {messages.length > 0 && (
             <button
               onClick={handleClear}
-              className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-all"
+              className="p-2 rounded-lg bg-white/5 border border-white/10 text-red-400 hover:bg-red-500/20 hover:border-red-500/30 transition-all"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -521,71 +531,75 @@ const ChatAgentNode = ({
         </div>
       </div>
 
-      {/* 设置面板 */}
+      {/* 设置面板 - Neo-Cyber 风格 */}
       {showSettings && (
-        <div className="px-5 py-3 border-b border-indigo-100 dark:border-indigo-900/20 bg-indigo-50/30 dark:bg-indigo-900/10 flex-shrink-0">
+        <div className="px-5 py-3 border-b border-indigo-500/20 bg-indigo-500/5 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FlaskConical className="w-4 h-4 text-indigo-500" />
-              <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+              <FlaskConical className="w-4 h-4 text-indigo-400" />
+              <span className="text-xs font-medium text-white/70">
                 深度研究模式
               </span>
             </div>
             <button
               onClick={() => setEnableDeepResearch(!enableDeepResearch)}
               className={cn(
-                "w-10 h-5 rounded-full transition-all relative",
+                "w-10 h-5 rounded-full transition-all relative border",
                 enableDeepResearch
-                  ? "bg-indigo-500"
-                  : "bg-neutral-300 dark:bg-neutral-700"
+                  ? "bg-indigo-500/30 border-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.3)]"
+                  : "bg-white/5 border-white/20"
               )}
             >
               <div
                 className={cn(
-                  "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all",
-                  enableDeepResearch ? "left-5" : "left-0.5"
+                  "absolute top-0.5 w-4 h-4 rounded-full transition-all",
+                  enableDeepResearch ? "left-5 bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.5)]" : "left-0.5 bg-white/50"
                 )}
               />
             </button>
           </div>
-          <p className="text-[10px] text-neutral-500 mt-1">
+          <p className="text-[10px] text-white/40 mt-1">
             启用后可使用深度研究工具进行更全面的信息收集
           </p>
         </div>
       )}
 
-      {/* 上下文状态栏 */}
-      <div className="px-5 py-2 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-900/50">
-        <span className="text-[10px] text-neutral-500">
-          上下文: {contextTokens.toLocaleString()} / {maxTokens.toLocaleString()} tokens
+      {/* 上下文状态栏 - Neo-Cyber 风格 */}
+      <div className="px-5 py-2 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+        <span className="text-[10px] text-white/40 font-mono">
+          CTX: {contextTokens.toLocaleString()} / {maxTokens.toLocaleString()}
         </span>
-        <div className="w-24 h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+        <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/10">
           <div
             className={cn(
               "h-full rounded-full transition-all",
               tokenUsagePercent > 80
-                ? "bg-red-500"
+                ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
                 : tokenUsagePercent > 50
-                ? "bg-yellow-500"
-                : "bg-green-500"
+                ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                : "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
             )}
             style={{ width: `${tokenUsagePercent}%` }}
           />
         </div>
       </div>
 
-      {/* 消息列表 */}
-      <NodeScrollArea className="flex-1 overflow-y-auto overflow-x-hidden p-5 bg-white/50 dark:bg-neutral-950/50">
+      {/* 消息列表 - Neo-Cyber 风格 */}
+      <NodeScrollArea className="flex-1 overflow-y-auto overflow-x-hidden p-5 bg-transparent">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-3xl bg-indigo-50 dark:bg-indigo-900/10 flex items-center justify-center rotate-3">
-                <Bot className="w-8 h-8 text-indigo-400/70 dark:text-indigo-400/50" />
+              <div className="relative w-16 h-16 mx-auto mb-4">
+                {/* 发光背景 */}
+                <div className="absolute inset-0 bg-indigo-500/20 rounded-2xl blur-xl animate-pulse" />
+                <div className="relative w-16 h-16 rounded-2xl bg-[#0a0a12] border border-indigo-500/30 flex items-center justify-center rotate-3 shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+                  <Bot className="w-8 h-8 text-indigo-400/70" />
+                </div>
               </div>
-              <h4 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-1">
-                开始对话
+              <h4 className="font-cyber text-sm font-bold tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 mb-1">
+                START CHAT
               </h4>
-              <p className="text-xs text-neutral-500 dark:text-neutral-500">
+              <p className="text-xs text-white/40">
                 支持上传图片、文档，可调用工具完成复杂任务
               </p>
             </div>
@@ -602,7 +616,7 @@ const ChatAgentNode = ({
                     msg.role === "user" ? "items-end" : "items-start"
                   } max-w-[90%] min-w-0`}
                 >
-                  {/* 用户附件预览 */}
+                  {/* 用户附件预览 - Neo-Cyber 风格 */}
                   {msg.role === "user" && msg.attachments && msg.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
                       {msg.attachments.map((att) => (
@@ -610,15 +624,15 @@ const ChatAgentNode = ({
                           // 图片附件：显示缩略图
                           <div
                             key={att.id}
-                            className="relative group rounded-lg overflow-hidden shadow-sm"
+                            className="relative group rounded-lg overflow-hidden border border-cyan-500/30 shadow-[0_0_10px_rgba(0,245,255,0.2)]"
                           >
                             <img
                               src={att.preview}
                               alt={att.filename}
                               className="w-20 h-20 object-cover rounded-lg"
                             />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                            <span className="absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-black/50 text-[8px] text-white truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-cyan-500/20 transition-colors" />
+                            <span className="absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-black/70 text-[8px] text-cyan-400 truncate opacity-0 group-hover:opacity-100 transition-opacity font-mono">
                               {att.filename}
                             </span>
                           </div>
@@ -626,10 +640,10 @@ const ChatAgentNode = ({
                           // 文档附件：显示文件名
                           <div
                             key={att.id}
-                            className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg flex items-center gap-1"
+                            className="px-2 py-1 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-center gap-1"
                           >
-                            <FileText className="w-3 h-3 text-blue-500" />
-                            <span className="text-[10px] text-neutral-600 dark:text-neutral-400">
+                            <FileText className="w-3 h-3 text-blue-400" />
+                            <span className="text-[10px] text-blue-300 font-mono">
                               {att.filename}
                             </span>
                           </div>
@@ -647,13 +661,13 @@ const ChatAgentNode = ({
                     </div>
                   )}
 
-                  {/* 消息气泡 */}
+                  {/* 消息气泡 - Neo-Cyber 风格 */}
                   <div
                     className={cn(
-                      "rounded-2xl px-4 py-3 overflow-hidden w-full shadow-sm selectable-text",
+                      "rounded-xl px-4 py-3 overflow-hidden w-full selectable-text",
                       msg.role === "user"
-                        ? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-tr-sm"
-                        : "bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border-2 border-neutral-100 dark:border-neutral-800 rounded-tl-sm"
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-tr-sm shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+                        : "bg-[#0a0a12] text-white/90 border border-white/10 rounded-tl-sm"
                     )}
                   >
                     {msg.role === "assistant" ? (
@@ -696,7 +710,7 @@ const ChatAgentNode = ({
                   })()}
 
                   {/* 时间戳 */}
-                  <span className="text-[9px] text-neutral-400 dark:text-neutral-600 mt-1 px-2">
+                  <span className="text-[9px] text-white/30 mt-1 px-2 font-mono">
                     {formatTime(msg.timestamp)}
                   </span>
                 </div>
@@ -718,10 +732,10 @@ const ChatAgentNode = ({
                 </div>
               )}
 
-              {/* 流式文本 */}
+              {/* 流式文本 - Neo-Cyber 风格 */}
               {streamingContent && (
-                <div className="rounded-2xl rounded-tl-sm px-4 py-3 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 border-2 border-neutral-100 dark:border-neutral-800 overflow-hidden w-full shadow-sm selectable-text">
-                  <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none break-words [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_pre]:my-2">
+                <div className="rounded-xl rounded-tl-sm px-4 py-3 bg-[#0a0a12] text-white/90 border border-indigo-500/30 overflow-hidden w-full selectable-text shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                  <div className="text-sm leading-relaxed prose prose-sm prose-invert max-w-none break-words [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_pre]:my-2">
                     <Streamdown>{normalizeMarkdown(streamingContent)}</Streamdown>
                   </div>
                 </div>
@@ -730,12 +744,12 @@ const ChatAgentNode = ({
           </div>
         )}
 
-        {/* 加载指示器 */}
+        {/* 加载指示器 - Neo-Cyber 风格 */}
         {isStreaming && !streamingContent && currentToolCalls.size === 0 && (
           <div className="flex justify-start mt-4">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 shadow-sm">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />
-              <span className="text-xs font-medium text-neutral-500">思考中...</span>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0a0a12] border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+              <span className="font-cyber text-[10px] font-bold tracking-wider uppercase text-indigo-400">THINKING</span>
             </div>
           </div>
         )}
@@ -743,26 +757,26 @@ const ChatAgentNode = ({
         <div ref={messagesEndRef} />
       </NodeScrollArea>
 
-      {/* 附件预览区 */}
+      {/* 附件预览区 - Neo-Cyber 风格 */}
       {attachments.length > 0 && (
-        <div className="px-5 py-2 border-t border-neutral-100 dark:border-neutral-800 flex flex-wrap gap-2">
+        <div className="px-5 py-2 border-t border-white/10 flex flex-wrap gap-2">
           {attachments.map((att) => (
             <div
               key={att.id}
-              className="relative group px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-xl flex items-center gap-2"
+              className="relative group px-3 py-2 bg-white/5 border border-white/10 rounded-lg flex items-center gap-2"
             >
               {att.type === "image" && att.preview && (
-                <img src={att.preview} alt="" className="w-8 h-8 object-cover rounded" />
+                <img src={att.preview} alt="" className="w-8 h-8 object-cover rounded border border-cyan-500/30" />
               )}
               {att.type === "document" && (
-                <FileText className="w-4 h-4 text-blue-500" />
+                <FileText className="w-4 h-4 text-blue-400" />
               )}
-              <span className="text-xs text-neutral-600 dark:text-neutral-400 max-w-[100px] truncate">
+              <span className="text-xs text-white/60 max-w-[100px] truncate font-mono">
                 {att.filename}
               </span>
               <button
                 onClick={() => removeAttachment(att.id)}
-                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_8px_rgba(239,68,68,0.5)]"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -771,8 +785,8 @@ const ChatAgentNode = ({
         </div>
       )}
 
-      {/* 输入区 */}
-      <div className="px-5 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-end gap-3 flex-shrink-0">
+      {/* 输入区 - Neo-Cyber 风格 */}
+      <div className="px-5 py-4 border-t border-white/10 bg-[#0a0a12]/80 flex items-end gap-3 flex-shrink-0">
         {/* 文件上传按钮 */}
         <input
           ref={fileInputRef}
@@ -792,7 +806,7 @@ const ChatAgentNode = ({
           }}
           onPointerDown={(e) => e.stopPropagation()}
           disabled={isStreaming}
-          className="p-3 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 disabled:opacity-30 transition-all"
+          className="p-3 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:bg-indigo-500/10 hover:border-indigo-500/30 hover:text-indigo-400 disabled:opacity-30 transition-all"
           title="上传文件"
         >
           <Paperclip className="w-5 h-5" />
@@ -802,7 +816,7 @@ const ChatAgentNode = ({
         <div className="flex-1 relative group">
           <NodeInput
             type="text"
-            className="w-full text-sm px-4 py-3 pr-12 rounded-full bg-neutral-50 dark:bg-neutral-900 border-2 border-transparent focus:border-indigo-300 dark:focus:border-indigo-700 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 transition-all placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
+            className="w-full text-sm px-4 py-3 pr-12 !rounded-xl !bg-[#050508] !border-white/10 focus:!border-indigo-500/50 focus:!shadow-[0_0_20px_rgba(99,102,241,0.15),inset_0_0_20px_rgba(99,102,241,0.05)] transition-all placeholder:text-white/30"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
@@ -810,7 +824,7 @@ const ChatAgentNode = ({
             disabled={isStreaming}
           />
           <div className="absolute right-3 bottom-3 flex items-center gap-1 pointer-events-none">
-            <span className="text-[10px] font-bold text-neutral-300 dark:text-neutral-700">
+            <span className="text-[10px] font-mono font-bold text-white/20">
               {input.length}
             </span>
           </div>
@@ -820,7 +834,7 @@ const ChatAgentNode = ({
         {isStreaming ? (
           <button
             onClick={handleStop}
-            className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-md hover:shadow-lg active:scale-95 hover:-translate-y-0.5"
+            className="p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95"
             title="停止生成"
           >
             <StopCircle className="w-5 h-5" />
@@ -829,7 +843,7 @@ const ChatAgentNode = ({
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="p-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-30 disabled:cursor-not-allowed disabled:bg-neutral-200 dark:disabled:bg-neutral-800 disabled:text-neutral-400 transition-all shadow-md hover:shadow-lg active:scale-95 disabled:shadow-none hover:-translate-y-0.5"
+            className="p-3 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white disabled:opacity-30 disabled:cursor-not-allowed disabled:bg-white/5 disabled:from-white/5 disabled:to-white/5 disabled:text-white/30 transition-all shadow-[0_0_15px_rgba(99,102,241,0.4)] hover:shadow-[0_0_25px_rgba(99,102,241,0.6)] active:scale-95 disabled:shadow-none hover:-translate-y-0.5"
             title="发送消息"
           >
             <Send className="w-5 h-5" />
@@ -841,7 +855,7 @@ const ChatAgentNode = ({
         type="source"
         position={Position.Bottom}
         isConnectable={isConnectable}
-        className="w-2 h-2 !bg-indigo-500 !border-0"
+        className="w-3 h-3 !bg-gradient-to-r !from-indigo-500 !to-purple-500 !border-2 !border-[#0a0a12] !shadow-[0_0_10px_rgba(99,102,241,0.5)]"
       />
     </div>
   );
