@@ -77,6 +77,8 @@ RUN apt-get update && apt-get install -y \
     libgif7 \
     librsvg2-2 \
     libpixman-1-0 \
+    # FFmpeg for video generation
+    ffmpeg \
     # Security: add tini for proper signal handling
     tini \
     # Health check dependency
