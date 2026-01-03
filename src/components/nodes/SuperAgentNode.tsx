@@ -467,13 +467,9 @@ Generate a CLEAN image as if the markers do not exist.
         const chunkEvent = event as any;
         const toolDisplayName = TOOL_NAMES[chunkEvent.tool] || chunkEvent.tool;
         const sizeKB = (chunkEvent.totalSize / 1024).toFixed(1);
-        // 实时显示生成内容的最后部分，让用户看到实际生成的提示词
-        const content = chunkEvent.content || '';
-        // 显示最后 200 个字符，避免内容过长
-        const displayContent = content.length > 200
-          ? '...' + content.slice(-200)
-          : content;
-        setStreamingThought(`📝 ${toolDisplayName} (${sizeKB}KB)\n${displayContent}`);
+        // 使用 preview 字段（只包含最后 200 个字符的预览）
+        const preview = chunkEvent.preview || '';
+        setStreamingThought(`📝 ${toolDisplayName} (${sizeKB}KB)\n...${preview}`);
         break;
 
       case "observation":
