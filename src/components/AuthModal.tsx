@@ -8,7 +8,7 @@ interface AuthModalProps {
   username: string;
   setUsername: (name: string) => void;
   onLogin: (password: string) => void;
-  onRegister: (password: string) => void;
+  onRegister: (password: string, inviteCode: string) => void;
   onLogout: () => void;
   isLoading: boolean;
   authError: string;
@@ -29,6 +29,7 @@ export const AuthModal = React.memo(({
   setAuthError
 }: AuthModalProps) => {
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [localLoading, setLocalLoading] = useState(false);
 
@@ -40,7 +41,7 @@ export const AuthModal = React.memo(({
       if (authMode === "login") {
         await onLogin(password);
       } else {
-        await onRegister(password);
+        await onRegister(password, inviteCode);
       }
       // Clear password on success handled by parent, or error handled by parent
     } finally {
@@ -104,11 +105,27 @@ export const AuthModal = React.memo(({
             className="w-full p-3 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-shadow"
             disabled={localLoading || isLoading}
           />
+          {authMode === "register" && (
+            <input
+              type="text"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              placeholder="邀请码"
+              className="w-full p-3 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-shadow"
+              disabled={localLoading || isLoading}
+            />
+          )}
         </div>
 
         <button
           onClick={handleAuth}
-          disabled={localLoading || isLoading || !username || !password}
+          disabled={
+            localLoading ||
+            isLoading ||
+            !username ||
+            !password ||
+            (authMode === "register" && !inviteCode)
+          }
           className="w-full mt-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white py-3 rounded-xl transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30"
         >
           {localLoading || isLoading ? "处理中..." : (authMode === "login" ? "登录" : "注册")}
@@ -126,7 +143,7 @@ export const AuthModal = React.memo(({
 
         {authMode === "register" && (
           <p className="text-xs text-neutral-400 mt-4 text-center">
-            用户名 2-20 字符，密码至少 6 位
+            用户名 2-20 字符，密码至少 6 位，仅邀请码注册
           </p>
         )}
       </div>

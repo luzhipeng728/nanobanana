@@ -7,7 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getUserBalance } from '@/lib/billing';
+import { getUserBalances } from '@/lib/billing';
 
 export async function GET() {
   try {
@@ -18,11 +18,13 @@ export async function GET() {
       return NextResponse.json({ success: false, error: '未登录' }, { status: 401 });
     }
 
-    const balance = await getUserBalance(userId);
+    const balances = await getUserBalances(userId);
 
     return NextResponse.json({
       success: true,
-      balance,
+      balance: balances.totalBalance,
+      freeBalance: balances.freeBalance,
+      paidBalance: balances.paidBalance,
     });
   } catch (error) {
     console.error('[API/user/balance] Error:', error);

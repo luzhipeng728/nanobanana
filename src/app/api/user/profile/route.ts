@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { IMAGE_MODEL_PRICING } from '@/lib/pricing';
+import { getUserBalances } from '@/lib/billing';
 
 export async function GET() {
   try {
@@ -26,6 +27,9 @@ export async function GET() {
         username: true,
         isAdmin: true,
         balance: true,
+        freeBalance: true,
+        freeBalanceUpdatedAt: true,
+        remark: true,
         createdAt: true,
         modelPermissions: {
           select: { modelId: true, createdAt: true },
@@ -43,6 +47,8 @@ export async function GET() {
       return NextResponse.json({ success: false, error: '用户不存在' }, { status: 404 });
     }
 
+    const balances = await getUserBalances(userId);
+
     // 获取消费统计
     const consumptionStats = await prisma.consumptionRecord.aggregate({
       where: { userId, amount: { gt: 0 } },
@@ -56,7 +62,11 @@ export async function GET() {
         id: user.id,
         username: user.username,
         isAdmin: user.isAdmin,
-        balance: Number(user.balance),
+        balance: balances.totalBalance,
+        freeBalance: balances.freeBalance,
+        paidBalance: balances.paidBalance,
+        freeBalanceUpdatedAt: balances.freeBalanceUpdatedAt,
+        remark: user.remark,
         createdAt: user.createdAt,
         permissions: user.modelPermissions.map((p) => ({
           modelId: p.modelId,

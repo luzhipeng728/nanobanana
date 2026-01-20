@@ -26,6 +26,9 @@ interface User {
   username: string;
   isAdmin: boolean;
   balance: number;
+  freeBalance: number;
+  paidBalance: number;
+  remark?: string | null;
   createdAt: string;
   permissions: string[];
   taskCount: number;
@@ -59,6 +62,29 @@ interface UserDetail {
     total: number;
     totalAmount: number;
   };
+}
+
+interface InviteCode {
+  id: string;
+  code: string;
+  note: string | null;
+  isActive: boolean;
+  createdAt: string;
+  usedAt: string | null;
+  createdBy: string;
+  usedBy: { id: string; username: string } | null;
+}
+
+interface QuotaRequest {
+  id: string;
+  amount: number;
+  reason: string | null;
+  status: string;
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  reviewNote: string | null;
+  user: { id: string; username: string };
 }
 
 // 图片预览弹窗
@@ -174,6 +200,11 @@ function UserDetailModal({
                   <p className="text-sm text-[var(--muted-foreground)] mt-1">
                     ID: {detail.user.id}
                   </p>
+                  {detail.user.remark && (
+                    <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                      备注: {detail.user.remark}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -186,6 +217,9 @@ function UserDetailModal({
                   </div>
                   <div className="text-lg font-bold text-[var(--primary)]">
                     {formatPrice(detail.user.balance)}
+                  </div>
+                  <div className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                    免费 {formatPrice(detail.user.freeBalance)} / 用户 {formatPrice(detail.user.paidBalance)}
                   </div>
                 </div>
                 <div className="bg-[var(--secondary)] rounded-lg p-3">
@@ -363,6 +397,12 @@ export default function AdminClient({ currentUser }: { currentUser: string }) {
   const [search, setSearch] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [invites, setInvites] = useState<InviteCode[]>([]);
+  const [inviteNote, setInviteNote] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [quotaRequests, setQuotaRequests] = useState<QuotaRequest[]>([]);
+  const [quotaLoading, setQuotaLoading] = useState(false);
+  const [quotaActionLoading, setQuotaActionLoading] = useState<string | null>(null);
 
   // 获取用户列表
   const fetchUsers = useCallback(async (page = 1, searchTerm = "") => {
@@ -389,6 +429,84 @@ export default function AdminClient({ currentUser }: { currentUser: string }) {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  const fetchInvites = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/invites?limit=50");
+      const data = await res.json();
+      if (data.success) {
+        setInvites(data.invites);
+      }
+    } catch (error) {
+      console.error("获取邀请码失败:", error);
+    }
+  }, []);
+
+  const fetchQuotaRequests = useCallback(async () => {
+    setQuotaLoading(true);
+    try {
+      const res = await fetch("/api/admin/quota-requests?status=pending&limit=50");
+      const data = await res.json();
+      if (data.success) {
+        setQuotaRequests(data.requests);
+      }
+    } catch (error) {
+      console.error("获取额度申请失败:", error);
+    } finally {
+      setQuotaLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInvites();
+    fetchQuotaRequests();
+  }, [fetchInvites, fetchQuotaRequests]);
+
+  const createInvite = async () => {
+    setInviteLoading(true);
+    try {
+      const res = await fetch("/api/admin/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: inviteNote }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setInviteNote("");
+        fetchInvites();
+      } else {
+        alert(data.error || "创建邀请码失败");
+      }
+    } catch (error) {
+      console.error("创建邀请码失败:", error);
+      alert("创建邀请码失败");
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const handleQuotaAction = async (requestId: string, action: "approve" | "reject") => {
+    setQuotaActionLoading(`${action}-${requestId}`);
+    try {
+      const res = await fetch("/api/admin/quota-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, action }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchQuotaRequests();
+        fetchUsers(pagination.page, search);
+      } else {
+        alert(data.error || "处理失败");
+      }
+    } catch (error) {
+      console.error("处理额度申请失败:", error);
+      alert("处理额度申请失败");
+    } finally {
+      setQuotaActionLoading(null);
+    }
+  };
 
   // 添加权限
   const addPermission = async (userId: string, modelId: string) => {
@@ -533,7 +651,7 @@ export default function AdminClient({ currentUser }: { currentUser: string }) {
                     用户名
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-[var(--foreground)]">
-                    余额
+                    额度
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-[var(--foreground)]">
                     任务数
@@ -578,7 +696,10 @@ export default function AdminClient({ currentUser }: { currentUser: string }) {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-[var(--foreground)]">
-                        {formatPrice(user.balance)}
+                        <div className="font-medium">{formatPrice(user.balance)}</div>
+                        <div className="text-[11px] text-[var(--muted-foreground)]">
+                          免费 {formatPrice(user.freeBalance)} / 用户 {formatPrice(user.paidBalance)}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-[var(--muted-foreground)]">
                         {user.taskCount}
@@ -658,6 +779,109 @@ export default function AdminClient({ currentUser }: { currentUser: string }) {
               </div>
             </div>
           )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-8">
+          {/* 邀请码管理 */}
+          <div className="bg-white rounded-xl border border-[var(--border)] p-6">
+            <h3 className="text-sm font-medium text-[var(--foreground)] mb-4">
+              邀请码管理
+            </h3>
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={inviteNote}
+                onChange={(e) => setInviteNote(e.target.value)}
+                placeholder="管理员备注（可选）"
+                className="flex-1 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              />
+              <button
+                onClick={createInvite}
+                disabled={inviteLoading}
+                className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg text-sm hover:opacity-90 disabled:opacity-50"
+              >
+                生成
+              </button>
+            </div>
+            {invites.length === 0 ? (
+              <div className="text-sm text-[var(--muted-foreground)]">暂无邀请码</div>
+            ) : (
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {invites.map((invite) => (
+                  <div
+                    key={invite.id}
+                    className="flex items-center justify-between p-2 bg-[var(--secondary)] rounded-lg text-sm"
+                  >
+                    <div>
+                      <div className="font-mono font-semibold text-[var(--foreground)]">
+                        {invite.code}
+                      </div>
+                      <div className="text-[11px] text-[var(--muted-foreground)]">
+                        {invite.note || "无备注"} · 创建人 {invite.createdBy}
+                      </div>
+                    </div>
+                    <div className="text-right text-[11px] text-[var(--muted-foreground)]">
+                      <div>
+                        {invite.usedBy ? `已使用: ${invite.usedBy.username}` : "未使用"}
+                      </div>
+                      <div>{new Date(invite.createdAt).toLocaleDateString("zh-CN")}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 额度申请 */}
+          <div className="bg-white rounded-xl border border-[var(--border)] p-6">
+            <h3 className="text-sm font-medium text-[var(--foreground)] mb-4">
+              额度申请（待处理）
+            </h3>
+            {quotaLoading ? (
+              <div className="text-sm text-[var(--muted-foreground)]">加载中...</div>
+            ) : quotaRequests.length === 0 ? (
+              <div className="text-sm text-[var(--muted-foreground)]">暂无待处理申请</div>
+            ) : (
+              <div className="space-y-3 max-h-72 overflow-y-auto">
+                {quotaRequests.map((request) => (
+                  <div key={request.id} className="p-3 bg-[var(--secondary)] rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium text-[var(--foreground)]">
+                        {request.user.username}
+                        <span className="ml-2 text-xs text-[var(--muted-foreground)]">
+                          {formatPrice(request.amount)}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-[var(--muted-foreground)]">
+                        {new Date(request.createdAt).toLocaleDateString("zh-CN")}
+                      </div>
+                    </div>
+                    {request.reason && (
+                      <div className="text-xs text-[var(--muted-foreground)] mt-1">
+                        理由: {request.reason}
+                      </div>
+                    )}
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => handleQuotaAction(request.id, "approve")}
+                        disabled={quotaActionLoading === `approve-${request.id}`}
+                        className="px-3 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-50"
+                      >
+                        通过
+                      </button>
+                      <button
+                        onClick={() => handleQuotaAction(request.id, "reject")}
+                        disabled={quotaActionLoading === `reject-${request.id}`}
+                        className="px-3 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50"
+                      >
+                        拒绝
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
 

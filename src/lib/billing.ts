@@ -6,7 +6,46 @@
 
 import { prisma } from '@/lib/prisma';
 import { getModelPrice, type ConsumptionType } from '@/lib/pricing';
+import type { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+
+const DAILY_FREE_BALANCE = 20;
+
+function getDateKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+async function getUserWithRefreshedFreeBalance(
+  tx: Prisma.TransactionClient,
+  userId: string
+) {
+  const user = await tx.user.findUnique({
+    where: { id: userId },
+    select: { balance: true, freeBalance: true, freeBalanceUpdatedAt: true },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  const now = new Date();
+  const shouldRefresh =
+    !user.freeBalanceUpdatedAt ||
+    getDateKey(user.freeBalanceUpdatedAt) !== getDateKey(now);
+
+  if (!shouldRefresh) {
+    return user;
+  }
+
+  return tx.user.update({
+    where: { id: userId },
+    data: {
+      freeBalance: new Decimal(DAILY_FREE_BALANCE),
+      freeBalanceUpdatedAt: now,
+    },
+    select: { balance: true, freeBalance: true, freeBalanceUpdatedAt: true },
+  });
+}
 
 export interface BillingResult {
   success: boolean;
@@ -26,20 +65,21 @@ export async function checkBalance(userId: string, amount: number): Promise<{
   sufficient: boolean;
   balance: number;
 }> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { balance: true },
+  const result = await prisma.$transaction(async (tx) => {
+    const user = await getUserWithRefreshedFreeBalance(tx, userId);
+
+    if (!user) {
+      return { sufficient: false, balance: 0 };
+    }
+
+    const balance = Number(user.freeBalance) + Number(user.balance);
+    return {
+      sufficient: balance >= amount,
+      balance,
+    };
   });
 
-  if (!user) {
-    return { sufficient: false, balance: 0 };
-  }
-
-  const balance = Number(user.balance);
-  return {
-    sufficient: balance >= amount,
-    balance,
-  };
+  return result;
 }
 
 /**
@@ -71,28 +111,34 @@ export async function deductBalance(
   try {
     // 使用事务确保原子性
     const result = await prisma.$transaction(async (tx) => {
-      // 获取当前余额并锁定
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: { balance: true },
-      });
+      // 获取并刷新每日免费额度
+      const user = await getUserWithRefreshedFreeBalance(tx, userId);
 
       if (!user) {
         throw new Error('用户不存在');
       }
 
-      const balanceBefore = Number(user.balance);
+      const freeBalanceBefore = Number(user.freeBalance);
+      const paidBalanceBefore = Number(user.balance);
+      const balanceBefore = freeBalanceBefore + paidBalanceBefore;
 
       if (balanceBefore < amount) {
         throw new Error(`余额不足，当前余额 ¥${balanceBefore.toFixed(2)}，需要 ¥${amount.toFixed(2)}`);
       }
 
-      const balanceAfter = balanceBefore - amount;
+      const freeDeduct = Math.min(freeBalanceBefore, amount);
+      const paidDeduct = amount - freeDeduct;
+      const freeBalanceAfter = freeBalanceBefore - freeDeduct;
+      const paidBalanceAfter = paidBalanceBefore - paidDeduct;
+      const balanceAfter = freeBalanceAfter + paidBalanceAfter;
 
       // 扣减余额
       await tx.user.update({
         where: { id: userId },
-        data: { balance: new Decimal(balanceAfter) },
+        data: {
+          freeBalance: new Decimal(freeBalanceAfter),
+          balance: new Decimal(paidBalanceAfter),
+        },
       });
 
       // 记录消费
@@ -130,11 +176,35 @@ export async function deductBalance(
  * 获取用户余额
  */
 export async function getUserBalance(userId: string): Promise<number> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { balance: true },
+  const balances = await getUserBalances(userId);
+  return balances.totalBalance;
+}
+
+/**
+ * 获取用户免费/永久额度
+ */
+export async function getUserBalances(userId: string): Promise<{
+  freeBalance: number;
+  paidBalance: number;
+  totalBalance: number;
+  freeBalanceUpdatedAt: Date | null;
+}> {
+  const user = await prisma.$transaction(async (tx) => {
+    return getUserWithRefreshedFreeBalance(tx, userId);
   });
-  return user ? Number(user.balance) : 0;
+
+  if (!user) {
+    return { freeBalance: 0, paidBalance: 0, totalBalance: 0, freeBalanceUpdatedAt: null };
+  }
+
+  const freeBalance = Number(user.freeBalance);
+  const paidBalance = Number(user.balance);
+  return {
+    freeBalance,
+    paidBalance,
+    totalBalance: freeBalance + paidBalance,
+    freeBalanceUpdatedAt: user.freeBalanceUpdatedAt,
+  };
 }
 
 /**
@@ -195,37 +265,36 @@ export async function addBalance(
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: { balance: true },
-      });
+      const user = await getUserWithRefreshedFreeBalance(tx, userId);
 
       if (!user) {
         throw new Error('用户不存在');
       }
 
-      const balanceBefore = Number(user.balance);
-      const balanceAfter = balanceBefore + amount;
+      const paidBalanceBefore = Number(user.balance);
+      const paidBalanceAfter = paidBalanceBefore + amount;
+      const totalBefore = Number(user.freeBalance) + paidBalanceBefore;
+      const totalAfter = Number(user.freeBalance) + paidBalanceAfter;
 
       await tx.user.update({
         where: { id: userId },
-        data: { balance: new Decimal(balanceAfter) },
+        data: { balance: new Decimal(paidBalanceAfter) },
       });
 
       // 记录充值（type 为 'recharge'，amount 为负数表示增加余额）
       await tx.consumptionRecord.create({
         data: {
           userId,
-          type: 'recharge',
+          type: 'quota_grant',
           modelId: 'system',
           amount: new Decimal(-amount), // 负数表示收入
-          balanceBefore: new Decimal(balanceBefore),
-          balanceAfter: new Decimal(balanceAfter),
-          description: description ?? '账户充值',
+          balanceBefore: new Decimal(totalBefore),
+          balanceAfter: new Decimal(totalAfter),
+          description: description ?? '额度发放',
         },
       });
 
-      return { balanceAfter, amount };
+      return { balanceAfter: totalAfter, amount };
     });
 
     return {

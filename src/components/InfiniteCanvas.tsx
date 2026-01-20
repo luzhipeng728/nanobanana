@@ -715,8 +715,12 @@ export default function InfiniteCanvas() {
     }
   };
 
-  const handleRegister = async (password: string) => {
-    const result = await registerUser(username.trim(), password);
+  const handleRegister = async (password: string, inviteCode: string) => {
+    const result = await registerUser(
+      username.trim(),
+      password,
+      inviteCode.trim().toUpperCase()
+    );
       if (result.success && result.user) {
         setUserId(result.user.id);
         setUsername(result.user.username);

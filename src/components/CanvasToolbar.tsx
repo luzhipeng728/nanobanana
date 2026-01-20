@@ -190,14 +190,24 @@ function ThemeSwitcher() {
 // 用户下拉菜单组件 - 点击触发，带有精致动画
 function UserDropdown({ username, onLogout }: { username: string; onLogout: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [userInfo, setUserInfo] = useState<{ isAdmin: boolean; balance: number } | null>(null);
+  const [userInfo, setUserInfo] = useState<{
+    isAdmin: boolean;
+    balance: number;
+    freeBalance: number;
+    paidBalance: number;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/user/profile")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setUserInfo({ isAdmin: data.user.isAdmin, balance: data.user.balance });
+          setUserInfo({
+            isAdmin: data.user.isAdmin,
+            balance: data.user.balance,
+            freeBalance: data.user.freeBalance ?? 0,
+            paidBalance: data.user.paidBalance ?? 0,
+          });
         }
       })
       .catch(() => {});
@@ -265,6 +275,11 @@ function UserDropdown({ username, onLogout }: { username: string; onLogout: () =
                       ¥{userInfo.balance.toFixed(2)}
                     </span>
                   </div>
+                </div>
+              )}
+              {userInfo && (
+                <div className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1">
+                  免费 ¥{userInfo.freeBalance.toFixed(2)} · 用户 ¥{userInfo.paidBalance.toFixed(2)}
                 </div>
               )}
             </div>

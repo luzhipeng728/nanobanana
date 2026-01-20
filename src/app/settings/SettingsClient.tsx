@@ -10,6 +10,9 @@ interface UserProfile {
   username: string;
   isAdmin: boolean;
   balance: number;
+  freeBalance: number;
+  paidBalance: number;
+  remark?: string | null;
   createdAt: string;
   permissions: Array<{
     modelId: string;
@@ -45,6 +48,12 @@ interface Pagination {
   hasMore: boolean;
 }
 
+const QUOTA_STATUS_LABELS: Record<string, string> = {
+  pending: "审核中",
+  approved: "已通过",
+  rejected: "已拒绝",
+};
+
 export default function SettingsClient() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [records, setRecords] = useState<ConsumptionRecord[]>([]);
@@ -52,6 +61,22 @@ export default function SettingsClient() {
   const [loading, setLoading] = useState(true);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "consumption">("overview");
+  const [quotaAmount, setQuotaAmount] = useState("");
+  const [quotaReason, setQuotaReason] = useState("");
+  const [quotaRequests, setQuotaRequests] = useState<
+    Array<{
+      id: string;
+      amount: number;
+      status: string;
+      reason: string | null;
+      reviewNote: string | null;
+      createdAt: string;
+      reviewedAt: string | null;
+    }>
+  >([]);
+  const [quotaLoading, setQuotaLoading] = useState(false);
+  const [quotaSubmitting, setQuotaSubmitting] = useState(false);
+  const [quotaMessage, setQuotaMessage] = useState("");
 
   // 获取用户信息
   useEffect(() => {
@@ -88,11 +113,57 @@ export default function SettingsClient() {
     }
   };
 
+  const fetchQuotaRequests = async () => {
+    setQuotaLoading(true);
+    try {
+      const res = await fetch("/api/user/quota-requests");
+      const data = await res.json();
+      if (data.success) {
+        setQuotaRequests(data.requests);
+      }
+    } catch (error) {
+      console.error("获取额度申请失败:", error);
+    } finally {
+      setQuotaLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "consumption" && records.length === 0) {
       fetchRecords();
     }
   }, [activeTab, records.length]);
+
+  useEffect(() => {
+    fetchQuotaRequests();
+  }, []);
+
+  const submitQuotaRequest = async () => {
+    setQuotaSubmitting(true);
+    setQuotaMessage("");
+    try {
+      const amount = Number(quotaAmount);
+      const res = await fetch("/api/user/quota-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, reason: quotaReason }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setQuotaAmount("");
+        setQuotaReason("");
+        setQuotaMessage("申请已提交");
+        fetchQuotaRequests();
+      } else {
+        setQuotaMessage(data.error || "提交失败");
+      }
+    } catch (error) {
+      console.error("提交额度申请失败:", error);
+      setQuotaMessage("提交失败");
+    } finally {
+      setQuotaSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -163,11 +234,22 @@ export default function SettingsClient() {
               <p className="text-sm text-[var(--muted-foreground)]">
                 注册于 {new Date(profile.createdAt).toLocaleDateString("zh-CN")}
               </p>
+              {profile.remark && (
+                <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                  备注: {profile.remark}
+                </p>
+              )}
             </div>
             <div className="text-right">
-              <div className="text-sm text-[var(--muted-foreground)]">账户余额</div>
+              <div className="text-sm text-[var(--muted-foreground)]">账户额度</div>
               <div className="text-3xl font-bold text-[var(--primary)]">
                 {formatPrice(profile.balance)}
+              </div>
+              <div className="text-xs text-[var(--muted-foreground)] mt-1">
+                免费 {formatPrice(profile.freeBalance)} / 用户 {formatPrice(profile.paidBalance)}
+              </div>
+              <div className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                每日免费额度 20 元自动刷新
               </div>
             </div>
           </div>
@@ -256,20 +338,75 @@ export default function SettingsClient() {
                   )}
                 </div>
 
-                {/* 充值入口（预留） */}
+                {/* 额度申请 */}
                 <div>
                   <h3 className="text-sm font-medium text-[var(--foreground)] mb-3">
-                    账户充值
+                    额度申请
                   </h3>
-                  <p className="text-sm text-[var(--muted-foreground)] mb-3">
-                    充值功能即将上线，敬请期待
-                  </p>
-                  <button
-                    disabled
-                    className="px-4 py-2 bg-[var(--muted)] text-[var(--muted-foreground)] rounded-lg cursor-not-allowed"
-                  >
-                    充值（即将上线）
-                  </button>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={quotaAmount}
+                        onChange={(e) => setQuotaAmount(e.target.value)}
+                        placeholder="申请额度（元）"
+                        className="flex-1 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                      />
+                      <button
+                        onClick={submitQuotaRequest}
+                        disabled={quotaSubmitting || !quotaAmount}
+                        className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg text-sm hover:opacity-90 disabled:opacity-50"
+                      >
+                        提交
+                      </button>
+                    </div>
+                    <textarea
+                      value={quotaReason}
+                      onChange={(e) => setQuotaReason(e.target.value)}
+                      placeholder="申请理由（可选）"
+                      className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                      rows={3}
+                    />
+                    {quotaMessage && (
+                      <div className="text-xs text-[var(--muted-foreground)]">{quotaMessage}</div>
+                    )}
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="text-xs text-[var(--muted-foreground)] mb-2">
+                      最近申请
+                    </div>
+                    {quotaLoading ? (
+                      <div className="text-xs text-[var(--muted-foreground)]">加载中...</div>
+                    ) : quotaRequests.length === 0 ? (
+                      <div className="text-xs text-[var(--muted-foreground)]">暂无申请记录</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {quotaRequests.map((request) => (
+                          <div
+                            key={request.id}
+                            className="flex items-center justify-between p-2 bg-[var(--secondary)] rounded-lg text-xs"
+                          >
+                            <div>
+                              <div className="text-[var(--foreground)]">
+                                {formatPrice(request.amount)} · {QUOTA_STATUS_LABELS[request.status] || request.status}
+                              </div>
+                              {request.reason && (
+                                <div className="text-[var(--muted-foreground)]">
+                                  理由: {request.reason}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-[var(--muted-foreground)]">
+                              {new Date(request.createdAt).toLocaleDateString("zh-CN")}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (

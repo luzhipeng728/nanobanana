@@ -34,7 +34,7 @@ async function setLoginCookies(userId: string, username: string) {
 /**
  * 注册新用户
  */
-export async function registerUser(username: string, password: string) {
+export async function registerUser(username: string, password: string, inviteCode: string) {
   if (!username || !password) {
     return { success: false, error: "用户名和密码不能为空" };
   }
@@ -47,23 +47,63 @@ export async function registerUser(username: string, password: string) {
     return { success: false, error: "密码长度至少 6 个字符" };
   }
 
+  const normalizedInviteCode = inviteCode.trim().toUpperCase();
+
+  if (!normalizedInviteCode) {
+    return { success: false, error: "邀请码不能为空" };
+  }
+
   try {
-    // 检查用户名是否已存在
-    const existingUser = await prisma.user.findUnique({
-      where: { username },
+    const result = await prisma.$transaction(async (tx) => {
+      // 检查邀请码
+      const invite = await tx.inviteCode.findUnique({
+        where: { code: normalizedInviteCode },
+        select: { id: true, isActive: true, usedById: true, note: true },
+      });
+
+      if (!invite || !invite.isActive) {
+        return { error: "邀请码无效" };
+      }
+
+      if (invite.usedById) {
+        return { error: "邀请码已被使用" };
+      }
+
+      // 检查用户名是否已存在
+      const existingUser = await tx.user.findUnique({
+        where: { username },
+      });
+
+      if (existingUser) {
+        return { error: "用户名已被注册" };
+      }
+
+      // 创建新用户
+      const user = await tx.user.create({
+        data: {
+          username,
+          password: hashPassword(password),
+          remark: invite.note ?? null,
+        },
+      });
+
+      await tx.inviteCode.update({
+        where: { id: invite.id },
+        data: {
+          usedById: user.id,
+          usedAt: new Date(),
+          isActive: false,
+        },
+      });
+
+      return { user };
     });
 
-    if (existingUser) {
-      return { success: false, error: "用户名已被注册" };
+    if (result.error) {
+      return { success: false, error: result.error };
     }
 
-    // 创建新用户
-    const user = await prisma.user.create({
-      data: {
-        username,
-        password: hashPassword(password),
-      },
-    });
+    const user = result.user!;
 
     // 设置登录状态
     await setLoginCookies(user.id, user.username);

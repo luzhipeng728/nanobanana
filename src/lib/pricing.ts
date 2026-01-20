@@ -73,7 +73,16 @@ export function formatPrice(amount: number): string {
 /**
  * 消费类型
  */
-export type ConsumptionType = 'image' | 'music' | 'video' | 'sticker' | 'veo' | 'sprite' | 'tts' | 'ppt';
+export type ConsumptionType =
+  | 'image'
+  | 'music'
+  | 'video'
+  | 'sticker'
+  | 'veo'
+  | 'sprite'
+  | 'tts'
+  | 'ppt'
+  | 'quota_grant';
 
 /**
  * 消费类型显示名称
@@ -87,4 +96,5 @@ export const CONSUMPTION_TYPE_LABELS: Record<ConsumptionType, string> = {
   sprite: '精灵图',
   tts: '语音合成',
   ppt: 'PPT 生成',
+  quota_grant: '额度发放',
 };
