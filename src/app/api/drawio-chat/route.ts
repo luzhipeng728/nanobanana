@@ -16,10 +16,10 @@ const DEFAULT_GEMINI_MODEL = process.env.SCROLLYTELLING_MODEL || 'gemini-3-pro-p
 const DEFAULT_ANTHROPIC_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514';
 const MAX_TOKENS = 64000;
 
-// 可用的模型列表 - 只支持两个模型
+// 可用的模型列表 - 只支持两个模型（仅展示名称）
 export const AVAILABLE_MODELS = [
-  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', description: '默认模型，支持思维链', isDefault: true },
-  { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', description: 'Anthropic 高性能模型', isDefault: false },
+  { id: 'claude-opus-4-5-20251101', name: '豆包 图表-快速', description: '默认模型', isDefault: true },
+  { id: 'claude-sonnet-4-20250514', name: '豆包 图表-专业', description: '高精度图表生成', isDefault: false },
 ];
 
 // 判断是否是 Gemini 模型

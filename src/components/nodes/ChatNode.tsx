@@ -29,10 +29,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/drawio/ui/dropdown-menu";
 
-// 可用的模型列表
+// 可用的模型列表（仅展示名称，底层模型保持不变）
 const AVAILABLE_MODELS = [
-  { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', icon: Bot, description: '默认，Anthropic 模型' },
-  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', icon: Sparkles, description: '支持思维链' },
+  { id: 'claude-sonnet-4-20250514', name: '豆包 图表-专业', icon: Bot, description: '高精度图表生成' },
+  { id: 'claude-opus-4-5-20251101', name: '豆包 图表-快速', icon: Sparkles, description: '更快响应，适合轻量修改' },
 ];
 
 type ChatNodeData = {
@@ -66,7 +66,7 @@ const ChatNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   // Input state
   const [input, setInput] = useState("");
 
-  // Model state - default to Gemini
+  // Model state - default to primary option
   const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0]);
 
   // Set up portal container for fullscreen mode

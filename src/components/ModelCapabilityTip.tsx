@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Info, Zap, Sparkles, ChevronDown, ChevronUp, DollarSign } from "lucide-react";
+import { X, Info, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 
 /**
  * 模型能力提示框组件
@@ -100,17 +100,17 @@ export default function ModelCapabilityTip() {
           `}
         >
           <div className="px-4 pb-4 space-y-3">
-            {/* Pro 模型说明 */}
-            <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 dark:from-purple-500/20 dark:to-purple-500/10 rounded-xl p-3 border border-purple-200/50 dark:border-purple-500/20">
+            {/* Seedream 4.5 模型说明 */}
+            <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/5 dark:from-emerald-500/20 dark:to-teal-500/10 rounded-xl p-3 border border-emerald-200/50 dark:border-emerald-500/20">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <h4 className="font-semibold text-purple-700 dark:text-purple-300 text-sm">
-                    Pro 模型
+                  <h4 className="font-semibold text-emerald-700 dark:text-emerald-300 text-sm">
+                    Seedream 4.5
                   </h4>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-300 font-medium">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-medium">
                     推荐
                   </span>
                 </div>
@@ -118,85 +118,31 @@ export default function ModelCapabilityTip() {
               <div className="space-y-2 text-gray-600 dark:text-gray-300 text-xs">
                 <div className="flex items-center justify-between">
                   <p className="font-medium text-gray-700 dark:text-gray-200">
-                    Gemini 3 Pro Image
+                    Doubao Seedream 4.5
                   </p>
-                  <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">
-                    <DollarSign className="w-3 h-3" />
-                    $0.13~0.24/张
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+                    ¥0.25/张
                   </span>
                 </div>
                 <ul className="space-y-1 ml-1">
                   <li className="flex items-start gap-1.5">
-                    <span className="text-purple-500 mt-0.5">•</span>
-                    <span><strong className="text-purple-600 dark:text-purple-400">中文文字生成</strong>（必需使用）</span>
+                    <span className="text-emerald-500 mt-0.5">•</span>
+                    <span>中文文本渲染稳定</span>
                   </li>
                   <li className="flex items-start gap-1.5">
-                    <span className="text-purple-500 mt-0.5">•</span>
-                    <span>高质量细节图像</span>
+                    <span className="text-emerald-500 mt-0.5">•</span>
+                    <span>细节表现更清晰</span>
                   </li>
                   <li className="flex items-start gap-1.5">
-                    <span className="text-purple-500 mt-0.5">•</span>
-                    <span>复杂场景构图</span>
+                    <span className="text-emerald-500 mt-0.5">•</span>
+                    <span>风格一致性更强</span>
                   </li>
                   <li className="flex items-start gap-1.5">
-                    <span className="text-purple-500 mt-0.5">•</span>
-                    <span>支持 4K 分辨率</span>
+                    <span className="text-emerald-500 mt-0.5">•</span>
+                    <span>适合海报与图表类场景</span>
                   </li>
                 </ul>
               </div>
-            </div>
-
-            {/* Fast 模型说明 */}
-            <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 dark:from-blue-500/20 dark:to-blue-500/10 rounded-xl p-3 border border-blue-200/50 dark:border-blue-500/20">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <Zap className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h4 className="font-semibold text-blue-700 dark:text-blue-300 text-sm">
-                    Fast 模型
-                  </h4>
-                </div>
-              </div>
-              <div className="space-y-2 text-gray-600 dark:text-gray-300 text-xs">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-gray-700 dark:text-gray-200">
-                    Gemini 2.5 Flash Image
-                  </p>
-                  <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 font-medium">
-                    <DollarSign className="w-3 h-3" />
-                    ~$0.039/张
-                  </span>
-                </div>
-                <ul className="space-y-1 ml-1">
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-blue-500 mt-0.5">•</span>
-                    <span>快速人物风格迁移</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-blue-500 mt-0.5">•</span>
-                    <span>图片融合与编辑</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-blue-500 mt-0.5">•</span>
-                    <span>角色一致性保持</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-blue-500 mt-0.5">•</span>
-                    <span>低延迟、高性价比</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* 重要提示 */}
-            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 dark:from-amber-500/20 dark:to-orange-500/10 rounded-xl p-3 border border-amber-200/50 dark:border-amber-500/20">
-              <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
-                <strong className="text-amber-600 dark:text-amber-300">⚠️ 提示：</strong>
-                生成<strong className="text-amber-700 dark:text-amber-200">中文文字</strong>需使用
-                <strong className="text-purple-600 dark:text-purple-300"> Pro 模型</strong>，
-                Fast 模型对中文支持有限
-              </p>
             </div>
 
             {/* 底部提示 */}
