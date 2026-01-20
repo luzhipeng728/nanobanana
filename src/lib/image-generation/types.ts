@@ -37,12 +37,12 @@ export type ImageModel = keyof typeof IMAGE_MODELS;
 /**
  * 基础模型 - 所有登录用户都可使用
  */
-export const BASE_MODELS: ImageModel[] = ['nano-banana', 'seedream-4.5'];
+export const BASE_MODELS: ImageModel[] = ['seedream-4.5'];
 
 /**
  * 高级模型 - 需要单独授权
  */
-export const PREMIUM_MODELS: ImageModel[] = ['nano-banana-pro'];
+export const PREMIUM_MODELS: ImageModel[] = ['nano-banana', 'nano-banana-pro'];
 
 /**
  * 检查模型是否为基础模型（无需授权）
