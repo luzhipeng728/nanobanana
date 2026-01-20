@@ -103,8 +103,8 @@ export class SeedreamAdapter extends ImageGenerationAdapter {
   readonly capabilities: AdapterCapabilitiesConfig = {
     supportedResolutions: ['1K', '2K', '4K'],
     supportedAspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4'],
-    supportsReferenceImages: false, // Seedream 不支持参考图
-    maxReferenceImages: 0,
+    supportsReferenceImages: true, // Seedream 4.5 支持最多 5 张参考图（多图融合）
+    maxReferenceImages: 5,
     extraOptions: [
       {
         key: 'sequentialImageGeneration',
@@ -124,18 +124,10 @@ export class SeedreamAdapter extends ImageGenerationAdapter {
    * 参数验证 - 覆盖基类方法，添加 Seedream 特定验证
    */
   override validateParams(params: ImageGenerationParams): ValidationResult {
-    // 先调用基类验证
+    // 先调用基类验证（包含参考图片数量检查）
     const baseResult = super.validateParams(params);
     if (!baseResult.valid) {
       return baseResult;
-    }
-
-    // Seedream 不支持参考图片
-    if (params.referenceImages && params.referenceImages.length > 0) {
-      return {
-        valid: false,
-        error: 'Seedream 模型不支持参考图片，请移除参考图片或选择其他模型',
-      };
     }
 
     return { valid: true };
@@ -170,6 +162,12 @@ export class SeedreamAdapter extends ImageGenerationAdapter {
       stream: false,
       watermark: false,
     };
+
+    // 添加参考图片（如果有）
+    if (params.referenceImages && params.referenceImages.length > 0) {
+      requestBody.image = params.referenceImages;
+      console.log(`[Seedream] 使用 ${params.referenceImages.length} 张参考图片`);
+    }
 
     // 组图功能
     const sequentialMode = params.extraOptions?.sequentialImageGeneration || 'disabled';
