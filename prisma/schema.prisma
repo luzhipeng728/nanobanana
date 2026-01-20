@@ -35,6 +35,7 @@ model User {
   permissionRequests PermissionRequest[]
   quotaRequests QuotaRequest[]
   inviteCodesCreated InviteCode[] @relation("InviteCodeCreator")
+  usedInviteCode InviteCode? @relation("InviteCodeUsed")
 }
 
 // 用户-模型权限（细粒度控制）
@@ -95,7 +96,7 @@ model InviteCode {
   createdById String
   createdBy   User     @relation("InviteCodeCreator", fields: [createdById], references: [id], onDelete: Cascade)
   usedById    String?  @unique
-  usedBy      User?    @relation(fields: [usedById], references: [id], onDelete: SetNull)
+  usedBy      User?    @relation("InviteCodeUsed", fields: [usedById], references: [id], onDelete: SetNull)
   usedAt      DateTime?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
