@@ -1,0 +1,67 @@
+{
+  "projectId": "2026-01-17_15-29-48_养鱼治愈视频",
+  "topic": "养鱼治愈视频",
+  "createdAt": "2026-01-17T15:29:48.704Z",
+  "updatedAt": "2026-01-17T15:30:34.328Z",
+  "currentPhase": 2,
+  "status": "in_progress",
+  "phase1_research": {
+    "status": "pending"
+  },
+  "phase2_storyboard": {
+    "status": "in_progress",
+    "scenes": [
+      {
+        "sceneId": "scene-1",
+        "title": "开场-养鱼之美",
+        "narration": "在繁忙的都市生活中，一方小小的鱼缸，就是一片宁静的海洋。今天，让我们一起走进养鱼的治愈世界。",
+        "firstFramePrompt": "Stunning aquarium scene, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from midnight blue to dark teal. Soft underwater light rays penetrating from above. Gentle bubble particles floating upward. MAIN SUBJECT: A beautiful planted aquarium with lush green aquatic plants (Java fern, Anubias, Amazon sword), natural driftwood, and smooth river stones. Crystal clear water with soft blue-green ambient lighting. Several colorful tropical fish swimming gracefully - neon tetras, guppies, and a beautiful betta fish. ATMOSPHERE: Peaceful, serene, therapeutic. Soft lens flare from the aquarium light. Bokeh effect on background plants. Professional aquarium photography style, National Geographic quality. No text, pure visual beauty."
+      },
+      {
+        "sceneId": "scene-2",
+        "title": "水族箱世界",
+        "narration": "精心布置的水族箱，是水草与石头的艺术。翠绿的水草轻轻摇曳，仿佛一片微型森林。",
+        "firstFramePrompt": "Breathtaking aquascape close-up, 16:9 ratio, 4K resolution. BACKGROUND: Dark aquarium background with subtle depth. Underwater ambiance with gentle caustic light patterns dancing on the substrate. MAIN SUBJECT: Professional aquascape layout - Dutch style with terraced plants. Foreground: carpeting plants (dwarf hairgrass, Monte Carlo). Midground: red and green stem plants (Rotala, Ludwigia). Background: tall vallisneria and Amazon swords. Detailed texture of fine gravel substrate, natural rock hardscape (dragon stone or seiryu stone). Small crystal shrimp visible on plants. LIGHTING: Dramatic aquarium LED lighting creating depth. Soft shadows and highlights. Macro photography style, extreme detail on plant leaves. Nature aquarium aesthetic, Takashi Amano inspired."
+      },
+      {
+        "sceneId": "scene-3",
+        "title": "观赏鱼之美",
+        "narration": "每一条鱼都是大自然的杰作。金鱼的雍容华贵，热带鱼的绚丽多彩，它们用舞姿诉说着生命的美丽。",
+        "firstFramePrompt": "Magnificent ornamental fish showcase, 16:9 ratio, 4K resolution. BACKGROUND: Premium dark blue gradient with subtle underwater particles. Soft ethereal lighting from above. MAIN SUBJECTS: Collection of stunning fish - A majestic fancy goldfish (Oranda) with flowing fins and vibrant orange color. A school of neon tetras with electric blue and red stripes. A beautiful Siamese fighting fish (Betta) with flowing galaxy-colored fins. Elegant angelfish with silver and black stripes. COMPOSITION: Fish arranged artistically at different depths. Sharp focus on fish details - scales, fins, eyes. STYLE: High-end aquarium photography. Soft bokeh background. Underwater portrait photography quality. Rich saturated colors. Magical, dreamlike atmosphere."
+      },
+      {
+        "sceneId": "scene-4",
+        "title": "日常养护",
+        "narration": "每天的喂食时刻，是最温馨的互动。看着它们争相游来，那份信任和依赖，让人心生温暖。",
+        "firstFramePrompt": "Heartwarming fish feeding moment, 16:9 ratio, 4K resolution. BACKGROUND: Bright, well-lit aquarium with clear water. Warm ambient lighting suggesting morning or sunset. MAIN SCENE: Tropical fish eagerly swimming upward toward the water surface. Fish food particles floating and slowly sinking. Multiple goldfish and guppies with mouths open, actively feeding. Visible excitement and movement in the fish. Water surface with gentle ripples from fish activity. ATMOSPHERE: Joyful, lively, intimate. Soft light filtering through water surface creating beautiful caustics. Dynamic composition capturing the energy of feeding time. Sharp focus on fish expressions. Natural aquarium hobby photography style. Warm color grading."
+      },
+      {
+        "sceneId": "scene-5",
+        "title": "心灵治愈",
+        "narration": "养鱼，不只是一种爱好，更是一种生活态度。愿这片小小的水世界，带给你每一天的宁静与治愈。",
+        "firstFramePrompt": "Zen-like aquarium meditation scene, 16:9 ratio, 4K resolution. BACKGROUND: Moody, atmospheric dark room with aquarium as the focal light source. Soft aquarium glow illuminating the surrounding space. MAIN SUBJECT: Pristine nature aquarium viewed from a contemplative angle. Slow-moving fish creating sense of calm - a single elegant betta fish or graceful angelfish as the focal point. Lush green plants swaying gently in the current. Perfect water clarity with visible light beams. MOOD: Meditative, peaceful, therapeutic. STYLE: Cinematic lighting, film photography aesthetic. Shallow depth of field. Soft vignette at edges. Warm highlights meeting cool shadows. The aquarium as a window to tranquility. Professional mood photography."
+      }
+    ]
+  },
+  "phase3_tts": {
+    "status": "pending",
+    "items": [],
+    "totalDuration": 0
+  },
+  "phase4_segments": {
+    "status": "pending",
+    "mergePlan": []
+  },
+  "phase5_endFrames": {
+    "status": "pending",
+    "items": []
+  },
+  "phase6_videos": {
+    "status": "pending",
+    "items": []
+  },
+  "phase7_merge": {
+    "status": "pending",
+    "finalVideoUrl": null
+  }
+}

@@ -122,7 +122,7 @@ export default function SettingsClient() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="text-2xl font-bold text-[var(--primary)]">
-              NanoBanana
+              豆包画布
             </Link>
             <span className="text-sm text-[var(--muted-foreground)]">个人设置</span>
           </div>

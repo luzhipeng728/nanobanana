@@ -6,7 +6,7 @@ import SettingsClient from "./SettingsClient";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "个人设置 | NanoBanana",
+  title: "个人设置 | 豆包画布",
   description: "账户设置与消费记录",
 };
 

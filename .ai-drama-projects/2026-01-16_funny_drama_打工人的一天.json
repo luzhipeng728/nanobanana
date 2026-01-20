@@ -1,0 +1,182 @@
+{
+  "projectId": "2026-01-16_funny_drama_打工人的一天",
+  "title": "打工人的一天",
+  "genre": "comedy",
+  "style": "realistic",
+  "status": "in_progress",
+  "createdAt": "2026-01-16T12:00:00.000Z",
+  "updatedAt": "2026-01-16T12:00:00.000Z",
+  "synopsis": "一个普通打工人小明在工作日经历的搞笑日常，从早起挣扎到开会摸鱼，每个场景都有意想不到的反转，让观众产生强烈共鸣。",
+  "aspectRatio": "9:16",
+  "voiceType": "zh_male_rap_mars_bigtts",
+  "characterBank": [
+    {
+      "id": "xiaoming",
+      "name": "小明",
+      "description": "25岁打工人，穿着普通白衬衫，戴着黑框眼镜，一脸疲惫但又努力装作精神的样子，短发，眼袋明显",
+      "firstAppearance": 0
+    },
+    {
+      "id": "boss",
+      "name": "王总",
+      "description": "中年男性老板，穿着得体西装，表情严肃，手持文件夹",
+      "firstAppearance": 3
+    }
+  ],
+  "storyboard": {
+    "shots": [
+      {
+        "id": "shot_001",
+        "order": 1,
+        "sceneDescription": "早晨7点，闹钟响起。小明躺在床上，一只手伸出被子关闭闹钟，眼睛紧闭，脸上写满了不情愿。房间光线昏暗，被子凌乱。",
+        "narration": "每天早上，我都在进行一场与闹钟的较量。",
+        "displayText": "早上7:00",
+        "characterIds": ["xiaoming"],
+        "duration": 6,
+        "cameraMovement": "从闹钟特写缓缓拉到小明脸部",
+        "mood": "sleepy",
+        "action": "小明痛苦地关闹钟，眼睛仍然紧闭",
+        "imagePrompt": "Young tired Chinese office worker in bed, reaching to turn off alarm clock, dark messy bedroom, morning light through curtains, realistic style, 9:16 portrait format"
+      },
+      {
+        "id": "shot_002",
+        "order": 2,
+        "sceneDescription": "小明睁开双眼，突然一个激灵坐起来，看向手机上的时间显示8:45，脸上露出惊恐表情。",
+        "narration": "直到我赢得了今天的战斗！",
+        "displayText": "8:45",
+        "characterIds": ["xiaoming"],
+        "duration": 4,
+        "cameraMovement": "快速推进到小明惊恐的脸",
+        "mood": "panic",
+        "action": "小明猛然坐起，惊恐看向手机",
+        "imagePrompt": "Young Chinese man suddenly waking up in panic, looking at phone showing 8:45, shocked expression, messy hair, sitting up in bed, morning light, realistic style, 9:16 portrait format"
+      },
+      {
+        "id": "shot_003",
+        "order": 3,
+        "sceneDescription": "地铁车厢内，小明被挤在人群中间，只能看到一片脑袋。他努力抬起手看手表，表情痛苦。周围都是同样疲惫的上班族。",
+        "narration": "上班路上，我练就了沙丁鱼的生存技能。",
+        "displayText": "地铁人海",
+        "characterIds": ["xiaoming"],
+        "duration": 5,
+        "cameraMovement": "俯拍拥挤地铁，聚焦小明",
+        "mood": "crowded",
+        "action": "小明被挤得动弹不得，艰难呼吸",
+        "imagePrompt": "Extremely crowded subway car in China, young office worker squeezed among commuters, trying to check watch, exhausted faces everywhere, morning rush hour, realistic style, 9:16 portrait format"
+      },
+      {
+        "id": "shot_004",
+        "order": 4,
+        "sceneDescription": "公司会议室，王总站在投影幕前严肃地讲话。小明坐在后排，眼睛半闭，努力保持清醒但明显在打瞌睡。",
+        "narration": "老板开会的声音，是最好的催眠曲。",
+        "displayText": "重要会议",
+        "characterIds": ["xiaoming", "boss"],
+        "duration": 5,
+        "cameraMovement": "从老板切到小明昏昏欲睡的脸",
+        "mood": "boring",
+        "action": "小明头一点一点往下坠",
+        "imagePrompt": "Corporate meeting room, Chinese boss giving presentation, young employee in back row nearly falling asleep, eyes closing, head nodding, modern office setting, realistic style, 9:16 portrait format"
+      },
+      {
+        "id": "shot_005",
+        "order": 5,
+        "sceneDescription": "突然，王总叫了小明的名字。小明瞬间睁大眼睛，立刻坐直身体，假装认真在记笔记。旁边同事偷偷憋笑。",
+        "narration": "但我永远能在0.1秒内假装自己很认真！",
+        "displayText": "小明！",
+        "characterIds": ["xiaoming", "boss"],
+        "duration": 5,
+        "cameraMovement": "快速切到小明震惊的脸",
+        "mood": "surprised",
+        "action": "小明假装专注，拿起笔快速写字",
+        "imagePrompt": "Chinese office worker suddenly alert and pretending to take notes, wide eyes, sitting straight, colleague smiling next to him, meeting room background, realistic style, 9:16 portrait format"
+      },
+      {
+        "id": "shot_006",
+        "order": 6,
+        "sceneDescription": "王总走到小明面前，严肃地盯着他的笔记本。镜头转向笔记本，上面画满了表情包和涂鸦。小明尴尬地笑着。",
+        "narration": "我的笔记？那是行为艺术！",
+        "displayText": "尴尬瞬间",
+        "characterIds": ["xiaoming", "boss"],
+        "duration": 5,
+        "cameraMovement": "从王总的脸切到笔记本特写",
+        "mood": "awkward",
+        "action": "笔记本上全是涂鸦，小明尴尬微笑",
+        "imagePrompt": "Close-up of notebook with doodles and emoji drawings, Chinese boss looking at it seriously, embarrassed young employee in background, office meeting room, realistic style, 9:16 portrait format"
+      },
+      {
+        "id": "shot_007",
+        "order": 7,
+        "sceneDescription": "下班时刻，小明坐在工位前对着电脑发呆，时钟显示5:59。他目不转睛盯着时钟，手已经放在关机按钮上。",
+        "narration": "每天最认真的时刻，就是等下班。",
+        "displayText": "5:59",
+        "characterIds": ["xiaoming"],
+        "duration": 5,
+        "cameraMovement": "时钟特写和小明期待的眼神交替",
+        "mood": "anticipation",
+        "action": "小明紧盯时钟，随时准备关电脑",
+        "imagePrompt": "Chinese office worker staring intensely at clock showing 5:59, finger hovering over computer power button, anticipation expression, modern office cubicle, realistic style, 9:16 portrait format"
+      },
+      {
+        "id": "shot_008",
+        "order": 8,
+        "sceneDescription": "时钟显示6:00，小明刚准备起身，王总突然出现在他身后说：加个班。小明的笑容瞬间凝固。",
+        "narration": "老板说加班就像说天气一样自然。",
+        "displayText": "加班！",
+        "characterIds": ["xiaoming", "boss"],
+        "duration": 5,
+        "cameraMovement": "从小明开心的脸到王总出现，再到小明表情凝固",
+        "mood": "shock",
+        "action": "小明的笑容凝固成社死表情",
+        "imagePrompt": "Chinese boss appearing behind young employee at 6:00 PM, employee's smile freezing, disappointed expression, clock showing 6:00 in background, office setting, realistic style, 9:16 portrait format"
+      },
+      {
+        "id": "shot_009",
+        "order": 9,
+        "sceneDescription": "晚上10点，小明终于下班，疲惫地走在空荡荡的街道上。路灯昏暗，只有他一个人的身影。他掏出手机看工资条。",
+        "narration": "加班到十点，工资三千五。",
+        "displayText": "工资：3500",
+        "characterIds": ["xiaoming"],
+        "duration": 5,
+        "cameraMovement": "远景到手机特写",
+        "mood": "melancholy",
+        "action": "小明疲惫看手机上的工资条",
+        "imagePrompt": "Tired Chinese office worker walking alone on empty street at night, looking at phone showing salary 3500 yuan, dim street lights, lonely atmosphere, realistic style, 9:16 portrait format"
+      },
+      {
+        "id": "shot_010",
+        "order": 10,
+        "sceneDescription": "小明突然振作起来，对着镜头比了一个大拇指，露出灿烂的笑容。背后是城市夜景。",
+        "narration": "但没关系，明天还是充满希望的一天！（才怪）",
+        "displayText": "明天见！",
+        "characterIds": ["xiaoming"],
+        "duration": 5,
+        "cameraMovement": "正面特写小明自嘲的笑",
+        "mood": "ironic",
+        "action": "小明比大拇指，假装乐观微笑",
+        "imagePrompt": "Chinese office worker giving thumbs up with big smile, city night skyline behind, ironic happy expression, looking at camera, dramatic lighting, realistic style, 9:16 portrait format"
+      }
+    ]
+  },
+  "phase1_characters": {
+    "status": "pending"
+  },
+  "phase2_scenes": {
+    "status": "pending"
+  },
+  "phase3_storyboard": {
+    "status": "completed"
+  },
+  "phase4_tts": {
+    "status": "pending",
+    "items": []
+  },
+  "phase5_frames": {
+    "status": "pending"
+  },
+  "phase6_videos": {
+    "status": "pending"
+  },
+  "phase7_merge": {
+    "status": "pending"
+  }
+}

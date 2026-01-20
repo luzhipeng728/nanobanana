@@ -30,7 +30,7 @@ interface ApiKey {
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
-  gemini: "Gemini (NanoBanana)",
+  gemini: "Gemini (豆包画布)",
   seedream: "Seedream 4.5",
 };
 
@@ -143,7 +143,7 @@ export default function ApiKeysClient({ currentUser }: { currentUser: string }) 
               <ArrowLeft className="w-5 h-5 text-[var(--muted-foreground)]" />
             </Link>
             <Link href="/" className="text-2xl font-bold text-[var(--primary)]">
-              NanoBanana
+              豆包画布
             </Link>
             <span className="text-sm text-[var(--muted-foreground)]">
               管理后台 / API Keys
@@ -387,7 +387,7 @@ function AddKeyModal({
               onChange={(e) => setProvider(e.target.value)}
               className="w-full px-3 py-2 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
             >
-              <option value="gemini">Gemini (NanoBanana)</option>
+              <option value="gemini">Gemini (豆包画布)</option>
               <option value="seedream">Seedream 4.5</option>
             </select>
           </div>

@@ -7,7 +7,7 @@ import AdminClient from "./AdminClient";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "管理后台 | NanoBanana",
+  title: "管理后台 | 豆包画布",
   description: "用户管理与权限控制",
 };
 

@@ -1,0 +1,541 @@
+{
+  "projectId": "2026-01-16_19-36-00_2026年1月AI大",
+  "topic": "2026年1月AI大事件：物理AI时代正式开启",
+  "createdAt": "2026-01-16T19:36:00.662Z",
+  "updatedAt": "2026-01-16T19:52:41.394Z",
+  "currentPhase": 7,
+  "status": "completed",
+  "phase1_research": {
+    "status": "pending"
+  },
+  "phase2_storyboard": {
+    "status": "completed",
+    "scenes": [
+      {
+        "sceneId": "scene-1",
+        "title": "开场",
+        "narration": "大家好，欢迎收看AI速报！2026年1月，科技界迎来历史性时刻。在刚刚结束的CES消费电子展上，物理AI成为绝对主角。从人形机器人到自动驾驶，AI正式从屏幕走向真实世界。接下来为您带来本月最重磅的AI新闻。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution.\n\nBACKGROUND: Deep gradient from dark navy blue to charcoal gray. Subtle tech grid pattern at low opacity. Soft cyan and purple ambient glow. Floating holographic particles.\n\nHEADER: Large Chinese title \"AI速报\" in bold white text with bright cyan glowing effect, centered at top. Subtitle \"2026年1月 物理AI时代\" below in soft silver. Thin glowing cyan separator line.\n\nCONTENT CARDS (6 cards in 2x3 grid):\nCard 1: Large hero card with rose red border glow, badge \"头条\", text \"物理AI的ChatGPT时刻正式到来\"\nCard 2: Glassmorphism card with vibrant purple border, badge \"机器人\", text \"Boston Dynamics Atlas开始工厂实战部署\"\nCard 3: Glassmorphism card with emerald green border, badge \"自动驾驶\", text \"NVIDIA发布Alpamayo开源AI模型\"\nCard 4: Glassmorphism card with warm amber border, badge \"人物\", text \"Yann LeCun离开Meta创办AMI Labs\"\nCard 5: Glassmorphism card with electric blue border, badge \"工业\", text \"AI与机器人深度融合重塑制造业\"\nCard 6: Glassmorphism card with cyan border, badge \"展望\", text \"2026将是物理AI元年\"\n\nFOOTER: Tagline \"AI从屏幕走向现实\" at bottom center in soft white.\n\nDECORATIVE: Floating hexagons and triangles at corners, robot and car silhouettes, holographic particles. Professional infographic design, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/f340e3d1-ff94-4493-8f7e-911edea92b98.png"
+      },
+      {
+        "sceneId": "scene-2",
+        "title": "NVIDIA CES 2026发布会",
+        "narration": "首先是NVIDIA在CES上的重磅发布。CEO黄仁勋宣布：物理AI的ChatGPT时刻已经到来！NVIDIA推出了Alpamayo，这是全球首个具备推理能力的自动驾驶AI。这套开源系统拥有100亿参数，能像人类一样理解复杂路况并做出决策。奔驰已宣布，2026款CLA将成为首款搭载该系统的量产车型。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution.\n\nBACKGROUND: Deep gradient from charcoal black to dark purple. Matrix-style data streams at low opacity. Electric green and cyan ambient glow. Circuit board patterns in corners.\n\nHEADER: Large Chinese title \"NVIDIA CES 2026\" in bold white with electric green glow, left-aligned. Subtitle \"物理AI的ChatGPT时刻\" in bright cyan. Jensen Huang silhouette icon on right.\n\nCONTENT CARDS (5 key points):\nCard 1: Hero card with green border, icon of brain chip, text \"黄仁勋宣布：物理AI时代正式开启\"\nCard 2: Card with cyan border, icon of car, text \"Alpamayo: 全球首个推理型自动驾驶AI\"\nCard 3: Card with purple border, icon of code, text \"100亿参数 开源模型 端到端训练\"\nCard 4: Card with amber border, Mercedes logo hint, text \"奔驰2026款CLA将首发搭载\"\nCard 5: Card with blue border, robot icon, text \"同时发布机器人芯片与Cosmos平台\"\n\nFOOTER: NVIDIA logo stylized, tagline \"从摄像头输入到动作输出\" in soft gray.\n\nDECORATIVE: Futuristic car silhouette, GPU chip patterns, holographic road visualization. All Chinese text clear and readable.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/7121a475-9a71-46e2-9d38-8a54c4579492.png"
+      },
+      {
+        "sceneId": "scene-3",
+        "title": "Boston Dynamics Atlas机器人",
+        "narration": "第二条重磅消息来自机器人领域。Boston Dynamics的人形机器人Atlas正式开始工业部署！这款全电动机器人已在现代汽车的乔治亚州超级工厂投入使用，负责汽车零部件的分拣和排序工作。Atlas拥有56个自由度，能举起50公斤重物。现代计划到2028年每年生产三万台Atlas，届时还将出现机器人专属的无人班次。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution.\n\nBACKGROUND: Deep industrial gray to dark blue gradient. Factory blueprint patterns at low opacity. Orange and cyan industrial lighting effects. Geometric grid overlay.\n\nHEADER: Large Chinese title \"Atlas机器人实战部署\" in bold white with orange accent glow. Subtitle \"Boston Dynamics × 现代汽车\" in silver. Robot icon on right.\n\nCONTENT CARDS (5 key achievements):\nCard 1: Hero card with orange border, factory icon, text \"乔治亚州Metaplant工厂正式投入使用\"\nCard 2: Card with cyan border, robot arm icon, text \"56个自由度 可举起50公斤重物\"\nCard 3: Card with purple border, trophy icon, text \"荣获CES 2026最佳机器人大奖\"\nCard 4: Card with amber border, production icon, text \"2028年目标：年产30000台\"\nCard 5: Card with red border, calendar icon, text \"2026年底将出现机器人专属无人班次\"\n\nFOOTER: Boston Dynamics and Hyundai logos stylized, tagline \"从炫技到实干\" in soft gray.\n\nDECORATIVE: Humanoid robot silhouette, car assembly line hints, mechanical gears. Professional industrial tech aesthetic, all Chinese text visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/ebfe85fd-ae5a-45e0-a35d-67231ddc89ca.png"
+      },
+      {
+        "sceneId": "scene-4",
+        "title": "Yann LeCun创办AMI Labs",
+        "narration": "AI界还有一则震动性新闻。图灵奖得主、Meta首席AI科学家Yann LeCun宣布离职，创办了AMI Labs。这家新公司估值高达30亿欧元，专注于研发世界模型。LeCun认为，大语言模型无法通向通用人工智能，真正的突破在于让AI理解物理世界。AMI Labs将利用视频和空间数据训练AI，使其具备规划和推理能力。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution.\n\nBACKGROUND: Deep gradient from midnight blue to dark purple. Neural network visualization at low opacity. Soft golden and blue ambient glow. Academic paper texture hints.\n\nHEADER: Large Chinese title \"Yann LeCun离开Meta\" in bold white with golden accent. Subtitle \"创办AMI Labs 押注世界模型\" in soft cyan. Abstract portrait silhouette icon.\n\nCONTENT CARDS (5 key points):\nCard 1: Hero card with golden border, medal icon, text \"图灵奖得主 Meta首席AI科学家12年\"\nCard 2: Card with blue border, building icon, text \"AMI Labs总部设于巴黎 估值30亿欧元\"\nCard 3: Card with purple border, brain icon, text \"核心理念：大语言模型无法通向AGI\"\nCard 4: Card with cyan border, world icon, text \"世界模型：让AI理解物理世界运作规律\"\nCard 5: Card with green border, video icon, text \"V-JEPA架构：从视频学习而非纯文本\"\n\nFOOTER: AMI Labs logo concept, tagline \"从预测文字到理解世界\" in soft gray.\n\nDECORATIVE: Brain neural patterns, physics formulas at low opacity, world globe hologram. Elegant academic tech aesthetic, all Chinese text readable.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/94a93f01-1b0a-4189-bbb7-161298c352ea.png"
+      },
+      {
+        "sceneId": "scene-5",
+        "title": "工业AI融合趋势",
+        "narration": "这些突破背后，是物理AI各领域的深度融合。NVIDIA与西门子宣布合作，打造工业AI操作系统。德国埃尔朗根的西门子工厂正在成为全自动化智能制造的蓝图。从自动驾驶到人形机器人，从世界模型到工业智能，AI正在重塑我们与物理世界的交互方式。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution.\n\nBACKGROUND: Deep gradient from dark teal to charcoal. Industrial and digital fusion patterns. Cyan, orange and purple ambient glows. Factory meets digital aesthetic.\n\nHEADER: Large Chinese title \"物理AI深度融合\" in bold white with multi-color gradient glow. Subtitle \"自动驾驶×机器人×世界模型×工业智能\" in silver.\n\nCONTENT LAYOUT (convergence diagram style):\nCenter: Large glowing node \"物理AI\" with connecting lines to four corners\nTop-left: Card with green border, car icon, text \"自动驾驶 NVIDIA Alpamayo\"\nTop-right: Card with orange border, robot icon, text \"人形机器人 Atlas DeepMind\"\nBottom-left: Card with purple border, brain icon, text \"世界模型 AMI Labs V-JEPA\"\nBottom-right: Card with cyan border, factory icon, text \"工业智能 NVIDIA×西门子\"\nBottom banner: \"德国埃尔朗根：全球首个AI驱动智能工厂蓝图\"\n\nFOOTER: Tagline \"AI重塑人与物理世界的交互\" in soft white.\n\nDECORATIVE: Connection lines between nodes, holographic mesh, industry icons. Futuristic convergence visual, all Chinese text clear.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/68eef933-b165-45f0-b890-507e5813c999.png"
+      },
+      {
+        "sceneId": "scene-6",
+        "title": "总结展望",
+        "narration": "2026年刚刚开始，物理AI已经展现出惊人的发展势头。从实验室到工厂，从概念到量产，AI正在以前所未有的速度融入现实世界。这将是物理AI的元年，让我们共同见证这场技术革命。感谢收看本期AI速报，我们下期再见！",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution.\n\nBACKGROUND: Deep gradient from dark navy to purple with sunrise hints of warm amber at horizon. Optimistic futuristic atmosphere. Holographic particles rising upward.\n\nHEADER: Large Chinese title \"2026：物理AI元年\" in bold white with warm golden and cyan dual glow. Subtitle \"见证技术革命\" in soft silver.\n\nCONTENT (timeline/milestone style):\nLeft side - Past milestones fading:\n- \"实验室突破\" faded\n- \"概念验证\" faded\nCenter - Current moment highlighted:\n- Large glowing badge \"2026年1月 历史性时刻\"\nRight side - Future vision:\n- \"量产部署\" bright\n- \"全面融合\" bright\n- \"改变世界\" brightest\n\nBottom cards row:\nCard 1: Recap badge \"NVIDIA物理AI\"\nCard 2: Recap badge \"Atlas机器人\"\nCard 3: Recap badge \"世界模型\"\nCard 4: Recap badge \"工业智能\"\n\nFOOTER: \"感谢收看 AI速报\" centered, \"下期再见\" below in friendly tone.\n\nDECORATIVE: Rising light rays, hopeful atmosphere, tech icons ascending. Inspiring conclusion visual, all Chinese text clear and celebratory.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/25dc5885-2568-4c1c-8aba-a7040073da75.png"
+      }
+    ]
+  },
+  "phase3_tts": {
+    "status": "completed",
+    "items": [
+      {
+        "sceneId": "scene-1",
+        "text": "大家好，欢迎收看AI速报！2026年1月，科技界迎来历史性时刻。在刚刚结束的CES消费电子展上，物理AI成为绝对主角。从人形机器人到自动驾驶，AI正式从屏幕走向真实世界。接下来为您带来本月最重磅的AI新闻。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/efb38e2e-0aa1-4085-9686-67a0cfe5fd1f.mp3",
+        "duration": 20.309
+      },
+      {
+        "sceneId": "scene-2",
+        "text": "首先是NVIDIA在CES上的重磅发布。CEO黄仁勋宣布：物理AI的ChatGPT时刻已经到来！NVIDIA推出了Alpamayo，这是全球首个具备推理能力的自动驾驶AI。这套开源系统拥有100亿参数，能像人类一样理解复杂路况并做出决策。奔驰已宣布，2026款CLA将成为首款搭载该系统的量产车型。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/8c72c73f-47cf-49c9-9ef3-1bed0c9842f6.mp3",
+        "duration": 27.574
+      },
+      {
+        "sceneId": "scene-3",
+        "text": "第二条重磅消息来自机器人领域。Boston Dynamics的人形机器人Atlas正式开始工业部署！这款全电动机器人已在现代汽车的乔治亚州超级工厂投入使用，负责汽车零部件的分拣和排序工作。Atlas拥有56个自由度，能举起50公斤重物。现代计划到2028年每年生产三万台Atlas，届时还将出现机器人专属的无人班次。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/49f8fa0f-53e4-4eb3-99b1-3c928e3f9cf1.mp3",
+        "duration": 28.585
+      },
+      {
+        "sceneId": "scene-4",
+        "text": "AI界还有一则震动性新闻。图灵奖得主、Meta首席AI科学家Yann LeCun宣布离职，创办了AMI Labs。这家新公司估值高达30亿欧元，专注于研发世界模型。LeCun认为，大语言模型无法通向通用人工智能，真正的突破在于让AI理解物理世界。AMI Labs将利用视频和空间数据训练AI，使其具备规划和推理能力。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/35ebbcb0-b2ee-41db-b400-7374b0af9502.mp3",
+        "duration": 28.259
+      },
+      {
+        "sceneId": "scene-5",
+        "text": "这些突破背后，是物理AI各领域的深度融合。NVIDIA与西门子宣布合作，打造工业AI操作系统。德国埃尔朗根的西门子工厂正在成为全自动化智能制造的蓝图。从自动驾驶到人形机器人，从世界模型到工业智能，AI正在重塑我们与物理世界的交互方式。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/2700efd3-12ba-4a2f-87cc-be3aad3007bd.mp3",
+        "duration": 22.73
+      },
+      {
+        "sceneId": "scene-6",
+        "text": "2026年刚刚开始，物理AI已经展现出惊人的发展势头。从实验室到工厂，从概念到量产，AI正在以前所未有的速度融入现实世界。这将是物理AI的元年，让我们共同见证这场技术革命。感谢收看本期AI速报，我们下期再见！",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/e93b7da8-e001-4fe2-9767-750dc69e808a.mp3",
+        "duration": 20.532
+      }
+    ],
+    "totalDuration": 147.989
+  },
+  "phase4_segments": {
+    "status": "in_progress",
+    "mergePlan": [
+      {
+        "sceneId": "scene-1",
+        "videoSegmentCount": 5,
+        "videoDuration": 25,
+        "videoSegments": [
+          {
+            "id": "seg-1-1",
+            "endFramePrompt": "END FRAME of 5s video. START: AI news infographic with 6 cards and title AI速报. END: Title remains glowing, cards start to fade, camera slowly zooms toward the hero card about Physical AI. Cyberpunk style, deep navy background, holographic particles, text 70% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/6594d2e0-0c61-4a5d-874e-56172f810571.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/308571f6-1c4c-4e83-b1a0-1c71af93ad46.mp4"
+          },
+          {
+            "id": "seg-1-2",
+            "endFramePrompt": "END FRAME of 5s video. START: Focus on hero card. END: Cards further faded, CES 2026 visual element emerging in center, holographic stage lights appearing. Text 50% opacity, futuristic tech atmosphere.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/d2a6fb66-6c23-4e9a-9a8e-557803960e69.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/be585d3b-8718-4d49-a256-98bff3ba7ede.mp4"
+          },
+          {
+            "id": "seg-1-3",
+            "endFramePrompt": "END FRAME of 5s video. START: CES visual element. END: Robot and car silhouettes emerging from holographic display, representing physical AI themes. Text 30% opacity, dynamic tech visualization.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/497e7882-cfc1-40db-a3d8-ffdb9099026a.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/fcb4ed14-671e-4c3f-bf08-0bff99c43f3d.mp4"
+          },
+          {
+            "id": "seg-1-4",
+            "endFramePrompt": "END FRAME of 5s video. START: Robot and car silhouettes. END: Multiple AI icons (robot, car, brain, factory) arranged in convergence pattern, showing AI entering real world. Text 15% opacity, glowing connections between icons.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/bffd1264-c62c-49ca-b0d1-6ca00671c7a0.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/f72ff330-7320-4162-b454-d50ab2619fce.mp4"
+          },
+          {
+            "id": "seg-1-5",
+            "endFramePrompt": "END FRAME of 5s video. START: AI convergence pattern. END: All text completely faded, pure visual of holographic AI ecosystem, ready to transition to next scene. No text, clean futuristic visual with floating particles.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/6625be93-d5d2-45f1-844d-0bb2cc4a2e03.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/5d3711b1-ddc3-4bec-8bb6-a2429ddf98b0.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/efb38e2e-0aa1-4085-9686-67a0cfe5fd1f.mp3",
+        "subtitleText": "大家好，欢迎收看AI速报！2026年1月，科技界迎来历史性时刻。在刚刚结束的CES消费电子展上，物理AI成为绝对主角。从人形机器人到自动驾驶，AI正式从屏幕走向真实世界。接下来为您带来本月最重磅的AI新闻。",
+        "ttsDuration": 20.309
+      },
+      {
+        "sceneId": "scene-2",
+        "videoSegmentCount": 6,
+        "videoDuration": 30,
+        "videoSegments": [
+          {
+            "id": "seg-2-1",
+            "endFramePrompt": "END FRAME of 5s video. START: NVIDIA CES 2026 infographic with Jensen Huang silhouette. END: Text starts fading, camera zooms toward NVIDIA logo area, green glow intensifying. Cyberpunk style, text 80% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/8adc6311-37bf-45b9-937b-40995e910e31.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/643c531c-bfb5-40b4-bf89-dbc3a4b584d4.mp4"
+          },
+          {
+            "id": "seg-2-2",
+            "endFramePrompt": "END FRAME of 5s video. START: NVIDIA logo focus. END: ChatGPT moment text fading, holographic speech bubble with Physical AI emerging, stage presentation atmosphere. Text 60% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/3394f6f5-8687-4e26-a581-18a634c44426.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/03f1a901-cce4-4827-be5e-edae1e147656.mp4"
+          },
+          {
+            "id": "seg-2-3",
+            "endFramePrompt": "END FRAME of 5s video. START: Physical AI announcement. END: Alpamayo logo and autonomous car visualization appearing, data streams flowing around vehicle. Text 40% opacity, futuristic car interface visible.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/9a49e56b-c958-4977-841e-47ef0d6fde9d.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/43362b87-a4b4-401c-ac45-61d909d4a840.mp4"
+          },
+          {
+            "id": "seg-2-4",
+            "endFramePrompt": "END FRAME of 5s video. START: Alpamayo car. END: Neural network visualization overlaid on car, showing AI reasoning chains, 100 billion parameters represented as glowing nodes. Text 25% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/fc8411ae-dd6e-4034-89c2-31addc8f24bc.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/a68f9103-6184-443d-a5bf-b0e343dc8a24.mp4"
+          },
+          {
+            "id": "seg-2-5",
+            "endFramePrompt": "END FRAME of 5s video. START: Neural reasoning visual. END: Mercedes-Benz logo subtly appearing, CLA car model silhouette emerging, partnership visualization. Text 10% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/c25f8883-c894-4d13-a6db-bad6e037e8d1.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/0ad1732d-b29f-4cc6-9d85-204315254dff.mp4"
+          },
+          {
+            "id": "seg-2-6",
+            "endFramePrompt": "END FRAME of 5s video. START: Mercedes partnership. END: Complete fade to pure visual of futuristic autonomous car on digital highway, no text, clean transition ready visual.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/b67cf5d9-062a-40f9-8568-0c0e478abf3a.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/767ff96b-4cfc-492a-b259-eb6e722974bc.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/8c72c73f-47cf-49c9-9ef3-1bed0c9842f6.mp3",
+        "subtitleText": "首先是NVIDIA在CES上的重磅发布。CEO黄仁勋宣布：物理AI的ChatGPT时刻已经到来！NVIDIA推出了Alpamayo，这是全球首个具备推理能力的自动驾驶AI。这套开源系统拥有100亿参数，能像人类一样理解复杂路况并做出决策。奔驰已宣布，2026款CLA将成为首款搭载该系统的量产车型。",
+        "ttsDuration": 27.574
+      },
+      {
+        "sceneId": "scene-3",
+        "videoSegmentCount": 6,
+        "videoDuration": 30,
+        "videoSegments": [
+          {
+            "id": "seg-3-1",
+            "endFramePrompt": "END FRAME of 5s video. START: Atlas robot infographic with factory theme. END: Text starts fading, camera zooms toward robot silhouette, orange industrial glow intensifying. Text 80% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/0f1fd34a-08ed-41cc-bbeb-58cfa513ec85.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/12679625-1572-4da4-9a2d-cec8bf80f6c4.mp4"
+          },
+          {
+            "id": "seg-3-2",
+            "endFramePrompt": "END FRAME of 5s video. START: Robot silhouette. END: Full humanoid robot emerging, electric blue accents glowing, industrial factory background forming. Text 60% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/1680efb2-7721-4b67-a311-a0bb03d7edfc.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c68184e4-1ba0-464e-a069-bb1d90df8396.mp4"
+          },
+          {
+            "id": "seg-3-3",
+            "endFramePrompt": "END FRAME of 5s video. START: Humanoid robot. END: Robot performing sorting task, mechanical arms in motion, car parts floating around. Text 40% opacity, dynamic industrial scene.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/1446f81a-a19d-4d24-b4e2-c3ba19663f3d.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/16855ee1-4ca2-4fca-86b4-55f11e3f1793.mp4"
+          },
+          {
+            "id": "seg-3-4",
+            "endFramePrompt": "END FRAME of 5s video. START: Robot working. END: Technical specs visualization, 56 degrees of freedom shown as joint highlights, 50kg weight indicator. Text 25% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/8d616b05-543b-499b-9fff-94a4b11bfb55.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/2552eae5-f749-4cda-b45d-f89963cac9c9.mp4"
+          },
+          {
+            "id": "seg-3-5",
+            "endFramePrompt": "END FRAME of 5s video. START: Tech specs. END: Factory production line visualization, multiple robots in formation, 30000 units per year counter. Text 10% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/7fb6078c-18f4-45db-aafd-177b63fb6960.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c05a5518-e872-4760-bb38-1e87ffffe516.mp4"
+          },
+          {
+            "id": "seg-3-6",
+            "endFramePrompt": "END FRAME of 5s video. START: Production line. END: Futuristic unmanned factory shift visualization, robots working autonomously, no humans, pure robotic efficiency. No text, clean industrial future visual.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/9d5f06fa-ac65-40dc-a4cd-8d2a4ca95b63.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/faf1e54e-85e4-4f03-94b7-fdb6368fb17d.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/49f8fa0f-53e4-4eb3-99b1-3c928e3f9cf1.mp3",
+        "subtitleText": "第二条重磅消息来自机器人领域。Boston Dynamics的人形机器人Atlas正式开始工业部署！这款全电动机器人已在现代汽车的乔治亚州超级工厂投入使用，负责汽车零部件的分拣和排序工作。Atlas拥有56个自由度，能举起50公斤重物。现代计划到2028年每年生产三万台Atlas，届时还将出现机器人专属的无人班次。",
+        "ttsDuration": 28.585
+      },
+      {
+        "sceneId": "scene-4",
+        "videoSegmentCount": 6,
+        "videoDuration": 30,
+        "videoSegments": [
+          {
+            "id": "seg-4-1",
+            "endFramePrompt": "END FRAME of 5s video. START: Yann LeCun infographic with academic theme. END: Text starts fading, camera zooms toward portrait silhouette area, golden glow intensifying. Text 80% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/722e38b3-c253-460d-aa93-fe53c919990f.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/53244a81-2aba-44cb-b5e3-f683187130d3.mp4"
+          },
+          {
+            "id": "seg-4-2",
+            "endFramePrompt": "END FRAME of 5s video. START: Portrait area. END: Turing Award medal visualization glowing, 12 years at Meta timeline fading behind. Text 60% opacity, prestigious academic atmosphere.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/73b51548-80e7-4bee-a01f-dd2f76ff7e98.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/479b1832-77b1-48ad-922f-37107b88ab78.mp4"
+          },
+          {
+            "id": "seg-4-3",
+            "endFramePrompt": "END FRAME of 5s video. START: Award visual. END: AMI Labs logo forming, Paris skyline silhouette, 3 billion euro valuation counter. Text 40% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/a8d35538-349c-46db-87c0-846ccaf09087.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/2645e050-1a1d-4a31-b0e3-64e1e94eacce.mp4"
+          },
+          {
+            "id": "seg-4-4",
+            "endFramePrompt": "END FRAME of 5s video. START: AMI Labs. END: World model concept visualization, physical objects with AI understanding overlay, contrast with text-based LLM. Text 25% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/dcd66a22-bfa8-44a3-8a4d-f16e9d6ba652.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/8ffc8d30-fa6b-4fe3-82dc-fdeb47596bc3.mp4"
+          },
+          {
+            "id": "seg-4-5",
+            "endFramePrompt": "END FRAME of 5s video. START: World model. END: V-JEPA architecture diagram, video frames transforming into understanding, spatial data visualization. Text 10% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/d89e8691-7e59-4706-8ed5-15ada603c74a.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/5981b0d9-cd6e-416d-b37e-68858c888b00.mp4"
+          },
+          {
+            "id": "seg-4-6",
+            "endFramePrompt": "END FRAME of 5s video. START: V-JEPA. END: AI understanding physical world visualization, objects with physics simulation, planning and reasoning pathways. No text, pure conceptual visual.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/d1b7ea7e-8d71-4871-a850-6ee932561f1e.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/08c3f858-6ad1-4cb2-9989-55dab7220a32.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/35ebbcb0-b2ee-41db-b400-7374b0af9502.mp3",
+        "subtitleText": "AI界还有一则震动性新闻。图灵奖得主、Meta首席AI科学家Yann LeCun宣布离职，创办了AMI Labs。这家新公司估值高达30亿欧元，专注于研发世界模型。LeCun认为，大语言模型无法通向通用人工智能，真正的突破在于让AI理解物理世界。AMI Labs将利用视频和空间数据训练AI，使其具备规划和推理能力。",
+        "ttsDuration": 28.259
+      },
+      {
+        "sceneId": "scene-5",
+        "videoSegmentCount": 5,
+        "videoDuration": 25,
+        "videoSegments": [
+          {
+            "id": "seg-5-1",
+            "endFramePrompt": "END FRAME of 5s video. START: Physical AI fusion infographic with convergence diagram. END: Text starts fading, camera zooms toward center node, multi-color glow intensifying. Text 70% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/45efd846-1db1-416b-b322-645de6a01dcd.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/255c8f78-6f17-4530-b68d-f1f860f0dbdf.mp4"
+          },
+          {
+            "id": "seg-5-2",
+            "endFramePrompt": "END FRAME of 5s video. START: Center node. END: NVIDIA and Siemens logos appearing, industrial AI operating system concept forming. Text 50% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/b776eae0-fcca-4cf0-bf95-565d9360bd6f.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/713ca2c3-4945-42bb-91c6-9bc43e5b6a4e.mp4"
+          },
+          {
+            "id": "seg-5-3",
+            "endFramePrompt": "END FRAME of 5s video. START: Partnership logos. END: German factory visualization, Erlangen location hint, fully automated assembly line. Text 30% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/b50a646b-7424-46a6-abd9-d3605681efb4.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/af887eb5-6e4a-4bb0-bef8-03a38e258981.mp4"
+          },
+          {
+            "id": "seg-5-4",
+            "endFramePrompt": "END FRAME of 5s video. START: Factory visual. END: All four domains connecting - car, robot, brain, factory icons merging into unified AI ecosystem. Text 15% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/13c6c893-5859-469b-947f-0ddb082646ed.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/62d5dae9-1079-4536-a8b3-2f7444954c51.mp4"
+          },
+          {
+            "id": "seg-5-5",
+            "endFramePrompt": "END FRAME of 5s video. START: Unified ecosystem. END: Human-AI interaction visualization, physical world transformed by AI, harmonious fusion. No text, inspiring visual of AI-enhanced reality.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/07822bd8-e007-4763-bf25-c905420efc7b.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b0c43bd2-31cf-4799-802b-e185bd48b1f8.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/2700efd3-12ba-4a2f-87cc-be3aad3007bd.mp3",
+        "subtitleText": "这些突破背后，是物理AI各领域的深度融合。NVIDIA与西门子宣布合作，打造工业AI操作系统。德国埃尔朗根的西门子工厂正在成为全自动化智能制造的蓝图。从自动驾驶到人形机器人，从世界模型到工业智能，AI正在重塑我们与物理世界的交互方式。",
+        "ttsDuration": 22.73
+      },
+      {
+        "sceneId": "scene-6",
+        "videoSegmentCount": 5,
+        "videoDuration": 25,
+        "videoSegments": [
+          {
+            "id": "seg-6-1",
+            "endFramePrompt": "END FRAME of 5s video. START: 2026 Physical AI Year infographic with timeline. END: Text starts fading, camera focuses on 2026 milestone badge, golden sunrise glow intensifying. Text 70% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/6c8c63ff-3030-44aa-acfb-e78979369996.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/a829313c-9d06-4174-b2ca-38e65d94ada2.mp4"
+          },
+          {
+            "id": "seg-6-2",
+            "endFramePrompt": "END FRAME of 5s video. START: 2026 milestone. END: Lab to factory transition visualization, progress arrow moving forward, transformation depicted. Text 50% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/c70d1b96-5317-43b7-8bbf-d44299019095.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/909d0edb-3d4d-464d-97e7-a7d74805976e.mp4"
+          },
+          {
+            "id": "seg-6-3",
+            "endFramePrompt": "END FRAME of 5s video. START: Transformation. END: Speed visualization, AI integration accelerating, multiple domains converging rapidly. Text 30% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/a8a92518-d61e-4220-b3d5-3a08d8a06b52.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ee3c8c94-b3b2-47d9-89ab-57fce3c94030.mp4"
+          },
+          {
+            "id": "seg-6-4",
+            "endFramePrompt": "END FRAME of 5s video. START: Acceleration. END: Recap badges of all topics glowing - NVIDIA, Atlas, AMI Labs, Industrial AI, celebrating achievements. Text 15% opacity.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/a21d8e28-a730-4399-96fb-e74c98725785.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/dabbf23e-e46c-4170-9ee3-03a22e49cd31.mp4"
+          },
+          {
+            "id": "seg-6-5",
+            "endFramePrompt": "END FRAME of 5s video. START: Recap badges. END: Hopeful future visualization, rising light rays, AI速报 logo with warm glow, inspiring conclusion. Minimal text, celebratory atmosphere, ready for end screen.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/1109aef4-a6f9-4fe3-9979-c0cc1de45003.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/cd383301-876c-4584-b9ee-183bc50d41da.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/e93b7da8-e001-4fe2-9767-750dc69e808a.mp3",
+        "subtitleText": "2026年刚刚开始，物理AI已经展现出惊人的发展势头。从实验室到工厂，从概念到量产，AI正在以前所未有的速度融入现实世界。这将是物理AI的元年，让我们共同见证这场技术革命。感谢收看本期AI速报，我们下期再见！",
+        "ttsDuration": 20.532
+      }
+    ]
+  },
+  "phase5_endFrames": {
+    "status": "completed",
+    "items": []
+  },
+  "phase6_videos": {
+    "status": "completed",
+    "items": [
+      {
+        "id": "seg-1-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/308571f6-1c4c-4e83-b1a0-1c71af93ad46.mp4"
+      },
+      {
+        "id": "seg-1-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/be585d3b-8718-4d49-a256-98bff3ba7ede.mp4"
+      },
+      {
+        "id": "seg-1-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/fcb4ed14-671e-4c3f-bf08-0bff99c43f3d.mp4"
+      },
+      {
+        "id": "seg-1-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/f72ff330-7320-4162-b454-d50ab2619fce.mp4"
+      },
+      {
+        "id": "seg-1-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/5d3711b1-ddc3-4bec-8bb6-a2429ddf98b0.mp4"
+      },
+      {
+        "id": "seg-2-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/643c531c-bfb5-40b4-bf89-dbc3a4b584d4.mp4"
+      },
+      {
+        "id": "seg-2-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/03f1a901-cce4-4827-be5e-edae1e147656.mp4"
+      },
+      {
+        "id": "seg-2-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/43362b87-a4b4-401c-ac45-61d909d4a840.mp4"
+      },
+      {
+        "id": "seg-2-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/a68f9103-6184-443d-a5bf-b0e343dc8a24.mp4"
+      },
+      {
+        "id": "seg-2-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/0ad1732d-b29f-4cc6-9d85-204315254dff.mp4"
+      },
+      {
+        "id": "seg-2-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/767ff96b-4cfc-492a-b259-eb6e722974bc.mp4"
+      },
+      {
+        "id": "seg-3-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/12679625-1572-4da4-9a2d-cec8bf80f6c4.mp4"
+      },
+      {
+        "id": "seg-3-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c68184e4-1ba0-464e-a069-bb1d90df8396.mp4"
+      },
+      {
+        "id": "seg-3-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/16855ee1-4ca2-4fca-86b4-55f11e3f1793.mp4"
+      },
+      {
+        "id": "seg-3-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/2552eae5-f749-4cda-b45d-f89963cac9c9.mp4"
+      },
+      {
+        "id": "seg-3-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c05a5518-e872-4760-bb38-1e87ffffe516.mp4"
+      },
+      {
+        "id": "seg-3-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/faf1e54e-85e4-4f03-94b7-fdb6368fb17d.mp4"
+      },
+      {
+        "id": "seg-4-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/53244a81-2aba-44cb-b5e3-f683187130d3.mp4"
+      },
+      {
+        "id": "seg-4-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/479b1832-77b1-48ad-922f-37107b88ab78.mp4"
+      },
+      {
+        "id": "seg-4-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/2645e050-1a1d-4a31-b0e3-64e1e94eacce.mp4"
+      },
+      {
+        "id": "seg-4-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/8ffc8d30-fa6b-4fe3-82dc-fdeb47596bc3.mp4"
+      },
+      {
+        "id": "seg-4-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/5981b0d9-cd6e-416d-b37e-68858c888b00.mp4"
+      },
+      {
+        "id": "seg-4-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/08c3f858-6ad1-4cb2-9989-55dab7220a32.mp4"
+      },
+      {
+        "id": "seg-5-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/255c8f78-6f17-4530-b68d-f1f860f0dbdf.mp4"
+      },
+      {
+        "id": "seg-5-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/713ca2c3-4945-42bb-91c6-9bc43e5b6a4e.mp4"
+      },
+      {
+        "id": "seg-5-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/af887eb5-6e4a-4bb0-bef8-03a38e258981.mp4"
+      },
+      {
+        "id": "seg-5-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/62d5dae9-1079-4536-a8b3-2f7444954c51.mp4"
+      },
+      {
+        "id": "seg-5-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b0c43bd2-31cf-4799-802b-e185bd48b1f8.mp4"
+      },
+      {
+        "id": "seg-6-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/a829313c-9d06-4174-b2ca-38e65d94ada2.mp4"
+      },
+      {
+        "id": "seg-6-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/909d0edb-3d4d-464d-97e7-a7d74805976e.mp4"
+      },
+      {
+        "id": "seg-6-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ee3c8c94-b3b2-47d9-89ab-57fce3c94030.mp4"
+      },
+      {
+        "id": "seg-6-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/dabbf23e-e46c-4170-9ee3-03a22e49cd31.mp4"
+      },
+      {
+        "id": "seg-6-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/cd383301-876c-4584-b9ee-183bc50d41da.mp4"
+      }
+    ]
+  },
+  "phase7_merge": {
+    "status": "completed",
+    "finalVideoUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-videos/033ed2b0-514d-464b-95b4-49fe5cc409b5.mp4"
+  }
+}

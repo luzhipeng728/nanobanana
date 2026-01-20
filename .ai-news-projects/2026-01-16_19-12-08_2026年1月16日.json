@@ -1,0 +1,276 @@
+{
+  "projectId": "2026-01-16_19-12-08_2026年1月16日",
+  "topic": "2026年1月16日股市速报",
+  "createdAt": "2026-01-16T19:12:08.919Z",
+  "updatedAt": "2026-01-16T19:32:37.436Z",
+  "currentPhase": 7,
+  "status": "completed",
+  "phase1_research": {
+    "status": "pending"
+  },
+  "phase2_storyboard": {
+    "status": "completed",
+    "scenes": [
+      {
+        "sceneId": "scene-1",
+        "title": "开场",
+        "narration": "大家好，欢迎收看今日股市速报！今天是2026年1月16日，为您带来A股与美股的最新行情。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark navy blue to charcoal gray. Subtle tech grid pattern at low opacity. Soft cyan and purple ambient glow. Floating holographic particles. HEADER: Large Chinese title \"今日股市速报\" in bold white text with cyan glowing effect, centered at top. Subtitle \"2026年1月16日\" in holographic pill badge. Thin glowing cyan separator line. CONTENT CARDS (4 cards in 2x2 grid): Card 1: Glassmorphism card with cyan border, stock chart icon, text \"沪深A股 最新行情\". Card 2: Glassmorphism card with purple border, US flag icon, text \"美股纳斯达克 标普道指\". Card 3: Glassmorphism card with amber border, chip icon, text \"芯片板块 涨价潮\". Card 4: Glassmorphism card with emerald border, trend icon, text \"市场热点 全面解读\". FOOTER: Tagline \"投资有风险 入市需谨慎\" at bottom center. DECORATIVE: Floating hexagons at corners, stock market icons, rising candlestick charts, subtle particle dust. Professional financial infographic design, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/bbe4aed2-f479-46cc-a1d3-8b8101e6d157.png"
+      },
+      {
+        "sceneId": "scene-2",
+        "title": "A股行情",
+        "narration": "今日A股三大指数集体收跌，沪指跌0.26%，深成指跌0.18%，创业板指跌0.2%。这是A股站上4100点的第6天。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark navy blue to charcoal gray with red downward arrows at low opacity. Soft red and cyan ambient glow indicating market decline. HEADER: Large Chinese title \"A股三大指数收跌\" in bold white text with soft red glowing effect, centered at top. Subtitle \"2026年1月16日 收盘\" in holographic pill badge. CONTENT CARDS (3 cards): Card 1 HERO: Large glassmorphism card with red border, text \"沪指 -0.26%\" in large font, \"4100点 第6天\" below. Card 2: Glassmorphism card with rose border, text \"深成指 -0.18%\". Card 3: Glassmorphism card with orange border, text \"创业板指 -0.2%\". CENTER VISUAL: Large red downward trending candlestick chart. DECORATIVE: Floating data particles, stock ticker symbols, subtle grid pattern. Professional financial infographic, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/6f5d948d-dcd6-4287-bfc2-20b6c205d6e1.png"
+      },
+      {
+        "sceneId": "scene-3",
+        "title": "芯片涨价人气股跌停",
+        "narration": "受台积电财报提振，芯片板块走强。但前期高位人气股大面积跌停，金风科技、海格通信封单数十亿。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark navy blue to charcoal gray. Split screen effect with green glow on left, red glow on right. HEADER: Large Chinese title \"芯片涨价 VS 人气股跌停\" in bold white text, centered at top. Thin cyan separator line. LEFT SECTION (green theme): Glassmorphism card with emerald border, chip icon, text \"台积电财报提振\" and \"芯片板块走强\", upward green arrows. RIGHT SECTION (red theme): Glassmorphism card with rose border, warning icon, text \"金风科技 跌停\" and \"海格通信 跌停\", text \"封单数十亿\" in smaller font. DECORATIVE: Semiconductor chip graphics on left, falling stock charts on right, contrasting visual elements. Professional financial infographic, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/72552102-04fc-4b29-b5e9-03863a84535b.png"
+      },
+      {
+        "sceneId": "scene-4",
+        "title": "美股接近历史新高",
+        "narration": "美股方面，标普500涨至6971点，逼近7000点大关。台积电宣布今年资本支出高达520至560亿美元，AI投资热度不减。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark navy blue to charcoal gray. Soft green and cyan ambient glow indicating bullish market. Upward trending particle streams. HEADER: Large Chinese title \"美股逼近历史新高\" in bold white text with green glowing effect, centered at top. Subtitle \"S&P 500\" in holographic pill badge. CONTENT CARDS (3 cards): Card 1 HERO: Large glassmorphism card with emerald border, text \"标普500 6971点\" in large font, \"距7000点仅一步之遥\" below, upward green arrow. Card 2: Glassmorphism card with cyan border, TSMC logo style icon, text \"台积电资本支出\" and \"520-560亿美元\". Card 3: Glassmorphism card with purple border, AI chip icon, text \"AI投资热度不减\". DECORATIVE: Rising candlestick chart, US market icons, floating hexagons, particle dust. Professional financial infographic, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/c55b5eb5-b555-403a-b8cd-949b67284152.png"
+      },
+      {
+        "sceneId": "scene-5",
+        "title": "结尾",
+        "narration": "以上就是今日股市速报，祝您投资顺利，我们明天再见！",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark navy blue to charcoal gray. Balanced cyan and purple ambient glow. Floating holographic particles creating elegant atmosphere. HEADER: Large Chinese title \"感谢收看\" in bold white text with warm golden glowing effect, centered at top. Subtitle \"今日股市速报\" below. CONTENT: Central glassmorphism card with golden border, text \"祝您投资顺利\" in elegant font. Below: \"明天同一时间 不见不散\" in smaller text. DECORATIVE ELEMENTS: Soft light rays emanating from center, floating sparkles, subtle stock chart patterns at very low opacity in background. FOOTER: Small logo placeholder, date \"2026.01.16\". Professional, warm closing screen design, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/acd327a4-46cb-4c11-99fb-6219cbb7c1db.png"
+      }
+    ]
+  },
+  "phase3_tts": {
+    "status": "completed",
+    "items": [
+      {
+        "sceneId": "scene-1",
+        "text": "大家好，欢迎收看今日股市速报！今天是2026年1月16日，为您带来A股与美股的最新行情。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/3ca18f71-8177-499e-bc0f-d055ed8a0555.mp3",
+        "duration": 9.005
+      },
+      {
+        "sceneId": "scene-2",
+        "text": "今日A股三大指数集体收跌，沪指跌0.26%，深成指跌0.18%，创业板指跌0.2%。这是A股站上4100点的第6天。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/28e07ffe-2fe1-4d2e-a5c5-7111f8f4fd41.mp3",
+        "duration": 13.533
+      },
+      {
+        "sceneId": "scene-3",
+        "text": "受台积电财报提振，芯片板块走强。但前期高位人气股大面积跌停，金风科技、海格通信封单数十亿。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/03e892bc-2bdd-4e80-954c-c07ffedde757.mp3",
+        "duration": 9.481
+      },
+      {
+        "sceneId": "scene-4",
+        "text": "美股方面，标普500涨至6971点，逼近7000点大关。台积电宣布今年资本支出高达520至560亿美元，AI投资热度不减。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/19745c4f-0511-46c6-8147-7ac92c8863e8.mp3",
+        "duration": 12.326
+      },
+      {
+        "sceneId": "scene-5",
+        "text": "以上就是今日股市速报，祝您投资顺利，我们明天再见！",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/dd737771-7699-48f9-a109-7b697638ec1d.mp3",
+        "duration": 4.674
+      }
+    ],
+    "totalDuration": 49.019
+  },
+  "phase4_segments": {
+    "status": "in_progress",
+    "mergePlan": [
+      {
+        "sceneId": "scene-1",
+        "videoSegmentCount": 2,
+        "videoDuration": 10,
+        "videoSegments": [
+          {
+            "id": "seg-1-1",
+            "endFramePrompt": "END FRAME of 5s video. START: Stock market briefing infographic with title and 4 cards. END: Text fading 50%, camera slowly zooming toward A-stock section card. Cyberpunk style, deep navy background, cyan glow, floating particles. Cards becoming slightly transparent, focus shifting to domestic market theme.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/69a37d13-d87a-4bee-97fa-80e5d7820b84.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/1071b15c-2c67-4ea8-882d-13135463de09.mp4"
+          },
+          {
+            "id": "seg-1-2",
+            "endFramePrompt": "END FRAME of 5s video. Text fully faded, smooth transition to A-stock theme. Deep navy background with red undertones emerging. Stock chart patterns visible, preparing for next scene about A-stock decline. No visible text, pure visual atmosphere.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/d8ab1c2c-5625-48e3-b09c-dc9455dbb3fc.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/de1eb2b5-26d6-4a96-a09b-139443d19306.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/3ca18f71-8177-499e-bc0f-d055ed8a0555.mp3",
+        "subtitleText": "大家好，欢迎收看今日股市速报！今天是2026年1月16日，为您带来A股与美股的最新行情。",
+        "ttsDuration": 9.005
+      },
+      {
+        "sceneId": "scene-2",
+        "videoSegmentCount": 3,
+        "videoDuration": 15,
+        "videoSegments": [
+          {
+            "id": "seg-2-1",
+            "endFramePrompt": "END FRAME of 5s video. START: A-stock decline infographic with index data. END: Text fading 30%, focus on Shanghai index card showing -0.26%. Red downward arrows more prominent. Cyberpunk financial style, dark background with red glow.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/c098f2d7-f1f4-4546-9362-171822607f91.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/86c89cf8-58f1-4e62-aec7-ab60bbc13095.mp4"
+          },
+          {
+            "id": "seg-2-2",
+            "endFramePrompt": "END FRAME of 5s video. Text fading 70%, camera panning to show all three indices. Shenzhen -0.18% and ChiNext -0.2% highlighted. Red candlestick chart animation, bearish market atmosphere. Floating data particles in red and gray.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/9fe0626f-c8ba-44a5-99ae-28c9cfa5afa4.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7d529de5-41c2-4285-bc54-94dc595c907d.mp4"
+          },
+          {
+            "id": "seg-2-3",
+            "endFramePrompt": "END FRAME of 5s video. All text faded out, pure visual of declining market. Large red downward candlestick chart centered, 4100 points marker glowing. Dark atmosphere, transition ready for next scene about chip sector.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/da5e0217-ff03-4032-a718-e22d4096f168.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/1be1074c-b28a-4157-9434-b94c051f0a34.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/28e07ffe-2fe1-4d2e-a5c5-7111f8f4fd41.mp3",
+        "subtitleText": "今日A股三大指数集体收跌，沪指跌0.26%，深成指跌0.18%，创业板指跌0.2%。这是A股站上4100点的第6天。",
+        "ttsDuration": 13.533
+      },
+      {
+        "sceneId": "scene-3",
+        "videoSegmentCount": 2,
+        "videoDuration": 10,
+        "videoSegments": [
+          {
+            "id": "seg-3-1",
+            "endFramePrompt": "END FRAME of 5s video. START: Split screen chip vs stocks infographic. END: Text fading 50%, left side (chip sector) becoming brighter with green glow. TSMC chip graphics emerging. Right side (falling stocks) dimming. Visual contrast between winners and losers.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/3561a99f-a934-468d-9b3a-1624ccf19ad7.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/e9d3ac35-29d4-416f-8208-c25ccace5d91.mp4"
+          },
+          {
+            "id": "seg-3-2",
+            "endFramePrompt": "END FRAME of 5s video. Text fully faded, visual focus on contrast. Left: glowing semiconductor chips, upward green particles. Right: faded red falling charts. Cyberpunk industrial style, preparing transition to US market scene.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/e519a111-c9ad-45f6-9a30-b3128726daef.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b0743887-a8e9-4be8-b17f-4d4bf9cc712f.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/03e892bc-2bdd-4e80-954c-c07ffedde757.mp3",
+        "subtitleText": "受台积电财报提振，芯片板块走强。但前期高位人气股大面积跌停，金风科技、海格通信封单数十亿。",
+        "ttsDuration": 9.481
+      },
+      {
+        "sceneId": "scene-4",
+        "videoSegmentCount": 3,
+        "videoDuration": 15,
+        "videoSegments": [
+          {
+            "id": "seg-4-1",
+            "endFramePrompt": "END FRAME of 5s video. START: US stock infographic near all-time high. END: Text fading 30%, S&P 500 6971 number glowing green. Upward trending chart animation. American market vibes, blue and green color scheme.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/d9afbc08-47e2-4821-9abe-c4145e87d65c.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/0584cd53-57dc-4ed4-8912-92fc595f5462.mp4"
+          },
+          {
+            "id": "seg-4-2",
+            "endFramePrompt": "END FRAME of 5s video. Text fading 60%, focus on TSMC capex card. 520-560 billion dollars figure highlighted. AI chip graphics appearing, semiconductor factory silhouette. Tech investment theme prominent.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/92c9f14a-8fa0-47cd-9e5b-2cb22b81ea6a.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/f6dd07d9-3d9e-4df6-994b-04fc2ed2aa2a.mp4"
+          },
+          {
+            "id": "seg-4-3",
+            "endFramePrompt": "END FRAME of 5s video. All text faded, pure visual celebration of tech market. Rising green candlestick chart, AI chip icons floating, bull market atmosphere. Preparing smooth transition to closing scene.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/b2c64def-ddef-4e64-a7a2-6b4f4f03177b.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b7971bea-6681-41d9-b2a1-f46f14b67e3b.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/19745c4f-0511-46c6-8147-7ac92c8863e8.mp3",
+        "subtitleText": "美股方面，标普500涨至6971点，逼近7000点大关。台积电宣布今年资本支出高达520至560亿美元，AI投资热度不减。",
+        "ttsDuration": 12.326
+      },
+      {
+        "sceneId": "scene-5",
+        "videoSegmentCount": 1,
+        "videoDuration": 5,
+        "videoSegments": [
+          {
+            "id": "seg-5-1",
+            "endFramePrompt": "END FRAME of 5s video. START: Thank you closing infographic. END: Warm golden glow intensifying from center. Text faded to elegant fade-out. Soft particles floating upward like sparkles. Professional, warm closing atmosphere. Date 2026.01.16 subtly visible.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/835dd73a-bb34-4907-8aa7-235c7c129762.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/420e784e-1ee7-41b2-a8d7-dcd8509008ba.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/dd737771-7699-48f9-a109-7b697638ec1d.mp3",
+        "subtitleText": "以上就是今日股市速报，祝您投资顺利，我们明天再见！",
+        "ttsDuration": 4.674
+      }
+    ]
+  },
+  "phase5_endFrames": {
+    "status": "completed",
+    "items": []
+  },
+  "phase6_videos": {
+    "status": "completed",
+    "items": [
+      {
+        "id": "seg-1-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/1071b15c-2c67-4ea8-882d-13135463de09.mp4"
+      },
+      {
+        "id": "seg-1-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/de1eb2b5-26d6-4a96-a09b-139443d19306.mp4"
+      },
+      {
+        "id": "seg-2-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/86c89cf8-58f1-4e62-aec7-ab60bbc13095.mp4"
+      },
+      {
+        "id": "seg-2-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7d529de5-41c2-4285-bc54-94dc595c907d.mp4"
+      },
+      {
+        "id": "seg-2-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/1be1074c-b28a-4157-9434-b94c051f0a34.mp4"
+      },
+      {
+        "id": "seg-3-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/e9d3ac35-29d4-416f-8208-c25ccace5d91.mp4"
+      },
+      {
+        "id": "seg-3-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b0743887-a8e9-4be8-b17f-4d4bf9cc712f.mp4"
+      },
+      {
+        "id": "seg-4-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/0584cd53-57dc-4ed4-8912-92fc595f5462.mp4"
+      },
+      {
+        "id": "seg-4-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/f6dd07d9-3d9e-4df6-994b-04fc2ed2aa2a.mp4"
+      },
+      {
+        "id": "seg-4-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b7971bea-6681-41d9-b2a1-f46f14b67e3b.mp4"
+      },
+      {
+        "id": "seg-5-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/420e784e-1ee7-41b2-a8d7-dcd8509008ba.mp4"
+      }
+    ]
+  },
+  "phase7_merge": {
+    "status": "completed",
+    "finalVideoUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-videos/dcd70707-c765-4c7d-893f-f7336682a611.mp4"
+  }
+}

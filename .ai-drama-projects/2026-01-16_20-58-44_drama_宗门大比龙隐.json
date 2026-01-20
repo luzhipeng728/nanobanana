@@ -1,0 +1,192 @@
+{
+  "projectId": "2026-01-16_20-58-44_drama_宗门大比龙隐",
+  "title": "宗门大比·龙隐",
+  "style": "xianxia_fantasy",
+  "status": "in_progress",
+  "createdAt": "2026-01-16T20:58:44.224Z",
+  "updatedAt": "2026-01-16T21:00:44.182Z",
+  "characterBank": [
+    {
+      "characterId": "char-linchen",
+      "name": "林尘",
+      "description": "主角，表面是宗门杂役，实则是隐世归来的绝世强者。外表朴素低调，眼神深邃，约25岁，穿着破旧的灰色麻布道袍",
+      "referencePrompt": "A 25-year-old Chinese male cultivator with long black hair tied in a simple ponytail, wearing worn gray hemp robes. Calm and mysterious expression, deep ancient eyes that hint at hidden power. Simple appearance but dignified bearing. Clean-shaven, handsome features. Portrait photography, cinematic lighting, fantasy xianxia style, 4K resolution, neutral background.",
+      "referenceImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/8842f3e2-1687-40b5-8129-7662e5ff037c.png"
+    },
+    {
+      "characterId": "char-zhaotianjiao",
+      "name": "赵天骄",
+      "description": "反派，内门天才弟子，嚣张跋扈。约22岁，俊美但傲慢，穿华丽金边白色道袍，手持折扇",
+      "referencePrompt": "A 22-year-old Chinese male cultivator with sharp handsome features and arrogant expression. Long black hair with golden hair crown, wearing luxurious white robes with golden embroidery and jade ornaments. Holding an elegant folding fan. Proud and disdainful demeanor. Portrait photography, cinematic lighting, fantasy xianxia style, 4K resolution, neutral background.",
+      "referenceImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/5b52b1ed-b69c-491d-9a0c-f33f910742f0.png"
+    },
+    {
+      "characterId": "char-murongxue",
+      "name": "慕容雪",
+      "description": "内门才女弟子，美丽聪慧。约20岁，肤白如雪，穿淡蓝色仙女裙装，气质清冷",
+      "referencePrompt": "A 20-year-old beautiful Chinese female cultivator with porcelain skin and elegant features. Long flowing black hair with silver hairpin, wearing ethereal light blue flowing robes. Cold and noble temperament, intelligent eyes. Portrait photography, cinematic lighting, fantasy xianxia style, 4K resolution, neutral background.",
+      "referenceImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/e45d77f7-dfec-4c02-a4d5-774b46b8f123.png"
+    }
+  ],
+  "sceneBank": [
+    {
+      "sceneId": "scene-arena",
+      "location": "宗门比武场",
+      "description": "宏伟的仙家比武场，四周是层层观众席，中央是巨大的圆形石台，周围有仙气缭绕，远处是云雾中的仙山",
+      "scenePrompt": "Grand ancient Chinese martial arts arena in a celestial sect. Massive circular stone platform in the center, surrounded by tiered spectator seats filled with cultivators. Mystical mist and spiritual energy swirling around. Majestic mountain peaks in the background shrouded in clouds. Flying cranes in the sky. Xianxia fantasy style, epic scale, cinematic wide shot, dramatic lighting, 4K resolution."
+    },
+    {
+      "sceneId": "scene-arena-close",
+      "location": "比武台近景",
+      "description": "比武台中央特写，古朴的青石地面，刻有阵法符文，仙气氤氲",
+      "scenePrompt": "Close-up of ancient stone fighting platform with mystical rune carvings glowing faintly on the floor. Spiritual energy mist rising from the surface. Xianxia fantasy style, detailed textures, cinematic lighting, 4K resolution."
+    }
+  ],
+  "storyboard": {
+    "shots": [
+      {
+        "shotId": "shot-01",
+        "sceneId": "scene-arena",
+        "characters": [],
+        "duration": 5,
+        "description": "开场：宏大的宗门比武场全景，云雾缭绕，观众席坐满修士",
+        "dialogue": "",
+        "cameraMovement": "缓慢推进的航拍镜头",
+        "videoPrompt": "[0-2s] Aerial establishing shot of grand celestial martial arts arena. [2-5s] Camera slowly pushes in toward the central stone platform. Thousands of cultivators in spectator seats. Mystical mist swirling, cranes flying in the sky. Epic xianxia atmosphere. Cinematic style."
+      },
+      {
+        "shotId": "shot-02",
+        "sceneId": "scene-arena-close",
+        "characters": [
+          "char-zhaotianjiao"
+        ],
+        "duration": 5,
+        "description": "赵天骄在擂台上展示剑法，剑气纵横",
+        "dialogue": "",
+        "cameraMovement": "环绕镜头",
+        "videoPrompt": "character1 (reference) performing spectacular sword techniques on the stone platform. [0-2s] Spinning with elegant sword forms. [2-5s] Releasing golden sword energy waves that illuminate the arena. Arrogant confident expression. Crowd watching in awe. Xianxia fantasy action, cinematic lighting."
+      },
+      {
+        "shotId": "shot-03",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-zhaotianjiao"
+        ],
+        "duration": 5,
+        "description": "赵天骄傲然站立，接受众人欢呼，得意洋洋",
+        "dialogue": "哈哈，谁敢与我一战！",
+        "cameraMovement": "低角度仰拍",
+        "videoPrompt": "character1 (reference) standing proudly on the platform after his performance. [0-3s] Low angle shot looking up at him, arms crossed smugly. [3-5s] He looks around with disdain, saying: Ha ha, who dares fight me! Crowd cheering in background. Arrogant expression. Xianxia fantasy style."
+      },
+      {
+        "shotId": "shot-04",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-linchen"
+        ],
+        "duration": 5,
+        "description": "林尘穿着破旧道袍，低调地走过擂台边缘，端着茶盘为长老送茶",
+        "dialogue": "",
+        "cameraMovement": "中景跟随",
+        "videoPrompt": "character1 (reference) in worn gray robes walking quietly at the edge of the arena, carrying a tea tray. [0-3s] Humble servant demeanor, head slightly bowed. [3-5s] He glances briefly at the platform with calm mysterious eyes. Nobody pays attention to him. Xianxia fantasy style, natural lighting."
+      },
+      {
+        "shotId": "shot-05",
+        "sceneId": "scene-arena-close",
+        "characters": [
+          "char-zhaotianjiao",
+          "char-linchen"
+        ],
+        "duration": 5,
+        "description": "赵天骄注意到林尘，轻蔑地走向他，一脚踢翻茶盘",
+        "dialogue": "杂役也配出现在这里？",
+        "cameraMovement": "中景",
+        "videoPrompt": "character1 (reference, arrogant young master) notices character2 (reference, humble servant) and walks toward him menacingly. [0-2s] character1 approaches with contempt. [2-5s] character1 kicks the tea tray from character2 hands, saying: A mere servant dares appear here? Tea cups scatter. character2 remains calm. Xianxia fantasy style."
+      },
+      {
+        "shotId": "shot-06",
+        "sceneId": "scene-arena-close",
+        "characters": [
+          "char-murongxue"
+        ],
+        "duration": 5,
+        "description": "慕容雪在观众席皱眉，觉得赵天骄太过分",
+        "dialogue": "",
+        "cameraMovement": "中景特写",
+        "videoPrompt": "character1 (reference, beautiful female cultivator) watching from the spectator seats with a frown of disapproval. [0-3s] She shakes her head slightly at the bullying scene. [3-5s] Close-up of her elegant face showing concern and curiosity about the humble servant. Xianxia fantasy style, soft lighting."
+      },
+      {
+        "shotId": "shot-07",
+        "sceneId": "scene-arena-close",
+        "characters": [
+          "char-zhaotianjiao",
+          "char-linchen"
+        ],
+        "duration": 5,
+        "description": "赵天骄挥剑攻向林尘，林尘用一根手指轻轻挡住了剑",
+        "dialogue": "",
+        "cameraMovement": "快速推进",
+        "videoPrompt": "character1 (reference, arrogant master) angrily swings his glowing sword at character2 (reference, humble servant). [0-2s] Sword slashing down with golden energy. [2-5s] SHOCKING moment - character2 catches the sword blade with just ONE finger, completely still. character1 face shows disbelief. Dramatic lighting, energy sparks. Xianxia fantasy action."
+      },
+      {
+        "shotId": "shot-08",
+        "sceneId": "scene-arena-close",
+        "characters": [
+          "char-linchen"
+        ],
+        "duration": 5,
+        "description": "林尘抬起头，双眼闪过金色光芒，释放出恐怖气势",
+        "dialogue": "小辈，够了",
+        "cameraMovement": "特写推进",
+        "videoPrompt": "character1 (reference) slowly raises his head. [0-2s] Close-up of his face as his eyes begin glowing with ancient golden light. [2-5s] He speaks calmly: Young one, enough. Terrifying spiritual pressure emanates from him, wind blowing his robes and hair. Hidden master finally revealed. Dramatic xianxia lighting, power aura visible."
+      },
+      {
+        "shotId": "shot-09",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-zhaotianjiao"
+        ],
+        "duration": 5,
+        "description": "赵天骄被气势压得跪倒在地，全场震惊",
+        "dialogue": "",
+        "cameraMovement": "多角度切换",
+        "videoPrompt": "character1 (reference, arrogant master) is forced to his knees by overwhelming spiritual pressure. [0-2s] He struggles against invisible force, sword clattering to ground. [2-5s] Wide shot showing entire crowd gasping in shock, some elders standing up. Dramatic revelation moment. Xianxia fantasy style, epic lighting."
+      },
+      {
+        "shotId": "shot-10",
+        "sceneId": "scene-arena-close",
+        "characters": [
+          "char-linchen"
+        ],
+        "duration": 5,
+        "description": "结尾：林尘负手而立，仙风道骨，真正的隐世大佬显现",
+        "dialogue": "",
+        "cameraMovement": "缓慢环绕上升",
+        "videoPrompt": "character1 (reference) stands with hands clasped behind back, radiating ancient immortal aura. [0-3s] Camera slowly orbits around him as golden spiritual energy swirls. [3-5s] His worn gray robes flutter in the wind, but his bearing is that of an immortal emperor. Majestic final shot. Epic xianxia atmosphere, divine lighting."
+      }
+    ]
+  },
+  "phase1_characters": {
+    "status": "completed"
+  },
+  "phase2_scenes": {
+    "status": "in_progress"
+  },
+  "phase3_storyboard": {
+    "status": "in_progress"
+  },
+  "phase4_tts": {
+    "status": "pending",
+    "items": []
+  },
+  "phase5_frames": {
+    "status": "pending"
+  },
+  "phase6_videos": {
+    "status": "pending"
+  },
+  "phase7_merge": {
+    "status": "pending",
+    "finalVideoUrl": null
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "projectId": "2026-01-16_20-29-15_drama_打工人的一天",
+  "title": "打工人的一天",
+  "style": "realistic",
+  "status": "completed",
+  "createdAt": "2026-01-16T20:29:15.914Z",
+  "updatedAt": "2026-01-16T20:51:19.307Z",
+  "characterBank": [
+    {
+      "characterId": "xiaoming",
+      "name": "小明",
+      "description": "25岁中国男性，短黑发，戴黑框眼镜，穿着普通白衬衫和深色休闲裤，一脸疲惫但努力装作精神的样子，眼袋明显",
+      "referencePrompt": "A 25-year-old Chinese man with short black hair, wearing black-framed glasses, dressed in a plain white dress shirt and dark casual pants. Tired looking face with visible eye bags, trying to look energetic. Clean-shaven, average build. Professional portrait photography, soft studio lighting, neutral gray background, 4K resolution.",
+      "referenceImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/e05c7666-6eea-41c9-8667-33a245abb597.png",
+      "referenceVideoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/02/20260117/b3101231/4cd3c087-d72e-4f91-a53d-21471111edfe.mp4?Expires=1768681971&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=%2Bjn495C3cNeZo10SFhrLwjcfgkk%3D"
+    },
+    {
+      "characterId": "boss",
+      "name": "王总",
+      "description": "45岁中国男性老板，微胖，穿着得体深色西装，表情严肃，有一点秃顶",
+      "referencePrompt": "A 45-year-old Chinese businessman, slightly overweight, wearing a well-fitted dark suit with a tie. Serious facial expression, slightly balding. Authoritative appearance. Professional portrait photography, soft studio lighting, neutral gray background, 4K resolution.",
+      "referenceImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/7e0468a6-40e1-4ff8-bfc9-8d078acadc35.png",
+      "referenceVideoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/25/20260117/b3101231/2d536515-3aca-4655-8ad9-4742c3cace9e.mp4?Expires=1768682059&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=E1Dj3GLoJfYRYYLITvVrIyDldtM%3D"
+    }
+  ],
+  "sceneBank": [
+    {
+      "sceneId": "bedroom",
+      "location": "卧室",
+      "description": "普通出租屋卧室，光线昏暗，床铺凌乱，床头有闹钟",
+      "scenePrompt": "Simple rental apartment bedroom in China, dim morning light through curtains, messy bed with rumpled blankets, alarm clock on nightstand, small room, realistic style, slightly cluttered but lived-in. Wide angle interior shot, natural morning light, 4K resolution.",
+      "sceneImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/1c571812-e67d-4b8a-b978-c4108ac8876a.png"
+    },
+    {
+      "sceneId": "subway",
+      "location": "地铁车厢",
+      "description": "早高峰拥挤的地铁车厢，人头攒动",
+      "scenePrompt": "Extremely crowded subway car during morning rush hour in China, packed with commuters in business attire, holding onto handles, everyone looking tired, bright fluorescent lighting, realistic documentary style. Wide angle interior shot, 4K resolution.",
+      "sceneImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/8d93733f-a1f7-49e6-b450-c9dc3be2fc5f.png"
+    },
+    {
+      "sceneId": "meeting-room",
+      "location": "公司会议室",
+      "description": "现代公司会议室，有投影仪，长桌和椅子",
+      "scenePrompt": "Modern corporate meeting room in Chinese office, long conference table with chairs, projector screen on wall, bright office lighting, clean and professional environment. Wide angle interior shot, office lighting, 4K resolution.",
+      "sceneImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/a5869892-0c18-4e21-ba97-ecd1f6194d14.png"
+    },
+    {
+      "sceneId": "office-cubicle",
+      "location": "办公区工位",
+      "description": "开放式办公区，普通工位，有电脑和时钟",
+      "scenePrompt": "Open plan office space in China, cubicle workstation with computer monitor, wall clock visible, typical corporate environment, afternoon lighting. Wide angle shot, fluorescent office lighting, 4K resolution.",
+      "sceneImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/f221b857-1f4d-4931-bcd5-c45562445a5c.png"
+    },
+    {
+      "sceneId": "night-street",
+      "location": "夜晚街道",
+      "description": "城市夜晚空旷街道，路灯昏暗，远处有城市灯光",
+      "scenePrompt": "Empty city street at night in Chinese city, dim street lamps, city lights in background, lonely atmosphere, after-work hours. Wide angle exterior shot, night photography, 4K resolution.",
+      "sceneImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/e8080037-c784-43b4-a8b9-c46bb90d0b9d.png"
+    }
+  ],
+  "storyboard": {
+    "shots": [
+      {
+        "shotId": "shot-1",
+        "sceneId": "bedroom",
+        "characters": [
+          "xiaoming"
+        ],
+        "duration": 5,
+        "description": "闹钟响起，小明痛苦地关闹钟，发现已经8:45",
+        "dialogue": "每天早上都在和闹钟较量",
+        "cameraMovement": "从闹钟特写拉到脸部，然后快切到惊恐表情",
+        "videoPrompt": "Young Chinese man with glasses (reference) in bed reaching to turn off alarm clock. [0-2s] Hand reaches out sleepily, eyes closed, turns off alarm. [2-3s] Opens eyes, looks at phone. [3-5s] Suddenly sits up with shocked expression, seeing 8:45 on phone. Dark bedroom, morning light through curtains. Chinese voiceover: Every morning I battle with my alarm clock. Sound effects: alarm ringing, gasp.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/6a/20260117/973225dd/3663b946-aa57-4c65-9032-d0a459c0ebb1.mp4?Expires=1768682272&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=FEcRJUf%2FYhI%2Bf2u9nlqyosvVVbI%3D"
+      },
+      {
+        "shotId": "shot-2",
+        "sceneId": "subway",
+        "characters": [
+          "xiaoming"
+        ],
+        "duration": 5,
+        "description": "小明被挤在人群中动弹不得",
+        "dialogue": "练就了沙丁鱼的生存技能",
+        "cameraMovement": "俯拍拥挤人群",
+        "videoPrompt": "Young Chinese man with glasses (reference) squeezed tightly in crowded subway during rush hour. [0-2s] Struggles to breathe, surrounded by commuters. [2-4s] Tries to raise arm to check watch but cannot move. [4-5s] Makes a helpless resigned expression. Packed subway car, fluorescent lighting. Chinese voiceover: I have mastered the survival skills of a sardine. Sound effects: subway announcement, crowd noise.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/1b/20260117/973225dd/0bbd48ae-fc39-4e69-b566-9fa09c9c9ec7.mp4?Expires=1768682394&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=lW7DT7uBHKpcpEzA5WcKPmFbLLc%3D"
+      },
+      {
+        "shotId": "shot-3",
+        "sceneId": "meeting-room",
+        "characters": [
+          "xiaoming",
+          "boss"
+        ],
+        "duration": 5,
+        "description": "老板开会，小明昏昏欲睡",
+        "dialogue": "老板的声音是最好的催眠曲",
+        "cameraMovement": "从老板讲话切到小明打瞌睡",
+        "videoPrompt": "Corporate meeting room scene. [0-2s] Middle-aged boss in suit speaking at front of room by projector. [2-5s] Camera moves to young man with glasses (reference) in back row, eyelids getting heavy, head slowly nodding down, about to fall asleep. Bright office lighting. Chinese voiceover: My boss voice is the best lullaby. Sound effects: droning voice, pen dropping.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/73/20260117/973225dd/776d0fcf-567e-4020-aea6-ae456d7ed144.mp4?Expires=1768682563&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=%2Fyo8GYnpBwXCHTQRHItuDx1Do1E%3D"
+      },
+      {
+        "shotId": "shot-4",
+        "sceneId": "meeting-room",
+        "characters": [
+          "xiaoming",
+          "boss"
+        ],
+        "duration": 5,
+        "description": "老板突然叫小明名字，小明假装认真",
+        "dialogue": "但我能0.1秒假装认真",
+        "cameraMovement": "快速推进小明震惊的脸",
+        "videoPrompt": "Corporate meeting room. [0-1s] Boss points at young man with glasses (reference), calling his name. [1-3s] Young man suddenly jolts awake with wide eyes, sits up straight. [3-5s] Quickly grabs pen and pretends to take notes intensely, exaggerated fake concentration face. Chinese voiceover: But I can fake being attentive in 0.1 seconds! Sound effects: chair scraping, scribbling sounds.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/48/20260117/973225dd/98c63d99-6629-4824-aa2f-1b2e8ea5325a.mp4?Expires=1768682719&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=fFCH7bbbed%2Bj268x45rjQyOmMaA%3D"
+      },
+      {
+        "shotId": "shot-5",
+        "sceneId": "office-cubicle",
+        "characters": [
+          "xiaoming",
+          "boss"
+        ],
+        "duration": 5,
+        "description": "5:59等下班，6:00老板出现说加班",
+        "dialogue": "加个班",
+        "cameraMovement": "时钟特写，然后老板突然出现",
+        "videoPrompt": "Office cubicle scene. [0-2s] Young man with glasses (reference) staring intensely at wall clock showing 5:59, finger hovering over power button, anticipating expression. [2-3s] Clock turns to 6:00, man starts to smile. [3-5s] Boss suddenly appears behind him, taps his shoulder, says overtime. Mans smile freezes into despair. Chinese dialogue: Lets do some overtime. Sound effects: clock ticking, dramatic music sting.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/fe/20260117/973225dd/c8c4416c-a040-4e3d-afad-eba64d316436.mp4?Expires=1768682899&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=Z0Tv7woDWI75BwU%2F22%2FWikLuH%2FI%3D"
+      },
+      {
+        "shotId": "shot-6",
+        "sceneId": "night-street",
+        "characters": [
+          "xiaoming"
+        ],
+        "duration": 5,
+        "description": "深夜下班，小明自嘲比大拇指",
+        "dialogue": "明天还是充满希望的一天，才怪",
+        "cameraMovement": "远景到近景，最后正面特写",
+        "videoPrompt": "Night street scene with city lights. [0-2s] Young man with glasses (reference) walking alone on empty street, looking at phone showing salary 3500 yuan. [2-4s] Looks up at camera with tired but ironic smile. [4-5s] Gives thumbs up with exaggerated fake happy expression, city skyline behind. Chinese voiceover: Tomorrow will still be a hopeful day... NOT! Sound effects: city ambient, sad trombone.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/e7/20260117/973225dd/ab858848-3097-4021-96d6-00c3ce74df63.mp4?Expires=1768683044&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=BoocgbX7XEj7gRWgGCGuVgb7HGA%3D"
+      }
+    ]
+  },
+  "phase1_characters": {
+    "status": "completed"
+  },
+  "phase2_scenes": {
+    "status": "completed"
+  },
+  "phase3_storyboard": {
+    "status": "in_progress"
+  },
+  "phase4_tts": {
+    "status": "pending",
+    "items": []
+  },
+  "phase5_frames": {
+    "status": "pending"
+  },
+  "phase6_videos": {
+    "status": "completed"
+  },
+  "phase7_merge": {
+    "status": "completed",
+    "finalVideoUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-videos/9d00cae8-e0bf-48eb-a62a-65687dd26f46.mp4"
+  }
+}

@@ -1,0 +1,236 @@
+{
+  "projectId": "2026-01-16_21-06-48_drama_宗门大比隐藏大佬",
+  "title": "宗门大比·隐藏大佬",
+  "style": "chinese-fantasy",
+  "status": "completed",
+  "createdAt": "2026-01-16T21:06:48.453Z",
+  "updatedAt": "2026-01-16T21:35:51.445Z",
+  "characterBank": [
+    {
+      "characterId": "char-linchen",
+      "name": "林尘",
+      "description": "20岁青年，外表平凡内敛，穿着朴素灰色粗布道袍，黑发束起，眼神深邃平静如古井无波。隐藏大佬，实力深不可测。",
+      "referencePrompt": "A 20-year-old Chinese young man with an unassuming appearance, wearing a simple gray coarse cloth Taoist robe. Black hair tied up in a simple bun. Deep calm eyes that hide immense power, serene expression. Slender build. Ancient Chinese cultivation fantasy style. Portrait photography, soft natural lighting, misty mountain background, 4K resolution, cinematic.",
+      "referenceImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/243508f6-86c2-4587-aee9-15992238404f.png",
+      "referenceVideoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/b4/20260117/b3101231/8b02da6a-9839-44f1-8489-6524d0c8018c.mp4?Expires=1768684237&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=hY3whHvdTcy%2Bw4SeGPpcw%2BJZEzg%3D"
+    },
+    {
+      "characterId": "char-zhaotianjiao",
+      "name": "赵天骄",
+      "description": "22岁，宗门第一天才，面容俊朗却傲气逼人，穿金边白色华贵道袍，手持青锋剑，周身剑气缭绕。",
+      "referencePrompt": "A 22-year-old handsome Chinese young man with an arrogant expression, wearing luxurious white Taoist robes with golden trim. Sharp features, confident smirk. Holding an elegant cyan sword. Sword energy aura around him. Ancient Chinese cultivation fantasy style. Portrait photography, dramatic lighting, 4K resolution, cinematic.",
+      "referenceImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/3c4fdb60-0931-4bef-a994-2da55d95cb67.png",
+      "referenceVideoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/0e/20260117/b3101231/5d87de77-28e6-471b-91b5-74801a2d9d6b.mp4?Expires=1768684240&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=7g%2B5AMKLD%2BGRWQgBRB%2BVY8S%2BFxY%3D"
+    },
+    {
+      "characterId": "char-murongxue",
+      "name": "慕容雪",
+      "description": "21岁，宗门大师姐，冷艳绝美，一袭淡紫色道袍，长发如瀑，气质高贵清冷，修为高深。",
+      "referencePrompt": "A 21-year-old beautiful Chinese woman with a cold and elegant demeanor, wearing light purple Taoist robes. Long flowing black hair, flawless porcelain skin, icy beautiful eyes. Noble and aloof aura. Ancient Chinese cultivation fantasy style. Portrait photography, soft ethereal lighting, 4K resolution, cinematic.",
+      "referenceImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/4e999c2b-2832-4980-86e9-afe2ba26032c.png",
+      "referenceVideoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/d7/20260117/b3101231/1c869f73-d3fd-4b79-95e1-a56c15209f5c.mp4?Expires=1768684243&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=f6xq%2FxduoEEUScB%2BbogRjOawZiU%3D"
+    },
+    {
+      "characterId": "char-elder",
+      "name": "刘长老",
+      "description": "60岁，宗门长老，白发白须，仙风道骨，穿深蓝色长老道袍，威严慈祥。",
+      "referencePrompt": "A 60-year-old Chinese elder with white hair and long white beard, wearing deep blue elder Taoist robes. Dignified and immortal-like appearance, wise and kind eyes. Ancient Chinese cultivation fantasy style. Portrait photography, majestic lighting, 4K resolution, cinematic.",
+      "referenceImageUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-images/f0654286-099e-4f5b-a7a5-f17e846619f4.png",
+      "referenceVideoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/0d/20260117/b3101231/d1c19347-31fc-4ad9-8c5a-5c5e822e7d0e.mp4?Expires=1768684234&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=vEDFnZc9QkuLcDGutq5ABf%2FW6n4%3D"
+    }
+  ],
+  "sceneBank": [
+    {
+      "sceneId": "scene-arena",
+      "location": "宗门大比擂台",
+      "description": "云雾缭绕的山巅，巨大的青石擂台悬浮在云海之上，四周刻有古老阵纹，金光闪烁。擂台周围环绕着层层看台，数千弟子围观。",
+      "scenePrompt": "A massive floating stone arena platform suspended above clouds on a mountain peak. Ancient glowing golden formation runes carved on the arena surface. Misty clouds swirling around. Majestic ancient Chinese immortal sect architecture. Tiered spectator stands surrounding the arena filled with cultivators in robes. Dramatic lighting from above, ethereal atmosphere. Ancient Chinese fantasy style, cinematic wide shot, 4K resolution."
+    },
+    {
+      "sceneId": "scene-audience",
+      "location": "观众席",
+      "description": "层层环绕的观众看台，坐满了各色道袍的弟子，上方是长老席位，气氛热烈。",
+      "scenePrompt": "Tiered spectator stands at a cultivation sect competition, filled with disciples wearing various colored Taoist robes. Elder seats elevated above with ornate canopy. Excited crowd atmosphere. Ancient Chinese immortal sect style, misty mountain background. Cinematic medium shot, 4K resolution."
+    }
+  ],
+  "storyboard": {
+    "shots": [
+      {
+        "shotId": "shot-01",
+        "sceneId": "scene-arena",
+        "characters": [],
+        "duration": 10,
+        "description": "全景镜头，云海之上的宗门擂台，气势恢宏",
+        "dialogue": "",
+        "cameraMovement": "航拍下推",
+        "videoPrompt": "Epic wide aerial shot of a massive floating stone arena suspended above clouds on a mountain peak. Ancient golden formation runes glowing on the arena surface. Misty clouds swirling around. Thousands of cultivators in robes watching from tiered stands. Camera slowly descends toward the arena. Majestic immortal sect atmosphere. Cinematic, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/67/20260117/973225dd/073976b5-452d-44f1-8fa2-24b64c553c7f.mp4?Expires=1768684518&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=7lc1%2BIAn%2FdRrjqkkOecBIhmMimE%3D"
+      },
+      {
+        "shotId": "shot-02",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-zhaotianjiao"
+        ],
+        "duration": 10,
+        "description": "赵天骄在擂台上施展剑法，击败多名对手，剑气纵横",
+        "dialogue": "",
+        "cameraMovement": "环绕跟拍",
+        "videoPrompt": "character1 (reference) standing victorious on the arena, performing spectacular sword techniques. Cyan sword energy slashing through the air. Defeated opponents stumbling back. Arrogant confident expression. White robes with golden trim flowing. Crowd cheering in background. Dynamic camera circling around. Ancient Chinese fantasy style, cinematic action, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/67/20260117/973225dd/073976b5-452d-44f1-8fa2-24b64c553c7f.mp4?Expires=1768684518&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=7lc1%2BIAn%2FdRrjqkkOecBIhmMimE%3D"
+      },
+      {
+        "shotId": "shot-03",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-zhaotianjiao"
+        ],
+        "duration": 5,
+        "description": "赵天骄傲然站立，挑衅地环视四周",
+        "dialogue": "哈哈！谁还敢与我一战！",
+        "cameraMovement": "低角度仰拍",
+        "videoPrompt": "character1 (reference) standing proudly on the arena, arms crossed, looking around with an arrogant smirk. Speaking loudly to challenge opponents. White robes with golden trim. Low angle shot making him appear dominant. Crowd in background. Ancient Chinese fantasy style, cinematic, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/67/20260117/973225dd/073976b5-452d-44f1-8fa2-24b64c553c7f.mp4?Expires=1768684518&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=7lc1%2BIAn%2FdRrjqkkOecBIhmMimE%3D"
+      },
+      {
+        "shotId": "shot-04",
+        "sceneId": "scene-audience",
+        "characters": [
+          "char-murongxue"
+        ],
+        "duration": 5,
+        "description": "慕容雪在观众席皱眉，对赵天骄的傲慢感到不满",
+        "dialogue": "",
+        "cameraMovement": "中景特写",
+        "videoPrompt": "character1 (reference) sitting in the spectator stands, frowning with displeasure. Cold beautiful eyes showing subtle annoyance. Light purple Taoist robes. Other disciples around her. Medium close-up shot. Ancient Chinese fantasy style, cinematic, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/ff/20260117/973225dd/f3409587-0160-4068-9337-d11b4a7a30c6.mp4?Expires=1768684681&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=m0pKjUZUoFFRqf%2FhhNQr8ZDwAyc%3D"
+      },
+      {
+        "shotId": "shot-05",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-linchen"
+        ],
+        "duration": 10,
+        "description": "林尘被嘲笑着推上擂台，神色平静如水",
+        "dialogue": "",
+        "cameraMovement": "跟随镜头",
+        "videoPrompt": "character1 (reference) being pushed onto the arena stage by laughing disciples. Wearing simple gray coarse cloth robes. Calm serene expression despite the mockery. Walking steadily forward. Some disciples pointing and laughing. Following shot tracking his movement. Ancient Chinese fantasy style, cinematic, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/d1/20260117/973225dd/f6f800ac-cf62-46ab-9a39-482db1ce69b8.mp4?Expires=1768684875&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=OAzQCGLHHbcMTrMPdfJkXtzmDmg%3D"
+      },
+      {
+        "shotId": "shot-06",
+        "sceneId": "scene-audience",
+        "characters": [],
+        "duration": 5,
+        "description": "众弟子哄笑，觉得他是在送死",
+        "dialogue": "哈哈哈！这个废物也敢上台！",
+        "cameraMovement": "快速剪切",
+        "videoPrompt": "Crowd of disciples in the spectator stands laughing mockingly. Pointing at the arena with amused expressions. Various colored Taoist robes. Quick cut reactions from different audience members. Ancient Chinese fantasy style, cinematic, 4K."
+      },
+      {
+        "shotId": "shot-07",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-zhaotianjiao"
+        ],
+        "duration": 10,
+        "description": "赵天骄轻蔑一笑，全力出剑，剑气化作青龙",
+        "dialogue": "不自量力！看我青龙剑诀！",
+        "cameraMovement": "侧面跟拍",
+        "videoPrompt": "character1 (reference) sneering contemptuously, then unleashing a powerful sword attack. Sword energy forming into a massive cyan dragon shape flying toward opponent. Dramatic flowing robes. Intense confident expression. Side tracking shot following the attack. Ancient Chinese fantasy style, epic action, cinematic, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/80/20260117/973225dd/2b698c3e-1406-4235-955d-bfc50a83ceff.mp4?Expires=1768685123&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=nSCLt1bjBw0y6tPBczqE0EsRK8w%3D"
+      },
+      {
+        "shotId": "shot-08",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-linchen"
+        ],
+        "duration": 5,
+        "description": "林尘轻抬一指，轻描淡写地挡住了攻击",
+        "dialogue": "",
+        "cameraMovement": "正面特写",
+        "videoPrompt": "character1 (reference) calmly raising one finger. A massive sword energy dragon collides with his finger and dissipates like smoke. Completely calm serene expression. Gray robes unmoved by the impact. Dramatic close-up shot. Ancient Chinese fantasy style, powerful moment, cinematic, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/80/20260117/973225dd/2b698c3e-1406-4235-955d-bfc50a83ceff.mp4?Expires=1768685123&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=nSCLt1bjBw0y6tPBczqE0EsRK8w%3D"
+      },
+      {
+        "shotId": "shot-09",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-linchen"
+        ],
+        "duration": 10,
+        "description": "林尘缓缓抬头，双眼闪过金色光芒，释放出恐怖威压",
+        "dialogue": "",
+        "cameraMovement": "推近特写",
+        "videoPrompt": "character1 (reference) slowly raising head. Eyes suddenly flash with brilliant golden light. An overwhelming terrifying aura emanating from body. Wind swirling around. Expression transforms from calm to subtly powerful. Camera slowly pushing in to close-up on face. Ancient Chinese fantasy style, dramatic power reveal, cinematic, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/80/20260117/973225dd/2b698c3e-1406-4235-955d-bfc50a83ceff.mp4?Expires=1768685123&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=nSCLt1bjBw0y6tPBczqE0EsRK8w%3D"
+      },
+      {
+        "shotId": "shot-10",
+        "sceneId": "scene-audience",
+        "characters": [
+          "char-murongxue",
+          "char-elder"
+        ],
+        "duration": 5,
+        "description": "全场震惊，慕容雪瞪大眼睛，刘长老猛然站起",
+        "dialogue": "这...这是上古血脉！",
+        "cameraMovement": "快切反应镜头",
+        "videoPrompt": "character1 (reference) in spectator stands with eyes wide in shock. character2 (reference) suddenly standing up from elder seat with astonished expression. Other disciples around them frozen in disbelief. Quick reaction shots. Ancient Chinese fantasy style, dramatic moment, cinematic, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/f4/20260117/973225dd/f3aca01b-73e3-497f-abac-69eb00c72e47.mp4?Expires=1768685353&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=XepNo5UDSaCe%2Fbo9kuNRp0ebjzw%3D"
+      },
+      {
+        "shotId": "shot-11",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-linchen",
+          "char-zhaotianjiao"
+        ],
+        "duration": 10,
+        "description": "林尘轻轻一挥手，无形剑气将赵天骄击飞出擂台",
+        "dialogue": "",
+        "cameraMovement": "全景跟拍",
+        "videoPrompt": "character1 (reference) casually waving hand with calm expression. Invisible sword energy blast. character2 (reference) getting sent flying off the arena with shocked expression, crashing into the spectator barrier. Epic wide shot capturing the defeat. Ancient Chinese fantasy style, climactic action, cinematic, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/f1/20260117/4356b203/d2f39f5d-3905-4b35-9559-d5dee035945a.mp4?Expires=1768685568&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=F1ZRy3ke7fs1kEgpnirUOFKBHXs%3D"
+      },
+      {
+        "shotId": "shot-12",
+        "sceneId": "scene-arena",
+        "characters": [
+          "char-linchen"
+        ],
+        "duration": 5,
+        "description": "林尘负手而立，衣袂飘飘，俯视众人，如同真正的仙人降世",
+        "dialogue": "",
+        "cameraMovement": "仰拍全景",
+        "videoPrompt": "character1 (reference) standing with hands behind back on the arena. Robes and hair flowing in wind. Looking down at the crowd with serene transcendent expression. Clouds swirling below. Golden light subtle glow. Low angle epic shot like an immortal descending. Ancient Chinese fantasy style, powerful ending, cinematic, 4K.",
+        "videoUrl": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/1d/f1/20260117/4356b203/d2f39f5d-3905-4b35-9559-d5dee035945a.mp4?Expires=1768685568&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=F1ZRy3ke7fs1kEgpnirUOFKBHXs%3D"
+      }
+    ]
+  },
+  "phase1_characters": {
+    "status": "completed"
+  },
+  "phase2_scenes": {
+    "status": "in_progress"
+  },
+  "phase3_storyboard": {
+    "status": "in_progress"
+  },
+  "phase4_tts": {
+    "status": "pending",
+    "items": []
+  },
+  "phase5_frames": {
+    "status": "pending"
+  },
+  "phase6_videos": {
+    "status": "completed"
+  },
+  "phase7_merge": {
+    "status": "completed",
+    "finalVideoUrl": "https://doubao.luzhipeng.com/nanobanana/ai-drama-videos/315b8d62-2280-478d-80c1-8ed7f7e65361.mp4"
+  }
+}

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NanoBanana - AI 创意画布",
+  title: "豆包画布 - AI 创意画布",
   description: "在无限画布上创作 AI 图片、音乐和视频",
   icons: {
     icon: [

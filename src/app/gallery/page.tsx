@@ -7,7 +7,7 @@ import GalleryClient from "./GalleryClient";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "作品画廊 | NanoBanana",
+  title: "作品画廊 | 豆包画布",
   description: "探索用户创作的精彩幻灯片作品",
 };
 

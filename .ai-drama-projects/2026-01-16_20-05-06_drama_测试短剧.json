@@ -1,0 +1,35 @@
+{
+  "projectId": "2026-01-16_20-05-06_drama_测试短剧",
+  "title": "测试短剧",
+  "style": "realistic",
+  "status": "in_progress",
+  "createdAt": "2026-01-16T20:05:06.597Z",
+  "updatedAt": "2026-01-16T20:05:06.597Z",
+  "characterBank": [],
+  "sceneBank": [],
+  "storyboard": {
+    "shots": []
+  },
+  "phase1_characters": {
+    "status": "pending"
+  },
+  "phase2_scenes": {
+    "status": "pending"
+  },
+  "phase3_storyboard": {
+    "status": "pending"
+  },
+  "phase4_tts": {
+    "status": "pending",
+    "items": []
+  },
+  "phase5_frames": {
+    "status": "pending"
+  },
+  "phase6_videos": {
+    "status": "pending"
+  },
+  "phase7_merge": {
+    "status": "pending"
+  }
+}

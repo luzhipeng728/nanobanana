@@ -1,0 +1,36 @@
+{
+  "projectId": "2026-01-16_19-07-01_测试项目",
+  "topic": "测试项目",
+  "createdAt": "2026-01-16T19:07:01.908Z",
+  "updatedAt": "2026-01-16T19:07:01.908Z",
+  "currentPhase": 0,
+  "status": "in_progress",
+  "phase1_research": {
+    "status": "pending"
+  },
+  "phase2_storyboard": {
+    "status": "pending",
+    "scenes": []
+  },
+  "phase3_tts": {
+    "status": "pending",
+    "items": [],
+    "totalDuration": 0
+  },
+  "phase4_segments": {
+    "status": "pending",
+    "mergePlan": []
+  },
+  "phase5_endFrames": {
+    "status": "pending",
+    "items": []
+  },
+  "phase6_videos": {
+    "status": "pending",
+    "items": []
+  },
+  "phase7_merge": {
+    "status": "pending",
+    "finalVideoUrl": null
+  }
+}

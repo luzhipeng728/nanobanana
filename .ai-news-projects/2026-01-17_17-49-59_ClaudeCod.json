@@ -1,0 +1,196 @@
+{
+  "projectId": "2026-01-17_17-49-59_ClaudeCod",
+  "topic": "Claude Code Skills使用技巧",
+  "createdAt": "2026-01-17T17:49:59.346Z",
+  "updatedAt": "2026-01-17T17:56:46.020Z",
+  "currentPhase": 5,
+  "status": "in_progress",
+  "phase1_research": {
+    "status": "pending"
+  },
+  "phase2_storyboard": {
+    "status": "completed",
+    "scenes": [
+      {
+        "sceneId": "scene-1",
+        "title": "开场介绍",
+        "narration": "大家好！今天来聊聊 Claude Code 的 Skills 功能。Skills 是教会 AI 执行特定任务的 Markdown 文件，就像给 AI 装上专业技能包。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark navy blue to charcoal gray with subtle tech grid pattern, soft cyan and purple ambient glow, floating holographic particles. HEADER: Large Chinese title \"Claude Code Skills\" in bold white text with cyan glowing effect, centered at top, subtitle \"AI技能包\" below in smaller cyan text, thin glowing cyan separator line. CONTENT CARDS (3 cards in row): Card 1 glassmorphism with cyan border showing skill icon and text \"技能定义\", Card 2 with purple border showing gear icon and text \"自动触发\", Card 3 with emerald border showing rocket icon and text \"效率提升\". DECORATIVE: Floating hexagons at corners, code symbols, neural network visualization. Professional tech infographic design, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/300f1746-fc97-4efc-8667-02361065677f.png"
+      },
+      {
+        "sceneId": "scene-2",
+        "title": "核心特性",
+        "narration": "Skills 的核心在于自动发现和按需加载。当你描述任务时，Claude 会自动匹配相关技能。无需手动调用，智能识别上下文，精准应用最合适的 Skill。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep space black to dark navy gradient with matrix-style data streams at low opacity, circuit board patterns in corners, blue-purple gradient glow. HEADER: Large Chinese title \"智能自动匹配\" in bold white with purple glow, date badge \"2026\" in holographic pill. CONTENT CARDS (4 cards in 2x2 grid): Card 1 cyan border badge \"1\" text \"描述任务\", Card 2 purple border badge \"2\" text \"智能识别\", Card 3 emerald border badge \"3\" text \"自动加载\", Card 4 amber border badge \"4\" text \"精准执行\". Arrow flow between cards showing workflow. DECORATIVE: AI brain icon, connection lines, floating particles. Clean tech infographic style.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/2e13bf33-a2cf-469a-86df-9cab3da8df1a.png"
+      },
+      {
+        "sceneId": "scene-3",
+        "title": "使用方法",
+        "narration": "使用 Skills 很简单。全局技能放在 ~/.claude/skills 目录，项目技能放在 .claude/skills 目录。只需创建 SKILL.md 文件，写上名称、描述和指令即可。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Dark charcoal with subtle code pattern overlay, cyan accent lighting from left side, particle dust floating. HEADER: Large Chinese title \"Skills 配置指南\" in bold white with emerald glow. CONTENT: Two side-by-side glassmorphism panels - Left panel cyan border title \"全局技能\" with path \"~/.claude/skills/\", Right panel purple border title \"项目技能\" with path \".claude/skills/\". Below: Code snippet card showing \"SKILL.md\" file structure with name and description fields. DECORATIVE: Folder icons, file icons, terminal cursor blinking effect. Professional developer documentation style.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/1e1fd17d-b723-44e7-a208-5fcbb0a104ec.png"
+      },
+      {
+        "sceneId": "scene-4",
+        "title": "总结与展望",
+        "narration": "总结一下：Skills 让 Claude 变得更专业、更高效。从代码审查到文档生成，从数据分析到自动化工作流，掌握 Skills 让你的 AI 助手事半功倍！",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Gradient from deep navy to dark purple, celebration particles and light rays emanating from center, subtle firework-like effects. HEADER: Large Chinese title \"Skills 让 AI 更强大\" in bold white with golden glow effect. CONTENT CARDS (4 cards in row): Card 1 cyan border icon code text \"代码审查\", Card 2 purple border icon document text \"文档生成\", Card 3 emerald border icon chart text \"数据分析\", Card 4 amber border icon automation text \"自动工作流\". FOOTER: Tagline \"掌握Skills 事半功倍\" in glowing text. DECORATIVE: Star bursts, achievement badges, upward arrows symbolizing growth. Celebratory tech infographic style.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/c957de5f-fd02-4d41-af58-25563a21153d.png"
+      }
+    ]
+  },
+  "phase3_tts": {
+    "status": "completed",
+    "items": [
+      {
+        "sceneId": "scene-1",
+        "text": "大家好！今天来聊聊 Claude Code 的 Skills 功能。Skills 是教会 AI 执行特定任务的 Markdown 文件，就像给 AI 装上专业技能包。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/939cf1e4-1b87-4890-b0f1-eb114c5025cf.mp3",
+        "duration": 10.898
+      },
+      {
+        "sceneId": "scene-2",
+        "text": "Skills 的核心在于自动发现和按需加载。当你描述任务时，Claude 会自动匹配相关技能。无需手动调用，智能识别上下文，精准应用最合适的 Skill。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/3f6d315d-4c44-480e-bfe5-53d66b1db841.mp3",
+        "duration": 13.191
+      },
+      {
+        "sceneId": "scene-3",
+        "text": "使用 Skills 很简单。全局技能放在 ~/.claude/skills 目录，项目技能放在 .claude/skills 目录。只需创建 SKILL.md 文件，写上名称、描述和指令即可。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/80535af9-e516-42a3-a8df-0ca3d5761381.mp3",
+        "duration": 15.837
+      },
+      {
+        "sceneId": "scene-4",
+        "text": "总结一下：Skills 让 Claude 变得更专业、更高效。从代码审查到文档生成，从数据分析到自动化工作流，掌握 Skills 让你的 AI 助手事半功倍！",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/b5b3cdac-4a4b-48c0-995e-01deb57927bb.mp3",
+        "duration": 13.109
+      }
+    ],
+    "totalDuration": 53.035000000000004
+  },
+  "phase4_segments": {
+    "status": "in_progress",
+    "mergePlan": [
+      {
+        "sceneId": "scene-1",
+        "videoSegmentCount": 3,
+        "videoDuration": 15,
+        "videoSegments": [
+          {
+            "id": "seg-1-1",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Camera zoomed into glowing neural network visualization. Floating skill icons scattered around. Deep navy background with cyan light particles. Clean cyberpunk aesthetic, all text completely dissolved.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/ceff83bb-1cea-4ef4-8bf0-b108ce08494c.png"
+          },
+          {
+            "id": "seg-1-2",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Focus on abstract AI brain hologram with pulsing connections. Purple and cyan gradients flowing. Futuristic particles floating. No readable text elements.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/a3a47faf-8199-49af-b123-3507ef2d0f64.png"
+          },
+          {
+            "id": "seg-1-3",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Skill package icons floating in space with glowing aura. Technology grid background fading. Smooth transition ready visual, clean and minimal.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/b9afeab6-0279-40c8-bedd-0f330a42f126.png"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/939cf1e4-1b87-4890-b0f1-eb114c5025cf.mp3",
+        "subtitleText": "大家好！今天来聊聊 Claude Code 的 Skills 功能。Skills 是教会 AI 执行特定任务的 Markdown 文件，就像给 AI 装上专业技能包。",
+        "ttsDuration": 10.898
+      },
+      {
+        "sceneId": "scene-2",
+        "videoSegmentCount": 3,
+        "videoDuration": 15,
+        "videoSegments": [
+          {
+            "id": "seg-2-1",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Abstract workflow diagram with glowing connection lines. Data flowing between nodes. Dark space background with blue-purple ambient glow. Clean tech visualization.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/f2972e5f-b6a4-4ce2-b0f5-b75b93a9d6f1.png"
+          },
+          {
+            "id": "seg-2-2",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. AI matching visualization with radar-like scanning effect. Context recognition represented as flowing light streams. Cyberpunk aesthetic without any text.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/f80febc0-a1bd-4e13-bbc2-4dcab81a4a17.png"
+          },
+          {
+            "id": "seg-2-3",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Skill activation visual with energy burst from center. Multiple skill icons orbiting around core. All text faded, pure dynamic visual ready for transition.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/af062a2a-e5c8-43cf-9551-a1618ce8e6dd.png"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/3f6d315d-4c44-480e-bfe5-53d66b1db841.mp3",
+        "subtitleText": "Skills 的核心在于自动发现和按需加载。当你描述任务时，Claude 会自动匹配相关技能。无需手动调用，智能识别上下文，精准应用最合适的 Skill。",
+        "ttsDuration": 13.191
+      },
+      {
+        "sceneId": "scene-3",
+        "videoSegmentCount": 4,
+        "videoDuration": 20,
+        "videoSegments": [
+          {
+            "id": "seg-3-1",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Abstract folder structure visualization with glowing paths. Directory tree represented as light connections. Dark background with emerald accent lighting.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/386adeee-dcb8-43e8-8857-92d4c36b0791.png"
+          },
+          {
+            "id": "seg-3-2",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Global skills folder icon enlarged with orbiting file symbols. Home directory represented as central hub with radiating connections.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/7cef958e-b758-4a41-855e-ec7dba4052c0.png"
+          },
+          {
+            "id": "seg-3-3",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Project folder icon with local skill files floating around. Workspace visualization with purple glow effects. Clean transition frame.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/98ecc432-7eff-4fc2-9700-9e7a79ab35d5.png"
+          },
+          {
+            "id": "seg-3-4",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. SKILL.md file icon transforming into active skill energy. Configuration flowing as light streams. Ready for next scene transition.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/aa4ab206-348a-4fad-b4ff-1fdf9ebe5973.png"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/80535af9-e516-42a3-a8df-0ca3d5761381.mp3",
+        "subtitleText": "使用 Skills 很简单。全局技能放在 ~/.claude/skills 目录，项目技能放在 .claude/skills 目录。只需创建 SKILL.md 文件，写上名称、描述和指令即可。",
+        "ttsDuration": 15.837
+      },
+      {
+        "sceneId": "scene-4",
+        "videoSegmentCount": 3,
+        "videoDuration": 15,
+        "videoSegments": [
+          {
+            "id": "seg-4-1",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Multiple skill application icons spreading outward. Code review, document, data chart icons glowing. Celebration particles emerging.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/d9de245d-0a3f-449b-80ba-ae532e957246.png"
+          },
+          {
+            "id": "seg-4-2",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Productivity boost visualization with upward arrows and light rays. Achievement star effects. Golden and cyan gradient glow.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/8e7ed2ae-f8d5-4a68-a6b6-501ff5e53493.png"
+          },
+          {
+            "id": "seg-4-3",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Final celebration visual with firework-like particles. Success energy radiating from center. Warm golden glow fading into completion. Perfect ending frame.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/82035082-d8b5-4c39-8729-96c2d16d1e04.png"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/b5b3cdac-4a4b-48c0-995e-01deb57927bb.mp3",
+        "subtitleText": "总结一下：Skills 让 Claude 变得更专业、更高效。从代码审查到文档生成，从数据分析到自动化工作流，掌握 Skills 让你的 AI 助手事半功倍！",
+        "ttsDuration": 13.109
+      }
+    ]
+  },
+  "phase5_endFrames": {
+    "status": "completed",
+    "items": []
+  },
+  "phase6_videos": {
+    "status": "pending",
+    "items": []
+  },
+  "phase7_merge": {
+    "status": "pending",
+    "finalVideoUrl": null
+  }
+}

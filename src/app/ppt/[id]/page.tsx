@@ -176,7 +176,7 @@ export async function generateMetadata({ params }: PPTPageProps) {
   }
 
   return {
-    title: `${ppt.topic} - NanoBanana PPT`,
+    title: `${ppt.topic} - 豆包画布 PPT`,
     description: ppt.description || ppt.topic,
   };
 }

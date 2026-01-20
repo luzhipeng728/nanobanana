@@ -1,0 +1,142 @@
+{
+  "projectId": "2026-01-18_10-33-32_2026年1月AI新",
+  "topic": "2026年1月AI新闻速报",
+  "createdAt": "2026-01-18T10:33:32.986Z",
+  "updatedAt": "2026-01-18T10:40:14.796Z",
+  "currentPhase": 7,
+  "status": "completed",
+  "phase1_research": {
+    "status": "pending"
+  },
+  "phase2_storyboard": {
+    "status": "completed",
+    "scenes": [
+      {
+        "sceneId": "scene-1",
+        "title": "开场",
+        "narration": "欢迎收看AI速报，今日三大热点！",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark navy blue to charcoal gray. Subtle tech grid pattern at low opacity. Soft cyan and purple ambient glow. Floating holographic particles. HEADER: Large Chinese title \"AI速报\" in bold white text with cyan glowing effect, centered at top. Subtitle \"2026年1月18日\" below. Thin glowing cyan separator line. MAIN CONTENT: Single large hero card with rose red border glow, glassmorphism effect. Text \"欢迎收看AI速报，今日三大热点！\" in bold white (32pt). FOOTER: Tagline \"AI新闻 一触即达\" at bottom center. DECORATIVE: Floating hexagons at corners, tech icons (chip, neural network), subtle particle dust. Professional infographic design, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/b61dd60a-5f35-4309-b520-d3783c90222b.png"
+      },
+      {
+        "sceneId": "scene-2",
+        "title": "马斯克索赔",
+        "narration": "马斯克起诉OpenAI，索赔1340亿美元！",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark navy blue to charcoal gray. Subtle tech grid pattern at low opacity. Soft cyan and purple ambient glow. Floating holographic particles. HEADER: Large Chinese title \"突发\" in bold rose red text with glowing effect, centered at top. Subtitle \"马斯克起诉OpenAI\" below. Thin glowing rose red separator line. MAIN CONTENT: Two glassmorphism cards with rose red border glow. Card 1: Text \"马斯克以欺诈为由起诉OpenAI\" in bold white. Card 2: Large text \"索赔1340亿美元\" in bold rose red (40pt). FOOTER: Tagline \"AI巨头法庭对决\" at bottom center. DECORATIVE: Floating hexagons at corners, legal icons (gavel, document), subtle particle dust. Professional infographic design, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/14c9f741-f932-4ad7-8ce2-300dee521e5e.png"
+      },
+      {
+        "sceneId": "scene-3",
+        "title": "具身智能爆发",
+        "narration": "具身智能爆发，2026迎应用大年！",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark navy blue to charcoal gray. Subtle tech grid pattern at low opacity. Soft cyan and purple ambient glow. Floating holographic particles. HEADER: Large Chinese title \"趋势\" in bold electric blue text with glowing effect, centered at top. Subtitle \"2026AI应用展望\" below. Thin glowing electric blue separator line. MAIN CONTENT: Three glassmorphism cards with electric blue border glow. Card 1: Text \"具身智能\" in bold white. Card 2: Text \"AI智能体\" in bold white. Card 3: Large text \"2026应用大爆发\" in bold electric blue (36pt). FOOTER: Tagline \"AI改变生活\" at bottom center. DECORATIVE: Floating hexagons at corners, robot icons, neural network symbols, subtle particle dust. Professional infographic design, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/ba5b829a-c9d9-49ff-b99d-4a112aa799e3.png"
+      }
+    ]
+  },
+  "phase3_tts": {
+    "status": "completed",
+    "items": [
+      {
+        "sceneId": "scene-1",
+        "text": "欢迎收看AI速报，今日三大热点！",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/dbf994d5-61fa-40a6-8195-16e89e94e36d.mp3",
+        "duration": 3.401
+      },
+      {
+        "sceneId": "scene-2",
+        "text": "马斯克起诉OpenAI，索赔1340亿美元！",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/b77419ca-3da5-4394-aee9-c9dbe01bf105.mp3",
+        "duration": 4.41
+      },
+      {
+        "sceneId": "scene-3",
+        "text": "具身智能爆发，2026迎应用大年！",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/25efd6a6-1b99-41d7-9aff-4347637cbd76.mp3",
+        "duration": 3.907
+      }
+    ],
+    "totalDuration": 11.718
+  },
+  "phase4_segments": {
+    "status": "in_progress",
+    "mergePlan": [
+      {
+        "sceneId": "scene-1",
+        "videoSegmentCount": 1,
+        "videoDuration": 5,
+        "videoSegments": [
+          {
+            "id": "seg-1-1",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Camera slowly zooms into tech infographic background. Holographic particles floating. Neural network patterns emerging. All text completely faded out. Cyberpunk aesthetic with cyan and purple glow.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/11c3a60a-3b99-4513-9717-03126966dc3c.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/30027a39-de12-4d91-bf63-73d3af5362c0.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/dbf994d5-61fa-40a6-8195-16e89e94e36d.mp3",
+        "subtitleText": "欢迎收看AI速报，今日三大热点！",
+        "ttsDuration": 3.401
+      },
+      {
+        "sceneId": "scene-2",
+        "videoSegmentCount": 1,
+        "videoDuration": 5,
+        "videoSegments": [
+          {
+            "id": "seg-2-1",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Camera focuses on abstract legal tech visualization. Gavel icon glowing, document patterns dissolving into light. All text completely gone. Rose red and cyan ambient lighting.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/1b288e62-e078-499c-8f02-ca2c9fb084f3.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/49827dc4-1bf5-4420-8fcd-0c251307ef18.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/b77419ca-3da5-4394-aee9-c9dbe01bf105.mp3",
+        "subtitleText": "马斯克起诉OpenAI，索赔1340亿美元！",
+        "ttsDuration": 4.41
+      },
+      {
+        "sceneId": "scene-3",
+        "videoSegmentCount": 1,
+        "videoDuration": 5,
+        "videoSegments": [
+          {
+            "id": "seg-3-1",
+            "endFramePrompt": "END FRAME of 5s video. Pure visual, NO TEXT visible. Robot and AI symbols glowing. Neural network connections pulsing. Future cityscape emerging. All text completely faded. Electric blue and purple tech atmosphere.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/a9ee9cba-1569-4e47-b549-4d8785af35f5.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7892c716-0914-45e3-b904-d25e4a3ddd90.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/25efd6a6-1b99-41d7-9aff-4347637cbd76.mp3",
+        "subtitleText": "具身智能爆发，2026迎应用大年！",
+        "ttsDuration": 3.907
+      }
+    ]
+  },
+  "phase5_endFrames": {
+    "status": "completed",
+    "items": []
+  },
+  "phase6_videos": {
+    "status": "completed",
+    "items": [
+      {
+        "id": "seg-1-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/30027a39-de12-4d91-bf63-73d3af5362c0.mp4"
+      },
+      {
+        "id": "seg-2-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/49827dc4-1bf5-4420-8fcd-0c251307ef18.mp4"
+      },
+      {
+        "id": "seg-3-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7892c716-0914-45e3-b904-d25e4a3ddd90.mp4"
+      }
+    ]
+  },
+  "phase7_merge": {
+    "status": "completed",
+    "finalVideoUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-videos/d0188033-a532-442b-af76-175e68089dc2.mp4"
+  }
+}

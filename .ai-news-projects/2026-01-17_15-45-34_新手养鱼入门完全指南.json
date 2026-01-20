@@ -1,0 +1,715 @@
+{
+  "projectId": "2026-01-17_15-45-34_新手养鱼入门完全指南",
+  "topic": "新手养鱼入门完全指南",
+  "createdAt": "2026-01-17T15:45:34.235Z",
+  "updatedAt": "2026-01-17T16:08:29.235Z",
+  "currentPhase": 7,
+  "status": "completed",
+  "phase1_research": {
+    "status": "pending"
+  },
+  "phase2_storyboard": {
+    "status": "completed",
+    "scenes": [
+      {
+        "sceneId": "scene-1",
+        "title": "开场介绍",
+        "narration": "大家好，欢迎收看新手养鱼入门完全指南。养鱼是一项既有趣又治愈的爱好，但很多新手因为不了解基本知识而频繁翻车。今天我们将从零开始，用最通俗的语言，带你掌握养鱼的核心技巧。记住一句话：养鱼先养水，这是成功的关键。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from ocean blue to dark teal. Subtle water ripple pattern at low opacity. Soft cyan and aqua ambient glow. Floating bubble particles. HEADER: Large Chinese title \"新手养鱼完全指南\" in bold white text with cyan glowing effect, centered at top. Subtitle \"从零开始的养鱼之旅\" below. Thin glowing cyan separator line. CONTENT CARDS (4 cards in 2x2 grid): Card 1: Glassmorphism card with cyan border, fish tank icon, text \"鱼缸选择\". Card 2: Glassmorphism card with blue border, water drop icon, text \"水质管理\". Card 3: Glassmorphism card with teal border, fish icon, text \"养水技巧\". Card 4: Glassmorphism card with aqua border, food icon, text \"喂食方法\". FOOTER: Tagline \"养鱼先养水\" at bottom center. DECORATIVE: Floating fish silhouettes, water bubbles, aquatic plant shapes. Clean modern design, all Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/52277d4b-1799-4c04-93d8-82a672a5ac5b.png"
+      },
+      {
+        "sceneId": "scene-2",
+        "title": "鱼缸选择",
+        "narration": "第一步是选择合适的鱼缸。记住黄金法则：一升水养一厘米的鱼。比如你想养五条五厘米的小鱼，就需要至少二十五升的鱼缸。鱼缸不是越小越好养，恰恰相反，水体越大，水质越稳定，新手建议从四十升以上的鱼缸起步。材质推荐超白玻璃，透光性好，观赏效果更佳。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark blue to navy. Subtle grid pattern. Soft blue ambient glow. HEADER: Large Chinese title \"鱼缸选择指南\" in bold white text with blue glow. MAIN VISUAL: Realistic glass fish tank illustration in center, showing water level marks. CONTENT CARDS (3 cards): Card 1: Glassmorphism card with cyan border, ruler icon, text \"黄金法则：1升水=1厘米鱼\". Card 2: Glassmorphism card with blue border, tank icon, text \"新手建议：40升以上\". Card 3: Glassmorphism card with teal border, glass icon, text \"推荐材质：超白玻璃\". SIZE COMPARISON: Visual showing 25L vs 40L vs 60L tanks with fish capacity. DECORATIVE: Floating measurement icons, tank silhouettes. All Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/785d9908-8dda-45b0-b10c-1687acbbf110.png"
+      },
+      {
+        "sceneId": "scene-3",
+        "title": "核心设备配置",
+        "narration": "接下来是核心设备配置。过滤器是必须的，水泵流量选择鱼缸水量的五到十倍。比如一百升的鱼缸，选五百到一千升每小时的水泵。加热棒瓦数等于水量的一到两倍，家里有暖气可以选低一点。氧气泵的气量是水体的五十分之一。这三件套是维持水质的基础，千万不能省。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark teal to charcoal. Tech circuit pattern at low opacity. Soft cyan glow. HEADER: Large Chinese title \"核心设备配置\" in bold white text with cyan glow. EQUIPMENT ICONS (3 large icons in row): Icon 1: Filter system illustration with label \"过滤器\", formula \"流量=水量×5-10\". Icon 2: Heater rod illustration with label \"加热棒\", formula \"瓦数=水量×1-2\". Icon 3: Air pump illustration with label \"氧气泵\", formula \"气量=水量÷50\". EXAMPLE BOX: Glassmorphism card showing \"100L鱼缸配置示例\": 过滤500-1000L/h, 加热棒100-200W, 氧气2L/min. DECORATIVE: Equipment silhouettes, bubbles, flow arrows. All Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/dd678c75-a9cf-4717-9f68-942db6883627.png"
+      },
+      {
+        "sceneId": "scene-4",
+        "title": "养水第一步：困水除氯",
+        "narration": "现在进入最关键的环节：养水。第一步是困水除氯。自来水中含有氯气，对鱼有害。最简单的方法是把水加满鱼缸后，打开水泵和氧气泵，让水循环曝气一到两天。氯气会自然挥发掉。也可以使用水质稳定剂快速除氯，但建议新手还是用自然方法，更稳妥。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark blue to purple. Water molecule pattern at low opacity. Soft blue glow. HEADER: Large Chinese title \"养水第一步\" in bold white text with blue glow. Subtitle \"困水除氯\" below. PROCESS VISUAL: Step diagram showing: 1. Tap water with Cl2 molecules 2. Tank with pump running 3. Clean water with bubbles rising. TIME INDICATOR: \"1-2天\" with clock icon. METHOD CARDS (2 cards): Card 1: Glassmorphism card with blue border, text \"自然法：循环曝气1-2天\". Card 2: Glassmorphism card with cyan border, text \"快速法：水质稳定剂\". WARNING: Yellow badge \"氯气对鱼有害\". DECORATIVE: Water molecules, bubbles, pump illustration. All Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/f203e784-b54e-4f79-9386-402ecea2574b.png"
+      },
+      {
+        "sceneId": "scene-5",
+        "title": "养水第二步：循环培菌",
+        "narration": "第二步是循环培菌，这是养水的核心。打开过滤器和氧气泵，让水二十四小时不间断循环。这个过程需要两到三周，目的是培养硝化细菌。硝化细菌能分解鱼的排泄物，是维持水质的关键。当你看到缸壁上长出一层滑滑的生物膜，水变得清澈透亮，说明硝化系统初步建立了。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from teal to dark green. Bacteria pattern at low opacity. Soft green glow. HEADER: Large Chinese title \"养水第二步\" in bold white text with green glow. Subtitle \"循环培菌\" below. CYCLE DIAGRAM: Circular flow showing: 鱼排泄物 → 氨 → 亚硝酸盐 → 硝酸盐 → 植物吸收. Center shows bacteria icons. TIME BOX: Large \"2-3周\" with calendar icon. SUCCESS INDICATORS (3 items): 1. \"缸壁生物膜\" with checkmark. 2. \"水质清澈\" with checkmark. 3. \"硝化系统建立\" with checkmark. KEY MESSAGE: Highlighted text \"24小时不间断循环\". DECORATIVE: Bacteria illustrations, water flow arrows. All Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/df832cfc-d0f8-4d6f-a6c0-5dd62a79af1b.png"
+      },
+      {
+        "sceneId": "scene-6",
+        "title": "放闯缸鱼测试",
+        "narration": "第三步是放闯缸鱼。闯缸鱼的作用是测试水质，同时它们的排泄物能帮助硝化细菌繁殖。推荐使用便宜又耐活的鱼，比如孔雀鱼或斑马鱼，放三到五条就够了。观察一周，如果闯缸鱼状态良好，没有生病或死亡，说明水质合格，可以准备放主鱼了。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark blue to indigo. Fish pattern at low opacity. Soft purple glow. HEADER: Large Chinese title \"放闯缸鱼测试\" in bold white text with purple glow. Subtitle \"水质检验关键步骤\" below. FISH RECOMMENDATIONS: Two fish cards side by side: Card 1: Guppy fish illustration with label \"孔雀鱼\" and traits \"便宜、耐活\". Card 2: Zebra fish illustration with label \"斑马鱼\" and traits \"适应力强\". QUANTITY: Large \"3-5条\" indicator. OBSERVATION CHECKLIST: Glassmorphism card with items: \"□ 游动活跃\" \"□ 进食正常\" \"□ 无疾病症状\" \"□ 观察一周\". SUCCESS: Green badge \"水质合格 → 可放主鱼\". DECORATIVE: Fish silhouettes, water bubbles. All Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/4a43080e-563a-4961-a22b-5a034f460f21.png"
+      },
+      {
+        "sceneId": "scene-7",
+        "title": "科学喂食技巧",
+        "narration": "喂食是新手最容易犯错的地方。记住：宁可少喂，不可多喂。过量的鱼食会沉底腐烂，污染水质。正确做法是每天喂两次，每次让鱼在三到五分钟内吃完。观察鱼的肚子微微鼓起就够了。水温低于二十度时要减少喂食，低于十五度几乎不用喂，因为鱼的消化能力会下降。",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from orange to dark red. Food particle pattern at low opacity. Warm amber glow. HEADER: Large Chinese title \"科学喂食技巧\" in bold white text with amber glow. Subtitle \"宁可少喂，不可多喂\" below. FEEDING SCHEDULE: Timeline showing morning and evening feeding icons, \"每天2次\". AMOUNT GUIDE: Visual showing fish with slightly bulging belly, \"3-5分钟吃完\". TEMPERATURE CHART: Gradient bar from cold to warm: \"<15°C 几乎不喂\" → \"15-20°C 减少喂食\" → \">20°C 正常喂食\". WARNING CARD: Red bordered glassmorphism card, text \"过量喂食 → 水质污染 → 鱼生病\". DECORATIVE: Fish food pellets, thermometer, fish eating animation frames. All Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/90d65e10-a1bd-4280-9f37-04a5723b9b7d.png"
+      },
+      {
+        "sceneId": "scene-8",
+        "title": "总结与新手推荐",
+        "narration": "最后总结一下：养鱼先养水，这是铁律。新手推荐从孔雀鱼、红绿灯、斗鱼或金鱼入手，它们皮实好养。记住四个关键点：一、选择合适大小的鱼缸；二、配置好过滤和增氧设备；三、耐心养水两到三周；四、科学喂食不过量。做好这些，你就能成功迈出养鱼的第一步。祝大家养鱼愉快！",
+        "firstFramePrompt": "Professional Chinese infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from ocean blue to teal with golden accents. Celebratory particle effects. Soft warm glow. HEADER: Large Chinese title \"养鱼入门总结\" in bold white text with golden glow. Subtitle \"四大关键点\" below. FISH RECOMMENDATIONS (4 fish cards in row): Card 1: Guppy fish icon with label \"孔雀鱼\". Card 2: Neon tetra icon with label \"红绿灯\". Card 3: Betta fish icon with label \"斗鱼\". Card 4: Goldfish icon with label \"金鱼\". KEY POINTS (4 numbered items in glassmorphism cards): 1. \"选择合适鱼缸\" with tank icon. 2. \"配置过滤增氧\" with equipment icon. 3. \"耐心养水2-3周\" with clock icon. 4. \"科学喂食\" with food icon. FOOTER: Large text \"养鱼先养水\" with golden highlight. Closing message \"祝大家养鱼愉快\" at bottom. DECORATIVE: Confetti, fish silhouettes, bubbles, aquatic plants. Celebratory and encouraging mood. All Chinese text clearly visible.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/6c5ece33-dfbb-4ee0-a828-48bc619bdee8.png"
+      }
+    ]
+  },
+  "phase3_tts": {
+    "status": "completed",
+    "items": [
+      {
+        "sceneId": "scene-1",
+        "text": "大家好，欢迎收看新手养鱼入门完全指南。养鱼是一项既有趣又治愈的爱好，但很多新手因为不了解基本知识而频繁翻车。今天我们将从零开始，用最通俗的语言，带你掌握养鱼的核心技巧。记住一句话：养鱼先养水，这是成功的关键。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/4c798aa9-763d-4c57-a1ae-25968a7ee794.mp3",
+        "duration": 21.115
+      },
+      {
+        "sceneId": "scene-2",
+        "text": "第一步是选择合适的鱼缸。记住黄金法则：一升水养一厘米的鱼。比如你想养五条五厘米的小鱼，就需要至少二十五升的鱼缸。鱼缸不是越小越好养，恰恰相反，水体越大，水质越稳定，新手建议从四十升以上的鱼缸起步。材质推荐超白玻璃，透光性好，观赏效果更佳。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/45a31bbb-2c19-4b02-a527-c5a5c777ec67.mp3",
+        "duration": 24.736
+      },
+      {
+        "sceneId": "scene-3",
+        "text": "接下来是核心设备配置。过滤器是必须的，水泵流量选择鱼缸水量的五到十倍。比如一百升的鱼缸，选五百到一千升每小时的水泵。加热棒瓦数等于水量的一到两倍，家里有暖气可以选低一点。氧气泵的气量是水体的五十分之一。这三件套是维持水质的基础，千万不能省。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/d13374f6-81a0-4e99-8d1b-d2b6adc84f6c.mp3",
+        "duration": 24.428
+      },
+      {
+        "sceneId": "scene-4",
+        "text": "现在进入最关键的环节：养水。第一步是困水除氯。自来水中含有氯气，对鱼有害。最简单的方法是把水加满鱼缸后，打开水泵和氧气泵，让水循环曝气一到两天。氯气会自然挥发掉。也可以使用水质稳定剂快速除氯，但建议新手还是用自然方法，更稳妥。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/a48ca58a-85ac-419f-b9b8-75e34db82a5c.mp3",
+        "duration": 24.269
+      },
+      {
+        "sceneId": "scene-5",
+        "text": "第二步是循环培菌，这是养水的核心。打开过滤器和氧气泵，让水二十四小时不间断循环。这个过程需要两到三周，目的是培养硝化细菌。硝化细菌能分解鱼的排泄物，是维持水质的关键。当你看到缸壁上长出一层滑滑的生物膜，水变得清澈透亮，说明硝化系统初步建立了。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/859e98fa-0fc5-40f3-aa66-c34512705b02.mp3",
+        "duration": 24.574
+      },
+      {
+        "sceneId": "scene-6",
+        "text": "第三步是放闯缸鱼。闯缸鱼的作用是测试水质，同时它们的排泄物能帮助硝化细菌繁殖。推荐使用便宜又耐活的鱼，比如孔雀鱼或斑马鱼，放三到五条就够了。观察一周，如果闯缸鱼状态良好，没有生病或死亡，说明水质合格，可以准备放主鱼了。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/b010322f-a1d4-40e6-881b-1ed8cf51ca6e.mp3",
+        "duration": 22.794
+      },
+      {
+        "sceneId": "scene-7",
+        "text": "喂食是新手最容易犯错的地方。记住：宁可少喂，不可多喂。过量的鱼食会沉底腐烂，污染水质。正确做法是每天喂两次，每次让鱼在三到五分钟内吃完。观察鱼的肚子微微鼓起就够了。水温低于二十度时要减少喂食，低于十五度几乎不用喂，因为鱼的消化能力会下降。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/969ef01c-9a93-488d-b251-6fc524335f5e.mp3",
+        "duration": 24.291
+      },
+      {
+        "sceneId": "scene-8",
+        "text": "最后总结一下：养鱼先养水，这是铁律。新手推荐从孔雀鱼、红绿灯、斗鱼或金鱼入手，它们皮实好养。记住四个关键点：一、选择合适大小的鱼缸；二、配置好过滤和增氧设备；三、耐心养水两到三周；四、科学喂食不过量。做好这些，你就能成功迈出养鱼的第一步。祝大家养鱼愉快！",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/fc65ee0d-dd90-4eeb-b7b5-f642c240c08f.mp3",
+        "duration": 28.847
+      }
+    ],
+    "totalDuration": 195.054
+  },
+  "phase4_segments": {
+    "status": "in_progress",
+    "mergePlan": [
+      {
+        "sceneId": "scene-1",
+        "videoSegmentCount": 5,
+        "videoDuration": 24,
+        "videoSegments": [
+          {
+            "id": "seg-1-1",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. START: Fish keeping guide infographic with text and 4 cards. END: Text fading, camera zooming into tank card. NARRATION: 欢迎收看养鱼指南. VISUAL: Tank card enlarging, water ripples appearing. Cyberpunk aquatic style, text 50% faded.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/c1aa4f04-b53d-423b-85ae-697f06e4e4e0.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/2fdda606-90b4-4b81-bfab-8803341df987.mp4"
+          },
+          {
+            "id": "seg-1-2",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Camera continues into fish tank visual. Text almost gone. NARRATION: 养鱼是治愈的爱好. VISUAL: Fish tank emerging, bubbles rising. Pure visual, minimal text.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/fbd5ed8e-45a5-43f1-8978-2df6f9a4ae37.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/101881d0-c407-4e98-9b0c-cdb6525079c9.mp4"
+          },
+          {
+            "id": "seg-1-3",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Focus on water quality theme. NARRATION: 很多新手频繁翻车. VISUAL: Water quality indicators appearing. Clean visual.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/9b10a56a-f9ab-4cfa-aa1b-2049d5427910.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ca791973-c989-49a1-8117-76c247bc6c30.mp4"
+          },
+          {
+            "id": "seg-1-4",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Key message appearing. NARRATION: 养鱼先养水是关键. VISUAL: Large text 养鱼先养水 glowing in center. Highlight effect.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/8edee97f-2f15-41d1-9ba8-8cb856d7531c.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/9429c96a-a5a6-48a3-b57d-18eca37ed3de.mp4"
+          },
+          {
+            "id": "seg-1-5",
+            "duration": 4,
+            "endFramePrompt": "END FRAME of 4s video. Transition to next scene. NARRATION: 这是成功的关键. VISUAL: Fade to dark with water particles.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/efe8d189-b5d1-4e9b-957a-c97f057a2107.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6df25313-ec5d-4fff-ba88-a072405b9aa4.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/4c798aa9-763d-4c57-a1ae-25968a7ee794.mp3",
+        "subtitleText": "大家好，欢迎收看新手养鱼入门完全指南。养鱼是一项既有趣又治愈的爱好，但很多新手因为不了解基本知识而频繁翻车。今天我们将从零开始，用最通俗的语言，带你掌握养鱼的核心技巧。记住一句话：养鱼先养水，这是成功的关键。",
+        "ttsDuration": 21.115
+      },
+      {
+        "sceneId": "scene-2",
+        "videoSegmentCount": 5,
+        "videoDuration": 25,
+        "videoSegments": [
+          {
+            "id": "seg-2-1",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. START: Fish tank selection guide infographic. END: Text fading, focus on tank illustration. NARRATION: 选择合适的鱼缸. VISUAL: Tank visual enlarging. Cyberpunk style.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/55f36c70-77de-4cb0-aa38-3b0ef818784b.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/4a72ba7e-2e09-497a-a6f6-ee4820960d41.mp4"
+          },
+          {
+            "id": "seg-2-2",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Golden rule visual. NARRATION: 一升水养一厘米鱼. VISUAL: Ruler and fish size comparison appearing. Formula highlighted.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/ba2a0dc4-fec5-414f-864d-e454b0e657c9.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/095bd5cd-582e-4f75-a2c7-1de209c93231.mp4"
+          },
+          {
+            "id": "seg-2-3",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Size comparison. NARRATION: 需要至少25升鱼缸. VISUAL: 25L 40L 60L tanks side by side. Size labels.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/370b493c-8a2d-410f-a235-05f83ec3777d.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/3e92208f-0302-488f-8d46-c410bbee7887.mp4"
+          },
+          {
+            "id": "seg-2-4",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Stability concept. NARRATION: 水体越大水质越稳定. VISUAL: Large tank with stable water icon. Green checkmark.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/0af2a963-4a4a-4da8-ae79-db804d3256c2.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/341e7d88-8be7-4d3c-aad3-f9c786ce0f5a.mp4"
+          },
+          {
+            "id": "seg-2-5",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Material recommendation. NARRATION: 推荐超白玻璃. VISUAL: Crystal clear glass tank visual. Premium look.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/5284e31b-22d5-45e8-bdbc-31929b522f8f.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/592d9818-65dd-4b9a-9620-f912bf98e430.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/45a31bbb-2c19-4b02-a527-c5a5c777ec67.mp3",
+        "subtitleText": "第一步是选择合适的鱼缸。记住黄金法则：一升水养一厘米的鱼。比如你想养五条五厘米的小鱼，就需要至少二十五升的鱼缸。鱼缸不是越小越好养，恰恰相反，水体越大，水质越稳定，新手建议从四十升以上的鱼缸起步。材质推荐超白玻璃，透光性好，观赏效果更佳。",
+        "ttsDuration": 24.736
+      },
+      {
+        "sceneId": "scene-3",
+        "videoSegmentCount": 5,
+        "videoDuration": 25,
+        "videoSegments": [
+          {
+            "id": "seg-3-1",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. START: Equipment setup infographic. END: Text fading, equipment icons enlarging. NARRATION: 核心设备配置. VISUAL: Three equipment icons prominent.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/7f9baa72-3621-4d4a-b5bc-c2a3993729a1.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/8fb78b4e-299c-4f3b-b28a-2dc8f8ec8135.mp4"
+          },
+          {
+            "id": "seg-3-2",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Filter system focus. NARRATION: 过滤器是必须的. VISUAL: Filter illustration with flow rate formula. Water flowing animation style.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/a3dcf91b-029d-4e53-8fda-eeafb16df4a8.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/9c0496aa-c41a-4947-a4f6-e69ebb00e70a.mp4"
+          },
+          {
+            "id": "seg-3-3",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Heater focus. NARRATION: 加热棒瓦数等于水量. VISUAL: Heater with temperature display. Warm glow effect.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/046a5891-3e32-4b0b-a5d1-d15b36c29f5c.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/1dad8ab3-b417-478a-abc3-3c3c007c29bf.mp4"
+          },
+          {
+            "id": "seg-3-4",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Air pump focus. NARRATION: 氧气泵的气量. VISUAL: Air pump with bubbles rising. Oxygen icons.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/ff52cd5f-213c-45ce-bbaa-eeda187bd67a.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c7cbdae0-5a6d-4124-89e6-c3b1441726a7.mp4"
+          },
+          {
+            "id": "seg-3-5",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Complete setup. NARRATION: 三件套是基础. VISUAL: All three equipment together. Essential badge.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/02f07f65-9ef9-45e0-945a-2b973f91d936.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/224b47e6-fb01-4b78-a75b-42821ffebf7c.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/d13374f6-81a0-4e99-8d1b-d2b6adc84f6c.mp3",
+        "subtitleText": "接下来是核心设备配置。过滤器是必须的，水泵流量选择鱼缸水量的五到十倍。比如一百升的鱼缸，选五百到一千升每小时的水泵。加热棒瓦数等于水量的一到两倍，家里有暖气可以选低一点。氧气泵的气量是水体的五十分之一。这三件套是维持水质的基础，千万不能省。",
+        "ttsDuration": 24.428
+      },
+      {
+        "sceneId": "scene-4",
+        "videoSegmentCount": 5,
+        "videoDuration": 25,
+        "videoSegments": [
+          {
+            "id": "seg-4-1",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. START: Water conditioning step 1 infographic. END: Text fading, water process starting. NARRATION: 养水第一步困水除氯. VISUAL: Tap water with chlorine molecules.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/483273c3-ec85-45df-a63c-7b5f6e0fddaa.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/61e7f98e-74eb-47ae-9e14-e8c6bcb52007.mp4"
+          },
+          {
+            "id": "seg-4-2",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Chlorine warning. NARRATION: 自来水含有氯气对鱼有害. VISUAL: Warning badge with Cl2 icon. Red alert style.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/20b7c3af-df2e-45bb-bfcc-5256dfb8f1f1.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/85b4fe62-f879-4d17-8d42-e56cc3f2af3d.mp4"
+          },
+          {
+            "id": "seg-4-3",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Natural method. NARRATION: 打开水泵和氧气泵. VISUAL: Pump running, bubbles rising. Circulation arrows.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/cfb2ee10-dfa2-42a7-9487-ea33cb164b28.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b0ec8496-d673-4fb8-8675-c9c198322704.mp4"
+          },
+          {
+            "id": "seg-4-4",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Time indicator. NARRATION: 循环曝气一到两天. VISUAL: Clock showing 1-2 days. Time lapse effect.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/f21e2726-99f4-44cd-8e5b-5ff626b06127.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/3c2d47e9-537a-47ca-8795-fd67afaf094a.mp4"
+          },
+          {
+            "id": "seg-4-5",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Clean result. NARRATION: 氯气自然挥发掉. VISUAL: Clear water, chlorine fading away. Green checkmark.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/b6de4781-fbdf-47fe-ad80-1dc8604ee875.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6e361b51-4b0a-405f-8289-027a6c90207c.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/a48ca58a-85ac-419f-b9b8-75e34db82a5c.mp3",
+        "subtitleText": "现在进入最关键的环节：养水。第一步是困水除氯。自来水中含有氯气，对鱼有害。最简单的方法是把水加满鱼缸后，打开水泵和氧气泵，让水循环曝气一到两天。氯气会自然挥发掉。也可以使用水质稳定剂快速除氯，但建议新手还是用自然方法，更稳妥。",
+        "ttsDuration": 24.269
+      },
+      {
+        "sceneId": "scene-5",
+        "videoSegmentCount": 5,
+        "videoDuration": 25,
+        "videoSegments": [
+          {
+            "id": "seg-5-1",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. START: Bacterial cultivation infographic. END: Text fading, bacteria cycle visible. NARRATION: 循环培菌是养水核心. VISUAL: Bacteria icons appearing.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/61d27c7b-32ba-46cd-add8-38966e75c513.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/bc355cf5-6e7b-49cc-9add-b55752c16d26.mp4"
+          },
+          {
+            "id": "seg-5-2",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. 24h operation. NARRATION: 24小时不间断循环. VISUAL: 24H badge glowing. Continuous operation visual.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/dee3166f-4e78-484e-bcfe-164217a2509c.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/39a85524-bf1f-40be-a5db-80ba8435712d.mp4"
+          },
+          {
+            "id": "seg-5-3",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Time requirement. NARRATION: 需要两到三周. VISUAL: Calendar showing 2-3 weeks. Progress bar.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/75241e34-7133-4c44-9041-524c7ad7a429.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/64b35648-edba-4ca1-ac92-e78467d3168a.mp4"
+          },
+          {
+            "id": "seg-5-4",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Nitrogen cycle. NARRATION: 培养硝化细菌. VISUAL: Ammonia → Nitrite → Nitrate cycle diagram.",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/119efa7c-a032-438e-a708-f590a208f436.mp4"
+          },
+          {
+            "id": "seg-5-5",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Success signs. NARRATION: 缸壁生物膜说明成功. VISUAL: Clear tank with biofilm indicator. Success checkmarks.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/a67cb578-87c7-407e-ae82-7cde23f3c1df.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/05cc7028-c46a-44a2-a7ae-5f9c5353dcda.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/859e98fa-0fc5-40f3-aa66-c34512705b02.mp3",
+        "subtitleText": "第二步是循环培菌，这是养水的核心。打开过滤器和氧气泵，让水二十四小时不间断循环。这个过程需要两到三周，目的是培养硝化细菌。硝化细菌能分解鱼的排泄物，是维持水质的关键。当你看到缸壁上长出一层滑滑的生物膜，水变得清澈透亮，说明硝化系统初步建立了。",
+        "ttsDuration": 24.574
+      },
+      {
+        "sceneId": "scene-6",
+        "videoSegmentCount": 5,
+        "videoDuration": 24,
+        "videoSegments": [
+          {
+            "id": "seg-6-1",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. START: Test fish infographic. END: Text fading, fish icons visible. NARRATION: 放闯缸鱼测试水质. VISUAL: Test fish entering tank.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/191c6f73-872b-4bf8-8bb9-047a1dad2c56.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/aac53b44-b2d8-473d-b167-5e9438431773.mp4"
+          },
+          {
+            "id": "seg-6-2",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Recommended fish. NARRATION: 推荐孔雀鱼或斑马鱼. VISUAL: Guppy and zebra fish illustrations. Affordable badge.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/6cf70699-5096-458e-9c8d-ca85b481b17c.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/26c38c73-5b61-42f6-911d-4cc99119080e.mp4"
+          },
+          {
+            "id": "seg-6-3",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Quantity. NARRATION: 放三到五条就够了. VISUAL: 3-5 fish swimming. Number indicator.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/67715d49-2278-40e8-8ce3-44c1b4108719.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/d8cea827-e230-498a-9525-330e990d3848.mp4"
+          },
+          {
+            "id": "seg-6-4",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Observation. NARRATION: 观察一周. VISUAL: Calendar with 7 days marked. Observation checklist.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/fceb1be2-9516-46f9-af62-fcd5087e6627.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/345298a2-c5e8-457c-92df-b6b13d059492.mp4"
+          },
+          {
+            "id": "seg-6-5",
+            "duration": 4,
+            "endFramePrompt": "END FRAME of 4s video. Success signal. NARRATION: 状态良好可放主鱼. VISUAL: Green light, success badge. Ready to proceed.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/22a309cf-2ca6-4620-9a0c-57c1be402d37.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7a2c216b-374e-4c5f-b662-9f930613b2b6.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/b010322f-a1d4-40e6-881b-1ed8cf51ca6e.mp3",
+        "subtitleText": "第三步是放闯缸鱼。闯缸鱼的作用是测试水质，同时它们的排泄物能帮助硝化细菌繁殖。推荐使用便宜又耐活的鱼，比如孔雀鱼或斑马鱼，放三到五条就够了。观察一周，如果闯缸鱼状态良好，没有生病或死亡，说明水质合格，可以准备放主鱼了。",
+        "ttsDuration": 22.794
+      },
+      {
+        "sceneId": "scene-7",
+        "videoSegmentCount": 5,
+        "videoDuration": 25,
+        "videoSegments": [
+          {
+            "id": "seg-7-1",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. START: Feeding guide infographic. END: Text fading, food icons visible. NARRATION: 喂食是新手易犯错. VISUAL: Fish food pellets appearing.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/357af825-d4fe-4b0c-93f2-e59ac31c50d1.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c734c21f-779f-43be-95ac-3e76b8547c25.mp4"
+          },
+          {
+            "id": "seg-7-2",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Key rule. NARRATION: 宁可少喂不可多喂. VISUAL: Less is more concept. Warning about overfeeding.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/d4814259-45c9-44fe-8777-bed1522243ab.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/bcef4d8e-f198-436d-83dd-361e17c1c698.mp4"
+          },
+          {
+            "id": "seg-7-3",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Schedule. NARRATION: 每天喂两次. VISUAL: Morning and evening icons. Schedule timeline.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/4eeffdaf-30ae-43c6-8674-c9200443a028.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/3ba16057-b8f4-420f-b3a7-43555440919b.mp4"
+          },
+          {
+            "id": "seg-7-4",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Amount guide. NARRATION: 三到五分钟内吃完. VISUAL: Timer showing 3-5 min. Fish eating.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/749eaf22-546c-43be-9e19-2900d78abbb9.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/d775afc1-1265-4ade-9dfc-552cf4855a0d.mp4"
+          },
+          {
+            "id": "seg-7-5",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Temperature guide. NARRATION: 低温减少喂食. VISUAL: Temperature gradient bar. Cold to warm scale.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/a637b258-1a0e-43c1-b44c-cd4b8432afd6.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7412f1f2-4c86-4885-91cb-69675574422b.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/969ef01c-9a93-488d-b251-6fc524335f5e.mp3",
+        "subtitleText": "喂食是新手最容易犯错的地方。记住：宁可少喂，不可多喂。过量的鱼食会沉底腐烂，污染水质。正确做法是每天喂两次，每次让鱼在三到五分钟内吃完。观察鱼的肚子微微鼓起就够了。水温低于二十度时要减少喂食，低于十五度几乎不用喂，因为鱼的消化能力会下降。",
+        "ttsDuration": 24.291
+      },
+      {
+        "sceneId": "scene-8",
+        "videoSegmentCount": 6,
+        "videoDuration": 30,
+        "videoSegments": [
+          {
+            "id": "seg-8-1",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. START: Summary infographic. END: Text fading, key message visible. NARRATION: 养鱼先养水是铁律. VISUAL: Golden rule highlighted.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/5172797e-1b6e-42b1-a129-cb1f2ae5aafd.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/33eb08e8-89e1-4d0d-ae4e-57f68a367cb8.mp4"
+          },
+          {
+            "id": "seg-8-2",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Recommended fish. NARRATION: 推荐孔雀鱼红绿灯斗鱼金鱼. VISUAL: Four fish species displayed beautifully.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/4d5aa2f9-81b3-4588-8d3e-badf8fb13b96.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/a54db30a-c84f-4a4b-bad2-6e10ce6f218e.mp4"
+          },
+          {
+            "id": "seg-8-3",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Point 1-2. NARRATION: 选择合适鱼缸配置设备. VISUAL: Tank and equipment icons with checkmarks.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/0946c568-9430-4b8e-b9b7-200f7a8ed91f.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/bfab804b-3ba7-4385-a14b-e83f89b9e82a.mp4"
+          },
+          {
+            "id": "seg-8-4",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Point 3-4. NARRATION: 耐心养水科学喂食. VISUAL: Water and food icons with checkmarks.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/69101daa-1aa2-4124-b803-d6b270353bba.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/aeb27a7d-fa0a-4862-8d6d-93a7a4dfb978.mp4"
+          },
+          {
+            "id": "seg-8-5",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Encouragement. NARRATION: 成功迈出养鱼第一步. VISUAL: Success celebration, confetti effect.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/27d51a05-b87e-411e-b2b2-b6c7c8402761.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/76605a42-1475-457e-9bac-a5fb827ce452.mp4"
+          },
+          {
+            "id": "seg-8-6",
+            "duration": 5,
+            "endFramePrompt": "END FRAME of 5s video. Closing. NARRATION: 祝大家养鱼愉快. VISUAL: Happy fish swimming, farewell message.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/9c3c33b5-b8c9-4ecd-ac2b-be24e3eb7060.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c596c11f-88ff-4d83-862e-6f08b52fad8e.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/fc65ee0d-dd90-4eeb-b7b5-f642c240c08f.mp3",
+        "subtitleText": "最后总结一下：养鱼先养水，这是铁律。新手推荐从孔雀鱼、红绿灯、斗鱼或金鱼入手，它们皮实好养。记住四个关键点：一、选择合适大小的鱼缸；二、配置好过滤和增氧设备；三、耐心养水两到三周；四、科学喂食不过量。做好这些，你就能成功迈出养鱼的第一步。祝大家养鱼愉快！",
+        "ttsDuration": 28.847
+      }
+    ]
+  },
+  "phase5_endFrames": {
+    "status": "completed",
+    "items": []
+  },
+  "phase6_videos": {
+    "status": "completed",
+    "items": [
+      {
+        "id": "seg-1-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/2fdda606-90b4-4b81-bfab-8803341df987.mp4"
+      },
+      {
+        "id": "seg-1-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/101881d0-c407-4e98-9b0c-cdb6525079c9.mp4"
+      },
+      {
+        "id": "seg-1-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ca791973-c989-49a1-8117-76c247bc6c30.mp4"
+      },
+      {
+        "id": "seg-1-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/9429c96a-a5a6-48a3-b57d-18eca37ed3de.mp4"
+      },
+      {
+        "id": "seg-1-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6df25313-ec5d-4fff-ba88-a072405b9aa4.mp4"
+      },
+      {
+        "id": "seg-2-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/4a72ba7e-2e09-497a-a6f6-ee4820960d41.mp4"
+      },
+      {
+        "id": "seg-2-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/095bd5cd-582e-4f75-a2c7-1de209c93231.mp4"
+      },
+      {
+        "id": "seg-2-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/3e92208f-0302-488f-8d46-c410bbee7887.mp4"
+      },
+      {
+        "id": "seg-2-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/341e7d88-8be7-4d3c-aad3-f9c786ce0f5a.mp4"
+      },
+      {
+        "id": "seg-2-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/592d9818-65dd-4b9a-9620-f912bf98e430.mp4"
+      },
+      {
+        "id": "seg-3-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/8fb78b4e-299c-4f3b-b28a-2dc8f8ec8135.mp4"
+      },
+      {
+        "id": "seg-3-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/9c0496aa-c41a-4947-a4f6-e69ebb00e70a.mp4"
+      },
+      {
+        "id": "seg-3-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/1dad8ab3-b417-478a-abc3-3c3c007c29bf.mp4"
+      },
+      {
+        "id": "seg-3-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c7cbdae0-5a6d-4124-89e6-c3b1441726a7.mp4"
+      },
+      {
+        "id": "seg-3-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/224b47e6-fb01-4b78-a75b-42821ffebf7c.mp4"
+      },
+      {
+        "id": "seg-4-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/61e7f98e-74eb-47ae-9e14-e8c6bcb52007.mp4"
+      },
+      {
+        "id": "seg-4-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/85b4fe62-f879-4d17-8d42-e56cc3f2af3d.mp4"
+      },
+      {
+        "id": "seg-4-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b0ec8496-d673-4fb8-8675-c9c198322704.mp4"
+      },
+      {
+        "id": "seg-4-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/3c2d47e9-537a-47ca-8795-fd67afaf094a.mp4"
+      },
+      {
+        "id": "seg-4-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6e361b51-4b0a-405f-8289-027a6c90207c.mp4"
+      },
+      {
+        "id": "seg-5-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/bc355cf5-6e7b-49cc-9add-b55752c16d26.mp4"
+      },
+      {
+        "id": "seg-5-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/39a85524-bf1f-40be-a5db-80ba8435712d.mp4"
+      },
+      {
+        "id": "seg-5-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/64b35648-edba-4ca1-ac92-e78467d3168a.mp4"
+      },
+      {
+        "id": "seg-5-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/119efa7c-a032-438e-a708-f590a208f436.mp4"
+      },
+      {
+        "id": "seg-5-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/05cc7028-c46a-44a2-a7ae-5f9c5353dcda.mp4"
+      },
+      {
+        "id": "seg-6-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/aac53b44-b2d8-473d-b167-5e9438431773.mp4"
+      },
+      {
+        "id": "seg-6-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/26c38c73-5b61-42f6-911d-4cc99119080e.mp4"
+      },
+      {
+        "id": "seg-6-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/d8cea827-e230-498a-9525-330e990d3848.mp4"
+      },
+      {
+        "id": "seg-6-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/345298a2-c5e8-457c-92df-b6b13d059492.mp4"
+      },
+      {
+        "id": "seg-6-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7a2c216b-374e-4c5f-b662-9f930613b2b6.mp4"
+      },
+      {
+        "id": "seg-7-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c734c21f-779f-43be-95ac-3e76b8547c25.mp4"
+      },
+      {
+        "id": "seg-7-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/bcef4d8e-f198-436d-83dd-361e17c1c698.mp4"
+      },
+      {
+        "id": "seg-7-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/3ba16057-b8f4-420f-b3a7-43555440919b.mp4"
+      },
+      {
+        "id": "seg-7-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/d775afc1-1265-4ade-9dfc-552cf4855a0d.mp4"
+      },
+      {
+        "id": "seg-7-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7412f1f2-4c86-4885-91cb-69675574422b.mp4"
+      },
+      {
+        "id": "seg-8-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/33eb08e8-89e1-4d0d-ae4e-57f68a367cb8.mp4"
+      },
+      {
+        "id": "seg-8-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/a54db30a-c84f-4a4b-bad2-6e10ce6f218e.mp4"
+      },
+      {
+        "id": "seg-8-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/bfab804b-3ba7-4385-a14b-e83f89b9e82a.mp4"
+      },
+      {
+        "id": "seg-8-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/aeb27a7d-fa0a-4862-8d6d-93a7a4dfb978.mp4"
+      },
+      {
+        "id": "seg-8-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/76605a42-1475-457e-9bac-a5fb827ce452.mp4"
+      },
+      {
+        "id": "seg-8-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c596c11f-88ff-4d83-862e-6f08b52fad8e.mp4"
+      }
+    ]
+  },
+  "phase7_merge": {
+    "status": "completed",
+    "finalVideoUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-videos/f048ee78-6f13-48bf-8b51-b9d8ad24e4e6.mp4"
+  }
+}

@@ -64,7 +64,7 @@ export const AuthModal = React.memo(({
       <div className="bg-white dark:bg-neutral-900 p-8 rounded-2xl shadow-2xl w-96 border border-neutral-200 dark:border-neutral-800 transform transition-all">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-            {authMode === "login" ? "登录 NanoBanana" : "注册 NanoBanana"}
+            {authMode === "login" ? "登录 豆包画布" : "注册 豆包画布"}
           </h2>
           {userId && (
             <button onClick={onClose} className="p-1 hover:bg-neutral-100 rounded-full">

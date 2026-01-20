@@ -316,7 +316,7 @@ export default function GalleryClient({ initialSlides }: GalleryClientProps) {
         <div className="relative z-10 max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 border border-purple-100 dark:border-purple-800 mb-6 animate-fade-in">
             <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-            <span className="text-xs font-bold text-purple-700 dark:text-purple-300 tracking-wide uppercase">NanoBanana 创意社区</span>
+            <span className="text-xs font-bold text-purple-700 dark:text-purple-300 tracking-wide uppercase">豆包画布 创意社区</span>
           </div>
 
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white mb-6 leading-tight">

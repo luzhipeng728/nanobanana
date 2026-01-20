@@ -1,0 +1,784 @@
+{
+  "projectId": "2026-01-17_17-19-15_ClaudeCod",
+  "topic": "Claude Code Skills功能详解",
+  "createdAt": "2026-01-17T17:19:15.744Z",
+  "updatedAt": "2026-01-17T17:41:11.117Z",
+  "currentPhase": 7,
+  "status": "completed",
+  "phase1_research": {
+    "status": "pending"
+  },
+  "phase2_storyboard": {
+    "status": "completed",
+    "scenes": [
+      {
+        "sceneId": "scene-1",
+        "title": "开场介绍",
+        "narration": "大家好，欢迎收看本期技术解读。今天我们来深入了解Claude Code的Skills功能。Skills是Claude Code最强大的扩展能力之一，它让你可以像教导一位超级助手一样，将专业知识和工作流程传授给AI。无论你是个人开发者还是团队成员，Skills都能显著提升你的编程效率。",
+        "firstFramePrompt": "Professional Chinese tech infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark navy blue to charcoal gray with subtle circuit board patterns at 5% opacity. Soft cyan and purple ambient glow with floating holographic particles. HEADER: Large Chinese title \"Claude Code Skills\" in bold white text with cyan glowing effect, centered at top. Subtitle \"技能系统完全指南\" below in smaller cyan text. CONTENT: Central visual showing Claude AI logo connected to multiple skill icons (code, document, database, workflow) through glowing neural network lines. Left side shows developer silhouette, right side shows productivity metrics. Bottom tagline \"让AI成为你的专属助手\". Cyberpunk tech aesthetic, clean modern design.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/212244de-3728-4f00-89a9-0adcbc4d7890.png"
+      },
+      {
+        "sceneId": "scene-2",
+        "title": "Skills核心概念",
+        "narration": "那么什么是Skills呢？简单来说，Skills就是Markdown文件，用来教Claude如何完成特定任务。它的工作方式非常智能，采用模型自动调用机制。当你发出请求时，Claude会分析内容，判断是否需要使用某个Skill。一旦匹配，Claude就会请求许可后自动加载并执行。这种设计让Skills既强大又安全，不会乱用你不需要的功能。",
+        "firstFramePrompt": "Professional Chinese tech infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep dark blue gradient with flowing data streams. HEADER: Title \"Skills工作原理\" in bold white with purple glow. CONTENT: Three-step workflow diagram. Step 1 card with cyan border: icon of magnifying glass, text \"发现 - Claude加载技能描述\". Step 2 card with purple border: icon of brain, text \"匹配 - 分析请求自动触发\". Step 3 card with emerald border: icon of gear, text \"执行 - 遵循指令完成任务\". Central connecting arrows in gradient cyan to purple. Bottom shows Markdown file icon transforming into AI assistant. Clean cyberpunk aesthetic.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/5089c8d3-5298-4d55-a4c4-ba253fdd5b22.png"
+      },
+      {
+        "sceneId": "scene-3",
+        "title": "Skills文件结构",
+        "narration": "创建一个Skill其实很简单。每个Skill需要一个SKILL.md文件，包含两部分内容。第一部分是YAML元数据，用三条横线包围，定义技能名称和描述。名称必须是小写字母加连字符，描述则告诉Claude何时使用这个技能。第二部分是Markdown正文，这里写具体的操作指令。你还可以添加allowed-tools字段来限制工具权限，或设置model指定使用的模型版本。",
+        "firstFramePrompt": "Professional Chinese tech infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Dark gradient with subtle code pattern overlay. HEADER: Title \"SKILL.md 文件结构\" in bold white with cyan glow. CONTENT: Large code block visualization showing SKILL.md structure. Top section labeled \"YAML元数据\" with fields: name, description, allowed-tools shown in cyan boxes. Bottom section labeled \"Markdown指令\" showing instruction text. Right side: 4 small cards showing optional fields - model, context, user-invocable, hooks. Decorative elements: file icon, configuration gears. Clean technical documentation style.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/df20d0db-de8c-4695-9719-2bd292b0b9e4.png"
+      },
+      {
+        "sceneId": "scene-4",
+        "title": "Skills存储位置",
+        "narration": "Skills可以存储在多个位置，适应不同使用场景。个人Skills放在用户目录下的.claude/skills文件夹，这些技能跨所有项目可用，非常适合个人常用工作流。项目Skills则放在项目根目录的.claude/skills文件夹，方便团队成员共享。企业用户还可以配置组织级Skills。系统会按优先级加载，企业级最高，然后是个人级，最后是项目级。",
+        "firstFramePrompt": "Professional Chinese tech infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep navy with folder tree visualization in background. HEADER: Title \"Skills存储位置\" in bold white with emerald glow. CONTENT: Three tier hierarchy diagram. Top tier with gold border: \"企业级\" icon of building, path text. Middle tier with purple border: \"个人级\" icon of user, path \"~/.claude/skills/\". Bottom tier with cyan border: \"项目级\" icon of folder, path \".claude/skills/\". Right side: priority arrow pointing upward labeled \"优先级\". Left side: icons showing cross-project availability. Clean organizational chart style.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/faee56c1-f6fa-43b2-bd9a-3c088e06faac.png"
+      },
+      {
+        "sceneId": "scene-5",
+        "title": "高级功能详解",
+        "narration": "Skills还有很多高级功能值得探索。通过allowed-tools字段，你可以精确控制Claude能使用哪些工具，比如只允许读取文件而禁止修改。设置context为fork可以让Skill在隔离的子代理中运行，避免污染主对话。user-invocable字段控制技能是否出现在斜杠命令菜单中，设为false可以隐藏但仍允许自动触发。这些精细控制让Skills既灵活又安全。",
+        "firstFramePrompt": "Professional Chinese tech infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Dark gradient with hexagonal tech pattern. HEADER: Title \"高级配置选项\" in bold white with amber glow. CONTENT: Four feature cards in 2x2 grid. Card 1 cyan border: shield icon, title \"allowed-tools\", text \"精确控制工具权限\". Card 2 purple border: fork icon, title \"context: fork\", text \"隔离子代理运行\". Card 3 emerald border: eye icon, title \"user-invocable\", text \"控制菜单可见性\". Card 4 amber border: hook icon, title \"hooks\", text \"生命周期事件钩子\". Center: configuration dial visual. Security focused aesthetic.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/38c63f77-9c8b-464e-ad95-7c2756df0869.png"
+      },
+      {
+        "sceneId": "scene-6",
+        "title": "实战应用场景",
+        "narration": "让我们看看Skills的实际应用场景。在代码审查方面，你可以创建包含团队编码规范的Skill，让Claude按统一标准审查每个PR。在文档处理方面，PDF处理Skill可以自动提取文本、填写表单、合并文档。在知识共享方面，团队可以把最佳实践封装成Skills，新成员上手即用。甚至可以创建数据库查询Skill，让Claude理解你的表结构，生成精准的SQL语句。",
+        "firstFramePrompt": "Professional Chinese tech infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep blue gradient with subtle network connections. HEADER: Title \"Skills实战应用\" in bold white with rose glow. CONTENT: Four use case cards arranged in diamond pattern. Card 1 rose border: code review icon, title \"代码审查\", text \"统一团队标准\". Card 2 cyan border: PDF icon, title \"文档处理\", text \"自动化PDF操作\". Card 3 emerald border: team icon, title \"知识共享\", text \"封装最佳实践\". Card 4 purple border: database icon, title \"数据库查询\", text \"智能SQL生成\". Center: Claude logo connecting all cards. Practical application focus.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/944682d3-9c2e-4bfb-b3aa-9beb4a6ef8fb.png"
+      },
+      {
+        "sceneId": "scene-7",
+        "title": "总结展望",
+        "narration": "总结一下，Claude Code Skills是一个革命性的功能扩展系统。它让你能够将专业知识教给AI，实现真正的个性化编程助手。无论是个人效率提升还是团队协作优化，Skills都能发挥巨大价值。现在就开始创建你的第一个Skill吧，从简单的工作流自动化开始，逐步构建属于你的AI技能库。感谢收看，我们下期再见！",
+        "firstFramePrompt": "Professional Chinese tech infographic poster, 16:9 ratio, 4K resolution. BACKGROUND: Deep gradient from dark purple to navy blue with constellation pattern and shooting stars. Soft warm amber and cyan ambient glow. HEADER: Title \"开启Skills之旅\" in bold white with golden glow effect, centered. Subtitle \"构建你的AI技能库\" below. CONTENT: Central visual showing upward rocket trajectory representing growth, surrounded by floating skill icons (code, document, team, database). Left side: checklist with completed items. Right side: progress chart showing efficiency gains. Bottom: call-to-action text \"从今天开始\". Inspirational futuristic aesthetic, warm and inviting tones.",
+        "firstFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/0c15c4cd-f2d8-4311-a0c3-500b02185ab4.png"
+      }
+    ]
+  },
+  "phase3_tts": {
+    "status": "completed",
+    "items": [
+      {
+        "sceneId": "scene-1",
+        "text": "大家好，欢迎收看本期技术解读。今天我们来深入了解Claude Code的Skills功能。Skills是Claude Code最强大的扩展能力之一，它让你可以像教导一位超级助手一样，将专业知识和工作流程传授给AI。无论你是个人开发者还是团队成员，Skills都能显著提升你的编程效率。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/914c5c5b-3027-484e-b33d-bc64384866ab.mp3",
+        "duration": 22.96
+      },
+      {
+        "sceneId": "scene-2",
+        "text": "那么什么是Skills呢？简单来说，Skills就是Markdown文件，用来教Claude如何完成特定任务。它的工作方式非常智能，采用模型自动调用机制。当你发出请求时，Claude会分析内容，判断是否需要使用某个Skill。一旦匹配，Claude就会请求许可后自动加载并执行。这种设计让Skills既强大又安全，不会乱用你不需要的功能。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/ff228bd6-7704-4ea6-9d34-4bc2242e4d63.mp3",
+        "duration": 27.939
+      },
+      {
+        "sceneId": "scene-3",
+        "text": "创建一个Skill其实很简单。每个Skill需要一个SKILL.md文件，包含两部分内容。第一部分是YAML元数据，用三条横线包围，定义技能名称和描述。名称必须是小写字母加连字符，描述则告诉Claude何时使用这个技能。第二部分是Markdown正文，这里写具体的操作指令。你还可以添加allowed-tools字段来限制工具权限，或设置model指定使用的模型版本。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/ca1c5acd-80cb-4f42-9184-0b68e1f6f92d.mp3",
+        "duration": 32.917
+      },
+      {
+        "sceneId": "scene-4",
+        "text": "Skills可以存储在多个位置，适应不同使用场景。个人Skills放在用户目录下的.claude/skills文件夹，这些技能跨所有项目可用，非常适合个人常用工作流。项目Skills则放在项目根目录的.claude/skills文件夹，方便团队成员共享。企业用户还可以配置组织级Skills。系统会按优先级加载，企业级最高，然后是个人级，最后是项目级。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/ea85b558-8ace-4424-b7be-297563dbeeb7.mp3",
+        "duration": 29.565
+      },
+      {
+        "sceneId": "scene-5",
+        "text": "Skills还有很多高级功能值得探索。通过allowed-tools字段，你可以精确控制Claude能使用哪些工具，比如只允许读取文件而禁止修改。设置context为fork可以让Skill在隔离的子代理中运行，避免污染主对话。user-invocable字段控制技能是否出现在斜杠命令菜单中，设为false可以隐藏但仍允许自动触发。这些精细控制让Skills既灵活又安全。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/9530455c-d3bd-4e04-9525-115e6645d67b.mp3",
+        "duration": 30.741
+      },
+      {
+        "sceneId": "scene-6",
+        "text": "让我们看看Skills的实际应用场景。在代码审查方面，你可以创建包含团队编码规范的Skill，让Claude按统一标准审查每个PR。在文档处理方面，PDF处理Skill可以自动提取文本、填写表单、合并文档。在知识共享方面，团队可以把最佳实践封装成Skills，新成员上手即用。甚至可以创建数据库查询Skill，让Claude理解你的表结构，生成精准的SQL语句。",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/155ea01a-b95a-43c4-9625-f44a2b454773.mp3",
+        "duration": 30.463
+      },
+      {
+        "sceneId": "scene-7",
+        "text": "总结一下，Claude Code Skills是一个革命性的功能扩展系统。它让你能够将专业知识教给AI，实现真正的个性化编程助手。无论是个人效率提升还是团队协作优化，Skills都能发挥巨大价值。现在就开始创建你的第一个Skill吧，从简单的工作流自动化开始，逐步构建属于你的AI技能库。感谢收看，我们下期再见！",
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/46c6a330-646f-4dee-ba8b-506181b8f3a5.mp3",
+        "duration": 25.893
+      }
+    ],
+    "totalDuration": 200.478
+  },
+  "phase4_segments": {
+    "status": "in_progress",
+    "mergePlan": [
+      {
+        "sceneId": "scene-1",
+        "videoSegmentCount": 6,
+        "videoDuration": 24,
+        "videoSegments": [
+          {
+            "id": "seg-1-1",
+            "endFramePrompt": "END FRAME of 4s video. Text fading out 30%, camera slowly pushing toward Claude AI logo. Neural network connections becoming more prominent. Subtle particle animation. Cyberpunk tech aesthetic, smooth transition.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/a6253dc9-7530-422c-aae9-0ac1eedc1e70.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/510a1566-210f-4dd0-88b2-0393368e0c32.mp4"
+          },
+          {
+            "id": "seg-1-2",
+            "endFramePrompt": "END FRAME of 4s video. Text 60% faded, focus shifting to skill icons cluster. Code icon glowing brighter. Network lines pulsing with data flow. Deep navy background with cyan accents.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/ae42aee0-a22b-4355-98a2-1e02cae93f85.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ab67651c-37f1-4a7e-8d1b-0c5cf82cf48a.mp4"
+          },
+          {
+            "id": "seg-1-3",
+            "endFramePrompt": "END FRAME of 4s video. Text 80% faded, document and database icons highlighted. Holographic particles floating. Developer silhouette becoming more visible. Tech aesthetic maintained.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/5b65af0a-d274-484a-b4a1-6164e7103a66.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/5e0a47bc-fe81-4709-b781-d8e87be49cbb.mp4"
+          },
+          {
+            "id": "seg-1-4",
+            "endFramePrompt": "END FRAME of 4s video. Text 95% faded, workflow icon prominent. Productivity metrics chart animating. Smooth camera movement. Clean cyberpunk style.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/8f0b1a7d-c99a-429a-a12a-ad9132629595.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/2e9d4e62-bc12-4c5b-b882-cfd7543d36d7.mp4"
+          },
+          {
+            "id": "seg-1-5",
+            "endFramePrompt": "END FRAME of 4s video. All text faded out, pure visual. Central Claude logo with radiating connection lines. Ambient glow intensifying. Professional tech atmosphere.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/ef95eaba-3207-45f4-b2ff-58375dd1199d.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ebc996c1-dde4-49ae-82cc-b3ee65213f1b.mp4"
+          },
+          {
+            "id": "seg-1-6",
+            "endFramePrompt": "END FRAME of 4s video. No text, transition state. Neural network fully visible, ready for next scene. Soft purple and cyan gradients. Clean ending frame.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/7e1efba6-4aad-4d17-a510-757152bd271f.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/e054bd7f-3249-4bac-8a56-a660ff4ffb69.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/914c5c5b-3027-484e-b33d-bc64384866ab.mp3",
+        "subtitleText": "大家好，欢迎收看本期技术解读。今天我们来深入了解Claude Code的Skills功能。Skills是Claude Code最强大的扩展能力之一，它让你可以像教导一位超级助手一样，将专业知识和工作流程传授给AI。无论你是个人开发者还是团队成员，Skills都能显著提升你的编程效率。",
+        "ttsDuration": 22.96
+      },
+      {
+        "sceneId": "scene-2",
+        "videoSegmentCount": 7,
+        "videoDuration": 28,
+        "videoSegments": [
+          {
+            "id": "seg-2-1",
+            "endFramePrompt": "END FRAME of 4s video. Text fading 25%, Step 1 discovery icon highlighted with magnifying glass. Data streams flowing. Purple glow background.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/e7f8f011-fc4d-429c-a7b8-104c4cf205b9.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/46b74974-e351-44b1-97ba-167c518eda15.mp4"
+          },
+          {
+            "id": "seg-2-2",
+            "endFramePrompt": "END FRAME of 4s video. Text 50% faded, arrow transitioning from Step 1 to Step 2. Brain icon starting to glow. Gradient cyan to purple.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/4fecb2f4-cbfe-4341-9d0f-6d11f58b356b.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/888ff0d6-cbf1-4665-945d-ba555c48e94a.mp4"
+          },
+          {
+            "id": "seg-2-3",
+            "endFramePrompt": "END FRAME of 4s video. Text 70% faded, Step 2 matching process visualized. Brain icon fully lit. Neural analysis pattern emerging.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/ff805e74-2766-4856-ab61-f7836b791b25.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/a4336b8b-b4fc-40a7-9af8-fbacfa059ee9.mp4"
+          },
+          {
+            "id": "seg-2-4",
+            "endFramePrompt": "END FRAME of 4s video. Text 85% faded, arrow moving to Step 3. Gear icon preparing to activate. Workflow visualization.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/063bcd21-6985-4c8e-9e7c-977c5b641187.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ffa7e53f-b5bd-4cd3-883d-d9e60bde2b09.mp4"
+          },
+          {
+            "id": "seg-2-5",
+            "endFramePrompt": "END FRAME of 4s video. Text 95% faded, Step 3 execution highlighted. Gear spinning animation implied. Task completion visual.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/e0e8e152-47b5-414b-9d04-48c935f3cdbf.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/a40684fa-2ec4-4875-8786-2a2f391dca86.mp4"
+          },
+          {
+            "id": "seg-2-6",
+            "endFramePrompt": "END FRAME of 4s video. All text faded, Markdown file icon transforming. AI assistant silhouette emerging. Clean tech aesthetic.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/5135f384-94bf-474f-82e6-1556070a087c.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c8f34d89-69ae-42f8-8358-96341d283a8f.mp4"
+          },
+          {
+            "id": "seg-2-7",
+            "endFramePrompt": "END FRAME of 4s video. No text, pure visual transition. All three steps connected with glowing lines. Ready for next scene.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/e36410fd-852e-470a-a542-7c97b9c17972.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/70f5a3be-dfe1-4e41-af70-3922036178e2.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/ff228bd6-7704-4ea6-9d34-4bc2242e4d63.mp3",
+        "subtitleText": "那么什么是Skills呢？简单来说，Skills就是Markdown文件，用来教Claude如何完成特定任务。它的工作方式非常智能，采用模型自动调用机制。当你发出请求时，Claude会分析内容，判断是否需要使用某个Skill。一旦匹配，Claude就会请求许可后自动加载并执行。这种设计让Skills既强大又安全，不会乱用你不需要的功能。",
+        "ttsDuration": 27.939
+      },
+      {
+        "sceneId": "scene-3",
+        "videoSegmentCount": 9,
+        "videoDuration": 36,
+        "videoSegments": [
+          {
+            "id": "seg-3-1",
+            "endFramePrompt": "END FRAME of 4s video. Text fading 20%, focus on SKILL.md file icon. Code structure visualization starting. Dark tech background.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/c83f03fd-72b5-42ed-9b78-a1a5ee70e1e6.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/162461dc-c50e-4fe3-ba81-86a12b611a38.mp4"
+          },
+          {
+            "id": "seg-3-2",
+            "endFramePrompt": "END FRAME of 4s video. Text 35% faded, YAML metadata section highlighted. Three dashes visual element. Cyan box glow.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/40f86918-ad86-4d02-9685-0330406d597c.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c14e67db-8c42-4ce4-9b00-d0da4a912b0d.mp4"
+          },
+          {
+            "id": "seg-3-3",
+            "endFramePrompt": "END FRAME of 4s video. Text 50% faded, name field box glowing. Lowercase letters visual hint. Purple accent.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/c4bd0b1a-a090-46cc-aa6e-da9f26d79d0e.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/353283a0-8282-4183-834a-e62d2cdc2f0f.mp4"
+          },
+          {
+            "id": "seg-3-4",
+            "endFramePrompt": "END FRAME of 4s video. Text 65% faded, description field prominent. Purpose text implied. Emerald highlight.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/16849d0f-61fc-407b-9fc6-a57cc16ed8f6.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/0fa60a53-c0ab-47d9-88df-43d697a36f79.mp4"
+          },
+          {
+            "id": "seg-3-5",
+            "endFramePrompt": "END FRAME of 4s video. Text 75% faded, Markdown instruction section visible. Document icon with lines. Clean layout.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/df01e88c-0680-4bfd-b1b7-7a71445d2a48.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/8c9a35fb-c0bd-4740-995b-9cc37fd8262f.mp4"
+          },
+          {
+            "id": "seg-3-6",
+            "endFramePrompt": "END FRAME of 4s video. Text 85% faded, allowed-tools field card highlighted. Shield icon visible. Security theme.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/9c6e5055-856f-4582-87ed-b970383b050c.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/cb602e89-6fe3-4405-9f42-77689f5be84f.mp4"
+          },
+          {
+            "id": "seg-3-7",
+            "endFramePrompt": "END FRAME of 4s video. Text 92% faded, model field card visible. Version selection implied. Configuration visual.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/843546bb-ef5f-48a1-b16a-2d47b746772d.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/929426d5-6f5e-4445-856a-868f3654aec5.mp4"
+          },
+          {
+            "id": "seg-3-8",
+            "endFramePrompt": "END FRAME of 4s video. Text 98% faded, all optional fields shown. Four cards in grid. Technical documentation style.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/14db0e32-88f4-446f-9d50-7650f3553f8d.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ecce7975-d48d-4240-881b-ef3b8fd3efbc.mp4"
+          },
+          {
+            "id": "seg-3-9",
+            "endFramePrompt": "END FRAME of 4s video. No text, file structure complete. Gear icons and file symbols. Clean transition frame.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/70241a8e-bb2a-4af5-8050-8b4e479f0103.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/2dde7920-e59e-408a-891d-27f869e78a7d.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/ca1c5acd-80cb-4f42-9184-0b68e1f6f92d.mp3",
+        "subtitleText": "创建一个Skill其实很简单。每个Skill需要一个SKILL.md文件，包含两部分内容。第一部分是YAML元数据，用三条横线包围，定义技能名称和描述。名称必须是小写字母加连字符，描述则告诉Claude何时使用这个技能。第二部分是Markdown正文，这里写具体的操作指令。你还可以添加allowed-tools字段来限制工具权限，或设置model指定使用的模型版本。",
+        "ttsDuration": 32.917
+      },
+      {
+        "sceneId": "scene-4",
+        "videoSegmentCount": 8,
+        "videoDuration": 32,
+        "videoSegments": [
+          {
+            "id": "seg-4-1",
+            "endFramePrompt": "END FRAME of 4s video. Text fading 20%, folder tree visualization emerging. Three tier hierarchy starting to form. Deep navy background.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/0f0578dc-c571-4533-97a9-9d86ed8e6195.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/52a6d70d-be13-40b6-a744-2e4c13599ef3.mp4"
+          },
+          {
+            "id": "seg-4-2",
+            "endFramePrompt": "END FRAME of 4s video. Text 40% faded, personal tier highlighted with user icon. Home directory path visual. Purple glow.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/61a60da5-09bf-45de-b956-60a93879e1d1.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7d18490b-43be-40e4-9120-3323d5196c27.mp4"
+          },
+          {
+            "id": "seg-4-3",
+            "endFramePrompt": "END FRAME of 4s video. Text 55% faded, cross-project availability icons visible. Multiple project folders connected. Network lines.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/0dd7ae85-4f28-493e-97f5-e4f6daf50e5a.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/f4d3139b-1037-4f60-94f0-5d3fd184330a.mp4"
+          },
+          {
+            "id": "seg-4-4",
+            "endFramePrompt": "END FRAME of 4s video. Text 70% faded, project tier highlighted. Folder icon with team symbol. Cyan border glow.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/71f9ef57-33b8-4c2d-9669-8777d1aa0cc3.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c5e45196-8871-42c8-bcc0-fc28f16180ac.mp4"
+          },
+          {
+            "id": "seg-4-5",
+            "endFramePrompt": "END FRAME of 4s video. Text 80% faded, enterprise tier at top. Building icon with gold border. Priority arrow starting.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/a90892ce-d27d-4aac-8ad9-3bb0aadd0d61.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/30b29489-6d61-4327-bb42-86e2a8096cc2.mp4"
+          },
+          {
+            "id": "seg-4-6",
+            "endFramePrompt": "END FRAME of 4s video. Text 90% faded, priority arrow fully visible pointing upward. Hierarchy complete. Emerald accents.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/739fb49c-aef4-4720-b51d-54ec598e8e19.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ff7cb4e7-31bc-4557-a50e-50a016518364.mp4"
+          },
+          {
+            "id": "seg-4-7",
+            "endFramePrompt": "END FRAME of 4s video. Text 97% faded, all three tiers connected. Loading sequence visual. Organizational chart style.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/63148c42-42d6-4a18-b655-33eb06f39857.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/90c911b3-eb2e-49cb-8b17-45bef23719b0.mp4"
+          },
+          {
+            "id": "seg-4-8",
+            "endFramePrompt": "END FRAME of 4s video. No text, complete folder structure. Clean hierarchy visual. Ready for transition.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/49a25e66-1555-4f09-b34b-35dacd8d3365.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/41bd5c50-3429-412b-93bb-10389d375dbf.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/ea85b558-8ace-4424-b7be-297563dbeeb7.mp3",
+        "subtitleText": "Skills可以存储在多个位置，适应不同使用场景。个人Skills放在用户目录下的.claude/skills文件夹，这些技能跨所有项目可用，非常适合个人常用工作流。项目Skills则放在项目根目录的.claude/skills文件夹，方便团队成员共享。企业用户还可以配置组织级Skills。系统会按优先级加载，企业级最高，然后是个人级，最后是项目级。",
+        "ttsDuration": 29.565
+      },
+      {
+        "sceneId": "scene-5",
+        "videoSegmentCount": 8,
+        "videoDuration": 32,
+        "videoSegments": [
+          {
+            "id": "seg-5-1",
+            "endFramePrompt": "END FRAME of 4s video. Text fading 20%, hexagonal tech pattern prominent. Four feature cards starting to highlight. Dark gradient.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/34fe1812-96cd-4893-9c21-759d179bad64.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/968d1d86-f002-4b93-80d8-c5901d84cb42.mp4"
+          },
+          {
+            "id": "seg-5-2",
+            "endFramePrompt": "END FRAME of 4s video. Text 40% faded, allowed-tools card glowing. Shield icon prominent. Security theme cyan border.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/28f135be-35cc-45c5-af8e-b487a65fcb07.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/55844b9d-9a75-4b70-84c8-4b1c57150099.mp4"
+          },
+          {
+            "id": "seg-5-3",
+            "endFramePrompt": "END FRAME of 4s video. Text 55% faded, tool restriction visual. Read-only symbol implied. Permission control theme.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/013c0d09-06a2-4436-8e82-b3a5663f3dc7.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6afa03b7-e5c6-4da5-bdbc-fdc9c213abbe.mp4"
+          },
+          {
+            "id": "seg-5-4",
+            "endFramePrompt": "END FRAME of 4s video. Text 70% faded, context fork card highlighted. Fork icon with isolation bubble. Purple glow.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/11276026-fcf6-42bd-aff7-5debcdf6f46e.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b74cf2c6-5087-409d-b83a-230ccc28ae35.mp4"
+          },
+          {
+            "id": "seg-5-5",
+            "endFramePrompt": "END FRAME of 4s video. Text 80% faded, sub-agent visual emerging. Separate context bubble. Clean separation.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/da34cf09-6932-4171-81a2-774fa53e8ec9.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/e7222685-0b3e-4ac2-8760-07df19decc06.mp4"
+          },
+          {
+            "id": "seg-5-6",
+            "endFramePrompt": "END FRAME of 4s video. Text 90% faded, user-invocable card visible. Eye icon with visibility toggle. Emerald accent.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/7483b343-ca1e-4808-8554-a752ccb379d2.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7f2cc1b1-317c-4a4a-8b65-82b1e619c64e.mp4"
+          },
+          {
+            "id": "seg-5-7",
+            "endFramePrompt": "END FRAME of 4s video. Text 97% faded, hooks card glowing. Lifecycle event icons. Amber border prominent.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/878a01cc-4043-48ef-8176-8f057b3225e7.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c3df1258-3d3e-4470-88b6-1cf68a411b47.mp4"
+          },
+          {
+            "id": "seg-5-8",
+            "endFramePrompt": "END FRAME of 4s video. No text, configuration dial in center. All four features connected. Security focused aesthetic complete.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/dd68bf5d-7819-4729-9896-f621b45cb94e.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/55a179c1-c3d0-4975-96d7-400b7768113b.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/9530455c-d3bd-4e04-9525-115e6645d67b.mp3",
+        "subtitleText": "Skills还有很多高级功能值得探索。通过allowed-tools字段，你可以精确控制Claude能使用哪些工具，比如只允许读取文件而禁止修改。设置context为fork可以让Skill在隔离的子代理中运行，避免污染主对话。user-invocable字段控制技能是否出现在斜杠命令菜单中，设为false可以隐藏但仍允许自动触发。这些精细控制让Skills既灵活又安全。",
+        "ttsDuration": 30.741
+      },
+      {
+        "sceneId": "scene-6",
+        "videoSegmentCount": 8,
+        "videoDuration": 32,
+        "videoSegments": [
+          {
+            "id": "seg-6-1",
+            "endFramePrompt": "END FRAME of 4s video. Text fading 20%, diamond pattern of use case cards forming. Network connections visible. Deep blue gradient.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/00d018e0-b801-48e4-be54-569265ae0624.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6a07d363-278b-4820-8537-d6dca9979f84.mp4"
+          },
+          {
+            "id": "seg-6-2",
+            "endFramePrompt": "END FRAME of 4s video. Text 40% faded, code review card highlighted. Code icon with checkmark. Rose border glowing.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/daecefef-ad7b-4277-a8b0-9df579dc5515.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b27f9286-9da1-49f4-9242-fbbfbd66b046.mp4"
+          },
+          {
+            "id": "seg-6-3",
+            "endFramePrompt": "END FRAME of 4s video. Text 55% faded, PR review visual implied. Team standards icon. Unified approach theme.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/d5145f20-afe6-4a74-a7c2-f0bf527277b8.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/bcab7d65-8435-4f2a-83ee-8355b91076f1.mp4"
+          },
+          {
+            "id": "seg-6-4",
+            "endFramePrompt": "END FRAME of 4s video. Text 70% faded, PDF processing card highlighted. Document icon with extraction arrows. Cyan glow.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/b233fbc1-faff-4a04-b01f-d5506d160d55.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/f4eed95e-93a4-4d2e-91a9-8b812bdc4d56.mp4"
+          },
+          {
+            "id": "seg-6-5",
+            "endFramePrompt": "END FRAME of 4s video. Text 80% faded, knowledge sharing card prominent. Team icon with lightbulb. Emerald border.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/d8e70bb7-9bc7-4f46-9252-9a6efd249da1.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/aeaf9afb-79dd-4c99-b24f-515cfeb76ce8.mp4"
+          },
+          {
+            "id": "seg-6-6",
+            "endFramePrompt": "END FRAME of 4s video. Text 90% faded, best practices visual. Shared knowledge flowing. New member icon.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/621f9a97-3739-44d4-9df3-b01319337454.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/f2867c69-6a70-4bba-af7f-4d61e9146733.mp4"
+          },
+          {
+            "id": "seg-6-7",
+            "endFramePrompt": "END FRAME of 4s video. Text 97% faded, database query card glowing. SQL icon with structure visual. Purple accent.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/2585bea6-974f-47d4-aaf3-ee4e2093a9dc.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6378a73d-3c2a-4619-a183-c16b0ed9271b.mp4"
+          },
+          {
+            "id": "seg-6-8",
+            "endFramePrompt": "END FRAME of 4s video. No text, Claude logo at center connecting all four use cases. Practical application complete.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/cb156725-f7c8-40fe-a860-76055b2d3487.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/d25fb0ec-26a0-45c7-a944-e177dbe6c72a.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/155ea01a-b95a-43c4-9625-f44a2b454773.mp3",
+        "subtitleText": "让我们看看Skills的实际应用场景。在代码审查方面，你可以创建包含团队编码规范的Skill，让Claude按统一标准审查每个PR。在文档处理方面，PDF处理Skill可以自动提取文本、填写表单、合并文档。在知识共享方面，团队可以把最佳实践封装成Skills，新成员上手即用。甚至可以创建数据库查询Skill，让Claude理解你的表结构，生成精准的SQL语句。",
+        "ttsDuration": 30.463
+      },
+      {
+        "sceneId": "scene-7",
+        "videoSegmentCount": 7,
+        "videoDuration": 28,
+        "videoSegments": [
+          {
+            "id": "seg-7-1",
+            "endFramePrompt": "END FRAME of 4s video. Text fading 25%, constellation pattern sparkling. Rocket trajectory starting. Warm amber glow emerging.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/3f31d06a-9973-458c-aa4b-5412ead6e79d.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/97aebb50-8aaa-487c-af1c-5f8dfd364df3.mp4"
+          },
+          {
+            "id": "seg-7-2",
+            "endFramePrompt": "END FRAME of 4s video. Text 50% faded, rocket rising higher. Skill icons orbiting around. Growth trajectory visible.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/75a7310f-66d2-4d69-b238-a75cfcdf001a.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6304e33f-803e-468c-8808-079de7274cdc.mp4"
+          },
+          {
+            "id": "seg-7-3",
+            "endFramePrompt": "END FRAME of 4s video. Text 70% faded, efficiency gains chart animating. Progress bars filling. Positive momentum.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/f0fd99b2-95a7-4439-bf79-af3b2d1f32a1.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b617b313-200a-4f61-be52-17d448d24fde.mp4"
+          },
+          {
+            "id": "seg-7-4",
+            "endFramePrompt": "END FRAME of 4s video. Text 85% faded, checklist showing completed items. Achievement icons. Motivational visual.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/46307d00-12fc-4240-a424-169a85ea2837.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ff9512fc-803f-427a-9d79-6562ef2fd1ab.mp4"
+          },
+          {
+            "id": "seg-7-5",
+            "endFramePrompt": "END FRAME of 4s video. Text 95% faded, skill library visual forming. Multiple skill folders. Building blocks theme.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/37ac9ffb-6d25-4841-afdb-d0cf225b112a.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/846f73f9-b93d-455d-b43f-bfdeac44319c.mp4"
+          },
+          {
+            "id": "seg-7-6",
+            "endFramePrompt": "END FRAME of 4s video. Text nearly gone, inspirational end state. Stars and shooting stars. Future possibilities.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/886998ee-45af-476f-a61a-f8e381cf4261.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/9fd57c71-3ddf-4acc-85d9-482b011ce560.mp4"
+          },
+          {
+            "id": "seg-7-7",
+            "endFramePrompt": "END FRAME of 4s video. No text, final closing frame. Warm inviting tones. Thank you visual implied. Clean ending.",
+            "endFrameUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-images/fc9cfae6-df29-4e16-b8a0-f053c14b6b73.png",
+            "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/0345a5a1-11e8-4df4-ae60-1b109ba63c20.mp4"
+          }
+        ],
+        "audioUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-audio/46c6a330-646f-4dee-ba8b-506181b8f3a5.mp3",
+        "subtitleText": "总结一下，Claude Code Skills是一个革命性的功能扩展系统。它让你能够将专业知识教给AI，实现真正的个性化编程助手。无论是个人效率提升还是团队协作优化，Skills都能发挥巨大价值。现在就开始创建你的第一个Skill吧，从简单的工作流自动化开始，逐步构建属于你的AI技能库。感谢收看，我们下期再见！",
+        "ttsDuration": 25.893
+      }
+    ]
+  },
+  "phase5_endFrames": {
+    "status": "completed",
+    "items": []
+  },
+  "phase6_videos": {
+    "status": "completed",
+    "items": [
+      {
+        "id": "seg-1-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/510a1566-210f-4dd0-88b2-0393368e0c32.mp4"
+      },
+      {
+        "id": "seg-1-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ab67651c-37f1-4a7e-8d1b-0c5cf82cf48a.mp4"
+      },
+      {
+        "id": "seg-1-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/5e0a47bc-fe81-4709-b781-d8e87be49cbb.mp4"
+      },
+      {
+        "id": "seg-1-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/2e9d4e62-bc12-4c5b-b882-cfd7543d36d7.mp4"
+      },
+      {
+        "id": "seg-1-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ebc996c1-dde4-49ae-82cc-b3ee65213f1b.mp4"
+      },
+      {
+        "id": "seg-1-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/e054bd7f-3249-4bac-8a56-a660ff4ffb69.mp4"
+      },
+      {
+        "id": "seg-2-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/46b74974-e351-44b1-97ba-167c518eda15.mp4"
+      },
+      {
+        "id": "seg-2-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/888ff0d6-cbf1-4665-945d-ba555c48e94a.mp4"
+      },
+      {
+        "id": "seg-2-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/a4336b8b-b4fc-40a7-9af8-fbacfa059ee9.mp4"
+      },
+      {
+        "id": "seg-2-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ffa7e53f-b5bd-4cd3-883d-d9e60bde2b09.mp4"
+      },
+      {
+        "id": "seg-2-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/a40684fa-2ec4-4875-8786-2a2f391dca86.mp4"
+      },
+      {
+        "id": "seg-2-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c8f34d89-69ae-42f8-8358-96341d283a8f.mp4"
+      },
+      {
+        "id": "seg-2-7",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/70f5a3be-dfe1-4e41-af70-3922036178e2.mp4"
+      },
+      {
+        "id": "seg-3-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/162461dc-c50e-4fe3-ba81-86a12b611a38.mp4"
+      },
+      {
+        "id": "seg-3-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c14e67db-8c42-4ce4-9b00-d0da4a912b0d.mp4"
+      },
+      {
+        "id": "seg-3-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/353283a0-8282-4183-834a-e62d2cdc2f0f.mp4"
+      },
+      {
+        "id": "seg-3-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/0fa60a53-c0ab-47d9-88df-43d697a36f79.mp4"
+      },
+      {
+        "id": "seg-3-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/8c9a35fb-c0bd-4740-995b-9cc37fd8262f.mp4"
+      },
+      {
+        "id": "seg-3-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/cb602e89-6fe3-4405-9f42-77689f5be84f.mp4"
+      },
+      {
+        "id": "seg-3-7",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/929426d5-6f5e-4445-856a-868f3654aec5.mp4"
+      },
+      {
+        "id": "seg-3-8",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ecce7975-d48d-4240-881b-ef3b8fd3efbc.mp4"
+      },
+      {
+        "id": "seg-3-9",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/2dde7920-e59e-408a-891d-27f869e78a7d.mp4"
+      },
+      {
+        "id": "seg-4-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/52a6d70d-be13-40b6-a744-2e4c13599ef3.mp4"
+      },
+      {
+        "id": "seg-4-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7d18490b-43be-40e4-9120-3323d5196c27.mp4"
+      },
+      {
+        "id": "seg-4-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/f4d3139b-1037-4f60-94f0-5d3fd184330a.mp4"
+      },
+      {
+        "id": "seg-4-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c5e45196-8871-42c8-bcc0-fc28f16180ac.mp4"
+      },
+      {
+        "id": "seg-4-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/30b29489-6d61-4327-bb42-86e2a8096cc2.mp4"
+      },
+      {
+        "id": "seg-4-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ff7cb4e7-31bc-4557-a50e-50a016518364.mp4"
+      },
+      {
+        "id": "seg-4-7",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/90c911b3-eb2e-49cb-8b17-45bef23719b0.mp4"
+      },
+      {
+        "id": "seg-4-8",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/41bd5c50-3429-412b-93bb-10389d375dbf.mp4"
+      },
+      {
+        "id": "seg-5-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/968d1d86-f002-4b93-80d8-c5901d84cb42.mp4"
+      },
+      {
+        "id": "seg-5-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/55844b9d-9a75-4b70-84c8-4b1c57150099.mp4"
+      },
+      {
+        "id": "seg-5-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6afa03b7-e5c6-4da5-bdbc-fdc9c213abbe.mp4"
+      },
+      {
+        "id": "seg-5-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b74cf2c6-5087-409d-b83a-230ccc28ae35.mp4"
+      },
+      {
+        "id": "seg-5-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/e7222685-0b3e-4ac2-8760-07df19decc06.mp4"
+      },
+      {
+        "id": "seg-5-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/7f2cc1b1-317c-4a4a-8b65-82b1e619c64e.mp4"
+      },
+      {
+        "id": "seg-5-7",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/c3df1258-3d3e-4470-88b6-1cf68a411b47.mp4"
+      },
+      {
+        "id": "seg-5-8",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/55a179c1-c3d0-4975-96d7-400b7768113b.mp4"
+      },
+      {
+        "id": "seg-6-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6a07d363-278b-4820-8537-d6dca9979f84.mp4"
+      },
+      {
+        "id": "seg-6-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b27f9286-9da1-49f4-9242-fbbfbd66b046.mp4"
+      },
+      {
+        "id": "seg-6-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/bcab7d65-8435-4f2a-83ee-8355b91076f1.mp4"
+      },
+      {
+        "id": "seg-6-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/f4eed95e-93a4-4d2e-91a9-8b812bdc4d56.mp4"
+      },
+      {
+        "id": "seg-6-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/aeaf9afb-79dd-4c99-b24f-515cfeb76ce8.mp4"
+      },
+      {
+        "id": "seg-6-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/f2867c69-6a70-4bba-af7f-4d61e9146733.mp4"
+      },
+      {
+        "id": "seg-6-7",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6378a73d-3c2a-4619-a183-c16b0ed9271b.mp4"
+      },
+      {
+        "id": "seg-6-8",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/d25fb0ec-26a0-45c7-a944-e177dbe6c72a.mp4"
+      },
+      {
+        "id": "seg-7-1",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/97aebb50-8aaa-487c-af1c-5f8dfd364df3.mp4"
+      },
+      {
+        "id": "seg-7-2",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/6304e33f-803e-468c-8808-079de7274cdc.mp4"
+      },
+      {
+        "id": "seg-7-3",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/b617b313-200a-4f61-be52-17d448d24fde.mp4"
+      },
+      {
+        "id": "seg-7-4",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/ff9512fc-803f-427a-9d79-6562ef2fd1ab.mp4"
+      },
+      {
+        "id": "seg-7-5",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/846f73f9-b93d-455d-b43f-bfdeac44319c.mp4"
+      },
+      {
+        "id": "seg-7-6",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/9fd57c71-3ddf-4acc-85d9-482b011ce560.mp4"
+      },
+      {
+        "id": "seg-7-7",
+        "success": true,
+        "videoUrl": "https://doubao.luzhipeng.com/nanobanana/video/mp4/0345a5a1-11e8-4df4-ae60-1b109ba63c20.mp4"
+      }
+    ]
+  },
+  "phase7_merge": {
+    "status": "completed",
+    "finalVideoUrl": "https://doubao.luzhipeng.com/nanobanana/ai-news-videos/14716897-7ef1-49db-be58-af958aeae07a.mp4"
+  }
+}
