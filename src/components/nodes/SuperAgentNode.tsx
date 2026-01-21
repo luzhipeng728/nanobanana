@@ -986,7 +986,7 @@ Generate a CLEAN image as if the markers do not exist.
             disabled={isProcessing}
             className="w-4 h-4 rounded border-purple-500/30 bg-white/5 text-purple-500 focus:ring-purple-500/30"
           />
-          <span className="text-[11px] text-white/60">
+          <span className="text-[11px] text-[color:var(--text-secondary)]">
             生成提示词后自动生成图片
           </span>
         </label>
@@ -999,14 +999,14 @@ Generate a CLEAN image as if the markers do not exist.
               disabled={isProcessing}
               className="w-4 h-4 rounded border-purple-500/30 bg-white/5 text-purple-500 focus:ring-purple-500/30"
             />
-            <span className="text-[11px] text-white/60 flex items-center gap-1">
+            <span className="text-[11px] text-[color:var(--text-secondary)] flex items-center gap-1">
               <Search className="w-3 h-3 text-purple-400" />
               启用深度研究
             </span>
           </label>
           {enableDeepResearch && (
             <div className="ml-6 flex items-center gap-1.5">
-              <span className="text-[10px] text-white/40">强度:</span>
+              <span className="text-[10px] text-[color:var(--text-tertiary)]">强度:</span>
               {[
                 { value: 'low', label: '快速', time: '1-3分钟', color: 'emerald' },
                 { value: 'medium', label: '标准', time: '3-7分钟', color: 'amber' },
@@ -1023,14 +1023,14 @@ Generate a CLEAN image as if the markers do not exist.
                         : option.color === 'amber'
                         ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.3)]'
                         : 'bg-red-500/20 text-red-400 border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.3)]'
-                      : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10'
+                      : 'bg-white/5 text-[color:var(--text-tertiary)] border-white/10 hover:bg-white/10'
                   }`}
                   title={option.time}
                 >
                   {option.label}
                 </button>
               ))}
-              <span className="text-[9px] text-white/30 ml-1 font-mono">
+              <span className="text-[9px] text-[color:var(--text-tertiary)] ml-1 font-mono">
                 ~{reasoningEffort === 'low' ? '1-3' : reasoningEffort === 'medium' ? '3-7' : '7-15'}min
               </span>
             </div>
