@@ -188,7 +188,7 @@ function ThemeSwitcher() {
 }
 
 // 用户下拉菜单组件 - 点击触发，带有精致动画
-function UserDropdown({ username, onLogout }: { username: string; onLogout: () => void }) {
+function UserDropdown({ userId, username, onLogout }: { userId: string; username: string; onLogout: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<{
     isAdmin: boolean;
@@ -198,20 +198,30 @@ function UserDropdown({ username, onLogout }: { username: string; onLogout: () =
   } | null>(null);
 
   useEffect(() => {
-    fetch("/api/user/profile")
+    let isActive = true;
+    const controller = new AbortController();
+    setUserInfo(null);
+
+    fetch("/api/user/profile", { cache: "no-store", signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) {
-          setUserInfo({
-            isAdmin: data.user.isAdmin,
-            balance: data.user.balance,
-            freeBalance: data.user.freeBalance ?? 0,
-            paidBalance: data.user.paidBalance ?? 0,
-          });
-        }
+        if (!isActive || !data.success) return;
+        setUserInfo({
+          isAdmin: data.user.isAdmin,
+          balance: data.user.balance,
+          freeBalance: data.user.freeBalance ?? 0,
+          paidBalance: data.user.paidBalance ?? 0,
+        });
       })
-      .catch(() => {});
-  }, []);
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      });
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -499,7 +509,7 @@ export const CanvasToolbar = React.memo(({
 
           {/* 用户区域 */}
           {userId ? (
-            <UserDropdown username={username} onLogout={onLogout} />
+            <UserDropdown userId={userId} username={username} onLogout={onLogout} />
           ) : (
             <ToolbarButton onClick={onOpenAuth} title="登录 / 注册" variant="default">
               <UserIcon className="w-4 h-4" />
