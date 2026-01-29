@@ -12,11 +12,11 @@
  */
 
 // 主模型 - 用于 SuperAgent ReAct 循环等核心任务
-// 使用 Opus 4.5：最强模型，生成高质量提示词
-export const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-5-20251101';
+// 使用 Sonnet 4.5：平衡性能和兼容性
+export const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
 
-// 主模型最大输出 tokens（Opus 4.5 最大支持 32K）
-export const CLAUDE_MAX_TOKENS = parseInt(process.env.CLAUDE_MAX_TOKENS || '32000', 10);
+// 主模型最大输出 tokens（Sonnet 4.5 最大支持 64K）
+export const CLAUDE_MAX_TOKENS = parseInt(process.env.CLAUDE_MAX_TOKENS || '64000', 10);
 
 // 轻量模型 - 用于简单任务如分类、评估等
 // 使用 Haiku 4.5：最快最便宜，适合结构化输出任务
