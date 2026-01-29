@@ -3,6 +3,136 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 /**
+ * 自定义流式请求处理器
+ * 用于处理代理服务器返回的有问题的流式响应（重复 message_start 问题）
+ */
+async function* createFixedStream(
+  baseURL: string | undefined,
+  apiKey: string,
+  requestBody: {
+    model: string;
+    max_tokens: number;
+    system: string;
+    tools: Anthropic.Tool[];
+    messages: Anthropic.MessageParam[];
+  }
+): AsyncGenerator<any> {
+  const url = `${baseURL || 'https://api.anthropic.com'}/v1/messages`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'structured-outputs-2025-11-13'
+    },
+    body: JSON.stringify({
+      ...requestBody,
+      stream: true
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`API request failed: ${response.status} ${errorText}`);
+  }
+
+  if (!response.body) {
+    throw new Error('No response body');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let messageStartCount = 0;  // 统计 message_start 出现次数
+  let skipNextData = false;   // 是否跳过下一个 data 行
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.startsWith('event: ')) {
+        const eventType = line.slice(7).trim();
+
+        // 检测重复的 message_start
+        if (eventType === 'message_start') {
+          messageStartCount++;
+          if (messageStartCount > 1) {
+            console.log(`[FixedStream] 过滤第 ${messageStartCount} 次重复的 message_start 事件`);
+            skipNextData = true;  // 跳过对应的 data 行
+            continue;
+          }
+        }
+
+        // message_stop 重置计数器（为下一轮准备）
+        if (eventType === 'message_stop') {
+          messageStartCount = 0;
+        }
+      } else if (line.startsWith('data: ')) {
+        // 如果上一个 event 被跳过，也跳过这个 data
+        if (skipNextData) {
+          skipNextData = false;
+          continue;
+        }
+
+        const dataStr = line.slice(6).trim();
+        if (dataStr) {
+          try {
+            const data = JSON.parse(dataStr);
+            yield data;
+          } catch (e) {
+            console.error('[FixedStream] JSON parse error:', e);
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * 使用自定义流式处理器代替 SDK 的 stream 方法
+ * 返回与 SDK 相同的事件格式
+ */
+async function* fixedMessageStream(
+  anthropic: Anthropic,
+  params: {
+    model: string;
+    max_tokens: number;
+    system: string;
+    tools: Anthropic.Tool[];
+    messages: Anthropic.MessageParam[];
+  }
+): AsyncGenerator<any> {
+  const baseURL = process.env.ANTHROPIC_BASE_URL;
+  const apiKey = process.env.ANTHROPIC_API_KEY!;
+
+  // 检查是否使用代理（非官方 API）
+  const useCustomStream = baseURL && !baseURL.includes('api.anthropic.com');
+
+  if (useCustomStream) {
+    console.log('[SuperAgent] 使用自定义流式处理器（代理模式）');
+    // 使用自定义流式处理器
+    for await (const event of createFixedStream(baseURL, apiKey, params)) {
+      // 转换为 SDK 兼容的事件格式
+      yield { type: event.type, ...event };
+    }
+  } else {
+    console.log('[SuperAgent] 使用 SDK 原生流式处理器');
+    // 使用 SDK 原生流式
+    const stream = anthropic.messages.stream(params);
+    for await (const event of stream) {
+      yield event;
+    }
+  }
+}
+
+/**
  * 转义 JSON 字符串中的特殊字符
  * 处理未正确转义的换行符、制表符、引号等
  */
@@ -333,8 +463,8 @@ export async function runReActLoop(
     console.log(`[SuperAgent] 调用参数: model=${CLAUDE_MODEL}, max_tokens=${CLAUDE_MAX_TOKENS}, tools=${tools.length}个`);
 
     try {
-      // 流式调用 Claude
-      const stream = anthropic.messages.stream({
+      // 流式调用 Claude（使用自定义流式处理器解决代理重复 message_start 问题）
+      const stream = fixedMessageStream(anthropic, {
         model: CLAUDE_MODEL,
         max_tokens: CLAUDE_MAX_TOKENS,
         system: systemPrompt,
