@@ -9,7 +9,8 @@ export type SkillCategory =
   | 'data-visualization' // 数据可视化
   | 'architecture'       // 架构图
   | 'lifestyle'          // 生活场景
-  | 'news';              // 新闻资讯
+  | 'news'               // 新闻资讯
+  | 'illustration';      // 插画风格
 
 export interface SkillMetadata {
   id: string;                    // 技能唯一标识
