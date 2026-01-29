@@ -825,6 +825,284 @@ Technical: Premium financial dashboard aesthetic, 8K resolution, professional da
         promptFix: 'with legend on the side instead of labels on pie slices'
       }
     ]
+  },
+
+  // ========== 技能9: 手绘风格插画 ==========
+  'hand-drawn-illustration': {
+    metadata: {
+      id: 'hand-drawn-illustration',
+      name: '手绘风格插画',
+      description: '生成水彩、马克笔、铅笔等传统媒介的手绘风格插画，包含纸张质感、手写字体、装饰性涂鸦元素',
+      keywords: ['手绘', '水彩', '马克笔', '铅笔', '素描', '插画', '手写', '涂鸦', '草图', '手工', 'watercolor', 'sketch', 'doodle', '艺术', '手账', '笔记', '草稿', '手绘风'],
+      category: 'illustration',
+      difficulty: 'medium',
+      requiredInputs: ['主题内容'],
+      optionalInputs: ['媒介类型', '纸张风格', '配色方案']
+    },
+    basePrompt: `A {{STYLE_INTENSITY}} hand-drawn {{CONTENT_TYPE}}, {{MEDIUM_TYPE}} illustration style.
+
+PAPER & TEXTURE FOUNDATION:
+{{PAPER_DESCRIPTION}} texture background ({{PAPER_COLOR}}) with {{PAPER_DETAILS}} like a {{PAPER_METAPHOR}}. The paper itself tells a story - slightly worn edges, subtle fiber texture visible, perhaps a coffee ring stain or tape marks for authenticity.
+
+MAIN COMPOSITION:
+{{MAIN_CONTENT}}
+
+HAND-DRAWN TYPOGRAPHY:
+All text elements use authentic hand-lettering styles:
+- Titles: {{TITLE_FONT_STYLE}} with decorative flourishes
+- Labels: {{LABEL_FONT_STYLE}}
+- Annotations: {{ANNOTATION_FONT_STYLE}}
+Chinese text rendered in brush calligraphy or neat handwriting style, maintaining readability while feeling personal and crafted.
+
+TRADITIONAL MEDIA TECHNIQUES:
+{{MEDIA_TECHNIQUES}}
+Key authenticity markers:
+- Visible pencil construction lines (partially erased but still detectable)
+- Watercolor texture bleeds where colors meet
+- Marker bold outlines with slight wobble (not perfectly straight)
+- Ink pooling at stroke endpoints
+- Color slightly outside the lines in places
+- Paper warping from wet media
+
+DECORATIVE HAND-DRAWN ELEMENTS:
+Scattered throughout the composition: {{DECORATIVE_ELEMENTS}}
+These imperfect, spontaneous touches are the soul of hand-drawn aesthetic.
+
+COLOR APPLICATION:
+{{COLOR_SCHEME}}
+Colors applied with visible brushstrokes or marker streaks, not flat digital fills. Gradients achieved through layered washes, not smooth transitions. White paper showing through in places adds luminosity.
+
+Professional illustration quality, 8K resolution, {{LIGHTING_STYLE}}. All Chinese text must be exactly as specified with no other text.`,
+    variables: [
+      {
+        name: 'STYLE_INTENSITY',
+        description: '风格强度',
+        type: 'text',
+        required: false,
+        defaultValue: 'vibrant',
+        examples: ['vibrant', 'warm', 'playful', 'elegant', 'whimsical', 'cozy']
+      },
+      {
+        name: 'CONTENT_TYPE',
+        description: '内容类型',
+        type: 'text',
+        required: true,
+        examples: ['infographic', 'illustration', 'diagram', 'poster', 'journal page', 'recipe card', 'travel sketch']
+      },
+      {
+        name: 'MEDIUM_TYPE',
+        description: '媒介类型',
+        type: 'text',
+        required: false,
+        defaultValue: 'watercolor and marker',
+        examples: ['watercolor and marker', 'pencil sketch', 'ink and watercolor', 'colored pencil', 'pen and ink', 'chalk pastel', 'mixed media']
+      },
+      {
+        name: 'PAPER_DESCRIPTION',
+        description: '纸张描述',
+        type: 'text',
+        required: false,
+        defaultValue: 'Light warm cream paper',
+        examples: ['Light warm cream paper', 'Aged vintage parchment', 'Clean white sketchbook', 'Kraft brown paper', 'Textured watercolor paper', 'Grid notebook']
+      },
+      {
+        name: 'PAPER_COLOR',
+        description: '纸张颜色（hex）',
+        type: 'color',
+        required: false,
+        defaultValue: '#fefce8',
+        examples: ['#fefce8 warm cream', '#fffbeb antique white', '#f5f5f4 cool white', '#d6cfc7 kraft brown']
+      },
+      {
+        name: 'PAPER_DETAILS',
+        description: '纸张细节',
+        type: 'text',
+        required: false,
+        defaultValue: 'subtle grid lines',
+        examples: ['subtle grid lines', 'faint ruled lines', 'torn edges', 'aged spots and stains', 'visible paper grain', 'ring binder holes']
+      },
+      {
+        name: 'PAPER_METAPHOR',
+        description: '纸张类比',
+        type: 'text',
+        required: false,
+        defaultValue: "designer's sketchpad",
+        examples: ["designer's sketchpad", 'vintage notebook', "artist's journal", 'grandmother\'s recipe book', 'travel diary', 'student notebook']
+      },
+      {
+        name: 'MAIN_CONTENT',
+        description: '主要内容描述',
+        type: 'text',
+        required: true,
+        examples: ['A collection of hand-drawn food illustrations arranged in a grid, each item labeled in Chinese calligraphy']
+      },
+      {
+        name: 'TITLE_FONT_STYLE',
+        description: '标题字体风格',
+        type: 'text',
+        required: false,
+        defaultValue: 'bold brush calligraphy',
+        examples: ['bold brush calligraphy', 'playful hand-lettering', 'elegant script', 'chunky marker text', 'vintage signage style']
+      },
+      {
+        name: 'LABEL_FONT_STYLE',
+        description: '标签字体风格',
+        type: 'text',
+        required: false,
+        defaultValue: 'casual handwriting',
+        examples: ['casual handwriting', 'neat print letters', 'cursive script', 'typewriter style']
+      },
+      {
+        name: 'ANNOTATION_FONT_STYLE',
+        description: '注释字体风格',
+        type: 'text',
+        required: false,
+        defaultValue: 'small neat script in margins',
+        examples: ['small neat script in margins', 'scribbled notes', 'circled callouts', 'arrow labels']
+      },
+      {
+        name: 'MEDIA_TECHNIQUES',
+        description: '媒介技法描述',
+        type: 'text',
+        required: false,
+        defaultValue: 'Watercolor washes with wet-on-wet blending, marker outlines with varying line weights, pencil underdrawing visible in places',
+        examples: [
+          'Watercolor washes with wet-on-wet blending, marker outlines with varying line weights, pencil underdrawing visible in places',
+          'Loose pencil sketching with cross-hatching for shadows, eraser marks and smudges for texture',
+          'Bold ink outlines with confident strokes, watercolor fills that bleed slightly beyond borders'
+        ]
+      },
+      {
+        name: 'DECORATIVE_ELEMENTS',
+        description: '装饰元素',
+        type: 'text',
+        required: false,
+        defaultValue: 'hand-drawn stars, arrows, underlines, margin notes, sketch bubbles, checkmark doodles, small hearts, asterisks',
+        examples: [
+          'hand-drawn stars, arrows, underlines, margin notes, sketch bubbles, checkmark doodles',
+          'floral doodles, vine borders, small birds, swirls and flourishes',
+          'geometric shapes, dots and dashes, bracket frames, banner ribbons'
+        ]
+      },
+      {
+        name: 'COLOR_SCHEME',
+        description: '配色方案',
+        type: 'text',
+        required: false,
+        defaultValue: 'Warm palette with terracotta (#e07a5f), sage green (#81b29a), golden yellow (#f2cc8f), and dusty rose (#e5989b)',
+        examples: [
+          'Warm palette with terracotta, sage green, golden yellow, and dusty rose',
+          'Cool tones: navy blue, teal, lavender, with pops of coral',
+          'Earth tones: burnt sienna, olive green, ochre, cream',
+          'Vibrant rainbow: purple-pink gradient, cyan, emerald, amber'
+        ]
+      },
+      {
+        name: 'LIGHTING_STYLE',
+        description: '光线风格',
+        type: 'text',
+        required: false,
+        defaultValue: 'natural warm lighting as if photographed on a sunny desk',
+        examples: ['natural warm lighting as if photographed on a sunny desk', 'soft diffused studio lighting', 'cozy evening lamp light']
+      }
+    ],
+    examples: [
+      {
+        userRequest: '帮我生成一个手绘风格的科技新闻信息图',
+        filledPrompt: `A vibrant hand-drawn infographic illustrating tech giants' strategic shifts, watercolor and marker illustration style.
+
+PAPER & TEXTURE FOUNDATION:
+Light warm paper texture background (#fefce8) with subtle grid lines like a designer's sketchpad. The paper shows slight wear and authenticity.
+
+MAIN COMPOSITION:
+Top banner in watercolor wash (purple-pink gradient): hand-lettered title "科技巨头：路线之争" in white brush calligraphy with decorative flourishes.
+Main layout: Three distinct sections separated by sketched dividing lines.
+LEFT SECTION (Meta's Pivot): Illustration of a VR headset being crossed out in red marker, with green upward arrow (+3.4%) drawn next to it. Chinese text "Meta领衔元宇宙大撤退" in bold handwriting at top, followed by bullet points in casual script.
+CENTER SECTION (Hardware Revival): Collection of hand-drawn product sketches (computers, servers, chips) in blue and teal markers. Chinese heading "硬件派逆袭" in energetic brush font.
+RIGHT SECTION (AI Throne): Nvidia logo sketch in green marker with crown doodle above it. Chinese text "英伟达稳守AI王座" in bold.
+
+HAND-DRAWN TYPOGRAPHY:
+- Titles: bold brush calligraphy with decorative flourishes
+- Labels: casual handwriting
+- Annotations: small neat script in margins
+
+TRADITIONAL MEDIA TECHNIQUES:
+Watercolor washes with wet-on-wet blending, marker outlines with varying line weights, pencil underdrawing visible in places.
+Visible pencil construction lines, watercolor texture bleeds, marker bold outlines with slight wobble.
+
+DECORATIVE HAND-DRAWN ELEMENTS:
+hand-drawn stars, arrows, underlines, margin notes, sketch bubbles, percentage symbols, checkmark doodles scattered throughout.
+
+COLOR APPLICATION:
+Vibrant palette with purple (#d946ef), pink (#ec4899), blue (#3b82f6), green (#10b981), grey (#6b7280) for contrast notes.
+
+Professional illustration, 8K resolution, natural warm lighting. All Chinese text must be exactly as specified with no other text.`,
+        chineseTexts: ['科技巨头：路线之争', 'Meta领衔元宇宙大撤退', '硬件派逆袭', '英伟达稳守AI王座']
+      },
+      {
+        userRequest: '画一个手绘食谱卡片',
+        filledPrompt: `A cozy hand-drawn recipe card, watercolor and ink illustration style.
+
+PAPER & TEXTURE FOUNDATION:
+Vintage cream paper texture background (#fffbeb) with faint ruled lines and slightly yellowed edges like grandmother's recipe book. Small splatter stains add authenticity.
+
+MAIN COMPOSITION:
+A recipe card layout with hand-illustrated ingredients arranged around the border (tomatoes, garlic, herbs in loose watercolor style). Center contains the recipe steps with numbered circles. Chinese title "番茄炒蛋" in playful brush lettering at top with a small heart doodle.
+
+HAND-DRAWN TYPOGRAPHY:
+- Title: playful hand-lettering with food doodle accents
+- Ingredients list: neat print letters
+- Steps: casual handwriting with circled numbers
+
+TRADITIONAL MEDIA TECHNIQUES:
+Loose watercolor food illustrations with visible brushstrokes, ink outlines that vary in thickness, pencil guidelines still faintly visible.
+
+DECORATIVE HAND-DRAWN ELEMENTS:
+small steam swirls above hot dishes, herb sprigs in corners, dotted borders, arrow pointing to tips, small stars next to key steps.
+
+COLOR APPLICATION:
+Appetizing palette: tomato red (#ef4444), egg yellow (#fbbf24), green herb (#22c55e), warm brown (#92400e) for cooking vessels.
+
+Professional illustration, 8K resolution, warm kitchen lighting. All Chinese text must be exactly as specified with no other text.`,
+        chineseTexts: ['番茄炒蛋']
+      }
+    ],
+    qualityChecklist: [
+      '是否有明显的手绘质感（线条不完美、颜色溢出边界）',
+      '纸张纹理是否真实（非纯白数字背景）',
+      '是否包含手绘装饰元素（星星、箭头、涂鸦等）',
+      '字体是否像手写而非数字字体',
+      '颜色是否有笔触感（非平涂）',
+      '是否有铅笔构图线等真实感细节',
+      '中文文字是否正确显示'
+    ],
+    commonIssues: [
+      {
+        issue: '看起来太数字化，缺乏手绘感',
+        solution: '强调传统媒介的不完美特征',
+        promptFix: 'with visible pencil construction lines (partially erased), watercolor texture bleeds where colors meet, marker outlines with slight wobble, color slightly outside the lines in places'
+      },
+      {
+        issue: '纸张背景太干净',
+        solution: '添加真实纸张细节',
+        promptFix: 'on aged paper texture with subtle coffee stains, worn edges, visible paper grain and fiber texture, slight yellowing'
+      },
+      {
+        issue: '缺少手绘装饰元素',
+        solution: '添加涂鸦和注释',
+        promptFix: 'with hand-drawn decorative elements scattered throughout: stars, arrows, underlines, margin notes, sketch bubbles, checkmark doodles, small hearts, asterisks'
+      },
+      {
+        issue: '颜色看起来是平涂',
+        solution: '强调笔触和渐变技法',
+        promptFix: 'colors applied with visible brushstrokes or marker streaks, not flat digital fills, gradients achieved through layered watercolor washes with wet-on-wet blending'
+      },
+      {
+        issue: '字体太规整',
+        solution: '使用手写字体描述',
+        promptFix: 'text in authentic hand-lettering: bold brush calligraphy for titles with decorative flourishes, casual handwriting for labels, small neat script for annotations'
+      }
+    ]
   }
 };
 
