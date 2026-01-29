@@ -208,12 +208,23 @@ import { CLAUDE_MODEL, CLAUDE_MAX_TOKENS } from '@/lib/claude-config';
 // 初始化 Anthropic 客户端（启用 structured outputs beta）
 function getAnthropicClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  const baseURL = process.env.ANTHROPIC_BASE_URL || undefined;
+
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY 未配置');
   }
+
+  // 打印配置信息，方便调试
+  console.log('[SuperAgent] ========== 模型配置 ==========');
+  console.log(`[SuperAgent] 模型: ${CLAUDE_MODEL}`);
+  console.log(`[SuperAgent] Max Tokens: ${CLAUDE_MAX_TOKENS}`);
+  console.log(`[SuperAgent] Base URL: ${baseURL || 'https://api.anthropic.com (默认)'}`);
+  console.log(`[SuperAgent] API Key: ${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}`);
+  console.log('[SuperAgent] ================================');
+
   return new Anthropic({
     apiKey,
-    baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+    baseURL,
     // 启用 structured outputs beta，确保工具调用返回符合 schema 的 JSON
     defaultHeaders: {
       'anthropic-beta': 'structured-outputs-2025-11-13'
@@ -319,6 +330,7 @@ export async function runReActLoop(
     state.iteration++;
 
     console.log(`[SuperAgent] Iteration ${state.iteration}/${state.maxIterations}`);
+    console.log(`[SuperAgent] 调用参数: model=${CLAUDE_MODEL}, max_tokens=${CLAUDE_MAX_TOKENS}, tools=${tools.length}个`);
 
     try {
       // 流式调用 Claude

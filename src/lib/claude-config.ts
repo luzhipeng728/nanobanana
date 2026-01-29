@@ -5,25 +5,25 @@
  * Claude 模型配置
  *
  * 支持的模型:
- * - claude-sonnet-4-5-20250929 (推荐，max output: 64K)
+ * - claude-opus-4-5-20251101 (最强，max output: 32K) ⭐ 推荐用于 SuperAgent
+ * - claude-sonnet-4-5-20250929 (平衡，max output: 64K)
  * - claude-sonnet-4-20250514 (max output: 64K)
- * - claude-opus-4-20250514 (max output: 32K)
  * - claude-haiku-4-5-20251001 (max output: 8K, 最快最便宜)
- * - claude-3-7-sonnet-20250219 (max output: 8K, 128K with beta header)
  */
 
 // 主模型 - 用于 SuperAgent ReAct 循环等核心任务
-export const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
+// 使用 Opus 4.5：最强模型，生成高质量提示词
+export const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-5-20251101';
 
-// 主模型最大输出 tokens
-export const CLAUDE_MAX_TOKENS = parseInt(process.env.CLAUDE_MAX_TOKENS || '64000', 10);
+// 主模型最大输出 tokens（Opus 4.5 最大支持 32K）
+export const CLAUDE_MAX_TOKENS = parseInt(process.env.CLAUDE_MAX_TOKENS || '32000', 10);
 
 // 轻量模型 - 用于简单任务如分类、评估等
 // 使用 Haiku 4.5：最快最便宜，适合结构化输出任务
 export const CLAUDE_LIGHT_MODEL = process.env.CLAUDE_LIGHT_MODEL || 'claude-haiku-4-5-20251001';
 
 // 轻量模型最大输出 tokens（Haiku 4.5 最大支持 8K）
-export const CLAUDE_LIGHT_MAX_TOKENS = parseInt(process.env.CLAUDE_LIGHT_MAX_TOKENS || '4096', 10);
+export const CLAUDE_LIGHT_MAX_TOKENS = parseInt(process.env.CLAUDE_LIGHT_MAX_TOKENS || '8192', 10);
 
 // DeepResearch 最大轮数
 export const DEEP_RESEARCH_MAX_ROUNDS = parseInt(process.env.DEEP_RESEARCH_MAX_ROUNDS || '10', 10);
