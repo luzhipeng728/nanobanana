@@ -43,7 +43,9 @@ export type ImageModel = keyof typeof IMAGE_MODELS;
 /**
  * 基础模型 - 所有登录用户都可使用
  */
-export const BASE_MODELS: ImageModel[] = ['seedream-4.5', 'glm-image'];
+export const BASE_MODELS: ImageModel[] = ['seedream-4.5'];
+// GLM 暂时隐藏，等部署环境变量配置好后再开放
+// export const BASE_MODELS: ImageModel[] = ['seedream-4.5', 'glm-image'];
 
 /**
  * 高级模型 - 需要单独授权
