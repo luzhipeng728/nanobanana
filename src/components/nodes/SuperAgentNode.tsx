@@ -844,11 +844,11 @@ Generate a CLEAN image as if the markers do not exist.
 
       {/* Reference images section - Neo-Cyber 风格 */}
       {connectedImages.length > 0 && (
-        <div className="relative bg-[#0a0a12]/80 border border-purple-500/30 rounded-xl p-3 space-y-2 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+        <div className="relative bg-purple-50 dark:bg-[#0a0a12]/80 border border-purple-200 dark:border-purple-500/30 rounded-xl p-3 space-y-2 shadow-sm dark:shadow-[0_0_15px_rgba(168,85,247,0.1)]">
           {/* 顶部装饰线 */}
           <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
 
-          <div className="flex items-center gap-2 text-xs font-cyber font-bold tracking-wider uppercase text-purple-400">
+          <div className="flex items-center gap-2 text-xs font-cyber font-bold tracking-wider uppercase text-purple-600 dark:text-purple-400">
             <ImageIcon className="w-3.5 h-3.5" />
             REF IMAGES
           </div>
@@ -862,7 +862,7 @@ Generate a CLEAN image as if the markers do not exist.
                 className="w-4 h-4 rounded border-purple-500/30 bg-white/5 text-purple-500 focus:ring-purple-500/30 disabled:opacity-50"
               />
               <Eye className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-[11px] text-white/60">
+              <span className="text-[11px] text-neutral-600 dark:text-white/60">
                 让 AI 分析图片生成提示词
               </span>
             </label>
@@ -875,7 +875,7 @@ Generate a CLEAN image as if the markers do not exist.
                 className="w-4 h-4 rounded border-purple-500/30 bg-white/5 text-purple-500 focus:ring-purple-500/30 disabled:opacity-50"
               />
               <Palette className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-[11px] text-white/60">
+              <span className="text-[11px] text-neutral-600 dark:text-white/60">
                 作为生图模型参考图
               </span>
             </label>
@@ -1080,18 +1080,18 @@ Generate a CLEAN image as if the markers do not exist.
 
       {/* Conversation history - Neo-Cyber 风格 */}
       {conversationId && (
-        <div className="relative bg-[#0a0a12]/80 border border-cyan-500/30 rounded-xl p-3 space-y-2 shadow-[0_0_15px_rgba(0,245,255,0.1)]">
+        <div className="relative bg-cyan-50 dark:bg-[#0a0a12]/80 border border-cyan-200 dark:border-cyan-500/30 rounded-xl p-3 space-y-2 shadow-sm dark:shadow-[0_0_15px_rgba(0,245,255,0.1)]">
           {/* 顶部装饰线 */}
           <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-cyber font-bold tracking-wider uppercase text-cyan-400">
+            <div className="flex items-center gap-2 text-xs font-cyber font-bold tracking-wider uppercase text-cyan-600 dark:text-cyan-400">
               <MessageSquare className="w-3.5 h-3.5" />
               <span>CHAT</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 font-mono border border-cyan-500/30">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 font-mono border border-cyan-500/30">
                 #{Math.ceil(conversationHistory.length / 2)}
               </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-white/5 text-white/50 font-mono border border-white/10">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-lg bg-neutral-100 dark:bg-white/5 text-neutral-500 dark:text-white/50 font-mono border border-neutral-200 dark:border-white/10">
                 {(conversationTokens / 1000).toFixed(1)}K
               </span>
               {hasCompressedHistory && (
@@ -1104,7 +1104,7 @@ Generate a CLEAN image as if the markers do not exist.
             <button
               onClick={handleNewConversation}
               disabled={isProcessing}
-              className="text-[10px] flex items-center gap-1 px-2 py-1 rounded-lg text-red-400 hover:text-red-300 bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-[10px] flex items-center gap-1 px-2 py-1 rounded-lg text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 bg-red-50 dark:bg-white/5 border border-red-200 dark:border-white/10 hover:bg-red-100 dark:hover:bg-red-500/20 hover:border-red-300 dark:hover:border-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               title="清空会话，开始新对话"
             >
               <Trash2 className="w-3 h-3" />
@@ -1118,8 +1118,8 @@ Generate a CLEAN image as if the markers do not exist.
                   key={idx}
                   className={`text-[11px] px-2 py-1.5 rounded-lg ${
                     msg.role === 'user'
-                      ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20'
-                      : 'bg-white/5 text-white/60 border border-white/10'
+                      ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 border border-cyan-500/20'
+                      : 'bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-white/60 border border-neutral-200 dark:border-white/10'
                   }`}
                 >
                   <span className="font-medium font-mono">{msg.role === 'user' ? 'YOU: ' : 'AI: '}</span>
@@ -1127,14 +1127,14 @@ Generate a CLEAN image as if the markers do not exist.
                 </div>
               ))}
               {conversationHistory.length > 4 && (
-                <div className="text-[10px] text-center text-cyan-500/60">
+                <div className="text-[10px] text-center text-cyan-600/60 dark:text-cyan-500/60">
                   + {conversationHistory.length - 4} more messages
                 </div>
               )}
             </div>
           )}
           {conversationHistory.length === 0 && (
-            <div className="text-[11px] text-center text-cyan-500/50 py-1">
+            <div className="text-[11px] text-center text-cyan-600/50 dark:text-cyan-500/50 py-1">
               对话已建立，输入问题继续交流
             </div>
           )}
@@ -1176,7 +1176,7 @@ Generate a CLEAN image as if the markers do not exist.
         <div className="space-y-2">
           <button
             onClick={() => setShowDetails(!showDetails)}
-            className="w-full flex items-center justify-between px-3 py-2.5 bg-[#0a0a12]/80 rounded-xl text-xs text-white/70 hover:bg-purple-500/10 transition-all border border-white/10 hover:border-purple-500/30"
+            className="w-full flex items-center justify-between px-3 py-2.5 bg-neutral-100 dark:bg-[#0a0a12]/80 rounded-xl text-xs text-neutral-700 dark:text-white/70 hover:bg-purple-500/10 transition-all border border-neutral-200 dark:border-white/10 hover:border-purple-500/30"
           >
             <span className="flex items-center gap-2">
               <Brain className="w-3.5 h-3.5 text-purple-400" />
