@@ -15,11 +15,8 @@ import { v4 as uuidv4 } from "uuid";
 
 const execAsync = promisify(exec);
 
-// TTS 客户端实例
-const ttsClient = new BytedanceTTSClient({
-  apiKey: process.env.BYTEDANCE_TTS_API_KEY || "",
-  resourceId: "volc.seedtts.default",
-});
+// TTS 客户端实例（使用 v1 API，从环境变量读取 TTS_APP_ID 和 TTS_ACCESS_TOKEN）
+const ttsClient = new BytedanceTTSClient();
 
 /**
  * 生成单个分段的 TTS
