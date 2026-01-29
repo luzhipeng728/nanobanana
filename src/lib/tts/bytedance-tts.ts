@@ -27,6 +27,8 @@ export interface TTSOptions {
   contextText?: string;
   /** 情感/风格（如：happy, sad, neutral, excited 等） */
   emotion?: string;
+  /** Resource ID（可选，用于覆盖默认值） */
+  resourceId?: string;
 }
 
 export interface TTSResult {
@@ -36,8 +38,10 @@ export interface TTSResult {
   error?: string;
 }
 
-// 通用 Resource ID（适用于所有发音人）
+// 通用 Resource ID（适用于大多数发音人）
 const DEFAULT_RESOURCE_ID = 'volc.seedtts.default';
+// MegaTTS Resource ID（适用于 moon 系列发音人）
+const MEGATTS_RESOURCE_ID = 'volc.megatts.default';
 
 // 预设发音人列表
 export const TTS_SPEAKERS = {
@@ -164,6 +168,7 @@ export const TTS_SPEAKERS = {
     language: 'zh-四川',
     gender: 'female',
     category: '方言口音' as const,
+    resourceId: MEGATTS_RESOURCE_ID, // moon 系列需要 megatts resource
   },
 } as const;
 
@@ -244,10 +249,13 @@ export class BytedanceTTSClient {
       };
     }
 
+    // 使用请求级别的 resourceId，如果没有则使用配置的默认值
+    const resourceId = opts.resourceId || this.config.resourceId;
+
     // 构建请求头和参数（在重试循环外，避免重复计算）
     const headers = {
       'x-api-key': this.config.apiKey,
-      'X-Api-Resource-Id': this.config.resourceId,
+      'X-Api-Resource-Id': resourceId,
       'Content-Type': 'application/json',
       'Connection': 'keep-alive',
     };
@@ -407,6 +415,14 @@ export class BytedanceTTSClient {
    */
   static getSpeakerId(key: SpeakerKey): string {
     return TTS_SPEAKERS[key]?.id || TTS_SPEAKERS.zh_female_vivi.id;
+  }
+
+  /**
+   * 获取发音人对应的 Resource ID
+   */
+  static getSpeakerResourceId(key: SpeakerKey): string {
+    const speaker = TTS_SPEAKERS[key] as { resourceId?: string } | undefined;
+    return speaker?.resourceId || DEFAULT_RESOURCE_ID;
   }
 }
 
