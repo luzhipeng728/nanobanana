@@ -19,6 +19,8 @@ export interface VideoCompositionRequest {
   transition: string;
   /** 输出路径 */
   outputPath: string;
+  /** 循环视频 URL 列表（如果提供，则使用视频而非图片） */
+  loopVideoUrls?: string[];
 }
 
 export interface VideoCompositionResult {
@@ -66,6 +68,34 @@ async function downloadImage(url: string, outputPath: string): Promise<void> {
 }
 
 /**
+ * 下载视频到临时目录
+ */
+async function downloadVideo(url: string, outputPath: string): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to download video: ${url}`);
+  }
+  const buffer = await response.arrayBuffer();
+  fs.writeFileSync(outputPath, Buffer.from(buffer));
+}
+
+/**
+ * 获取视频时长（秒）
+ */
+async function getVideoDuration(videoPath: string): Promise<number> {
+  try {
+    const result = execSync(
+      `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`,
+      { encoding: "utf-8" }
+    );
+    return parseFloat(result.trim()) || 5;
+  } catch (e) {
+    console.error(`[Video] Failed to get video duration for ${videoPath}:`, e);
+    return 5; // 默认 5 秒
+  }
+}
+
+/**
  * 检测图片尺寸并确定视频分辨率
  * 使用 720p 分辨率以提升编码速度
  */
@@ -102,31 +132,63 @@ export async function composeVideo(
   request: VideoCompositionRequest,
   onProgress?: (percent: number, message: string) => void
 ): Promise<VideoCompositionResult> {
-  const { imageUrls, audioPaths, transition, outputPath } = request;
+  const { imageUrls, audioPaths, transition, outputPath, loopVideoUrls } = request;
 
-  if (imageUrls.length !== audioPaths.length) {
-    return { success: false, error: "图片和音频数量不匹配" };
+  // 使用循环视频还是图片
+  const useLoopVideos = loopVideoUrls && loopVideoUrls.length === audioPaths.length;
+  const sourceCount = useLoopVideos ? loopVideoUrls!.length : imageUrls.length;
+
+  if (sourceCount !== audioPaths.length) {
+    return { success: false, error: "图片/视频和音频数量不匹配" };
   }
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "slideshow-video-"));
   const transitionDuration = transition === "none" ? 0 : 0.5;
 
   try {
-    onProgress?.(10, "正在下载图片...");
+    let localImagePaths: string[] = [];
+    let localVideoPaths: string[] = [];
+    let width = 1280;
+    let height = 720;
 
-    // 下载所有图片
-    const localImagePaths: string[] = [];
-    for (let i = 0; i < imageUrls.length; i++) {
-      const ext = imageUrls[i].includes(".png") ? "png" : "jpg";
-      const localPath = path.join(tempDir, `image_${i}.${ext}`);
-      await downloadImage(imageUrls[i], localPath);
-      localImagePaths.push(localPath);
-      onProgress?.(10 + (i / imageUrls.length) * 20, `下载图片 ${i + 1}/${imageUrls.length}`);
+    if (useLoopVideos) {
+      // 下载所有循环视频
+      onProgress?.(10, "正在下载循环视频...");
+      for (let i = 0; i < loopVideoUrls!.length; i++) {
+        const localPath = path.join(tempDir, `loop_video_${i}.mp4`);
+        await downloadVideo(loopVideoUrls![i], localPath);
+        localVideoPaths.push(localPath);
+        onProgress?.(10 + (i / loopVideoUrls!.length) * 20, `下载视频 ${i + 1}/${loopVideoUrls!.length}`);
+      }
+      // 从第一个视频获取尺寸
+      const sizeResult = execSync(
+        `ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${localVideoPaths[0]}"`,
+        { encoding: "utf-8" }
+      );
+      const [w, h] = sizeResult.trim().split("x").map(Number);
+      if (w && h) {
+        width = w;
+        height = h;
+      }
+      console.log(`[Video] Loop video size: ${width}x${height}`);
+    } else {
+      onProgress?.(10, "正在下载图片...");
+
+      // 下载所有图片
+      for (let i = 0; i < imageUrls.length; i++) {
+        const ext = imageUrls[i].includes(".png") ? "png" : "jpg";
+        const localPath = path.join(tempDir, `image_${i}.${ext}`);
+        await downloadImage(imageUrls[i], localPath);
+        localImagePaths.push(localPath);
+        onProgress?.(10 + (i / imageUrls.length) * 20, `下载图片 ${i + 1}/${imageUrls.length}`);
+      }
+
+      // 检测视频尺寸
+      const size = await detectVideoSize(localImagePaths[0]);
+      width = size.width;
+      height = size.height;
+      console.log(`[Video] Output size: ${width}x${height}`);
     }
-
-    // 检测视频尺寸
-    const { width, height } = await detectVideoSize(localImagePaths[0]);
-    console.log(`[Video] Output size: ${width}x${height}`);
 
     onProgress?.(35, "正在分析音频时长...");
 
@@ -144,44 +206,90 @@ export async function composeVideo(
     // 并发生成所有视频片段（真正的并行处理）
     const vfFilter = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`;
 
-    console.log(`[Video] Processing ${localImagePaths.length} segments in parallel...`);
+    const sourceCount2 = useLoopVideos ? localVideoPaths.length : localImagePaths.length;
+    console.log(`[Video] Processing ${sourceCount2} segments in parallel (useLoopVideos=${useLoopVideos})...`);
     const startTimeAll = Date.now();
 
-    const segmentPromises = localImagePaths.map(async (imagePath, i) => {
-      const segmentPath = path.join(tempDir, `segment_${i}.mp4`);
-      const audioPath = audioPaths[i];
-      const duration = durations[i];
+    let segmentPromises: Promise<string>[];
 
-      const cmd = [
-        "ffmpeg", "-y",
-        "-loop", "1",
-        "-framerate", "1",
-        "-i", `"${imagePath}"`,
-        "-i", `"${audioPath}"`,
-        "-c:v", "libx264",
-        "-preset", "ultrafast",
-        "-tune", "stillimage",
-        "-crf", "28",
-        "-r", "24",
-        "-c:a", "aac",
-        "-b:a", "128k",
-        "-pix_fmt", "yuv420p",
-        "-vf", `"${vfFilter}"`,
-        "-t", duration.toFixed(2),
-        "-shortest",
-        `"${segmentPath}"`,
-      ].join(" ");
+    if (useLoopVideos) {
+      // 使用循环视频：需要 loop + 添加音频
+      segmentPromises = localVideoPaths.map(async (videoPath, i) => {
+        const segmentPath = path.join(tempDir, `segment_${i}.mp4`);
+        const audioPath = audioPaths[i];
+        const audioDuration = durations[i];
 
-      const startTime = Date.now();
-      console.log(`[Video] Starting segment ${i + 1}...`);
+        // 获取源视频时长
+        const videoDuration = await getVideoDuration(videoPath);
+        // 计算需要循环多少次
+        const loopCount = Math.ceil(audioDuration / videoDuration);
 
-      await execAsync(cmd, { shell: "/bin/bash" });
+        const startTime = Date.now();
+        console.log(`[Video] Starting segment ${i + 1} (loop ${loopCount}x, video=${videoDuration.toFixed(1)}s, audio=${audioDuration.toFixed(1)}s)...`);
 
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(`[Video] Segment ${i + 1} done in ${elapsed}s`);
+        // 使用 stream_loop 循环视频，然后与音频合并
+        const cmd = [
+          "ffmpeg", "-y",
+          "-stream_loop", String(loopCount - 1), // -stream_loop 0 表示不循环，1 表示循环一次
+          "-i", `"${videoPath}"`,
+          "-i", `"${audioPath}"`,
+          "-c:v", "libx264",
+          "-preset", "fast",
+          "-crf", "23",
+          "-c:a", "aac",
+          "-b:a", "128k",
+          "-map", "0:v:0",
+          "-map", "1:a:0",
+          "-t", audioDuration.toFixed(2),
+          "-shortest",
+          `"${segmentPath}"`,
+        ].join(" ");
 
-      return segmentPath;
-    });
+        await execAsync(cmd, { shell: "/bin/bash" });
+
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[Video] Segment ${i + 1} done in ${elapsed}s`);
+
+        return segmentPath;
+      });
+    } else {
+      // 使用图片：原有逻辑
+      segmentPromises = localImagePaths.map(async (imagePath, i) => {
+        const segmentPath = path.join(tempDir, `segment_${i}.mp4`);
+        const audioPath = audioPaths[i];
+        const duration = durations[i];
+
+        const cmd = [
+          "ffmpeg", "-y",
+          "-loop", "1",
+          "-framerate", "1",
+          "-i", `"${imagePath}"`,
+          "-i", `"${audioPath}"`,
+          "-c:v", "libx264",
+          "-preset", "ultrafast",
+          "-tune", "stillimage",
+          "-crf", "28",
+          "-r", "24",
+          "-c:a", "aac",
+          "-b:a", "128k",
+          "-pix_fmt", "yuv420p",
+          "-vf", `"${vfFilter}"`,
+          "-t", duration.toFixed(2),
+          "-shortest",
+          `"${segmentPath}"`,
+        ].join(" ");
+
+        const startTime = Date.now();
+        console.log(`[Video] Starting segment ${i + 1}...`);
+
+        await execAsync(cmd, { shell: "/bin/bash" });
+
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[Video] Segment ${i + 1} done in ${elapsed}s`);
+
+        return segmentPath;
+      });
+    }
 
     const segmentPaths = await Promise.all(segmentPromises);
 

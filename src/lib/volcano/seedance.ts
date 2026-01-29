@@ -15,6 +15,7 @@ const DEFAULT_MODEL = 'doubao-seedance-1-0-lite-i2v-250428'
 export const SEEDANCE_MODELS = {
   'seedance-lite': 'doubao-seedance-1-0-lite-i2v-250428',
   'seedance-pro': 'doubao-seedance-1-0-pro-i2v-250428',
+  'seedance-1.5-pro': 'doubao-seedance-1-5-pro-251215',
 } as const
 
 interface VideoTaskResponse {

@@ -157,6 +157,14 @@ export const TTS_SPEAKERS = {
     gender: 'female',
     category: '角色扮演' as const,
   },
+  // ========== 方言口音 ==========
+  'zh_female_sichuan': {
+    id: 'zh_female_daimengchuanmei_moon_bigtts',
+    name: '呆萌川妹',
+    language: 'zh-四川',
+    gender: 'female',
+    category: '方言口音' as const,
+  },
 } as const;
 
 

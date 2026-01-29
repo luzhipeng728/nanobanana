@@ -36,6 +36,9 @@ interface SlideshowPanelProps {
   setScrollytellingTheme: (theme: string) => void;
   onGenerateScrollytelling: () => void;
   scrollytellingGenerating: boolean;
+  // 新增：循环微动视频
+  enableLoopVideo: boolean;
+  setEnableLoopVideo: (enable: boolean) => void;
 }
 
 const NARRATION_SPEAKERS = [
@@ -45,6 +48,7 @@ const NARRATION_SPEAKERS = [
   { key: 'zh_male_yunzhou', name: '云舟', gender: '男', lang: '中文' },
   { key: 'zh_male_dayi', name: '大壹', gender: '男', lang: '中文' },
   { key: 'zh_female_cancan', name: '知性灿灿', gender: '女', lang: '中文' },
+  { key: 'zh_female_sichuan', name: '呆萌川妹', gender: '女', lang: '四川话' },
 ];
 
 const TRANSITIONS = [
@@ -84,6 +88,9 @@ export const SlideshowPanel = React.memo(({
   setScrollytellingTheme,
   onGenerateScrollytelling,
   scrollytellingGenerating,
+  // 循环微动视频
+  enableLoopVideo,
+  setEnableLoopVideo,
 }: SlideshowPanelProps) => {
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-4 min-w-[420px] max-w-[480px] animate-slide-up">
@@ -376,6 +383,24 @@ export const SlideshowPanel = React.memo(({
                   className="w-full px-3 py-2 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-neutral-800 text-sm focus:ring-2 focus:ring-purple-500 outline-none placeholder:text-neutral-400"
                 />
               </div>
+
+              {/* 循环微动视频选项 */}
+              <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={enableLoopVideo}
+                  onChange={(e) => setEnableLoopVideo(e.target.checked)}
+                  className="w-4 h-4 rounded border-purple-300 text-purple-500 focus:ring-purple-500"
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    生成循环微动视频
+                  </span>
+                  <span className="text-[10px] text-neutral-400">
+                    图片元素微动，文字保持静止，可无限循环
+                  </span>
+                </div>
+              </label>
             </div>
           )}
 

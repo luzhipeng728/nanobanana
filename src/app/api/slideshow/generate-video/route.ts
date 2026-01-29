@@ -9,9 +9,11 @@ import { generateNarrations } from "@/lib/video/generate-narration";
 import { composeVideo, checkFFmpeg } from "@/lib/video/compose-video";
 import { BytedanceTTSClient, textToSpeech } from "@/lib/tts/bytedance-tts";
 import { uploadBufferToR2 } from "@/lib/r2";
+import { generateVideo as generateLoopVideoWithSeedance } from "@/lib/volcano/seedance";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { execSync } from "child_process";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 分钟超时
@@ -22,6 +24,44 @@ interface VideoGenerationRequest {
   transition: string;
   style?: string;
   speed?: number;
+  enableLoopVideo?: boolean;
+}
+
+/**
+ * 计算循环视频的时长和循环次数
+ * 目标：让视频能整除循环，实现无缝衔接
+ */
+function calculateLoopDuration(audioDuration: number): { videoDuration: number; loopCount: number } {
+  // 语音 ≤ 12s：用最接近的整数秒（Seedance 支持 2-12s）
+  if (audioDuration <= 12) {
+    const videoDuration = Math.max(2, Math.min(12, Math.round(audioDuration)));
+    return { videoDuration, loopCount: 1 };
+  }
+
+  // 语音 > 12s：找能整除的秒数 (2-12秒范围)
+  // 优先找能完美整除的
+  for (let d = 12; d >= 2; d--) {
+    if (Math.abs(audioDuration - Math.round(audioDuration / d) * d) < 0.5) {
+      return { videoDuration: d, loopCount: Math.round(audioDuration / d) };
+    }
+  }
+
+  // 找最接近能整除的
+  let bestDuration = 8;
+  let minRemainder = audioDuration % 8;
+  for (let d = 2; d <= 12; d++) {
+    const remainder = audioDuration % d;
+    const adjustedRemainder = Math.min(remainder, d - remainder);
+    if (adjustedRemainder < minRemainder) {
+      minRemainder = adjustedRemainder;
+      bestDuration = d;
+    }
+  }
+
+  return {
+    videoDuration: bestDuration,
+    loopCount: Math.ceil(audioDuration / bestDuration)
+  };
 }
 
 /**
@@ -64,7 +104,7 @@ function createSSEResponse(
 async function* videoGenerationProcess(
   request: VideoGenerationRequest
 ): AsyncGenerator<string, void, unknown> {
-  const { slideshowId, speaker, transition, style, speed = 1.0 } = request;
+  const { slideshowId, speaker, transition, style, speed = 1.0, enableLoopVideo = false } = request;
 
   console.log(`[Video API] Request params: speaker=${speaker}, speed=${speed}, transition=${transition}`);
 
@@ -233,7 +273,61 @@ async function* videoGenerationProcess(
     const ttsElapsed = ((Date.now() - ttsStartTime) / 1000).toFixed(1);
     console.log(`[Video API] All ${audioPaths.length} TTS completed in ${ttsElapsed}s`);
 
-    // 5. 合成视频（带心跳）
+    // 5. 如果启用循环微动视频，生成 Seedance 视频（并发）
+    let loopVideoUrls: string[] | undefined;
+    if (enableLoopVideo) {
+      yield sendProgress(45, "loop_video", "正在生成循环微动视频...");
+
+      console.log(`[Video API] Starting ${images.length} Seedance loop video tasks in parallel...`);
+      const seedanceStartTime = Date.now();
+
+      let seedanceCompletedCount = 0;
+      const seedancePromises = images.map(async (imageUrl, i) => {
+        const startTime = Date.now();
+
+        // 使用 Seedance 1.5 Pro 生成循环视频
+        // 首帧和尾帧使用同一张图片，实现无缝循环
+        const loopVideoUrl = await generateLoopVideoWithSeedance({
+          startFrame: imageUrl,
+          endFrame: imageUrl, // 首尾帧相同
+          duration: 5, // 默认生成 5 秒视频，后续会循环拼接
+          aspectRatio: '16:9',
+          model: 'doubao-seedance-1-5-pro-251215',
+          prompt: '保持文字和主要内容静止不动，只让背景中的小元素、装饰物、光影有轻微的动态效果，形成平滑的循环动画',
+        });
+
+        seedanceCompletedCount++;
+        const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[Video API] Seedance ${i + 1} done in ${elapsedTime}s (${seedanceCompletedCount}/${images.length})`);
+
+        return loopVideoUrl;
+      });
+
+      // Seedance 带心跳
+      const seedanceAllPromise = Promise.all(seedancePromises);
+      let seedanceHeartbeatElapsed = 0;
+
+      while (!loopVideoUrls) {
+        const result = await Promise.race([
+          seedanceAllPromise.then(r => ({ type: 'done' as const, data: r })),
+          new Promise<{ type: 'heartbeat' }>(resolve =>
+            setTimeout(() => resolve({ type: 'heartbeat' }), 5000)
+          ),
+        ]);
+
+        if (result.type === 'heartbeat') {
+          seedanceHeartbeatElapsed += 5;
+          yield sendProgress(45, "loop_video", `正在生成循环微动视频... ${seedanceCompletedCount}/${images.length} (${seedanceHeartbeatElapsed}秒)`);
+        } else {
+          loopVideoUrls = result.data;
+        }
+      }
+
+      const seedanceElapsed = ((Date.now() - seedanceStartTime) / 1000).toFixed(1);
+      console.log(`[Video API] All ${loopVideoUrls.length} Seedance videos completed in ${seedanceElapsed}s`);
+    }
+
+    // 6. 合成视频（带心跳）
     yield sendProgress(60, "compose", "正在合成视频...");
 
     const outputPath = path.join(tempDir, "output.mp4");
@@ -245,6 +339,7 @@ async function* videoGenerationProcess(
         audioPaths,
         transition,
         outputPath,
+        loopVideoUrls, // 传入循环视频 URL（如果有）
       },
       (percent, message) => {
         lastComposeMessage = message;
@@ -327,7 +422,7 @@ async function* videoGenerationProcess(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { slideshowId, speaker, transition, style, speed } = body;
+    const { slideshowId, speaker, transition, style, speed, enableLoopVideo } = body;
 
     // 验证参数
     if (!slideshowId) {
@@ -364,6 +459,7 @@ export async function POST(request: NextRequest) {
       transition: transition || "fade",
       style,
       speed: speed || 1.0,
+      enableLoopVideo: enableLoopVideo || false,
     });
 
     return createSSEResponse(generator);

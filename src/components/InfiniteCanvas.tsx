@@ -136,6 +136,7 @@ export default function InfiniteCanvas() {
   const [narrationTransition, setNarrationTransition] = useState("fade");
   const [narrationStyle, setNarrationStyle] = useState("");
   const [narrationSpeed, setNarrationSpeed] = useState(1.0);
+  const [enableLoopVideo, setEnableLoopVideo] = useState(false);
   // 视频生成进度
   const [videoGenerating, setVideoGenerating] = useState(false);
   const [videoProgress, setVideoProgress] = useState<{
@@ -1176,6 +1177,7 @@ export default function InfiniteCanvas() {
                 transition: narrationTransition,
                 style: narrationStyle || undefined,
                 speed: narrationSpeed,
+                enableLoopVideo,
               }),
             });
 
@@ -1241,7 +1243,7 @@ export default function InfiniteCanvas() {
         setIsPublishing(false);
       }
     }
-  }, [slideshowSelections, slideshowTitle, enableNarration, narrationSpeaker, narrationTransition, narrationStyle, narrationSpeed]);
+  }, [slideshowSelections, slideshowTitle, enableNarration, narrationSpeaker, narrationTransition, narrationStyle, narrationSpeed, enableLoopVideo]);
 
   const getNodes = useCallback(() => nodesRef.current, []);
   const getEdges = useCallback(() => edgesRef.current, []);
@@ -1387,6 +1389,9 @@ export default function InfiniteCanvas() {
           setScrollytellingTheme={setScrollytellingTheme}
           onGenerateScrollytelling={handleGenerateScrollytelling}
           scrollytellingGenerating={scrollytellingGenerating}
+          // 循环微动视频
+          enableLoopVideo={enableLoopVideo}
+          setEnableLoopVideo={setEnableLoopVideo}
         />
       )}
 
