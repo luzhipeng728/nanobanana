@@ -7,6 +7,7 @@
  * - nano-banana: 0.039 USD × 7.2 ≈ 0.28 RMB
  * - nano-banana-pro: 0.24 USD × 7.2 ≈ 1.73 RMB
  * - seedream-4.5: 0.25 RMB
+ * - glm-image: 0.25 RMB (智谱 AI)
  */
 
 export interface ModelPricing {
@@ -38,6 +39,12 @@ export const IMAGE_MODEL_PRICING: Record<string, ModelPricing> = {
   },
   'seedream-4.5': {
     modelId: 'seedream-4.5',
+    price: 0.25,
+    unit: '张',
+    originalPrice: '¥0.25/张',
+  },
+  'glm-image': {
+    modelId: 'glm-image',
     price: 0.25,
     unit: '张',
     originalPrice: '¥0.25/张',

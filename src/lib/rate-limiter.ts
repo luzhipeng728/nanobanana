@@ -4,7 +4,7 @@
  * Pro 模型: 20 RPM
  */
 
-export type ModelType = "nano-banana" | "nano-banana-pro" | "seedream-4.5";
+export type ModelType = "nano-banana" | "nano-banana-pro" | "seedream-4.5" | "glm-image";
 
 interface QueueItem {
   id: string;
@@ -31,6 +31,7 @@ const RPM_LIMITS: Record<ModelType, number> = {
   "nano-banana": 500,      // Fast 模型 500 RPM
   "nano-banana-pro": 20,   // Pro 模型 20 RPM
   "seedream-4.5": 60,      // Seedream 4.5 60 RPM (保守估计)
+  "glm-image": 60,         // GLM 智谱 60 RPM
 };
 
 // 最大并发数（避免同时发送太多请求）
@@ -38,6 +39,7 @@ const MAX_CONCURRENT: Record<ModelType, number> = {
   "nano-banana": 50,       // Fast 模型最多 50 并发
   "nano-banana-pro": 5,    // Pro 模型最多 5 并发
   "seedream-4.5": 10,      // Seedream 最多 10 并发
+  "glm-image": 10,         // GLM 最多 10 并发
 };
 
 // 全局状态（单例）
@@ -104,6 +106,7 @@ async function processQueue() {
     const fastItems = state.queue.filter(item => item.model === "nano-banana");
     const proItems = state.queue.filter(item => item.model === "nano-banana-pro");
     const seedreamItems = state.queue.filter(item => item.model === "seedream-4.5");
+    const glmItems = state.queue.filter(item => item.model === "glm-image");
 
     let processed = false;
 
@@ -152,15 +155,32 @@ async function processQueue() {
       }
     }
 
+    // 处理 GLM 模型队列
+    const glmConcurrent = state.queue.filter(
+      item => item.model === "glm-image" && state.processing < MAX_CONCURRENT["glm-image"]
+    ).length;
+
+    for (const item of glmItems) {
+      if (getAvailableQuota("glm-image") > 0 &&
+          glmConcurrent < MAX_CONCURRENT["glm-image"]) {
+        if (consumeQuota("glm-image")) {
+          processItem(item);
+          processed = true;
+        }
+      }
+    }
+
     // 如果没有处理任何项，等待一段时间
     if (!processed && state.queue.length > 0) {
       const waitFast = getWaitTime("nano-banana");
       const waitPro = getWaitTime("nano-banana-pro");
       const waitSeedream = getWaitTime("seedream-4.5");
+      const waitGlm = getWaitTime("glm-image");
       const minWait = Math.min(
         fastItems.length > 0 ? waitFast : Infinity,
         proItems.length > 0 ? waitPro : Infinity,
-        seedreamItems.length > 0 ? waitSeedream : Infinity
+        seedreamItems.length > 0 ? waitSeedream : Infinity,
+        glmItems.length > 0 ? waitGlm : Infinity
       );
 
       if (minWait > 0 && minWait < Infinity) {
@@ -244,9 +264,11 @@ export function getQueueStatus() {
     fastQuota: getAvailableQuota("nano-banana"),
     proQuota: getAvailableQuota("nano-banana-pro"),
     seedreamQuota: getAvailableQuota("seedream-4.5"),
+    glmQuota: getAvailableQuota("glm-image"),
     fastInQueue: state.queue.filter(item => item.model === "nano-banana").length,
     proInQueue: state.queue.filter(item => item.model === "nano-banana-pro").length,
     seedreamInQueue: state.queue.filter(item => item.model === "seedream-4.5").length,
+    glmInQueue: state.queue.filter(item => item.model === "glm-image").length,
   };
 }
 
