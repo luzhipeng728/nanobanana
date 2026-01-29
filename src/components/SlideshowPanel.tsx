@@ -42,13 +42,22 @@ interface SlideshowPanelProps {
 }
 
 const NARRATION_SPEAKERS = [
-  { key: 'zh_female_vivi', name: 'Vivi', gender: '女', lang: '中/英' },
-  { key: 'zh_male_ruyayichen', name: '儒雅逸辰', gender: '男', lang: '中文' },
-  { key: 'zh_female_xiaohe', name: '小何', gender: '女', lang: '中文' },
-  { key: 'zh_male_yunzhou', name: '云舟', gender: '男', lang: '中文' },
-  { key: 'zh_male_dayi', name: '大壹', gender: '男', lang: '中文' },
-  { key: 'zh_female_cancan', name: '知性灿灿', gender: '女', lang: '中文' },
-  { key: 'zh_female_sichuan', name: '呆萌川妹', gender: '女', lang: '四川话' },
+  // 儿童绘本
+  { key: 'zh_female_xueayi', name: '学艾伊', gender: '女', lang: '中文', category: '儿童绘本' },
+  // 通用场景
+  { key: 'zh_female_vivi', name: 'Vivi', gender: '女', lang: '中/英', category: '通用场景' },
+  { key: 'zh_male_ruyayichen', name: '儒雅逸辰', gender: '男', lang: '中文', category: '通用场景' },
+  { key: 'zh_female_xiaohe', name: '小何', gender: '女', lang: '中文', category: '通用场景' },
+  { key: 'zh_male_yunzhou', name: '云舟', gender: '男', lang: '中文', category: '通用场景' },
+  { key: 'zh_male_xiaotian', name: '小天', gender: '男', lang: '中文', category: '通用场景' },
+  // 视频配音
+  { key: 'zh_male_dayi', name: '大壹', gender: '男', lang: '中文', category: '视频配音' },
+  { key: 'zh_female_mizai', name: '咪仔', gender: '女', lang: '中文', category: '视频配音' },
+  { key: 'zh_female_jitangnv', name: '鸡汤女', gender: '女', lang: '中文', category: '视频配音' },
+  { key: 'zh_female_meilinvyou', name: '魅力女友', gender: '女', lang: '中文', category: '视频配音' },
+  { key: 'zh_female_liuchang', name: '流畅女声', gender: '女', lang: '中文', category: '视频配音' },
+  // 方言口音
+  { key: 'zh_female_sichuan', name: '呆萌川妹', gender: '女', lang: '四川话', category: '方言口音' },
 ];
 
 const TRANSITIONS = [

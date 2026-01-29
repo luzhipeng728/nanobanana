@@ -216,9 +216,8 @@ async function* videoGenerationProcess(
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "slideshow-tts-"));
     const speakerKey = speaker as keyof typeof import("@/lib/tts/bytedance-tts").TTS_SPEAKERS;
     const speakerId = BytedanceTTSClient.getSpeakerId(speakerKey);
-    const speakerResourceId = BytedanceTTSClient.getSpeakerResourceId(speakerKey);
 
-    console.log(`[Video API] Starting ${narrations.length} TTS tasks in parallel (speaker=${speakerId}, resourceId=${speakerResourceId})...`);
+    console.log(`[Video API] Starting ${narrations.length} TTS tasks in parallel (speaker=${speakerId})...`);
     const ttsStartTime = Date.now();
 
     // 所有 TTS 请求并发执行
@@ -229,7 +228,6 @@ async function* videoGenerationProcess(
 
       const ttsResult = await textToSpeech(text, {
         speaker: speakerId,
-        resourceId: speakerResourceId,
         format: "mp3",
         speed,
         // 使用大模型生成的参数保持一致性

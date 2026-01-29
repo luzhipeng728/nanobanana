@@ -46,15 +46,24 @@ function getBlurPreviewUrl(url: string): string {
   return getResizedUrl(url, { width: 400, quality: 50 });
 }
 
-// TTS 发音人列表
+// TTS 发音人列表 (12个可用音色)
 const TTS_SPEAKERS = [
-  { key: 'zh_female_vivi', name: 'Vivi (通用)', category: '通用场景' },
+  // 儿童绘本
+  { key: 'zh_female_xueayi', name: '学艾伊', category: '儿童绘本' },
+  // 通用场景
+  { key: 'zh_female_vivi', name: 'Vivi', category: '通用场景' },
   { key: 'zh_male_ruyayichen', name: '儒雅逸辰', category: '通用场景' },
   { key: 'zh_female_xiaohe', name: '小何', category: '通用场景' },
+  { key: 'zh_male_yunzhou', name: '云舟', category: '通用场景' },
+  { key: 'zh_male_xiaotian', name: '小天', category: '通用场景' },
+  // 视频配音
   { key: 'zh_male_dayi', name: '大壹', category: '视频配音' },
   { key: 'zh_female_mizai', name: '咪仔', category: '视频配音' },
   { key: 'zh_female_jitangnv', name: '鸡汤女', category: '视频配音' },
   { key: 'zh_female_meilinvyou', name: '魅力女友', category: '视频配音' },
+  { key: 'zh_female_liuchang', name: '流畅女声', category: '视频配音' },
+  // 方言口音
+  { key: 'zh_female_sichuan', name: '呆萌川妹', category: '方言口音' },
 ];
 
 export default function SlideshowViewer({
@@ -96,6 +105,7 @@ export default function SlideshowViewer({
   const [speed, setSpeed] = useState(1.0);
   const [transition, setTransition] = useState("fade");
   const [style, setStyle] = useState("");
+  const [enableLoopVideo, setEnableLoopVideo] = useState(false);
 
   // 缩放和平移状态
   const [scale, setScale] = useState(1);
@@ -415,6 +425,7 @@ export default function SlideshowViewer({
           transition,
           speed,
           style: style || undefined,
+          enableLoopVideo,
         }),
       });
 
@@ -852,6 +863,26 @@ export default function SlideshowViewer({
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* 循环微动视频选项 */}
+                  <div>
+                    <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={enableLoopVideo}
+                        onChange={(e) => setEnableLoopVideo(e.target.checked)}
+                        className="w-4 h-4 rounded border-orange-300 text-orange-500 focus:ring-orange-500"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-white">
+                          生成循环微动视频
+                        </span>
+                        <span className="text-[11px] text-neutral-500">
+                          图片元素微动，文字静止，可无限循环 (需更长生成时间)
+                        </span>
+                      </div>
+                    </label>
                   </div>
 
                   {/* 错误提示 */}

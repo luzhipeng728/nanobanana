@@ -4,8 +4,8 @@
  */
 
 export interface TTSConfig {
-  apiKey: string;
-  resourceId: string;
+  appId: string;
+  accessToken: string;
 }
 
 export interface TTSOptions {
@@ -27,8 +27,6 @@ export interface TTSOptions {
   contextText?: string;
   /** 情感/风格（如：happy, sad, neutral, excited 等） */
   emotion?: string;
-  /** Resource ID（可选，用于覆盖默认值） */
-  resourceId?: string;
 }
 
 export interface TTSResult {
@@ -38,12 +36,7 @@ export interface TTSResult {
   error?: string;
 }
 
-// 通用 Resource ID（适用于大多数发音人）
-const DEFAULT_RESOURCE_ID = 'volc.seedtts.default';
-// MegaTTS Resource ID（适用于 moon 系列发音人）
-const MEGATTS_RESOURCE_ID = 'volc.megatts.default';
-
-// 预设发音人列表
+// 预设发音人列表（已测试可用 v1 API）
 export const TTS_SPEAKERS = {
   // ========== 有声阅读 / 儿童绘本 ==========
   'zh_female_xueayi': {
@@ -125,42 +118,6 @@ export const TTS_SPEAKERS = {
     gender: 'female',
     category: '视频配音' as const,
   },
-  // ========== 角色扮演 ==========
-  'zh_female_keai': {
-    id: 'saturn_zh_female_keainvsheng_tob',
-    name: '可爱女生',
-    language: 'zh',
-    gender: 'female',
-    category: '角色扮演' as const,
-  },
-  'zh_female_tiaopi': {
-    id: 'saturn_zh_female_tiaopigongzhu_tob',
-    name: '调皮公主',
-    language: 'zh',
-    gender: 'female',
-    category: '角色扮演' as const,
-  },
-  'zh_male_shuanglang': {
-    id: 'saturn_zh_male_shuanglangshaonian_tob',
-    name: '爽朗少年',
-    language: 'zh',
-    gender: 'male',
-    category: '角色扮演' as const,
-  },
-  'zh_male_tiancai': {
-    id: 'saturn_zh_male_tiancaitongzhuo_tob',
-    name: '天才同桌',
-    language: 'zh',
-    gender: 'male',
-    category: '角色扮演' as const,
-  },
-  'zh_female_cancan': {
-    id: 'saturn_zh_female_cancan_tob',
-    name: '知性灿灿',
-    language: 'zh',
-    gender: 'female',
-    category: '角色扮演' as const,
-  },
   // ========== 方言口音 ==========
   'zh_female_sichuan': {
     id: 'zh_female_daimengchuanmei_moon_bigtts',
@@ -168,7 +125,6 @@ export const TTS_SPEAKERS = {
     language: 'zh-四川',
     gender: 'female',
     category: '方言口音' as const,
-    resourceId: MEGATTS_RESOURCE_ID, // moon 系列需要 megatts resource
   },
 } as const;
 
@@ -177,8 +133,8 @@ export type SpeakerKey = keyof typeof TTS_SPEAKERS;
 
 // 默认配置
 const DEFAULT_CONFIG: TTSConfig = {
-  apiKey: process.env.BYTEDANCE_TTS_API_KEY || '',
-  resourceId: process.env.BYTEDANCE_TTS_RESOURCE_ID || DEFAULT_RESOURCE_ID,
+  appId: process.env.TTS_APP_ID || '',
+  accessToken: process.env.TTS_ACCESS_TOKEN || '',
 };
 
 const DEFAULT_OPTIONS: Partial<TTSOptions> = {
@@ -190,7 +146,8 @@ const DEFAULT_OPTIONS: Partial<TTSOptions> = {
   pitch: 1.0,
 };
 
-const TTS_API_URL = 'https://openspeech.bytedance.com/api/v3/tts/unidirectional';
+// 使用 v1 API（支持所有音色包括 moon 系列）
+const TTS_API_URL = 'https://openspeech.bytedance.com/api/v1/tts';
 
 // 重试配置
 const MAX_RETRIES = 5;
@@ -220,7 +177,7 @@ function shouldRetry(status: number, errorMessage: string): boolean {
 }
 
 /**
- * 火山引擎 TTS 客户端
+ * 火山引擎 TTS 客户端（使用 v1 API）
  */
 export class BytedanceTTSClient {
   private config: TTSConfig;
@@ -235,10 +192,10 @@ export class BytedanceTTSClient {
   async synthesize(options: TTSOptions): Promise<TTSResult> {
     const opts = { ...DEFAULT_OPTIONS, ...options };
 
-    if (!this.config.apiKey) {
+    if (!this.config.appId || !this.config.accessToken) {
       return {
         success: false,
-        error: 'TTS API Key is not configured',
+        error: 'TTS_APP_ID and TTS_ACCESS_TOKEN are required',
       };
     }
 
@@ -249,64 +206,43 @@ export class BytedanceTTSClient {
       };
     }
 
-    // 使用请求级别的 resourceId，如果没有则使用配置的默认值
-    const resourceId = opts.resourceId || this.config.resourceId;
-
-    // 构建请求头和参数（在重试循环外，避免重复计算）
+    // 构建请求头
     const headers = {
-      'x-api-key': this.config.apiKey,
-      'X-Api-Resource-Id': resourceId,
       'Content-Type': 'application/json',
-      'Connection': 'keep-alive',
+      'Authorization': `Bearer;${this.config.accessToken}`,
     };
 
-    // 构建 additions 参数（仅包含非音频参数）
-    const additions: Record<string, unknown> = {
-      disable_markdown_filter: true,
-      enable_language_detector: true,
-      enable_latex_tn: true,
-      disable_default_bit_rate: true,
-      max_length_to_filter_parenthesis: 0,
-      cache_config: {
-        text_type: 1,
-        use_cache: true,
-      },
-    };
+    // v1 API 使用 speed_ratio/volume_ratio/pitch_ratio (0.5-2.0)
+    const speedRatio = opts.speed ?? 1.0;
+    const volumeRatio = opts.volume ?? 1.0;
+    const pitchRatio = opts.pitch ?? 1.0;
 
-    // 添加上下文文本（用于保持语调一致性）
-    if (opts.contextText) {
-      additions.context_text = opts.contextText;
-    }
+    console.log(`[BytedanceTTS] Params: speed=${speedRatio}, pitch=${pitchRatio}, volume=${volumeRatio}, speaker=${opts.speaker}`);
 
-    // 转换参数值：speed/volume/pitch 范围 0.5-2.0 → speech_rate/loudness_rate 范围 -50 到 100
-    // 公式：(value - 1) * 100，例如 1.5 → 50，0.5 → -50，1.0 → 0
-    // 使用默认值 1.0 处理 undefined 的情况
-    const speechRate = Math.round(((opts.speed ?? 1.0) - 1) * 100);
-    const loudnessRate = Math.round(((opts.volume ?? 1.0) - 1) * 100);
-    const pitchRate = Math.round(((opts.pitch ?? 1.0) - 1) * 100);
-
-    // 构建 audio_params（使用正确的 v3 API 参数名）
-    const audioParams: Record<string, unknown> = {
-      format: opts.format,
-      sample_rate: opts.sampleRate,
-      speech_rate: speechRate,      // 语速：-50 到 100
-      loudness_rate: loudnessRate,  // 音量：-50 到 100
-      pitch_rate: pitchRate,        // 音调：-50 到 100
-    };
-
-    // 添加情感/风格参数
-    if (opts.emotion) {
-      audioParams.emotion = opts.emotion;
-    }
-
-    console.log(`[BytedanceTTS] Params: speed=${opts.speed}→speech_rate=${speechRate}, pitch=${opts.pitch}→pitch_rate=${pitchRate}, volume=${opts.volume}→loudness_rate=${loudnessRate}, emotion=${opts.emotion}`);
-
+    // 构建 v1 API 请求体
     const payload = {
-      req_params: {
+      app: {
+        appid: this.config.appId,
+        token: this.config.accessToken,
+        cluster: 'volcano_tts',
+      },
+      user: {
+        uid: 'nanobanana-tts',
+      },
+      audio: {
+        voice_type: opts.speaker,
+        encoding: opts.format || 'mp3',
+        speed_ratio: speedRatio,
+        volume_ratio: volumeRatio,
+        pitch_ratio: pitchRatio,
+      },
+      request: {
+        reqid: `tts-${Date.now()}-${Math.random().toString(36).substring(7)}`,
         text: opts.text,
-        speaker: opts.speaker,
-        additions: JSON.stringify(additions),
-        audio_params: audioParams,
+        text_type: 'plain',
+        operation: 'query',
+        with_frontend: 1,
+        frontend_type: 'unitTson',
       },
     };
 
@@ -340,43 +276,25 @@ export class BytedanceTTSClient {
           return { success: false, error: lastError };
         }
 
-        // 解析流式 JSON Lines 响应
-        const responseText = await response.text();
-        const lines = responseText.split('\n').filter(line => line.trim());
+        // 解析 v1 API 响应
+        const data = await response.json();
 
-        const audioChunks: Buffer[] = [];
-        let apiError = '';
-
-        for (const line of lines) {
-          const data = JSON.parse(line);
-
-          if (data.code !== 0 && data.message !== 'OK') {
-            apiError = data.message || 'Unknown error';
-            break;
-          }
-
-          // 提取 base64 编码的音频数据
-          if (data.data) {
-            audioChunks.push(Buffer.from(data.data, 'base64'));
-          }
-        }
-
-        // 如果 API 返回错误，检查是否应该重试
-        if (apiError) {
-          lastError = `TTS API error: ${apiError}`;
-          if (attempt < MAX_RETRIES && shouldRetry(0, apiError)) {
-            console.log(`[BytedanceTTS] Retryable API error: ${apiError}`);
+        // v1 API 成功码是 3000
+        if (data.code !== 3000) {
+          lastError = `TTS API error: ${data.message || 'Unknown error'} (code: ${data.code})`;
+          if (attempt < MAX_RETRIES && shouldRetry(0, lastError)) {
+            console.log(`[BytedanceTTS] Retryable API error: ${lastError}`);
             continue;
           }
           return { success: false, error: lastError };
         }
 
-        if (audioChunks.length === 0) {
+        if (!data.data) {
           return { success: false, error: 'No audio data received' };
         }
 
-        // 合并音频块
-        const audioBuffer = Buffer.concat(audioChunks);
+        // 解码 base64 音频数据
+        const audioBuffer = Buffer.from(data.data, 'base64');
 
         return {
           success: true,
@@ -415,14 +333,6 @@ export class BytedanceTTSClient {
    */
   static getSpeakerId(key: SpeakerKey): string {
     return TTS_SPEAKERS[key]?.id || TTS_SPEAKERS.zh_female_vivi.id;
-  }
-
-  /**
-   * 获取发音人对应的 Resource ID
-   */
-  static getSpeakerResourceId(key: SpeakerKey): string {
-    const speaker = TTS_SPEAKERS[key] as { resourceId?: string } | undefined;
-    return speaker?.resourceId || DEFAULT_RESOURCE_ID;
   }
 }
 
