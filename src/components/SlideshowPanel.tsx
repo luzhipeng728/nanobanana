@@ -39,6 +39,8 @@ interface SlideshowPanelProps {
   // 新增：循环微动视频
   enableLoopVideo: boolean;
   setEnableLoopVideo: (enable: boolean) => void;
+  loopVideoModel: 'lite' | 'pro';
+  setLoopVideoModel: (model: 'lite' | 'pro') => void;
 }
 
 const NARRATION_SPEAKERS = [
@@ -100,6 +102,8 @@ export const SlideshowPanel = React.memo(({
   // 循环微动视频
   enableLoopVideo,
   setEnableLoopVideo,
+  loopVideoModel,
+  setLoopVideoModel,
 }: SlideshowPanelProps) => {
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 p-4 min-w-[420px] max-w-[480px] animate-slide-up">
@@ -394,22 +398,52 @@ export const SlideshowPanel = React.memo(({
               </div>
 
               {/* 循环微动视频选项 */}
-              <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={enableLoopVideo}
-                  onChange={(e) => setEnableLoopVideo(e.target.checked)}
-                  className="w-4 h-4 rounded border-purple-300 text-purple-500 focus:ring-purple-500"
-                />
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    生成循环微动视频
-                  </span>
-                  <span className="text-[10px] text-neutral-400">
-                    图片元素微动，文字保持静止，可无限循环
-                  </span>
-                </div>
-              </label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={enableLoopVideo}
+                    onChange={(e) => setEnableLoopVideo(e.target.checked)}
+                    className="w-4 h-4 rounded border-purple-300 text-purple-500 focus:ring-purple-500"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      生成循环微动视频
+                    </span>
+                    <span className="text-[10px] text-neutral-400">
+                      图片元素微动，文字保持静止，可无限循环
+                    </span>
+                  </div>
+                </label>
+
+                {/* 模型选择 - 仅在启用循环视频时显示 */}
+                {enableLoopVideo && (
+                  <div className="flex gap-2 pl-7">
+                    <button
+                      onClick={() => setLoopVideoModel('lite')}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${
+                        loopVideoModel === 'lite'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 border border-green-300 dark:border-green-700'
+                          : 'bg-white dark:bg-neutral-800 text-neutral-500 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700'
+                      }`}
+                    >
+                      <div className="font-medium">快速 Lite</div>
+                      <div className="text-[10px] opacity-70">~30秒/张</div>
+                    </button>
+                    <button
+                      onClick={() => setLoopVideoModel('pro')}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${
+                        loopVideoModel === 'pro'
+                          ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-700'
+                          : 'bg-white dark:bg-neutral-800 text-neutral-500 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700'
+                      }`}
+                    >
+                      <div className="font-medium">高清 Pro</div>
+                      <div className="text-[10px] opacity-70">~60秒/张</div>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

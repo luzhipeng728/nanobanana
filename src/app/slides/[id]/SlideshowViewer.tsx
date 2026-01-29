@@ -106,6 +106,7 @@ export default function SlideshowViewer({
   const [transition, setTransition] = useState("fade");
   const [style, setStyle] = useState("");
   const [enableLoopVideo, setEnableLoopVideo] = useState(false);
+  const [loopVideoModel, setLoopVideoModel] = useState<'lite' | 'pro'>('lite'); // lite更快，pro质量更好
 
   // 缩放和平移状态
   const [scale, setScale] = useState(1);
@@ -426,6 +427,7 @@ export default function SlideshowViewer({
           speed,
           style: style || undefined,
           enableLoopVideo,
+          loopVideoModel,
         }),
       });
 
@@ -866,7 +868,7 @@ export default function SlideshowViewer({
                   </div>
 
                   {/* 循环微动视频选项 */}
-                  <div>
+                  <div className="space-y-2">
                     <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                       <input
                         type="checkbox"
@@ -879,10 +881,40 @@ export default function SlideshowViewer({
                           生成循环微动视频
                         </span>
                         <span className="text-[11px] text-neutral-500">
-                          图片元素微动，文字静止，可无限循环 (需更长生成时间)
+                          图片元素微动，文字静止，可无限循环
                         </span>
                       </div>
                     </label>
+
+                    {/* 模型选择 - 仅在启用循环视频时显示 */}
+                    {enableLoopVideo && (
+                      <div className="flex gap-2 pl-7">
+                        <button
+                          onClick={() => setLoopVideoModel('lite')}
+                          className={cn(
+                            "flex-1 px-3 py-2 rounded-xl text-sm transition-all",
+                            loopVideoModel === 'lite'
+                              ? "bg-green-500/20 text-green-400 border border-green-500/50"
+                              : "bg-white/5 text-neutral-400 border border-white/10 hover:bg-white/10"
+                          )}
+                        >
+                          <div className="font-medium">快速 Lite</div>
+                          <div className="text-[10px] opacity-70">~30秒/张</div>
+                        </button>
+                        <button
+                          onClick={() => setLoopVideoModel('pro')}
+                          className={cn(
+                            "flex-1 px-3 py-2 rounded-xl text-sm transition-all",
+                            loopVideoModel === 'pro'
+                              ? "bg-purple-500/20 text-purple-400 border border-purple-500/50"
+                              : "bg-white/5 text-neutral-400 border border-white/10 hover:bg-white/10"
+                          )}
+                        >
+                          <div className="font-medium">高清 Pro</div>
+                          <div className="text-[10px] opacity-70">~60秒/张</div>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* 错误提示 */}

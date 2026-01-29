@@ -21,6 +21,7 @@
 import { ImageGenerationAdapter } from './base-adapter';
 import { GeminiAdapter } from './adapters/gemini-adapter';
 import { SeedreamAdapter } from './adapters/seedream-adapter';
+import { GLMAdapter } from './adapters/glm-adapter';
 import type {
   ImageGenerationParams,
   ImageGenerationResult,
@@ -38,6 +39,7 @@ import { getAvailableModelsForUser, isBaseModel } from './types';
 const adapters: ImageGenerationAdapter[] = [
   new GeminiAdapter(),
   new SeedreamAdapter(),
+  new GLMAdapter(),
 ];
 
 /** 模型 ID 到适配器的映射 */
@@ -218,6 +220,7 @@ function getModelDescription(modelId: string): string {
     'nano-banana': '快速生成，适合日常使用',
     'nano-banana-pro': '高质量生成，支持 Google Search 增强',
     'seedream-4.5': '字节跳动 Seedream，支持组图功能',
+    'glm-image': '智谱 AI，中文文字渲染能力强',
   };
   return descriptions[modelId] || '';
 }

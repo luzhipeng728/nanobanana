@@ -28,6 +28,12 @@ export const IMAGE_MODELS = {
     label: 'Seedream 4.5',
     description: '字节跳动 Seedream，支持组图功能',
   },
+  'glm-image': {
+    adapter: 'glm',
+    apiModel: 'glm-image',
+    label: 'GLM 智谱',
+    description: '智谱 AI，中文文字渲染能力强',
+  },
 } as const;
 
 export type ImageModel = keyof typeof IMAGE_MODELS;
@@ -37,7 +43,7 @@ export type ImageModel = keyof typeof IMAGE_MODELS;
 /**
  * 基础模型 - 所有登录用户都可使用
  */
-export const BASE_MODELS: ImageModel[] = ['seedream-4.5'];
+export const BASE_MODELS: ImageModel[] = ['seedream-4.5', 'glm-image'];
 
 /**
  * 高级模型 - 需要单独授权

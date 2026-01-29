@@ -137,6 +137,7 @@ export default function InfiniteCanvas() {
   const [narrationStyle, setNarrationStyle] = useState("");
   const [narrationSpeed, setNarrationSpeed] = useState(1.0);
   const [enableLoopVideo, setEnableLoopVideo] = useState(false);
+  const [loopVideoModel, setLoopVideoModel] = useState<'lite' | 'pro'>('lite');
   // 视频生成进度
   const [videoGenerating, setVideoGenerating] = useState(false);
   const [videoProgress, setVideoProgress] = useState<{
@@ -1178,6 +1179,7 @@ export default function InfiniteCanvas() {
                 style: narrationStyle || undefined,
                 speed: narrationSpeed,
                 enableLoopVideo,
+                loopVideoModel,
               }),
             });
 
@@ -1243,7 +1245,7 @@ export default function InfiniteCanvas() {
         setIsPublishing(false);
       }
     }
-  }, [slideshowSelections, slideshowTitle, enableNarration, narrationSpeaker, narrationTransition, narrationStyle, narrationSpeed, enableLoopVideo]);
+  }, [slideshowSelections, slideshowTitle, enableNarration, narrationSpeaker, narrationTransition, narrationStyle, narrationSpeed, enableLoopVideo, loopVideoModel]);
 
   const getNodes = useCallback(() => nodesRef.current, []);
   const getEdges = useCallback(() => edgesRef.current, []);
@@ -1392,6 +1394,8 @@ export default function InfiniteCanvas() {
           // 循环微动视频
           enableLoopVideo={enableLoopVideo}
           setEnableLoopVideo={setEnableLoopVideo}
+          loopVideoModel={loopVideoModel}
+          setLoopVideoModel={setLoopVideoModel}
         />
       )}
 

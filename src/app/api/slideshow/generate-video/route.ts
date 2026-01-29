@@ -25,6 +25,7 @@ interface VideoGenerationRequest {
   style?: string;
   speed?: number;
   enableLoopVideo?: boolean;
+  loopVideoModel?: 'lite' | 'pro'; // lite 更快，pro 质量更好
 }
 
 /**
@@ -104,9 +105,9 @@ function createSSEResponse(
 async function* videoGenerationProcess(
   request: VideoGenerationRequest
 ): AsyncGenerator<string, void, unknown> {
-  const { slideshowId, speaker, transition, style, speed = 1.0, enableLoopVideo = false } = request;
+  const { slideshowId, speaker, transition, style, speed = 1.0, enableLoopVideo = false, loopVideoModel = 'lite' } = request;
 
-  console.log(`[Video API] Request params: speaker=${speaker}, speed=${speed}, transition=${transition}`);
+  console.log(`[Video API] Request params: speaker=${speaker}, speed=${speed}, transition=${transition}, loopVideoModel=${loopVideoModel}`);
 
   // 发送进度
   const sendProgress = (
@@ -288,13 +289,19 @@ async function* videoGenerationProcess(
 
         // 使用 Seedance 1.5 Pro 生成循环视频
         // 首帧和尾帧使用同一张图片，实现无缝循环
+        // 提示词策略：只描述要动的部分，不提静止部分（模型会自动保持未提及的元素静止）
+        // 根据选择的模型确定实际模型 ID
+        const modelId = loopVideoModel === 'pro'
+          ? 'doubao-seedance-1-5-pro-251215'    // Pro: 高质量，~60秒/张
+          : 'doubao-seedance-1-0-lite-i2v-250428'; // Lite: 快速，~30秒/张
+
         const loopVideoUrl = await generateLoopVideoWithSeedance({
           startFrame: imageUrl,
           endFrame: imageUrl, // 首尾帧相同
           duration: 5, // 默认生成 5 秒视频，后续会循环拼接
           aspectRatio: '16:9',
-          model: 'doubao-seedance-1-5-pro-251215',
-          prompt: '保持文字和主要内容静止不动，只让背景中的小元素、装饰物、光影有轻微的动态效果，形成平滑的循环动画',
+          model: modelId,
+          prompt: 'Background particles float gently upward. Soft light rays pulse slowly. Small decorative elements drift subtly. Ambient glow breathes softly. Camera fixed.',
         });
 
         seedanceCompletedCount++;
@@ -423,7 +430,7 @@ async function* videoGenerationProcess(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { slideshowId, speaker, transition, style, speed, enableLoopVideo } = body;
+    const { slideshowId, speaker, transition, style, speed, enableLoopVideo, loopVideoModel } = body;
 
     // 验证参数
     if (!slideshowId) {
@@ -461,6 +468,7 @@ export async function POST(request: NextRequest) {
       style,
       speed: speed || 1.0,
       enableLoopVideo: enableLoopVideo || false,
+      loopVideoModel: loopVideoModel || 'lite',
     });
 
     return createSSEResponse(generator);
