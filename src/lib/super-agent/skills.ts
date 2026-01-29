@@ -6,6 +6,7 @@ import type { SkillTemplate } from '@/types/super-agent';
 
 /**
  * Hex 颜色到描述性名称的映射表
+ * 用于将提示词中的 hex 颜色代码转换为描述性名称，避免图片模型将其渲染为文字
  */
 const HEX_COLOR_MAP: Record<string, string> = {
   // 深色背景
@@ -15,23 +16,46 @@ const HEX_COLOR_MAP: Record<string, string> = {
   '#16213e': 'midnight blue',
   '#1e293b': 'dark charcoal gray',
 
+  // 浅色/纸张背景
+  '#fefce8': 'warm cream',
+  '#fffbeb': 'antique white',
+  '#f5f5f4': 'cool white',
+  '#fef3c7': 'light yellow',
+  '#fef9c3': 'pale yellow',
+  '#d6cfc7': 'kraft brown',
+  '#f5f5dc': 'beige',
+
   // 霓虹/强调色
   '#00f0ff': 'bright cyan',
   '#06b6d4': 'cyan',
   '#3b82f6': 'electric blue',
   '#8b5cf6': 'violet purple',
   '#a855f7': 'vibrant purple',
+  '#d946ef': 'magenta purple',
+  '#ec4899': 'hot pink',
   '#10b981': 'emerald green',
   '#34d399': 'light emerald',
+  '#22c55e': 'green',
   '#f59e0b': 'warm amber',
+  '#fbbf24': 'golden yellow',
   '#f97316': 'bright orange',
   '#f43f5e': 'rose red',
   '#ef4444': 'bright red',
+  '#6b7280': 'medium gray',
+  '#9ca3af': 'light gray',
+
+  // 手绘风格常用色
+  '#e07a5f': 'terracotta',
+  '#81b29a': 'sage green',
+  '#f2cc8f': 'golden yellow',
+  '#e5989b': 'dusty rose',
+  '#92400e': 'warm brown',
 };
 
 /**
  * 将提示词中的 hex 颜色代码转换为描述性颜色名称
- * 用于 Seedream 模型兼容性
+ * 避免图片生成模型将 hex 代码当作文字渲染（如 #fefce8 显示在图片中）
+ * 适用于所有图片模型
  */
 export function convertPromptForSeedream(prompt: string): string {
   let converted = prompt;

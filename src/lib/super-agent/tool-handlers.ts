@@ -960,10 +960,16 @@ export const handleFinalizeOutput: ToolHandler = async (params, sendEvent) => {
       };
     }
 
+    // 转换 hex 颜色代码为描述性名称（避免图片模型将 hex 当作文字渲染）
+    const cleanedPrompt = convertPromptForSeedream(promptText);
+    if (cleanedPrompt !== promptText) {
+      console.log(`[SuperAgent] Converted hex colors in prompt ${index + 1}`);
+    }
+
     return {
       id: `prompt-${Date.now()}-${index}`,
       scene,
-      prompt: promptText,
+      prompt: cleanedPrompt,
       chineseTexts
     };
   }).filter((p: any) => p && p.prompt && p.prompt.trim().length > 0);
