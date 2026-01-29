@@ -931,11 +931,11 @@ Professional illustration quality, 8K resolution, {{LIGHTING_STYLE}}. All Chines
       },
       {
         name: 'PAPER_COLOR',
-        description: '纸张颜色（hex）',
-        type: 'color',
+        description: '纸张颜色（用描述性名称，不要用 hex 代码）',
+        type: 'text',
         required: false,
-        defaultValue: '#fefce8',
-        examples: ['#fefce8 warm cream', '#fffbeb antique white', '#f5f5f4 cool white', '#d6cfc7 kraft brown']
+        defaultValue: 'warm cream',
+        examples: ['warm cream', 'antique white', 'cool white', 'kraft brown', 'pale yellow']
       },
       {
         name: 'PAPER_DETAILS',
@@ -1010,10 +1010,10 @@ Professional illustration quality, 8K resolution, {{LIGHTING_STYLE}}. All Chines
       },
       {
         name: 'COLOR_SCHEME',
-        description: '配色方案',
+        description: '配色方案（用描述性颜色名称，不要用 hex 代码）',
         type: 'text',
         required: false,
-        defaultValue: 'Warm palette with terracotta (#e07a5f), sage green (#81b29a), golden yellow (#f2cc8f), and dusty rose (#e5989b)',
+        defaultValue: 'Warm palette with terracotta, sage green, golden yellow, and dusty rose',
         examples: [
           'Warm palette with terracotta, sage green, golden yellow, and dusty rose',
           'Cool tones: navy blue, teal, lavender, with pops of coral',
@@ -1036,7 +1036,7 @@ Professional illustration quality, 8K resolution, {{LIGHTING_STYLE}}. All Chines
         filledPrompt: `A vibrant hand-drawn infographic illustrating tech giants' strategic shifts, watercolor and marker illustration style.
 
 PAPER & TEXTURE FOUNDATION:
-Light warm paper texture background (#fefce8) with subtle grid lines like a designer's sketchpad. The paper shows slight wear and authenticity.
+Light warm cream paper texture background with subtle grid lines like a designer's sketchpad. The paper shows slight wear and authenticity.
 
 MAIN COMPOSITION:
 Top banner in watercolor wash (purple-pink gradient): hand-lettered title "科技巨头：路线之争" in white brush calligraphy with decorative flourishes.
@@ -1058,7 +1058,7 @@ DECORATIVE HAND-DRAWN ELEMENTS:
 hand-drawn stars, arrows, underlines, margin notes, sketch bubbles, percentage symbols, checkmark doodles scattered throughout.
 
 COLOR APPLICATION:
-Vibrant palette with purple (#d946ef), pink (#ec4899), blue (#3b82f6), green (#10b981), grey (#6b7280) for contrast notes.
+Vibrant palette with magenta purple, hot pink, electric blue, emerald green, medium gray for contrast notes.
 
 Professional illustration, 8K resolution, natural warm lighting. All Chinese text must be exactly as specified with no other text.`,
         chineseTexts: ['科技巨头：路线之争', 'Meta领衔元宇宙大撤退', '硬件派逆袭', '英伟达稳守AI王座']
@@ -1068,7 +1068,7 @@ Professional illustration, 8K resolution, natural warm lighting. All Chinese tex
         filledPrompt: `A cozy hand-drawn recipe card, watercolor and ink illustration style.
 
 PAPER & TEXTURE FOUNDATION:
-Vintage cream paper texture background (#fffbeb) with faint ruled lines and slightly yellowed edges like grandmother's recipe book. Small splatter stains add authenticity.
+Vintage antique white paper texture background with faint ruled lines and slightly yellowed edges like grandmother's recipe book. Small splatter stains add authenticity.
 
 MAIN COMPOSITION:
 A recipe card layout with hand-illustrated ingredients arranged around the border (tomatoes, garlic, herbs in loose watercolor style). Center contains the recipe steps with numbered circles. Chinese title "番茄炒蛋" in playful brush lettering at top with a small heart doodle.
@@ -1085,7 +1085,7 @@ DECORATIVE HAND-DRAWN ELEMENTS:
 small steam swirls above hot dishes, herb sprigs in corners, dotted borders, arrow pointing to tips, small stars next to key steps.
 
 COLOR APPLICATION:
-Appetizing palette: tomato red (#ef4444), egg yellow (#fbbf24), green herb (#22c55e), warm brown (#92400e) for cooking vessels.
+Appetizing palette: tomato red, golden yellow for eggs, green for herbs, warm brown for cooking vessels.
 
 Professional illustration, 8K resolution, warm kitchen lighting. All Chinese text must be exactly as specified with no other text.`,
         chineseTexts: ['番茄炒蛋']

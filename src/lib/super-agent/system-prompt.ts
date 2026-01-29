@@ -103,6 +103,7 @@ export function buildSystemPrompt(options: SystemPromptOptions = {}): string {
 3. **技能模板辅助** - 模板只提供基础结构参考，风格可完全替换
 4. **灵活扩展** - 根据用户需求自由添加模板没有的元素
 5. **不要遗漏** - 用户明确要求的每一项都必须包含
+6. **🚫 禁止使用 hex 颜色代码** - 提示词中的颜色必须使用描述性名称（如 "warm cream", "emerald green"），**绝对不要使用 #fefce8 这样的 hex 代码**，否则图片模型会将其当作文字渲染到图片中！
 
 ## 预设技能库
 
