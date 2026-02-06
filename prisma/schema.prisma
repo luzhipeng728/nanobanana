@@ -34,6 +34,7 @@ model User {
   consumptionRecords ConsumptionRecord[]
   permissionRequests PermissionRequest[]
   quotaRequests QuotaRequest[]
+  lastActiveCanvasId String?
   inviteCodesCreated InviteCode[] @relation("InviteCodeCreator")
   usedInviteCode InviteCode? @relation("InviteCodeUsed")
 }

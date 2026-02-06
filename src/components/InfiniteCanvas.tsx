@@ -44,7 +44,7 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { TouchContextMenuProvider } from "./TouchContextMenu";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
-import { saveCanvas, getUserCanvases, getCanvasById } from "@/app/actions/canvas";
+import { saveCanvas, getUserCanvases, getCanvasById, deleteCanvas, renameCanvas, setLastActiveCanvas, getLastActiveCanvas } from "@/app/actions/canvas";
 import { registerUser, loginUser, getCurrentUser, logout } from "@/app/actions/user";
 import { uploadImageToR2 } from "@/app/actions/storage";
 import { 
@@ -86,7 +86,12 @@ const nodeTypes = {
   storyVideoGen: StoryVideoGenNode as any,
 };
 
-const LOCALSTORAGE_KEY = "nanobanana-canvas-v1";
+const LOCALSTORAGE_KEY_PREFIX = "nanobanana-canvas-v1";
+const LOCALSTORAGE_KEY_LEGACY = "nanobanana-canvas-v1"; // 旧的全局 key，用于迁移
+
+function getUserCanvasKey(userId: string) {
+  return `${LOCALSTORAGE_KEY_PREFIX}-${userId}`;
+}
 
 // Start with empty canvas - users will drag nodes from toolbar
 const initialNodes: Node[] = [];
@@ -106,9 +111,12 @@ export default function InfiniteCanvas() {
   const [authError, setAuthError] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [currentCanvasId, setCurrentCanvasId] = useState<string | null>(null);
+  const [currentCanvasName, setCurrentCanvasName] = useState<string>("My Canvas");
   const [savedCanvases, setSavedCanvases] = useState<any[]>([]);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingToServer, setIsSavingToServer] = useState(false);
+  const [serverSaveStatus, setServerSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle');
 
   // Image Modal State
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -189,25 +197,117 @@ export default function InfiniteCanvas() {
     setVideoUnlocked(unlocked);
   }, []);
 
-  // Load canvas from localStorage on mount
+  // Load canvas from server when userId changes
   useEffect(() => {
-    try {
-      const savedCanvas = localStorage.getItem(LOCALSTORAGE_KEY);
+    if (!userId) {
+      // 未登录时也标记加载完成，显示空画布
+      setIsCanvasLoaded(true);
+      return;
+    }
 
-      if (savedCanvas) {
-        const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedCanvas);
-        if (savedNodes && Array.isArray(savedNodes) && savedNodes.length > 0) {
-          setNodes(savedNodes);
+    let cancelled = false;
+
+    const loadFromServer = async () => {
+      try {
+        // 1. Try to load last active canvas from server
+        const serverCanvas = await getLastActiveCanvas(userId);
+
+        if (cancelled) return;
+
+        if (serverCanvas) {
+          // Load from server
+          const { nodes: savedNodes, edges: savedEdges } = JSON.parse(serverCanvas.data);
+          setNodes(savedNodes || []);
           setEdges(savedEdges || []);
-          console.log("✅ Loaded canvas from localStorage:", savedNodes.length, "nodes");
+          setCurrentCanvasId(serverCanvas.id);
+          setCurrentCanvasName(serverCanvas.name);
+          // Update localStorage cache
+          localStorage.setItem(getUserCanvasKey(userId), serverCanvas.data);
+          console.log("Loaded canvas from server:", serverCanvas.name, savedNodes?.length || 0, "nodes");
+        } else {
+          // No server canvas — check localStorage migration
+          const userKey = getUserCanvasKey(userId);
+          let savedCanvas = localStorage.getItem(userKey);
+
+          // Migration: try legacy global key
+          if (!savedCanvas) {
+            const legacyCanvas = localStorage.getItem(LOCALSTORAGE_KEY_LEGACY);
+            if (legacyCanvas) {
+              savedCanvas = legacyCanvas;
+              localStorage.setItem(userKey, legacyCanvas);
+              console.log("Migrated canvas from legacy key for user:", userId);
+            }
+          }
+
+          if (savedCanvas) {
+            const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedCanvas);
+            if (savedNodes && Array.isArray(savedNodes) && savedNodes.length > 0) {
+              setNodes(savedNodes);
+              setEdges(savedEdges || []);
+              // Auto-create server canvas with migrated data
+              try {
+                const created = await saveCanvas(userId, "My Canvas", savedCanvas);
+                if (!cancelled && created) {
+                  setCurrentCanvasId(created.id);
+                  setCurrentCanvasName(created.name);
+                  console.log("Auto-saved migrated data to server as:", created.name);
+                }
+              } catch (err) {
+                console.error("Failed to auto-save migrated data:", err);
+              }
+            } else {
+              setNodes([]);
+              setEdges([]);
+            }
+          } else {
+            // Brand new user: create empty canvas
+            setNodes([]);
+            setEdges([]);
+            try {
+              const emptyData = JSON.stringify({ nodes: [], edges: [] });
+              const created = await saveCanvas(userId, "My Canvas", emptyData);
+              if (!cancelled && created) {
+                setCurrentCanvasId(created.id);
+                setCurrentCanvasName(created.name);
+              }
+            } catch (err) {
+              console.error("Failed to create initial canvas:", err);
+            }
+          }
+        }
+
+        if (!cancelled) {
+          loadUserCanvases(userId);
+        }
+      } catch (error) {
+        console.error("Failed to load canvas from server:", error);
+        // Fallback: try localStorage
+        try {
+          const userKey = getUserCanvasKey(userId);
+          const savedCanvas = localStorage.getItem(userKey);
+          if (savedCanvas) {
+            const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedCanvas);
+            if (savedNodes && Array.isArray(savedNodes) && savedNodes.length > 0) {
+              setNodes(savedNodes);
+              setEdges(savedEdges || []);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load from localStorage fallback:", e);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCanvasLoaded(true);
         }
       }
-    } catch (error) {
-      console.error("Failed to load canvas from localStorage:", error);
-    } finally {
-      setIsCanvasLoaded(true);
-    }
-  }, []);
+    };
+
+    loadFromServer();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   // Load example images manually
   const loadExampleImages = useCallback(() => {
@@ -342,7 +442,7 @@ export default function InfiniteCanvas() {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isCanvasLoaded) return;
+    if (!isCanvasLoaded || !userId) return;
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -351,7 +451,7 @@ export default function InfiniteCanvas() {
     saveTimeoutRef.current = setTimeout(() => {
       try {
         const canvasData = JSON.stringify({ nodes, edges });
-        localStorage.setItem(LOCALSTORAGE_KEY, canvasData);
+        localStorage.setItem(getUserCanvasKey(userId), canvasData);
       } catch (error) {
         console.error("Failed to save canvas to localStorage:", error);
       }
@@ -362,7 +462,45 @@ export default function InfiniteCanvas() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [nodes, edges, isCanvasLoaded]);
+  }, [nodes, edges, isCanvasLoaded, userId]);
+
+  // Server auto-save (5s debounce)
+  const serverSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedHashRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!isCanvasLoaded || !userId || !currentCanvasId) return;
+
+    if (serverSaveTimeoutRef.current) {
+      clearTimeout(serverSaveTimeoutRef.current);
+    }
+
+    serverSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const canvasData = JSON.stringify({ nodes, edges });
+        // Simple hash to avoid redundant saves
+        const hash = canvasData.length + "-" + canvasData.slice(0, 100) + canvasData.slice(-100);
+        if (hash === lastSavedHashRef.current) return;
+
+        setServerSaveStatus('saving');
+        setIsSavingToServer(true);
+        await saveCanvas(userId, undefined, canvasData, currentCanvasId);
+        lastSavedHashRef.current = hash;
+        setServerSaveStatus('saved');
+      } catch (error) {
+        console.error("Failed to auto-save to server:", error);
+        setServerSaveStatus('idle');
+      } finally {
+        setIsSavingToServer(false);
+      }
+    }, 5000);
+
+    return () => {
+      if (serverSaveTimeoutRef.current) {
+        clearTimeout(serverSaveTimeoutRef.current);
+      }
+    };
+  }, [nodes, edges, isCanvasLoaded, userId, currentCanvasId]);
 
   // Check Session
   useEffect(() => {
@@ -736,9 +874,16 @@ export default function InfiniteCanvas() {
   const handleLogout = async () => {
     const result = await logout();
     if (result.success) {
+      setNodes([]);
+      setEdges([]);
+      setCurrentCanvasId(null);
+      setCurrentCanvasName("My Canvas");
+      setIsCanvasLoaded(false);
       setUserId(null);
       setUsername("");
       setSavedCanvases([]);
+      setServerSaveStatus('idle');
+      lastSavedHashRef.current = "";
       setIsUserModalOpen(true);
     }
   };
@@ -755,13 +900,31 @@ export default function InfiniteCanvas() {
     }
 
     const canvasData = JSON.stringify({ nodes, edges });
-    const name = `Canvas ${new Date().toLocaleString()}`;
-    
-    const saved = await saveCanvas(userId, name, canvasData, currentCanvasId || undefined);
-    if (saved) {
-      setCurrentCanvasId(saved.id);
-      alert("Canvas saved successfully!");
-      loadUserCanvases(userId);
+
+    if (currentCanvasId) {
+      // Existing canvas: just save data, keep name
+      setServerSaveStatus('saving');
+      const saved = await saveCanvas(userId, undefined, canvasData, currentCanvasId);
+      if (saved) {
+        lastSavedHashRef.current = canvasData.length + "-" + canvasData.slice(0, 100) + canvasData.slice(-100);
+        setServerSaveStatus('saved');
+        loadUserCanvases(userId);
+      }
+    } else {
+      // New canvas: prompt for name
+      const defaultName = `Canvas ${new Date().toLocaleString()}`;
+      const name = prompt("请输入画布名称:", defaultName);
+      if (!name) return;
+
+      setServerSaveStatus('saving');
+      const saved = await saveCanvas(userId, name, canvasData);
+      if (saved) {
+        setCurrentCanvasId(saved.id);
+        setCurrentCanvasName(saved.name);
+        lastSavedHashRef.current = canvasData.length + "-" + canvasData.slice(0, 100) + canvasData.slice(-100);
+        setServerSaveStatus('saved');
+        loadUserCanvases(userId);
+      }
     }
   };
 
@@ -769,21 +932,110 @@ export default function InfiniteCanvas() {
     const canvas = await getCanvasById(canvasId);
     if (canvas) {
       const { nodes: loadedNodes, edges: loadedEdges } = JSON.parse(canvas.data);
-      setNodes(loadedNodes);
-      setEdges(loadedEdges);
+      setNodes(loadedNodes || []);
+      setEdges(loadedEdges || []);
       setCurrentCanvasId(canvas.id);
-      localStorage.setItem(LOCALSTORAGE_KEY, canvas.data);
+      setCurrentCanvasName(canvas.name);
+      lastSavedHashRef.current = "";
+      setServerSaveStatus('saved');
+      if (userId) {
+        localStorage.setItem(getUserCanvasKey(userId), canvas.data);
+        setLastActiveCanvas(userId, canvas.id);
+      }
+    }
+  };
+
+  const handleCreateNewCanvas = async () => {
+    if (!userId) return;
+
+    // Save current canvas first (if exists)
+    if (currentCanvasId) {
+      try {
+        const canvasData = JSON.stringify({ nodes, edges });
+        await saveCanvas(userId, undefined, canvasData, currentCanvasId);
+      } catch (err) {
+        console.error("Failed to save current canvas before switching:", err);
+      }
+    }
+
+    const defaultName = `Canvas ${new Date().toLocaleString()}`;
+    const name = prompt("请输入新画布名称:", defaultName);
+    if (!name) return;
+
+    const emptyData = JSON.stringify({ nodes: [], edges: [] });
+    try {
+      const created = await saveCanvas(userId, name, emptyData);
+      if (created) {
+        setNodes([]);
+        setEdges([]);
+        setCurrentCanvasId(created.id);
+        setCurrentCanvasName(created.name);
+        lastSavedHashRef.current = "";
+        setServerSaveStatus('saved');
+        localStorage.setItem(getUserCanvasKey(userId), emptyData);
+        loadUserCanvases(userId);
+      }
+    } catch (err) {
+      console.error("Failed to create new canvas:", err);
+    }
+  };
+
+  const handleDeleteCanvas = async (canvasId: string) => {
+    if (!userId) return;
+    if (!confirm("确定要删除这个画布吗？此操作不可撤销。")) return;
+
+    try {
+      await deleteCanvas(canvasId, userId);
+
+      if (canvasId === currentCanvasId) {
+        // Deleted current canvas — switch to another
+        const remaining = savedCanvases.filter(c => c.id !== canvasId);
+        if (remaining.length > 0) {
+          await loadCanvas(remaining[0].id);
+        } else {
+          // No canvases left, create a new one
+          const emptyData = JSON.stringify({ nodes: [], edges: [] });
+          const created = await saveCanvas(userId, "My Canvas", emptyData);
+          if (created) {
+            setNodes([]);
+            setEdges([]);
+            setCurrentCanvasId(created.id);
+            setCurrentCanvasName(created.name);
+            lastSavedHashRef.current = "";
+            localStorage.setItem(getUserCanvasKey(userId), emptyData);
+          }
+        }
+      }
+
+      loadUserCanvases(userId);
+    } catch (err) {
+      console.error("Failed to delete canvas:", err);
+    }
+  };
+
+  const handleRenameCanvas = async (canvasId: string, newName: string) => {
+    if (!userId) return;
+    try {
+      const updated = await renameCanvas(canvasId, userId, newName);
+      if (updated && canvasId === currentCanvasId) {
+        setCurrentCanvasName(updated.name);
+      }
+      loadUserCanvases(userId);
+    } catch (err) {
+      console.error("Failed to rename canvas:", err);
     }
   };
 
   const clearLocalCache = useCallback(() => {
     if (confirm("确定要清空画布缓存吗？这将删除所有节点。")) {
-      localStorage.removeItem(LOCALSTORAGE_KEY);
+      if (userId) {
+        localStorage.removeItem(getUserCanvasKey(userId));
+      }
       setNodes([]);
       setEdges([]);
       setCurrentCanvasId(null);
     }
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, userId]);
 
   const deleteSelectedNodes = useCallback((skipConfirm = false) => {
     const selectedNodes = nodes.filter(node => node.selected);
@@ -1288,8 +1540,15 @@ export default function InfiniteCanvas() {
         username={username}
         savedCanvases={savedCanvases}
         selectionMode={selectionMode}
+        currentCanvasId={currentCanvasId}
+        currentCanvasName={currentCanvasName}
+        isSavingToServer={isSavingToServer}
+        serverSaveStatus={serverSaveStatus}
         onSave={handleSave}
         onLoadCanvas={loadCanvas}
+        onCreateNewCanvas={handleCreateNewCanvas}
+        onDeleteCanvas={handleDeleteCanvas}
+        onRenameCanvas={handleRenameCanvas}
         onOpenGallery={() => setIsGalleryOpen(true)}
         onToggleSelectionMode={() => setSelectionMode(!selectionMode)}
         onDeleteSelected={() => deleteSelectedNodes(false)}
