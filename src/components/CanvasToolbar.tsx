@@ -219,20 +219,37 @@ function UserDropdown({ userId, username, onLogout }: { userId: string; username
     const controller = new AbortController();
     setUserInfo(null);
 
-    fetch("/api/user/profile", { cache: "no-store", signal: controller.signal })
-      .then((res) => res.json())
-      .then((data) => {
-        if (!isActive || !data.success) return;
-        setUserInfo({
-          isAdmin: data.user.isAdmin,
-          balance: data.user.balance,
-          freeBalance: data.user.freeBalance ?? 0,
-          paidBalance: data.user.paidBalance ?? 0,
-        });
-      })
-      .catch((error) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-      });
+    const fetchProfile = async (retries = 2) => {
+      for (let i = 0; i <= retries; i++) {
+        try {
+          const res = await fetch("/api/user/profile", {
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          const data = await res.json();
+          if (!isActive) return;
+          if (data.success && data.user) {
+            setUserInfo({
+              isAdmin: data.user.isAdmin,
+              balance: data.user.balance,
+              freeBalance: data.user.freeBalance ?? 0,
+              paidBalance: data.user.paidBalance ?? 0,
+            });
+            return;
+          }
+          console.warn("[UserDropdown] Profile fetch failed:", data.error);
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") return;
+          console.error("[UserDropdown] Profile fetch error (attempt " + (i + 1) + "):", error);
+        }
+        // Wait before retry
+        if (i < retries) {
+          await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        }
+      }
+    };
+
+    fetchProfile();
 
     return () => {
       isActive = false;
