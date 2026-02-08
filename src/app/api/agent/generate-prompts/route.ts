@@ -435,6 +435,47 @@ ${imageAnalysis}
       let prompts: AgentPrompt[] = [];
       let jsonString = "";
 
+      // 尝试修复截断的 JSON（当输出被 max_tokens 截断时）
+      const tryRepairTruncatedJson = (str: string): string => {
+        let repaired = str.trim();
+        // 如果以 ```json 开头但没有闭合 ```，提取内容
+        const openCodeBlock = repaired.match(/^```(?:json)?\s*([\s\S]*)/);
+        if (openCodeBlock) {
+          repaired = openCodeBlock[1].replace(/```\s*$/, '').trim();
+        }
+        // 尝试关闭未闭合的 JSON 字符串和结构
+        // 1. 检查是否在字符串中间被截断（奇数个未转义引号）
+        const unescapedQuotes = repaired.match(/(?<!\\)"/g);
+        if (unescapedQuotes && unescapedQuotes.length % 2 !== 0) {
+          repaired += '"';
+        }
+        // 2. 关闭未闭合的括号
+        const opens = { '{': 0, '[': 0 };
+        let inString = false;
+        for (let i = 0; i < repaired.length; i++) {
+          const ch = repaired[i];
+          if (ch === '"' && (i === 0 || repaired[i - 1] !== '\\')) {
+            inString = !inString;
+          }
+          if (!inString) {
+            if (ch === '{') opens['{']++;
+            else if (ch === '}') opens['{']--;
+            else if (ch === '[') opens['[']++;
+            else if (ch === ']') opens['[']--;
+          }
+        }
+        // 移除尾部不完整的键值对（如 "key": 后面没有值）
+        repaired = repaired.replace(/,\s*"[^"]*"\s*:\s*$/, '');
+        repaired = repaired.replace(/,\s*$/, '');
+        // 关闭 objects 和 arrays
+        for (let i = 0; i < opens['{']; i++) repaired += '}';
+        for (let i = 0; i < opens['[']; i++) repaired += ']';
+        // 也可能需要额外闭合
+        if (opens['{'] < 0) repaired = '{'.repeat(-opens['{']) + repaired;
+        if (opens['['] < 0) repaired = '['.repeat(-opens['[']) + repaired;
+        return repaired;
+      };
+
       // 方法1: 尝试从 markdown 代码块中提取 JSON
       const jsonMatch = finalOutput.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
@@ -450,12 +491,30 @@ ${imageAnalysis}
         }
       }
 
+      // 方法2.5: 如果代码块没有闭合（截断），提取 ```json 后面的所有内容
+      if (!jsonString) {
+        const openCodeBlockMatch = finalOutput.match(/```(?:json)?\s*([\s\S]+)/);
+        if (openCodeBlockMatch) {
+          jsonString = openCodeBlockMatch[1].replace(/```\s*$/, '').trim();
+          console.log("Found content in truncated code block");
+        }
+      }
+
       // 方法3: 如果没有代码块，尝试找到 { 开头的 JSON
       if (!jsonString) {
         const jsonObjectMatch = finalOutput.match(/\{[\s\S]*"prompts"[\s\S]*\}/);
         if (jsonObjectMatch) {
           jsonString = jsonObjectMatch[0].trim();
           console.log("Found JSON object in plain text");
+        }
+      }
+
+      // 方法3.5: 找到 { 开头但没闭合的 JSON（截断情况）
+      if (!jsonString) {
+        const truncatedJsonMatch = finalOutput.match(/(\{[\s\S]*"prompts"[\s\S]*)/);
+        if (truncatedJsonMatch) {
+          jsonString = truncatedJsonMatch[1].trim();
+          console.log("Found truncated JSON object");
         }
       }
 
@@ -475,16 +534,22 @@ ${imageAnalysis}
         } catch {
           // 尝试修复常见的 JSON 格式错误
           try {
-            // 移除可能的注释
             const cleaned = str
-              .replace(/\/\/.*$/gm, '')  // 移除单行注释
-              .replace(/\/\*[\s\S]*?\*\//g, '')  // 移除多行注释
-              .replace(/,\s*}/g, '}')  // 移除尾随逗号
-              .replace(/,\s*]/g, ']')  // 移除数组尾随逗号
+              .replace(/\/\/.*$/gm, '')
+              .replace(/\/\*[\s\S]*?\*\//g, '')
+              .replace(/,\s*}/g, '}')
+              .replace(/,\s*]/g, ']')
               .trim();
             return JSON.parse(cleaned);
           } catch {
-            return null;
+            // 尝试修复截断的 JSON
+            try {
+              const repaired = tryRepairTruncatedJson(str);
+              console.log("Trying repaired JSON:", repaired.substring(0, 200));
+              return JSON.parse(repaired);
+            } catch {
+              return null;
+            }
           }
         }
       };
@@ -493,21 +558,24 @@ ${imageAnalysis}
         const parsed = tryParseJson(jsonString);
         if (parsed) {
           if (parsed.prompts && Array.isArray(parsed.prompts)) {
-            prompts = parsed.prompts.map((p: any) => ({
-              id: uuidv4(),
-              scene: p.scene || "场景",
-              prompt: p.prompt,
-              status: "pending" as const,
-            }));
+            prompts = parsed.prompts
+              .filter((p: any) => p.prompt && p.prompt.length > 10)
+              .map((p: any) => ({
+                id: uuidv4(),
+                scene: p.scene || "场景",
+                prompt: p.prompt,
+                status: "pending" as const,
+              }));
             console.log(`Successfully parsed ${prompts.length} prompts`);
           } else if (Array.isArray(parsed)) {
-            // 可能直接返回了数组
-            prompts = parsed.map((p: any) => ({
-              id: uuidv4(),
-              scene: p.scene || "场景",
-              prompt: p.prompt || p.description || String(p),
-              status: "pending" as const,
-            }));
+            prompts = parsed
+              .filter((p: any) => (p.prompt || p.description) && (p.prompt || p.description).length > 10)
+              .map((p: any) => ({
+                id: uuidv4(),
+                scene: p.scene || "场景",
+                prompt: p.prompt || p.description || String(p),
+                status: "pending" as const,
+              }));
             console.log(`Successfully parsed ${prompts.length} prompts from array`);
           } else {
             console.error("Parsed JSON but no valid prompts array found");
@@ -521,14 +589,25 @@ ${imageAnalysis}
       // 方法5: 如果所有 JSON 解析都失败了，尝试从文本中提取 prompts
       if (prompts.length === 0) {
         console.log("Trying to extract prompts from plain text...");
-        
-        // 尝试找到类似 "prompt": "..." 的模式
+
+        // 尝试找到完整的 "prompt": "..." 模式
         const promptMatches = finalOutput.matchAll(/"prompt"\s*:\s*"([^"]+)"/g);
         const sceneMatches = finalOutput.matchAll(/"scene"\s*:\s*"([^"]+)"/g);
-        
-        const promptTexts = [...promptMatches].map(m => m[1]);
-        const sceneTexts = [...sceneMatches].map(m => m[1]);
-        
+
+        let promptTexts = [...promptMatches].map(m => m[1]);
+        let sceneTexts = [...sceneMatches].map(m => m[1]);
+
+        // 如果没找到完整的 prompt，尝试匹配截断的（没有闭合引号的）
+        if (promptTexts.length === 0) {
+          const truncatedPromptMatches = finalOutput.matchAll(/"prompt"\s*:\s*"([^"]{20,})/g);
+          const truncatedSceneMatches = finalOutput.matchAll(/"scene"\s*:\s*"([^"]+)/g);
+          promptTexts = [...truncatedPromptMatches].map(m => m[1]);
+          sceneTexts = [...truncatedSceneMatches].map(m => m[1]);
+          if (promptTexts.length > 0) {
+            console.log(`Found ${promptTexts.length} truncated prompts`);
+          }
+        }
+
         if (promptTexts.length > 0) {
           prompts = promptTexts.map((promptText, i) => ({
             id: uuidv4(),
