@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgentPrompt, AgentStreamEvent } from "@/types/agent";
 import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from "@/lib/claude-config";
+import { fetchAndCompressImage } from "@/lib/image-utils";
 
 // 参考图数据类型
 interface ReferenceImages {
@@ -28,10 +29,10 @@ async function analyzeImagesWithClaudeStream(
     baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
   });
 
-  // 构建图片内容
-  const imageContent: Anthropic.ImageBlockParam[] = await Promise.all(
-    imageUrls.slice(0, 4).map(async (url) => {
-      // 如果是 base64 或 data URL
+  // 构建图片内容 - 统一转换为 base64 格式（兼容不支持 URL 的代理服务器）
+  const imageContentResults = await Promise.all(
+    imageUrls.slice(0, 4).map(async (url): Promise<Anthropic.ImageBlockParam | null> => {
+      // 如果是 base64 或 data URL，直接解析
       if (url.startsWith("data:")) {
         const match = url.match(/^data:([^;]+);base64,(.+)$/);
         if (match) {
@@ -45,16 +46,32 @@ async function analyzeImagesWithClaudeStream(
           };
         }
       }
-      // 普通 URL
-      return {
-        type: "image" as const,
-        source: {
-          type: "url" as const,
-          url: url,
-        },
-      };
+      // 普通 URL - 下载并转换为 base64
+      try {
+        const compressed = await fetchAndCompressImage(url, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          maxSizeBytes: 800 * 1024,
+          quality: 0.8,
+          format: 'jpeg',
+        });
+        if (compressed) {
+          return {
+            type: "image" as const,
+            source: {
+              type: "base64" as const,
+              media_type: compressed.mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+              data: compressed.base64,
+            },
+          };
+        }
+      } catch (err) {
+        console.error(`[Agent] Failed to convert image to base64: ${url}`, err);
+      }
+      return null;
     })
   );
+  const imageContent = imageContentResults.filter((img): img is Anthropic.ImageBlockParam => img !== null);
 
   // 使用流式 API
   let fullText = "";
@@ -218,11 +235,18 @@ export async function POST(request: NextRequest) {
   const stream = new TransformStream();
   const writer = stream.writable.getWriter();
 
-  // 发送事件的辅助函数
+  // 发送事件的辅助函数（带写入保护，防止向已关闭的流写入）
+  let writerClosed = false;
   const sendEvent = async (event: AgentStreamEvent) => {
-    await writer.write(
-      encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
-    );
+    if (writerClosed) return;
+    try {
+      await writer.write(
+        encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
+      );
+    } catch (err) {
+      console.error("[Agent] sendEvent write error:", err);
+      writerClosed = true;
+    }
   };
 
   // 异步处理
@@ -577,7 +601,14 @@ ${imageAnalysis}
         error: error instanceof Error ? error.message : "未知错误",
       });
     } finally {
-      await writer.close();
+      if (!writerClosed) {
+        try {
+          await writer.close();
+        } catch {
+          // stream already closed
+        }
+        writerClosed = true;
+      }
     }
   })();
 
