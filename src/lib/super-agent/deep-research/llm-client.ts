@@ -2,7 +2,7 @@
 
 import OpenAI from 'openai';
 import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from '@/lib/claude-config';
-import { streamAnthropicText } from '@/lib/anthropic-stream';
+import { streamAnthropicText, callAnthropicText } from '@/lib/anthropic-stream';
 
 // OpenAI 格式客户端配置（用于 GLM 等模型）
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;
@@ -89,20 +89,17 @@ export async function callLLM(prompt: string): Promise<LLMResponse> {
 
   // 2. 回退到 Haiku
   try {
-    const response = await anthropic.messages.create({
+    const text = await callAnthropicText({
       model: CLAUDE_LIGHT_MODEL,
       max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const content = response.content[0];
-    if (content.type === 'text') {
-      return {
-        text: content.text,
-        model: CLAUDE_LIGHT_MODEL,
-        usedFallback: true,
-      };
-    }
+    return {
+      text,
+      model: CLAUDE_LIGHT_MODEL,
+      usedFallback: true,
+    };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`[LLM Client] Haiku error: ${errorMessage}`);
