@@ -57,9 +57,9 @@ async function* rawEventStream(params: AnthropicStreamParams): AsyncGenerator<Re
     buffer = lines.pop() || '';
 
     for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
+      if (!line.startsWith('data:')) continue;
 
-      const dataStr = line.slice(6).trim();
+      const dataStr = line.slice(5).trim();
       if (!dataStr || dataStr === '[DONE]') continue;
 
       let event: Record<string, unknown>;
