@@ -21,7 +21,10 @@ import type {
 import { CONTENT_TYPE_CONFIGS as configs } from './types';
 
 // 初始化 AI 客户端
-const anthropic = new Anthropic();
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+});
 
 // 台词控制常量
 const CHARS_PER_SECOND = 3.5;  // 正常语速：3-4字/秒

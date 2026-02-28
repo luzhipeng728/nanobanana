@@ -8,7 +8,10 @@ import { ResearchDimension, DimensionGeneratorConfig } from "./types";
 import { v4 as uuidv4 } from "uuid";
 import { CLAUDE_MODEL } from "@/lib/claude-config";
 
-const anthropic = new Anthropic();
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+});
 
 /**
  * 获取当前日期信息（中文格式）

@@ -17,7 +17,10 @@ import { ScriptSegment, ImagePromptConfig, ImageResult, ImageBatchConfig, TTSRes
 import { generateImage } from "@/lib/image-generation";
 import { CLAUDE_MODEL } from "@/lib/claude-config";
 
-const anthropic = new Anthropic();
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+});
 
 /**
  * 判断是否为 Seedream 模型

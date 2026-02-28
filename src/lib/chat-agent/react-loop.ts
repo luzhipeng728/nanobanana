@@ -16,7 +16,10 @@ import { DEFAULT_REACT_CONFIG } from './types';
 import { getTool } from './tool-registry';
 
 // Anthropic 客户端
-const anthropic = new Anthropic();
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+});
 
 // 系统提示词
 const SYSTEM_PROMPT = `你是一个智能助手，可以帮助用户完成各种任务。你有以下能力：

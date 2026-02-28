@@ -16,7 +16,10 @@ const GLM_MAX_TOKENS = 4096; // 增加到 4K 以容纳思考过程
 const GLM_TIMEOUT = 60000;   // 60 秒超时（reasoning 需要更多时间）
 
 // Anthropic 客户端（回退用）
-const anthropic = new Anthropic();
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+});
 
 // OpenAI 客户端（GLM）
 let openaiClient: OpenAI | null = null;

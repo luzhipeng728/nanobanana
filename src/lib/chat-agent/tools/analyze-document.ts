@@ -6,7 +6,10 @@ import { analyzeDocumentSchema } from '../tool-registry';
 import { CLAUDE_MODEL } from '@/lib/claude-config';
 
 // Anthropic 客户端
-const anthropic = new Anthropic();
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+});
 
 // 分析类型对应的提示词
 const ANALYSIS_PROMPTS: Record<string, string> = {

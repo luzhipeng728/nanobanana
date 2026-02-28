@@ -10,7 +10,10 @@ import { ScriptSegment, ScriptGeneratorConfig, ScriptResult, CHARS_PER_SECOND, R
 import { getGeminiKeys } from "@/lib/api-keys";
 import { CLAUDE_MODEL } from "@/lib/claude-config";
 
-const anthropic = new Anthropic();
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+});
 
 // Gemini 模型配置
 const GEMINI_FILTER_MODEL = 'gemini-3-flash-preview';
