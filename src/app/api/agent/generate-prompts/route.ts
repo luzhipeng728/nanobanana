@@ -77,16 +77,24 @@ async function analyzeImagesWithClaudeStream(
           ...imageContent,
           {
             type: "text",
-            text: `请仔细分析这些参考图片，然后结合用户的需求来理解他们想要生成什么样的图片。
+            text: `请仔细分析这些参考图片，结合用户需求来理解他们想要生成什么。
 
 用户需求：${userRequest}
 
-请详细描述：
+【判断图片类型】
+如果图片是建筑平面图/户型图/设计图（包含房间轮廓、墙体、门窗标注等），请重点分析：
+1. **平面布局**：识别所有功能区域（客厅、主卧、次卧、厨房、餐厅、卫生间、书房、阳台等）
+2. **各房间位置**：描述每个房间在平面图中的位置（左/右/上/下、朝向）
+3. **空间大小估计**：哪些房间较大（如主卧、客厅），哪些较小（如卫生间）
+4. **空间关系**：开放式还是独立式？客餐厅是否连通？
+5. **采光条件**：根据门窗位置判断各房间采光
+
+如果是普通参考图片（非平面图），请描述：
 1. 图片中的主要元素、风格、色调、构图
 2. 图片的整体氛围和情感
 3. 如果用户想要类似风格的图片，你会建议怎样的描述
 
-请用中文回答，描述要详细具体，这将帮助后续生成更精准的图像。`,
+请用中文回答，描述要详细具体。`,
           },
         ],
       },
@@ -210,7 +218,74 @@ const AGENT_SYSTEM_PROMPT = `你是 Nano Banana Pro（Gemini 3 Pro Image）的�
 ### ❌ 错误示例（不要这样做）
 ❌ "好的，我来为您生成..."
 ❌ "根据您的需求，我将..."
-✅ 直接输出 JSON，不要有任何解释性文字`;
+✅ 直接输出 JSON，不要有任何解释性文字
+
+## 🏠【室内设计3D渲染】专项指南
+
+当用户需求包含"装修"、"效果图"、"户型图"、"平面图转3D"等关键词，或参考图片是平面图时，必须遵循以下规则：
+
+### ⚡ 必须生成多张图片（4-5张）
+根据平面图分析出的房间，为每个主要空间生成一张专属的3D渲染效果图：
+1. **客厅/起居室全景** - 主视角大角度透视（必须有）
+2. **主卧室** - 温馨私密感（必须有）
+3. **厨房或餐厅** - 功能美学细节（必须有）
+4. **次卧/书房** - 如果户型有，生成此空间（可选）
+5. **卫生间/浴室** - 精致细节（可选）
+
+### 📐 Prompt 写作公式（室内渲染专用，基于 Gemini 官方最佳实践）
+
+每张图的 prompt 必须按此结构写：
+
+**公式**：[相机设置] + [空间描述] + [设计风格详情] + [材质细节] + [光线描述] + [质量要求]
+
+**模板**：
+"Photorealistic 3D interior rendering of [具体房间名称] based on the provided floor plan. Camera positioned at 1.2m eye level, 24mm wide-angle lens with perspective correction, f/8 aperture for maximum sharpness throughout. [空间布局描述，来自平面图分析]. [设计风格详细描述]. [材质细节：地板/墙面/家具]. [光线：自然光/人工光]. Physically-based rendering (PBR) materials, no plastic-looking surfaces. 8K resolution, professional architectural photography quality, indistinguishable from real interior photography."
+
+### 🎨 6种装修风格的完整英文描述
+
+当用户选择了装修风格，将对应描述填入 prompt：
+
+**现代简约** (Modern Minimalist):
+"Clean straight lines throughout, neutral palette of warm white walls and light gray accents, light oak hardwood flooring, minimal decorative elements, functional furniture with concealed storage, geometric shapes, abundant negative space"
+
+**北欧风格** (Scandinavian):
+"Warm birch wood furniture and flooring, cozy textile layers in muted tones (oatmeal, sage green, dusty rose), hygge atmosphere with multiple warm light sources, sheepskin throws, ceramic decorative accents, potted plants, white walls with natural wood elements"
+
+**日式侘寂** (Japandi / Wabi-Sabi):
+"Natural materials throughout — bamboo, raw linen, smooth stone, unfinished wood with visible grain, earthy neutral palette (warm beige, charcoal, moss green), low-profile furniture close to the ground, asymmetric composition, bonsai tree accent, washi paper pendant light, deliberate imperfection and simplicity"
+
+**轻奢风格** (Contemporary Luxury):
+"Marble feature surfaces with gold veining, brushed brass hardware and fixtures, velvet upholstery in deep jewel tones (navy blue, emerald green, or burgundy), statement pendant lighting with warm Edison bulbs, art deco geometric patterns, curated decorative objects, high-gloss lacquered cabinetry"
+
+**工业风格** (Industrial):
+"Exposed brick feature wall with raw texture, visible concrete ceiling with steel beams, reclaimed dark walnut wood flooring, Edison bulb pendant cluster lighting, leather and iron furniture, open steel shelving with pipe brackets, urban loft atmosphere, muted color palette of charcoal, rust brown, and aged brass"
+
+**美式乡村** (American Farmhouse):
+"Shiplap wood paneling on accent wall painted white, wide-plank distressed oak flooring, subway tile kitchen backsplash, farmhouse apron sink, mix of vintage and rustic elements, warm cream and navy blue color scheme, cotton canvas and linen textiles, mason jar accents, wrought iron hardware"
+
+### ✅ 正确输出示例（装修3D效果图）
+
+用户需求：帮我把这个户型图转成现代简约风格的3D效果图，装修风格：现代简约
+
+\`\`\`json
+{
+  "prompts": [
+    {
+      "scene": "客厅全景",
+      "prompt": "Photorealistic 3D interior rendering of a spacious living room based on the provided floor plan. Camera at 1.2m eye level, 24mm wide-angle lens, f/8 aperture. Open-plan layout with living area flowing into dining space, sofa facing feature wall, coffee table centered on area rug. Clean straight lines throughout, neutral palette of warm white walls and light gray accents, light oak hardwood flooring, minimal decorative elements, functional furniture with concealed storage. Golden hour afternoon light streaming through floor-to-ceiling windows, warm and even illumination. Physically-based rendering, visible wood grain texture, soft fabric sheen on upholstery. 8K resolution, professional architectural photography quality."
+    },
+    {
+      "scene": "主卧室",
+      "prompt": "Photorealistic 3D interior rendering of the master bedroom based on the provided floor plan. Camera at 1.0m height centered on the bed wall, 35mm lens. King-size platform bed as focal point, flanked by matching floating nightstands, integrated wardrobe along side wall. Clean straight lines throughout, neutral palette of warm white walls and light gray accents, light oak hardwood flooring with plush area rug beside bed. Soft diffused morning light from side window, warm bedside lamp glow. Physically-based rendering, linen bedding texture clearly visible, matte painted surfaces. 8K resolution, cozy yet minimal atmosphere, professional interior photography quality."
+    },
+    {
+      "scene": "厨房餐厅",
+      "prompt": "Photorealistic 3D interior rendering of the kitchen and dining area based on the provided floor plan. Camera at 1.2m height, wide 24mm lens showing full kitchen layout. L-shaped kitchen counter with integrated appliances, dining table for 4 adjacent to kitchen. Handleless white lacquer cabinetry, light gray quartz countertop, stainless steel appliances recessed into cabinetry. Bright overhead lighting with recessed LED strips under cabinets. Clean straight lines, functional minimalist design, light oak flooring continuous from living area. 8K resolution, commercial kitchen photography quality, crisp and clean aesthetic."
+    }
+  ]
+}
+\`\`\``;
+
 
 
 export async function POST(request: NextRequest) {
