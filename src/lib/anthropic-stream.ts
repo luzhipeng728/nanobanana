@@ -33,7 +33,7 @@ async function* rawEventStream(params: AnthropicStreamParams): AsyncGenerator<Re
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({ ...params, stream: true }),
+    body: JSON.stringify({ ...params, stream: true, thinking: { type: 'disabled' } }),
   });
 
   if (!response.ok) {
