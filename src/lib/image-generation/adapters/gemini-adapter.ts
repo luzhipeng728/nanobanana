@@ -26,8 +26,8 @@ import { getGeminiKeys } from '@/lib/api-keys';
 // ============================================================================
 
 const GEMINI_MODEL_MAP: Record<string, string> = {
-  'nano-banana': 'gemini-2.5-flash-image',
-  'nano-banana-pro': 'gemini-3-pro-image-preview',
+  'nano-banana': 'gemini-3.1-flash-image-preview',
+  'nano-banana-pro': 'gemini-3.1-flash-image-preview',
 };
 
 // ============================================================================
@@ -50,6 +50,15 @@ async function loadGeminiKeys(): Promise<string[]> {
     cachedGeminiKeys = keys;
     keysLoadedAt = now;
     console.log(`[GeminiAdapter] 从数据库加载了 ${keys.length} 个 API Key`);
+    return cachedGeminiKeys;
+  }
+
+  // 兜底：从环境变量读取
+  const envKey = process.env.GEMINI_API_KEY;
+  if (envKey) {
+    cachedGeminiKeys = [envKey];
+    keysLoadedAt = now;
+    console.log(`[GeminiAdapter] 使用环境变量 GEMINI_API_KEY`);
   }
 
   return cachedGeminiKeys;
