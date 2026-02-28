@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import Anthropic from "@anthropic-ai/sdk";
 import { v4 as uuidv4 } from "uuid";
+import { streamAnthropicText } from "@/lib/anthropic-stream";
 import { prisma } from "@/lib/prisma";
 import { generateImageAction } from "@/app/actions/generate";
 import type { GeminiImageModel, ImageGenerationConfig } from "@/types/image-gen";
@@ -35,10 +36,9 @@ async function analyzeOriginalImage(
   animationPrompt: string,
   onChunk: (chunk: string) => Promise<void>
 ): Promise<string> {
-  const anthropic = getAnthropicClient();
   let analysisText = "";
-  
-  const stream = anthropic.messages.stream({
+
+  for await (const chunk of streamAnthropicText({
     model: CLAUDE_LIGHT_MODEL,
     max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
     messages: [
@@ -88,14 +88,9 @@ Output in clear English with bullet points.`,
         ],
       },
     ],
-  });
-
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      const chunk = event.delta.text;
-      analysisText += chunk;
-      await onChunk(chunk);
-    }
+  })) {
+    analysisText += chunk;
+    await onChunk(chunk);
   }
 
   return analysisText;

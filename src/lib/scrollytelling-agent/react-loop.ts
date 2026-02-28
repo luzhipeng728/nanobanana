@@ -1,6 +1,7 @@
 // Reveal.js 演示文稿 Agent ReAct 循环
 
 import Anthropic from '@anthropic-ai/sdk';
+import { createAnthropicStream } from '@/lib/anthropic-stream';
 import {
   ImageInfo,
   ScrollytellingAgentState,
@@ -453,12 +454,12 @@ export async function runScrollytellingAgent(
 
       try {
         // 流式调用 Claude
-        const stream = anthropic.messages.stream({
+        const stream = createAnthropicStream({
           model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929',
           max_tokens: parseInt(process.env.CLAUDE_MAX_TOKENS || '16000', 10),
           system: systemPrompt,
-          tools: tools as any,
-          messages
+          tools: tools as unknown[],
+          messages: messages as any,
         });
 
         // 处理流式响应
@@ -550,7 +551,7 @@ export async function runScrollytellingAgent(
         }
 
         const finalMessage = await stream.finalMessage();
-        messages.push({ role: 'assistant', content: finalMessage.content });
+        messages.push({ role: 'assistant', content: finalMessage.content as any });
 
         // 如果没有工具调用
         if (toolCalls.length === 0) {

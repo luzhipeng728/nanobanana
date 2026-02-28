@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { streamAnthropicText } from "@/lib/anthropic-stream";
 import { createCanvas, loadImage } from "canvas";
 import { uploadBufferToR2 } from "@/lib/r2";
 import type {
@@ -20,17 +20,6 @@ function getGeminiApiKey(): string {
   return apiKey;
 }
 
-// 初始化 Claude 客户端
-function getClaudeClient() {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY 未配置");
-  }
-  return new Anthropic({
-    apiKey,
-    baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
-  });
-}
 
 // 重试机制
 async function withRetry<T>(
@@ -382,8 +371,6 @@ async function analyzeSpriteWithClaudeStream(
   imageBase64: string,
   onChunk: (chunk: string) => Promise<void>
 ): Promise<SpriteAnalysisResult> {
-  const anthropic = getClaudeClient();
-
   console.log("[Sprite Stream] Using Claude to analyze sprite sheet...");
 
   // 压缩图片用于分析（避免 413 错误）
@@ -396,7 +383,8 @@ async function analyzeSpriteWithClaudeStream(
 
   let fullText = "";
 
-  const stream = anthropic.messages.stream({
+  // 处理流式响应
+  for await (const chunk of streamAnthropicText({
     model: CLAUDE_LIGHT_MODEL,
     max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
     messages: [
@@ -433,18 +421,9 @@ async function analyzeSpriteWithClaudeStream(
         ],
       },
     ],
-  });
-
-  // 处理流式响应
-  for await (const event of stream) {
-    if (
-      event.type === "content_block_delta" &&
-      event.delta.type === "text_delta"
-    ) {
-      const chunk = event.delta.text;
-      fullText += chunk;
-      await onChunk(chunk);
-    }
+  })) {
+    fullText += chunk;
+    await onChunk(chunk);
   }
 
   // 解析 JSON

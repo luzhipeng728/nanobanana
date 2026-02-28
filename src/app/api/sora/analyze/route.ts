@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from "@/lib/claude-config";
+import { streamAnthropicText, callAnthropicText } from "@/lib/anthropic-stream";
 
 export interface SoraAnalyzeEvent {
   type: "status" | "analysis_start" | "analysis_chunk" | "analysis_end" | "prompt_ready" | "error";
@@ -41,18 +42,6 @@ export async function POST(request: NextRequest) {
         return;
       }
 
-      const apiKey = process.env.ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        await sendEvent({ type: "error", error: "ANTHROPIC_API_KEY 未配置" });
-        await writer.close();
-        return;
-      }
-
-      const anthropic = new Anthropic({
-        apiKey,
-        baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
-      });
-
       let imageAnalysis = "";
 
       // 有图片时：分析图片内容
@@ -90,7 +79,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 简洁的图片分析
-        const analysisStream = anthropic.messages.stream({
+        for await (const chunk of streamAnthropicText({
           model: CLAUDE_LIGHT_MODEL,
           max_tokens: 1024,
           messages: [
@@ -114,14 +103,9 @@ export async function POST(request: NextRequest) {
               ],
             },
           ],
-        });
-
-        for await (const event of analysisStream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            const chunk = event.delta.text;
-            imageAnalysis += chunk;
-            await sendEvent({ type: "analysis_chunk", chunk });
-          }
+        })) {
+          imageAnalysis += chunk;
+          await sendEvent({ type: "analysis_chunk", chunk });
         }
 
         await sendEvent({ type: "analysis_end" });
@@ -135,7 +119,7 @@ export async function POST(request: NextRequest) {
 
         await sendEvent({ type: "analysis_start" });
 
-        const thinkingStream = anthropic.messages.stream({
+        for await (const chunk of streamAnthropicText({
           model: CLAUDE_LIGHT_MODEL,
           max_tokens: 1024,
           messages: [
@@ -153,14 +137,9 @@ export async function POST(request: NextRequest) {
 用中文简洁回答。`,
             },
           ],
-        });
-
-        for await (const event of thinkingStream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            const chunk = event.delta.text;
-            imageAnalysis += chunk;
-            await sendEvent({ type: "analysis_chunk", chunk });
-          }
+        })) {
+          imageAnalysis += chunk;
+          await sendEvent({ type: "analysis_chunk", chunk });
         }
 
         await sendEvent({ type: "analysis_end" });
@@ -173,7 +152,7 @@ export async function POST(request: NextRequest) {
       });
 
       // 生成最终提示词 - 简洁有效
-      const promptResponse = await anthropic.messages.create({
+      let generatedPrompt = (await callAnthropicText({
         model: CLAUDE_LIGHT_MODEL,
         max_tokens: 512,
         messages: [
@@ -201,13 +180,7 @@ ${userRequest}
 "A young woman with long black hair stands in a sunlit garden. She slowly turns her head toward the camera, her eyes meeting the lens with a gentle smile forming on her lips. The golden hour light catches her hair as a soft breeze lifts a few strands. Her expression shifts from contemplative to warmly inviting as she tilts her head slightly."`,
           },
         ],
-      });
-
-      const textBlock = promptResponse.content.find(
-        (block): block is Anthropic.TextBlock => block.type === "text"
-      );
-
-      let generatedPrompt = textBlock?.text?.trim() || userRequest;
+      })).trim() || userRequest;
 
       // 清理可能的引号包裹
       if (generatedPrompt.startsWith('"') && generatedPrompt.endsWith('"')) {

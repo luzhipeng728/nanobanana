@@ -1,6 +1,5 @@
 // Chat Agent ReAct 循环 - 流式版本
 
-import Anthropic from '@anthropic-ai/sdk';
 import type {
   ClaudeMessage,
   ClaudeContent,
@@ -14,12 +13,7 @@ import type {
 } from './types';
 import { DEFAULT_REACT_CONFIG } from './types';
 import { getTool } from './tool-registry';
-
-// Anthropic 客户端
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
-});
+import { createAnthropicStream } from '@/lib/anthropic-stream';
 
 // 系统提示词
 const SYSTEM_PROMPT = `你是一个智能助手，可以帮助用户完成各种任务。你有以下能力：
@@ -84,12 +78,12 @@ export async function runReactLoop(
 
     try {
       // 调用 Claude API（流式）
-      const stream = anthropic.messages.stream({
+      const stream = createAnthropicStream({
         model: config.model,
         max_tokens: config.maxTokens,
         system: SYSTEM_PROMPT,
-        messages: messages as Anthropic.MessageParam[],
-        tools: tools as Anthropic.Tool[],
+        messages: messages as any,
+        tools: tools as unknown[],
       });
 
       // 收集本轮响应内容

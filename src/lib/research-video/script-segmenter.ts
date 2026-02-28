@@ -9,6 +9,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ScriptSegment, ScriptGeneratorConfig, ScriptResult, CHARS_PER_SECOND, ResearchVideoEvent } from "./types";
 import { getGeminiKeys } from "@/lib/api-keys";
 import { CLAUDE_MODEL } from "@/lib/claude-config";
+import { streamAnthropicText } from "@/lib/anthropic-stream";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -269,7 +270,12 @@ export async function generateSegmentedScript(
     message: "正在生成解说脚本...",
   });
 
-  const stream = anthropic.messages.stream({
+  // 收集流式内容
+  let fullText = '';
+  let chunkCount = 0;
+  const startTime = Date.now();
+
+  for await (const text of streamAnthropicText({
     model: CLAUDE_MODEL,
     max_tokens: 16384,
     messages: [
@@ -290,28 +296,18 @@ ${filteredContent}
 - 确保内容深度和专业性`,
       },
     ],
-  });
+  })) {
+    fullText += text;
+    chunkCount++;
 
-  // 收集流式内容
-  let fullText = '';
-  let chunkCount = 0;
-  const startTime = Date.now();
-
-  for await (const event of stream) {
-    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-      const text = event.delta.text;
-      fullText += text;
-      chunkCount++;
-
-      // 每 10 个 chunk 发送一次进度
-      if (chunkCount % 10 === 0) {
-        const elapsed = Math.round((Date.now() - startTime) / 1000);
-        sendEvent?.({
-          type: "script_progress",
-          message: `生成中... ${fullText.length} 字符（${elapsed}s）`,
-          data: { text, totalLength: fullText.length },
-        });
-      }
+    // 每 10 个 chunk 发送一次进度
+    if (chunkCount % 10 === 0) {
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      sendEvent?.({
+        type: "script_progress",
+        message: `生成中... ${fullText.length} 字符（${elapsed}s）`,
+        data: { text, totalLength: fullText.length },
+      });
     }
   }
 

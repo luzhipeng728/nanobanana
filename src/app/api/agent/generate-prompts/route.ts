@@ -20,16 +20,6 @@ async function analyzeImagesWithClaudeStream(
   userRequest: string,
   onChunk: (chunk: string) => Promise<void>
 ): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY 未配置");
-  }
-
-  const anthropic = new Anthropic({
-    apiKey,
-    baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
-  });
-
   // 构建图片内容 - 统一转换为 base64 格式（兼容不支持 URL 的代理服务器）
   const imageContentResults = await Promise.all(
     imageUrls.slice(0, 4).map(async (url): Promise<Anthropic.ImageBlockParam | null> => {
@@ -76,8 +66,8 @@ async function analyzeImagesWithClaudeStream(
 
   // 使用流式 API
   let fullText = "";
-  
-  const stream = anthropic.messages.stream({
+
+  for await (const chunk of streamAnthropicText({
     model: CLAUDE_LIGHT_MODEL,
     max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
     messages: [
@@ -101,15 +91,9 @@ async function analyzeImagesWithClaudeStream(
         ],
       },
     ],
-  });
-
-  // 处理流式响应
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      const chunk = event.delta.text;
-      fullText += chunk;
-      await onChunk(chunk);
-    }
+  })) {
+    fullText += chunk;
+    await onChunk(chunk);
   }
 
   return fullText;

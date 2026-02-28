@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from "@/lib/claude-config";
+import { streamAnthropicText, callAnthropicText } from "@/lib/anthropic-stream";
 
 export interface VeoAnalyzeEvent {
   type: "status" | "analysis_start" | "analysis_chunk" | "analysis_end" | "prompt_ready" | "error";
@@ -40,18 +41,6 @@ export async function POST(request: NextRequest) {
         return;
       }
 
-      const apiKey = process.env.ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        await sendEvent({ type: "error", error: "ANTHROPIC_API_KEY 未配置" });
-        await writer.close();
-        return;
-      }
-
-      const anthropic = new Anthropic({
-        apiKey,
-        baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
-      });
-
       let imageAnalysis = "";
 
       // 第一阶段：如果有图片，先详细分析图片
@@ -89,7 +78,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 流式分析图片
-        const analysisStream = anthropic.messages.stream({
+        for await (const chunk of streamAnthropicText({
           model: CLAUDE_LIGHT_MODEL,
           max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
           messages: [
@@ -114,14 +103,9 @@ export async function POST(request: NextRequest) {
               ],
             },
           ],
-        });
-
-        for await (const event of analysisStream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            const chunk = event.delta.text;
-            imageAnalysis += chunk;
-            await sendEvent({ type: "analysis_chunk", chunk });
-          }
+        })) {
+          imageAnalysis += chunk;
+          await sendEvent({ type: "analysis_chunk", chunk });
         }
 
         await sendEvent({ type: "analysis_end" });
@@ -195,17 +179,11 @@ User's request: ${userRequest}
 Generate a detailed prompt (50-80 words) with cinematic depth.
 Output ONLY the prompt text in English, nothing else.`;
 
-      const promptResponse = await anthropic.messages.create({
+      const generatedPrompt = (await callAnthropicText({
         model: CLAUDE_LIGHT_MODEL,
         max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
         messages: [{ role: "user", content: promptSystemMessage }],
-      });
-
-      const textBlock = promptResponse.content.find(
-        (block): block is Anthropic.TextBlock => block.type === "text"
-      );
-
-      const generatedPrompt = textBlock?.text?.trim() || userRequest;
+      })).trim() || userRequest;
 
       await sendEvent({
         type: "status",

@@ -1,8 +1,8 @@
 // DeepResearch LLM 客户端 - 支持 OpenAI 格式 (GLM) + Anthropic 回退
 
-import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from '@/lib/claude-config';
+import { streamAnthropicText } from '@/lib/anthropic-stream';
 
 // OpenAI 格式客户端配置（用于 GLM 等模型）
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;
@@ -14,12 +14,6 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'zai-glm-4.6';
 // 需要足够的 tokens 让它完成思考 + 输出最终答案
 const GLM_MAX_TOKENS = 4096; // 增加到 4K 以容纳思考过程
 const GLM_TIMEOUT = 60000;   // 60 秒超时（reasoning 需要更多时间）
-
-// Anthropic 客户端（回退用）
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
-});
 
 // OpenAI 客户端（GLM）
 let openaiClient: OpenAI | null = null;
@@ -151,21 +145,15 @@ export async function callLLMStream(
   onChunk: StreamCallback
 ): Promise<LLMResponse> {
   try {
-    // 使用 Anthropic 流式 API
-    const stream = anthropic.messages.stream({
+    let fullText = '';
+
+    for await (const chunk of streamAnthropicText({
       model: CLAUDE_LIGHT_MODEL,
       max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
       messages: [{ role: 'user', content: prompt }],
-    });
-
-    let fullText = '';
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        const chunk = event.delta.text;
-        fullText += chunk;
-        await onChunk(chunk);
-      }
+    })) {
+      fullText += chunk;
+      await onChunk(chunk);
     }
 
     return {

@@ -1,15 +1,9 @@
 // 文档分析工具
 
-import Anthropic from '@anthropic-ai/sdk';
 import type { ChatAgentTool, ToolContext, ToolCallbacks, ToolResult } from '../types';
 import { analyzeDocumentSchema } from '../tool-registry';
 import { CLAUDE_MODEL } from '@/lib/claude-config';
-
-// Anthropic 客户端
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
-});
+import { streamAnthropicText } from '@/lib/anthropic-stream';
 
 // 分析类型对应的提示词
 const ANALYSIS_PROMPTS: Record<string, string> = {
@@ -66,29 +60,19 @@ async function analyzeWithClaude(
 
   callbacks.onProgress('正在分析文档...');
 
-  // 使用流式 API
-  const stream = anthropic.messages.stream({
+  let fullContent = '';
+
+  for await (const chunk of streamAnthropicText({
     model: CLAUDE_MODEL,
     max_tokens: 4096,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
-  });
-
-  let fullContent = '';
-
-  for await (const event of stream) {
+  })) {
     if (abortSignal.aborted) {
       throw new Error('用户中断');
     }
-
-    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-      fullContent += event.delta.text;
-
-      // 流式输出
-      if (callbacks.onChunk) {
-        callbacks.onChunk(event.delta.text);
-      }
-    }
+    fullContent += chunk;
+    callbacks.onChunk?.(chunk);
   }
 
   return fullContent;

@@ -1,6 +1,6 @@
 // 工具处理器 - 实际执行工具调用的逻辑
 
-import Anthropic from '@anthropic-ai/sdk';
+import { streamAnthropicText } from '@/lib/anthropic-stream';
 import { SKILL_LIBRARY, matchSkillByKeywords, convertPromptForSeedream, isSeedreamModel } from './skills';
 import type { ToolResult, FinalOutput, SuperAgentStreamEvent } from '@/types/super-agent';
 // 旧版 DeepResearch（基于 Google + Tavily + LLM 评估）
@@ -18,17 +18,6 @@ import {
 import { fetchAndCompressImage } from '@/lib/image-utils';
 import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS, DEEP_RESEARCH_MAX_ROUNDS } from '@/lib/claude-config';
 
-// 初始化 Anthropic 客户端
-function getAnthropicClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY 未配置');
-  }
-  return new Anthropic({
-    apiKey,
-    baseURL: process.env.ANTHROPIC_BASE_URL || undefined
-  });
-}
 
 // 工具处理器类型
 type ToolHandler = (
@@ -625,8 +614,6 @@ export const handleAnalyzeImage: ToolHandler = async (params, sendEvent) => {
   await sendEvent({ type: 'image_analysis_start' });
 
   try {
-    const anthropic = getAnthropicClient();
-
     // 下载图片并压缩 (确保 < 1MB)
     const compressed = await fetchAndCompressImage(image_url, {
       maxWidth: 1600,
@@ -659,7 +646,7 @@ ${focusPoints.map((f: string) => `- ${f}`).join('\n')}
 
     let fullAnalysis = '';
 
-    const stream = anthropic.messages.stream({
+    for await (const chunk of streamAnthropicText({
       model: CLAUDE_LIGHT_MODEL,
       max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
       messages: [{
@@ -674,19 +661,14 @@ ${focusPoints.map((f: string) => `- ${f}`).join('\n')}
             }
           },
           { type: 'text', text: analysisPrompt }
-        ]
-      }]
-    });
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        const chunk = event.delta.text;
-        fullAnalysis += chunk;
-        await sendEvent({
-          type: 'image_analysis_chunk',
-          chunk
-        });
-      }
+        ],
+      }],
+    })) {
+      fullAnalysis += chunk;
+      await sendEvent({
+        type: 'image_analysis_chunk',
+        chunk
+      });
     }
 
     await sendEvent({
