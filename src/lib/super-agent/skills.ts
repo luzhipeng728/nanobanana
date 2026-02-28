@@ -1127,6 +1127,133 @@ Professional illustration, 8K resolution, warm kitchen lighting. All Chinese tex
         promptFix: 'text in authentic hand-lettering: bold brush calligraphy for titles with decorative flourishes, casual handwriting for labels, small neat script for annotations'
       }
     ]
+  },
+
+  // ========== 技能9: 装修3D效果图 ==========
+  'interior-design-3d': {
+    metadata: {
+      id: 'interior-design-3d',
+      name: '平面图转3D装修效果图',
+      description: '将平面户型图/设计图转换为多角度3D室内装修实景效果图，支持多种装修风格',
+      keywords: ['装修', '效果图', '平面图', '户型图', '设计图', '室内设计', '家装', '翻新', '改造', '实景图', '3D效果', '室内效果图', '装修风格', '室内渲染', '家居设计', '空间设计', '房间设计', '客厅', '卧室', '厨房'],
+      category: 'interior-design',
+      difficulty: 'hard',
+      requiredInputs: ['平面设计图（参考图）'],
+      optionalInputs: ['装修风格', '重点空间', '特殊要求']
+    },
+    basePrompt: `Based on the uploaded floor plan, generate a photorealistic 3D interior rendering of {{ROOM_TYPE}}.
+
+DESIGN STYLE: {{DESIGN_STYLE_PROMPT}}
+
+SCENE COMPOSITION:
+Wide-angle architectural photography shot at eye level (1.2m height), capturing the full depth of the room. {{LAYOUT_DESCRIPTION}} The camera uses a 24mm wide-angle lens with slight perspective correction, f/8 aperture for maximum depth of field, ensuring every element from foreground to background is razor-sharp.
+
+MATERIALS & FINISHES:
+{{MATERIAL_DETAILS}} All surfaces rendered with physically-based rendering (PBR): subtle light reflections on polished floors, visible grain in wood textures, soft sheen on upholstery fabrics. No plastic-looking surfaces.
+
+LIGHTING:
+{{LIGHTING_DESCRIPTION}} Soft natural light streams through floor-to-ceiling windows with sheer curtains diffusing the light into a warm, even glow. Supplementary warm-toned recessed lighting creates layered illumination. Global illumination with accurate light bouncing off walls.
+
+QUALITY REQUIREMENTS:
+Photorealistic architectural visualization, 8K resolution, professional interior photography quality. Sharp focus throughout, no motion blur, accurate perspective geometry. The rendering should be indistinguishable from a professional interior photography shoot.`,
+    variables: [
+      {
+        name: 'ROOM_TYPE',
+        description: '主要展示的房间类型',
+        type: 'text',
+        required: true,
+        defaultValue: 'the living room and dining area',
+        examples: ['the living room and dining area', 'the master bedroom', 'the open-plan kitchen', 'the full apartment layout']
+      },
+      {
+        name: 'DESIGN_STYLE_PROMPT',
+        description: '装修风格的详细英文描述',
+        type: 'text',
+        required: true,
+        defaultValue: 'Modern Minimalist — clean lines, neutral palette of white and warm gray, light oak wood flooring, minimal decorative elements, functional furniture with hidden storage',
+        examples: [
+          'Modern Minimalist — clean lines, neutral palette of white and warm gray, light oak wood flooring, minimal decorative elements, functional furniture with hidden storage',
+          'Scandinavian — warm birch wood, cozy textiles in muted tones (oatmeal, sage green, dusty rose), hygge atmosphere, abundant natural light, sheepskin throws and ceramic accents',
+          'Japandi — wabi-sabi aesthetic, natural materials (bamboo, linen, raw concrete), earthy neutral palette (warm beige, charcoal, moss green), low-profile furniture, bonsai and stone garden accents',
+          'Contemporary Luxury — marble accent walls, brushed brass hardware, velvet upholstery in deep jewel tones (navy, emerald, burgundy), statement pendant lighting, curated art pieces',
+          'Industrial — exposed brick and concrete, raw steel beams, Edison bulb pendants, reclaimed wood shelving, leather and iron furniture, urban loft atmosphere',
+          'American Farmhouse — shiplap walls, distressed wood floors, subway tile kitchen, farmhouse sink, mix of vintage and rustic elements, warm cream and navy color scheme'
+        ]
+      },
+      {
+        name: 'LAYOUT_DESCRIPTION',
+        description: '空间布局描述（根据平面图分析得出）',
+        type: 'text',
+        required: false,
+        defaultValue: 'Open-plan layout with living area flowing seamlessly into dining space.',
+        examples: [
+          'Open-plan layout with living area flowing seamlessly into dining space.',
+          'Bedroom with dedicated reading nook by the window and walk-in wardrobe zone.',
+          'L-shaped kitchen island as the central feature with breakfast bar seating.'
+        ]
+      },
+      {
+        name: 'MATERIAL_DETAILS',
+        description: '材质细节描述',
+        type: 'text',
+        required: false,
+        defaultValue: 'Light oak hardwood flooring throughout, white plaster walls with subtle texture, linen upholstery on sofa.',
+        examples: [
+          'Light oak hardwood flooring throughout, white plaster walls with subtle texture, linen upholstery on sofa.',
+          'Polished concrete floors with underfloor heating, exposed brick feature wall, walnut veneer cabinetry.',
+          'Herringbone parquet flooring, marble fireplace surround, bouclé fabric armchairs.'
+        ]
+      },
+      {
+        name: 'LIGHTING_DESCRIPTION',
+        description: '光线和氛围描述',
+        type: 'text',
+        required: false,
+        defaultValue: 'Golden hour afternoon light creating long warm shadows across the floor.',
+        examples: [
+          'Golden hour afternoon light creating long warm shadows across the floor.',
+          'Bright midday light with cool blue sky visible through windows, crisp and airy atmosphere.',
+          'Dusk interior lighting with warm ambient glow, cozy evening atmosphere.'
+        ]
+      }
+    ],
+    examples: [
+      {
+        userRequest: '帮我把这个户型图转成现代简约风格的3D效果图',
+        filledPrompt: 'Based on the uploaded floor plan, generate a photorealistic 3D interior rendering of the living room and dining area. DESIGN STYLE: Modern Minimalist — clean lines, neutral palette of white and warm gray, light oak wood flooring, minimal decorative elements. Wide-angle architectural photography, 24mm lens, f/8 aperture. Light oak hardwood flooring, white plaster walls, linen sofa. Golden hour light. 8K resolution, professional interior photography quality.',
+        chineseTexts: []
+      }
+    ],
+    qualityChecklist: [
+      '空间比例是否符合平面图布局',
+      '装修风格是否统一（材质/颜色/家具风格一致）',
+      '光线是否自然真实（有明暗层次）',
+      '材质细节是否清晰（木纹/石材/织物肌理）',
+      '家具陈设是否合理（符合人体工程学）',
+      '整体是否达到专业室内摄影水准'
+    ],
+    commonIssues: [
+      {
+        issue: '空间比例失真',
+        solution: '明确指定相机高度和镜头焦距',
+        promptFix: 'camera at 1.2m eye-level height, 24mm wide-angle lens, perspective correction applied, accurate architectural proportions'
+      },
+      {
+        issue: '材质看起来像CGI塑料',
+        solution: '强调PBR材质和真实光线反射',
+        promptFix: 'physically-based rendering (PBR) materials, subtle specular highlights on surfaces, visible material imperfections and texture variation, photorealistic not CGI'
+      },
+      {
+        issue: '光线太平均没有层次',
+        solution: '添加定向光和阴影描述',
+        promptFix: 'directional sunlight casting defined shadows, layered lighting with ambient fill and accent spotlights, warm-to-cool light temperature variation'
+      },
+      {
+        issue: '房间太空或家具太少',
+        solution: '明确要求完整陈设',
+        promptFix: 'fully furnished and styled room with complete furniture arrangement, decorative accessories, plants, cushions, and art pieces as per the design style'
+      }
+    ]
   }
 };
 

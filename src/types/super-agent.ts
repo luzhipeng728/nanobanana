@@ -10,7 +10,8 @@ export type SkillCategory =
   | 'architecture'       // 架构图
   | 'lifestyle'          // 生活场景
   | 'news'               // 新闻资讯
-  | 'illustration';      // 插画风格
+  | 'illustration'       // 插画风格
+  | 'interior-design';   // 室内设计
 
 export interface SkillMetadata {
   id: string;                    // 技能唯一标识
