@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { AgentPrompt, AgentStreamEvent } from "@/types/agent";
 import { CLAUDE_LIGHT_MODEL, CLAUDE_LIGHT_MAX_TOKENS } from "@/lib/claude-config";
 import { fetchAndCompressImage } from "@/lib/image-utils";
+import { streamAnthropicText } from "@/lib/anthropic-stream";
 
 // 参考图数据类型
 interface ReferenceImages {
@@ -362,58 +363,22 @@ ${imageAnalysis}
       try {
         console.log(`[Agent] Starting Claude stream for prompt generation`);
 
-        const stream = anthropic.messages.stream({
+        // 使用代理兼容的流（跳过 thinking_delta，避免 SDK 挂死）
+        let collectedText = "";
+        for await (const chunk of streamAnthropicText({
           model: CLAUDE_LIGHT_MODEL,
           max_tokens: CLAUDE_LIGHT_MAX_TOKENS,
           system: AGENT_SYSTEM_PROMPT,
           messages: [{ role: "user", content: userInput }],
-        });
-
-        // 处理流式响应
-        let collectedText = "";
-        try {
-          for await (const event of stream) {
-            if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-              const chunk = event.delta.text;
-              collectedText += chunk;
-              // 实时发送思考过程给前端
-              await sendEvent({ type: "claude_analysis_chunk", chunk });
-            }
-          }
-        } catch (streamError) {
-          console.error(`[Agent] Stream error:`, streamError);
-          // 如果已经有一些文本，尝试继续处理
-          if (collectedText.length > 100) {
-            console.log(`[Agent] Using partial text (${collectedText.length} chars) despite stream error`);
-            finalOutput = collectedText;
-          } else {
-            throw streamError;
-          }
+        })) {
+          collectedText += chunk;
+          await sendEvent({ type: "claude_analysis_chunk", chunk });
         }
 
-        // 获取完整的响应
-        if (!finalOutput) {
-          try {
-            const finalMessage = await stream.finalMessage();
-            const textBlock = finalMessage.content.find(
-              (block): block is Anthropic.TextBlock => block.type === "text"
-            );
-            finalOutput = textBlock?.text || collectedText;
-            console.log(`[Agent] Got final output, length: ${finalOutput.length}`);
-          } catch (finalMsgError) {
-            console.error(`[Agent] Error getting final message:`, finalMsgError);
-            // 使用已收集的文本
-            if (collectedText.length > 100) {
-              console.log(`[Agent] Using collected text (${collectedText.length} chars) as fallback`);
-              finalOutput = collectedText;
-            } else {
-              throw finalMsgError;
-            }
-          }
-        }
+        finalOutput = collectedText;
+        console.log(`[Agent] Got final output, length: ${finalOutput.length}`);
       } catch (loopError) {
         console.error(`[Agent] Error in Claude stream:`, loopError);
-        // 确保发送结束事件
         await sendEvent({ type: "claude_analysis_end" });
         throw loopError;
       }
