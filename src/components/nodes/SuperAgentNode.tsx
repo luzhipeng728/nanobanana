@@ -171,19 +171,6 @@ const SuperAgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) =
     }
   }, [selectedModel, supportedAspectRatios, aspectRatio]);
 
-  // 装修风格选择
-  const [designStyle, setDesignStyle] = useState<string>('');
-
-  const designStyleOptions = [
-    { value: '', label: '不限' },
-    { value: '现代简约', label: '现代简约' },
-    { value: '北欧风格', label: '北欧风' },
-    { value: '日式侘寂', label: '侘寂风' },
-    { value: '轻奢风格', label: '轻奢' },
-    { value: '工业风格', label: '工业风' },
-    { value: '美式乡村', label: '美式' },
-  ];
-
   // Deep research settings
   const [enableDeepResearch, setEnableDeepResearch] = useState(false);
   const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('low');
@@ -684,15 +671,11 @@ Generate a CLEAN image as if the markers do not exist.
         });
       }
 
-      const finalRequest = designStyle
-        ? `${userRequest}，装修风格：${designStyle}`
-        : userRequest;
-
       const response = await fetch("/api/super-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userRequest: finalRequest,
+          userRequest,
           referenceImages,
           enableDeepResearch,
           reasoningEffort: enableDeepResearch ? reasoningEffort : undefined,  // 深度研究强度
@@ -926,19 +909,6 @@ Generate a CLEAN image as if the markers do not exist.
           placeholder="描述你想要生成的图片类型，例如：&#10;• 公司介绍PPT，5页，科技风格&#10;• 4步骤使用教程图&#10;• 皮克斯风格故事场景（3个场景）..."
           disabled={isProcessing}
           className="focus:ring-purple-500/20 focus:border-purple-500"
-        />
-      </div>
-
-      {/* 装修风格快选 */}
-      <div className="space-y-1.5">
-        <NodeLabel>装修风格 <span className="text-[10px] text-[color:var(--text-tertiary)] font-normal">（平面图转3D用）</span></NodeLabel>
-        <NodeTabSelect
-          value={designStyle}
-          onChange={setDesignStyle}
-          options={designStyleOptions}
-          disabled={isProcessing}
-          color="purple"
-          size="sm"
         />
       </div>
 

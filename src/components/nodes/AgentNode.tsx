@@ -125,6 +125,18 @@ const AgentNode = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   const [isRunning, setIsRunning] = useState(false);
   const [generatingCount, setGeneratingCount] = useState(0); // 当前正在生成的数量
 
+  // 装修风格选择
+  const [designStyle, setDesignStyle] = useState<string>('');
+  const designStyleOptions = [
+    { value: '', label: '不限' },
+    { value: '现代简约', label: '现代简约' },
+    { value: '北欧风格', label: '北欧风' },
+    { value: '日式侘寂', label: '侘寂风' },
+    { value: '轻奢风格', label: '轻奢' },
+    { value: '工业风格', label: '工业风' },
+    { value: '美式乡村', label: '美式' },
+  ];
+
   // 参考图相关状态
   const [connectedImages, setConnectedImages] = useState<string[]>([]);
   const [connectedMarkedImages, setConnectedMarkedImages] = useState<string[]>([]); // 带标记的图片
@@ -772,7 +784,9 @@ Generate a CLEAN image as if the markers do not exist.
       } : undefined;
 
       // 如果有图表参考，将 XML 添加到用户请求前面
-      let enhancedUserRequest = userRequest;
+      let enhancedUserRequest = designStyle
+        ? `${userRequest}，装修风格：${designStyle}`
+        : userRequest;
       if (referenceDiagrams) {
         const diagramContext = connectedDiagrams.map((d, i) =>
           `[图表 ${i + 1} XML]:\n${d.xml}`
@@ -1173,6 +1187,19 @@ Generate a CLEAN image as if the markers do not exist.
             ))}
           </div>
         )}
+      </div>
+
+      {/* 装修风格快选 */}
+      <div className="space-y-1.5">
+        <NodeLabel>装修风格 <span className="text-[10px] text-neutral-500 font-normal">（平面图转3D用）</span></NodeLabel>
+        <NodeTabSelect
+          value={designStyle}
+          onChange={setDesignStyle}
+          options={designStyleOptions}
+          disabled={isRunning}
+          color="purple"
+          size="sm"
+        />
       </div>
 
       {/* 模型、分辨率、比例选择 - 使用 Tab 样式 */}
