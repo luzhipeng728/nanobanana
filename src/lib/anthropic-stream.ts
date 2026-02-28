@@ -71,6 +71,14 @@ async function* rawEventStream(params: AnthropicStreamParams): AsyncGenerator<Re
 
       const eventType = event.type as string;
 
+      // 调试日志（只记录关键事件类型）
+      if (eventType === 'content_block_start' || eventType === 'content_block_delta' || eventType === 'message_stop') {
+        const logData = eventType === 'content_block_delta'
+          ? { type: eventType, deltaType: (event.delta as any)?.type }
+          : { type: eventType, blockType: (event.content_block as any)?.type };
+        console.log('[SSE Debug]', JSON.stringify(logData));
+      }
+
       // --- 过滤 thinking 块 ---
       if (eventType === 'content_block_start') {
         const block = event.content_block as { type?: string } | undefined;
