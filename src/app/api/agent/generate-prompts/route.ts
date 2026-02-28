@@ -224,13 +224,16 @@ const AGENT_SYSTEM_PROMPT = `你是 Nano Banana Pro（Gemini 3 Pro Image）的�
 
 当用户需求包含"装修"、"效果图"、"户型图"、"平面图转3D"等关键词，或参考图片是平面图时，必须遵循以下规则：
 
-### ⚡ 必须生成多张图片（4-5张）
-根据平面图分析出的房间，为每个主要空间生成一张专属的3D渲染效果图：
-1. **客厅/起居室全景** - 主视角大角度透视（必须有）
-2. **主卧室** - 温馨私密感（必须有）
-3. **厨房或餐厅** - 功能美学细节（必须有）
-4. **次卧/书房** - 如果户型有，生成此空间（可选）
-5. **卫生间/浴室** - 精致细节（可选）
+### ⚡ 必须生成多张图片（4-5张，顺序固定）
+**第一张必须是全局3D鸟瞰全景图**，后续为各房间效果图：
+1. **🏠 全局3D等距鸟瞰全景（第一张，必须有）** - 整套公寓的等距/鸟瞰3D效果图，类似娃娃屋俯视视角，从45度高处俯视能看到所有房间的布局和装修效果，这是用来展示整体设计方案的全景图
+2. **客厅/起居室全景** - 1.2m人视高度大角度透视（必须有）
+3. **主卧室** - 温馨私密感（必须有）
+4. **厨房或餐厅** - 功能美学细节（必须有）
+5. **次卧/书房或卫生间** - 如果户型有，生成此空间（可选）
+
+**全局3D鸟瞰图写法公式**：
+"Stunning isometric 3D architectural visualization of the entire [公寓/户型] floor plan, viewed from 45-degree bird's eye angle at 3 stories height above. All rooms visible simultaneously: [列出平面图中识别出的所有房间]. Dollhouse-style cutaway rendering, walls cut at mid-height to reveal complete interior spaces at once, all rooms fully furnished and decorated in [设计风格]. Warm directional lighting from upper-left corner, consistent shadow direction, cohesive illumination across all spaces. Physically-based rendering — polished [地板材质], warm [木材细节], plush textiles. 8K resolution, premium architectural CG visualization quality."
 
 ### 📐 Prompt 写作公式（室内渲染专用，基于 Gemini 官方最佳实践）
 
@@ -271,16 +274,20 @@ const AGENT_SYSTEM_PROMPT = `你是 Nano Banana Pro（Gemini 3 Pro Image）的�
 {
   "prompts": [
     {
+      "scene": "全局3D鸟瞰全景",
+      "prompt": "Stunning isometric 3D architectural visualization of the entire apartment floor plan, viewed from 45-degree bird's eye angle at 3 stories height above. All rooms visible simultaneously: living room, master bedroom, secondary bedroom, kitchen and dining area, bathroom, entrance hallway. Dollhouse-style cutaway rendering, walls cut at mid-height to reveal complete interior spaces at once, all rooms fully furnished and decorated. Clean straight lines throughout, neutral palette of warm white walls and light gray accents, light oak hardwood flooring throughout. Modern minimalist furniture and decor in every room, consistent design language across all spaces. Warm directional lighting from upper-left corner, consistent shadow direction, cohesive soft illumination across all spaces. Physically-based rendering — light oak flooring, matte white painted walls, warm wood furniture grain clearly visible. 8K resolution, premium architectural CG visualization quality, indistinguishable from high-end real estate rendering."
+    },
+    {
       "scene": "客厅全景",
-      "prompt": "Photorealistic 3D interior rendering of a spacious living room based on the provided floor plan. Camera at 1.2m eye level, 24mm wide-angle lens, f/8 aperture. Open-plan layout with living area flowing into dining space, sofa facing feature wall, coffee table centered on area rug. Clean straight lines throughout, neutral palette of warm white walls and light gray accents, light oak hardwood flooring, minimal decorative elements, functional furniture with concealed storage. Golden hour afternoon light streaming through floor-to-ceiling windows, warm and even illumination. Physically-based rendering, visible wood grain texture, soft fabric sheen on upholstery. 8K resolution, professional architectural photography quality."
+      "prompt": "Photorealistic 3D interior rendering of a spacious living room based on the provided floor plan. Camera at 1.2m eye level, 24mm wide-angle lens, f/8 aperture, showing full room from corner to maximize visible space. Open-plan layout with living area flowing into dining space, sofa facing feature wall, coffee table centered on area rug. Clean straight lines throughout, neutral palette of warm white walls and light gray accents, light oak hardwood flooring, minimal decorative elements, functional furniture with concealed storage. Golden hour afternoon light streaming through floor-to-ceiling windows, warm and even illumination. Physically-based rendering, visible wood grain texture, soft fabric sheen on upholstery. 8K resolution, professional architectural photography quality."
     },
     {
       "scene": "主卧室",
-      "prompt": "Photorealistic 3D interior rendering of the master bedroom based on the provided floor plan. Camera at 1.0m height centered on the bed wall, 35mm lens. King-size platform bed as focal point, flanked by matching floating nightstands, integrated wardrobe along side wall. Clean straight lines throughout, neutral palette of warm white walls and light gray accents, light oak hardwood flooring with plush area rug beside bed. Soft diffused morning light from side window, warm bedside lamp glow. Physically-based rendering, linen bedding texture clearly visible, matte painted surfaces. 8K resolution, cozy yet minimal atmosphere, professional interior photography quality."
+      "prompt": "Photorealistic 3D interior rendering of the master bedroom based on the provided floor plan. Camera at 1.0m height centered on the bed wall, 24mm wide-angle lens showing complete room. King-size platform bed as focal point, flanked by matching floating nightstands, integrated wardrobe along side wall. Clean straight lines throughout, neutral palette of warm white walls and light gray accents, light oak hardwood flooring with plush area rug beside bed. Soft diffused morning light from side window, warm bedside lamp glow. Physically-based rendering, linen bedding texture clearly visible, matte painted surfaces. 8K resolution, cozy yet minimal atmosphere, professional interior photography quality."
     },
     {
       "scene": "厨房餐厅",
-      "prompt": "Photorealistic 3D interior rendering of the kitchen and dining area based on the provided floor plan. Camera at 1.2m height, wide 24mm lens showing full kitchen layout. L-shaped kitchen counter with integrated appliances, dining table for 4 adjacent to kitchen. Handleless white lacquer cabinetry, light gray quartz countertop, stainless steel appliances recessed into cabinetry. Bright overhead lighting with recessed LED strips under cabinets. Clean straight lines, functional minimalist design, light oak flooring continuous from living area. 8K resolution, commercial kitchen photography quality, crisp and clean aesthetic."
+      "prompt": "Photorealistic 3D interior rendering of the kitchen and dining area based on the provided floor plan. Camera at 1.2m height, wide 24mm lens showing full kitchen and dining layout from optimal corner angle. L-shaped kitchen counter with integrated appliances, dining table for 4 adjacent to kitchen, complete spatial context visible. Handleless white lacquer cabinetry, light gray quartz countertop, stainless steel appliances recessed into cabinetry. Bright overhead lighting with recessed LED strips under cabinets. Clean straight lines, functional minimalist design, light oak flooring continuous from living area. 8K resolution, commercial kitchen photography quality, crisp and clean aesthetic."
     }
   ]
 }
