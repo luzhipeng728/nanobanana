@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { readFile, access, constants } from "fs/promises";
 import { uploadBufferToR2 } from "@/lib/r2";
+import { CLAUDE_MODEL } from "@/lib/claude-config";
 
 const prisma = new PrismaClient();
 
@@ -174,7 +175,7 @@ export async function POST(request: NextRequest) {
         // 构建查询选项
         const queryOptions: any = {
           // 使用 Claude Opus 4.5 模型（最强大的模型）
-          model: "claude-opus-4-5-20251101",
+          model: CLAUDE_MODEL,
           // 加载项目和用户设置（包括 skills）
           settingSources: ["project", "user"],
           // 显式加载 document-skills 插件

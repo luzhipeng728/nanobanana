@@ -253,11 +253,11 @@ export interface ReActConfig {
   maxTokens: number;
 }
 
-export const DEFAULT_REACT_CONFIG = {
+export const DEFAULT_REACT_CONFIG: ReActConfig = {
   maxIterations: 10,
-  model: 'claude-sonnet-4-20250514',
+  model: process.env.CLAUDE_MODEL || 'qwen3.5-plus',
   maxTokens: 4096,
-} as const satisfies ReActConfig;
+};
 
 // ========== WebSocket 处理器类型 ==========
 

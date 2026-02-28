@@ -13,14 +13,14 @@
 
 // 主模型 - 用于 SuperAgent ReAct 循环等核心任务
 // 使用 Sonnet 4.5：平衡性能和兼容性
-export const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
+export const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'qwen3.5-plus';
 
 // 主模型最大输出 tokens（Sonnet 4.5 最大支持 64K）
 export const CLAUDE_MAX_TOKENS = parseInt(process.env.CLAUDE_MAX_TOKENS || '64000', 10);
 
 // 轻量模型 - 用于简单任务如分类、评估等
 // 使用 Haiku 4.5：最快最便宜，适合结构化输出任务
-export const CLAUDE_LIGHT_MODEL = process.env.CLAUDE_LIGHT_MODEL || 'claude-haiku-4-5-20251001';
+export const CLAUDE_LIGHT_MODEL = process.env.CLAUDE_LIGHT_MODEL || 'qwen3.5-plus';
 
 // 轻量模型最大输出 tokens（Haiku 4.5 最大支持 8K）
 export const CLAUDE_LIGHT_MAX_TOKENS = parseInt(process.env.CLAUDE_LIGHT_MAX_TOKENS || '8192', 10);

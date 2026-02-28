@@ -15,6 +15,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { ScriptSegment, ImagePromptConfig, ImageResult, ImageBatchConfig, TTSResult, ResearchVideoEvent, ImageGenerationPlan, SegmentImage } from "./types";
 import { generateImage } from "@/lib/image-generation";
+import { CLAUDE_MODEL } from "@/lib/claude-config";
 
 const anthropic = new Anthropic();
 
@@ -200,7 +201,7 @@ ${keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODEL,
       max_tokens: 4096, // 增加输出长度
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
@@ -447,7 +448,7 @@ ${fullText}
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODEL,
       max_tokens: 8192,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
@@ -556,7 +557,7 @@ ${originalPrompt}`;
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: CLAUDE_MODEL,
       max_tokens: 4096,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],

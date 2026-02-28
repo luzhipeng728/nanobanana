@@ -3,6 +3,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { ChatAgentTool, ToolContext, ToolCallbacks, ToolResult } from '../types';
 import { analyzeDocumentSchema } from '../tool-registry';
+import { CLAUDE_MODEL } from '@/lib/claude-config';
 
 // Anthropic 客户端
 const anthropic = new Anthropic();
@@ -64,7 +65,7 @@ async function analyzeWithClaude(
 
   // 使用流式 API
   const stream = anthropic.messages.stream({
-    model: 'claude-sonnet-4-20250514',
+    model: CLAUDE_MODEL,
     max_tokens: 4096,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],

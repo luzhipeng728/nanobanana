@@ -13,13 +13,13 @@ export const maxDuration = 300;
 const GEMINI_BASE_URL = process.env.SCROLLYTELLING_API_BASE_URL || '';
 const GEMINI_API_KEY = process.env.SCROLLYTELLING_API_KEY || '';
 const DEFAULT_GEMINI_MODEL = process.env.SCROLLYTELLING_MODEL || 'gemini-3-pro-preview';
-const DEFAULT_ANTHROPIC_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514';
+const DEFAULT_ANTHROPIC_MODEL = process.env.CLAUDE_MODEL || 'qwen3.5-plus';
 const MAX_TOKENS = 64000;
 
 // 可用的模型列表 - 只支持两个模型（仅展示名称）
 export const AVAILABLE_MODELS = [
-  { id: 'claude-opus-4-5-20251101', name: '豆包 图表-快速', description: '默认模型', isDefault: true },
-  { id: 'claude-sonnet-4-20250514', name: '豆包 图表-专业', description: '高精度图表生成', isDefault: false },
+  { id: 'qwen3.5-plus', name: '豆包 图表-快速', description: '默认模型', isDefault: true },
+  { id: 'qwen3.5-plus', name: '豆包 图表-专业', description: '高精度图表生成', isDefault: false },
 ];
 
 // 判断是否是 Gemini 模型

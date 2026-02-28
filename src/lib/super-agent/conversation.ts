@@ -3,15 +3,15 @@
 
 import { prisma } from '@/lib/prisma';
 import Anthropic from '@anthropic-ai/sdk';
-import { CLAUDE_MODEL } from '@/lib/claude-config';
+import { CLAUDE_MODEL, CLAUDE_LIGHT_MODEL } from '@/lib/claude-config';
 
 // Token 限制配置
 const MAX_CONTEXT_TOKENS = 100000;  // 最大上下文 tokens
 const COMPRESS_THRESHOLD = 90000;   // 触发压缩的阈值（90%）
 const RECENT_TURNS_TO_KEEP = 2;     // 压缩时保留最近的轮数
 
-// Haiku 模型用于压缩
-const HAIKU_MODEL = 'claude-haiku-4-5-20251001';
+// 压缩用轻量模型
+const HAIKU_MODEL = CLAUDE_LIGHT_MODEL;
 
 /**
  * 对话消息类型

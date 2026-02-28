@@ -31,8 +31,8 @@ import {
 
 // 可用的模型列表（仅展示名称，底层模型保持不变）
 const AVAILABLE_MODELS = [
-  { id: 'claude-sonnet-4-20250514', name: '豆包 图表-专业', icon: Bot, description: '高精度图表生成' },
-  { id: 'claude-opus-4-5-20251101', name: '豆包 图表-快速', icon: Sparkles, description: '更快响应，适合轻量修改' },
+  { id: 'qwen3.5-plus', name: '豆包 图表-专业', icon: Bot, description: '高精度图表生成' },
+  { id: 'qwen3.5-plus', name: '豆包 图表-快速', icon: Sparkles, description: '更快响应，适合轻量修改' },
 ];
 
 type ChatNodeData = {

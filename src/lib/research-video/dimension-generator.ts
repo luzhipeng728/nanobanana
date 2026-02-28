@@ -6,6 +6,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { ResearchDimension, DimensionGeneratorConfig } from "./types";
 import { v4 as uuidv4 } from "uuid";
+import { CLAUDE_MODEL } from "@/lib/claude-config";
 
 const anthropic = new Anthropic();
 
@@ -98,7 +99,7 @@ export async function generateResearchDimensions(
   const prompt = buildDimensionPrompt();
 
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: CLAUDE_MODEL,
     max_tokens: 1024,
     messages: [
       {

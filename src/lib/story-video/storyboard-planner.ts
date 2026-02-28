@@ -8,6 +8,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { CLAUDE_MODEL } from '@/lib/claude-config';
 import { GoogleGenAI } from '@google/genai';
 import type {
   Storyboard,
@@ -119,7 +120,7 @@ Return ONLY the JSON object, no other text.`;
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: CLAUDE_MODEL,
       max_tokens: 4096,
       messages: [
         { role: 'user', content: userPrompt },

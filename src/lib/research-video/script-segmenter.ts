@@ -8,6 +8,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ScriptSegment, ScriptGeneratorConfig, ScriptResult, CHARS_PER_SECOND, ResearchVideoEvent } from "./types";
 import { getGeminiKeys } from "@/lib/api-keys";
+import { CLAUDE_MODEL } from "@/lib/claude-config";
 
 const anthropic = new Anthropic();
 
@@ -210,7 +211,7 @@ ${researchResult}
   });
 
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: CLAUDE_MODEL,
     max_tokens: 32000,
     messages: [
       {
@@ -266,7 +267,7 @@ export async function generateSegmentedScript(
   });
 
   const stream = anthropic.messages.stream({
-    model: "claude-sonnet-4-20250514",
+    model: CLAUDE_MODEL,
     max_tokens: 16384,
     messages: [
       {
